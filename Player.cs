@@ -1,12 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement.Rebar;
+using Realm.States;
 
 namespace Realm
 {
@@ -29,10 +25,24 @@ namespace Realm
         public string name;
         public string description;
 
-        //public static Vector2 Posistion;
+        public static int Health;
+        public static int HealthMax;
 
+        public static int Mana;
+        public static int ManaMax;
+
+        public static int Attack;
+        public static int Defense;
+        public static int Vitality;
+        public static int Wisdom;
         public static float Speed;
         public static int Dexterity;
+
+        public static int Experience;
+        public static int ExperienceTotal;
+
+        public static int Level;
+
         public static int ProjectileDuration;
         public static float ProjectileMagnitude;
 
@@ -43,47 +53,143 @@ namespace Realm
             id = 0;
             name = "Player";
             description = string.Empty;
+            image = Art.Player;
 
-            Speed = 4;
+            Health = 100;
+            HealthMax = 100;
+
+            Mana = 100;
+            ManaMax = 100;
+
+            Attack = 1;
+            Defense = 1;
+            Vitality = 1;
+            Wisdom = 1;
+            Speed = 1;
             Dexterity = 1;
+
+            Experience = 0;
+            ExperienceTotal = 0;
+
+            Level = 1;
 
             ProjectileDuration = 24;
             ProjectileMagnitude = 12f;
 
             Position = Game1.ScreenSize / 2;
-
-            image = Art.Player;
+            Radius = image.Width / 2f;
         }
 
-        //public override void Draw(SpriteBatch spriteBatch)
-        //{
-        //    // Draw player texture.
-        //    Player.Instance.Draw(spriteBatch);
-        //    //Texture.DrawFrame(spriteBatch, new Vector2(Position.X - 32, Position.Y - 32));
-        //}
-
-        public void Update(float elapsed, GameTime gameTime)
+        public static void UseAbility()
         {
-            // Update player animation.
-            //Texture.UpdateFrame(elapsed);
+            int abilityCost = 25;
+
+            if (Mana >= abilityCost)
+            {
+                Mana -= abilityCost;
+
+                // Spell bomb.
+                for (int i = 0; i < 35; i++)
+                {
+                    Vector2 vel = Extensions.FromPolar(i * 10, ProjectileMagnitude);
+                    EntityManager.Add(new Projectile(Input.GetMousePosistion(), vel));
+                }
+            }
         }
 
-        private int cooldownRemaining = 0;
-        private int cooldownFrames = 24;
+        public static void LevelUp()
+        {
+            Level++;
+
+            Attack++;
+            Defense++;
+
+            Vitality += Level;
+            Wisdom += Level;
+
+            if (Level % 3 == 0)
+            {
+                Speed++;
+            }
+
+            Dexterity += Level;
+
+            Experience = 0;
+        }
+
+        public static void Hit()
+        {
+            Health = Health - 25;
+            if (Health <= 0)
+            {
+                Kill();
+            }
+        }
+
+        public static void Kill()
+        {
+            EnemySpawner.Reset();
+            EntityManager.Reset();
+            GameState.Player = new Player();
+            Player.Instance.Position = Game1.ScreenSize / 2;
+            Camera.Reset();
+            Game1.Instance.ChangeState(
+                new MenuState(Game1.Instance, Game1.Instance.GraphicsDevice, Game1.Instance.Content)
+            );
+        }
+
+        private int projectileCooldownRemaining = 0;
+        private readonly int projectileCooldown = 50;
+
+        private int healthCooldownRemaining = 0;
+        private readonly int healthCooldown = 500;
+
+        private int manaCooldownRemaining = 0;
+        private readonly int manaCooldown = 250;
 
         public override void Update()
         {
+            // Update position.
             Velocity = Speed * Input.GetMovementDirection();
             Position += Velocity;
+            Game1.Camera.Pos += Velocity;
             //Position = Vector2.Clamp(Position, Size / 2, Game1.ScreenSize - Size / 2);
 
+            // Check for level up
+            if (Experience >= 10 * Level * Level)
+            {
+                Debug.WriteLine("Level up.");
+                LevelUp();
+            }
+
+            // Regenerate Health.
+            if (healthCooldownRemaining <= 0)
+            {
+                healthCooldownRemaining = healthCooldown - (Vitality * 1);
+                if (Health < HealthMax)
+                    Health++;
+            }
+            if (healthCooldownRemaining > 0)
+                healthCooldownRemaining--;
+
+            // Regenerate mana.
+            if (manaCooldownRemaining <= 0)
+            {
+                manaCooldownRemaining = manaCooldown - (Wisdom * 1);
+                if (Mana < ManaMax)
+                    Mana++;
+            }
+            if (manaCooldownRemaining > 0)
+                manaCooldownRemaining--;
+
             // Shoot
-            if (Input.MouseState.LeftButton == Microsoft.Xna.Framework.Input.ButtonState.Pressed)
+            // This may be moved to new Weapon class.
+            if (Input.mouse.LeftButton == Microsoft.Xna.Framework.Input.ButtonState.Pressed)
             {
                 var aim = Input.GetMouseAimDirection();
-                if (aim.LengthSquared() > 0 && cooldownRemaining <= 0)
+                if (aim.LengthSquared() > 0 && projectileCooldownRemaining <= 0)
                 {
-                    cooldownRemaining = cooldownFrames;
+                    projectileCooldownRemaining = projectileCooldown - (Dexterity * 1);
                     float aimAngle = aim.ToAngle();
                     Quaternion aimQuat = Quaternion.CreateFromYawPitchRoll(0, 0, aimAngle);
                     float randomSpread =
@@ -99,8 +205,8 @@ namespace Realm
                     //EntityManager.Add(new Projectile(Position + offset, vel));
                     //Sound.Shot.Play(0.2f, rand.NextFloat(-0.2f, 0.2f), 0);
                 }
-                if (cooldownRemaining > 0)
-                    cooldownRemaining = cooldownRemaining - Dexterity;
+                if (projectileCooldownRemaining > 0)
+                    projectileCooldownRemaining--;
             }
         }
     }

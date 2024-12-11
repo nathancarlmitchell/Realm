@@ -18,7 +18,7 @@ namespace Realm
         public static State GameState,
             MenuState;
 
-        public static Camera2D Camera;
+        public static Camera Camera;
 
         // Helpful static properties.
         public static Game1 Instance { get; private set; }
@@ -87,13 +87,12 @@ namespace Realm
         protected override void LoadContent()
         {
             _spriteBatch = new SpriteBatch(GraphicsDevice);
-            Camera = new Camera2D(Viewport, 2000, 2000, 1f);
+            Camera = new Camera(Viewport, 2000, 2000, 1f);
 
             Art.Load(Content);
             Sound.Load(Content);
 
             StartGame();
-            // TODO: use this.Content to load your game content here
         }
 
         private void StartGame()
@@ -111,45 +110,31 @@ namespace Realm
 
         protected override void Update(GameTime gameTime)
         {
-            // Move the camera when the arrow keys are pressed
-            //Vector2 movement = Vector2.Zero;
-            //Viewport vp = Viewport;
-            //keyboard = Keyboard.GetState();
-
-            //if (keyboard.IsKeyDown(Keys.A))
-            //    movement.X--;
-            //if (keyboard.IsKeyDown(Keys.D))
-            //    movement.X++;
-            //if (keyboard.IsKeyDown(Keys.W))
-            //    movement.Y--;
-            //if (keyboard.IsKeyDown(Keys.S))
-            //    movement.Y++;
-
-            //Camera.Pos += movement * Player.Speed;
-
             if (nextState != null)
             {
-                if (nextState is GameState && GameState != null)
-                {
-                    currentState = GameState;
-                    Debug.WriteLine("restoring GameState");
-                }
-                else if (nextState is MenuState && MenuState != null)
-                {
-                    currentState = MenuState;
-                    Debug.WriteLine("restoring MenuState");
-                }
-                else if (nextState is MenuState)
-                {
-                    MenuState = nextState;
-                    currentState = nextState;
-                    Debug.WriteLine("nextState is MenuState");
-                }
-                else
-                {
-                    Debug.WriteLine("Next State.");
-                    currentState = nextState;
-                }
+                //if (nextState is GameState && GameState != null)
+                //{
+                //    currentState = GameState;
+                //    Debug.WriteLine("restoring GameState");
+                //}
+                //else if (nextState is MenuState && MenuState != null)
+                //{
+                //    currentState = MenuState;
+                //    Debug.WriteLine("restoring MenuState");
+                //}
+                //else if (nextState is MenuState)
+                //{
+                //    MenuState = nextState;
+                //    currentState = nextState;
+                //    Debug.WriteLine("nextState is MenuState");
+                //}
+                //else
+                //{
+                //    Debug.WriteLine("Next State.");
+                //    currentState = nextState;
+                //}
+
+                currentState = nextState;
 
                 nextState = null;
             }

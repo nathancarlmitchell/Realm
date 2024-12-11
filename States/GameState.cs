@@ -12,21 +12,22 @@ namespace Realm.States
     public class GameState : State
     {
         public static Player Player { get; set; }
-        public static Camera Camera { get; set; }
+        public static Camera_old Camera { get; set; }
 
         public GameState(Game1 game, GraphicsDevice graphicsDevice, ContentManager content)
             : base()
         {
             //Camera = new Camera(Game1.Viewport);
 
-            Player = new Player()
-            {
-                //Position.X = Game1.ScreenWidth / 2,
-                //Y = Game1.ScreenHeight / 2,
-                //Height = 64,
-                //Width = 64,
-                Texture = Art.Player,
-            };
+            //Player = new Player()
+            //{
+            //    //    //Position.X = Game1.ScreenWidth / 2,
+            //    //    //Y = Game1.ScreenHeight / 2,
+            //    //    //Height = 64,
+            //    //    //Width = 64,
+            //    //    Texture = Art.Player,
+            //};
+            EntityManager.Add(Player.Instance);
         }
 
         public override void Draw(GameTime gameTime, SpriteBatch spriteBatch)
@@ -45,10 +46,16 @@ namespace Realm.States
             Background.Draw(spriteBatch);
 
             // Draw player.
-            Player.Draw(spriteBatch);
+            //Player.Draw(spriteBatch);
 
             // Draw projectiles.
             EntityManager.Draw(spriteBatch);
+
+            // Draw health and mana.
+            Overlay.DrawHealth(spriteBatch);
+
+            // Draw stats.
+            Overlay.DrawStats(spriteBatch);
 
             if (Game1._Debug)
             {
@@ -66,12 +73,10 @@ namespace Realm.States
         public override void Update(GameTime gameTime)
         {
             float elapsed = (float)gameTime.ElapsedGameTime.TotalSeconds;
-            Player.Update(elapsed, gameTime);
-            Player.Update();
+            //Player.Update(elapsed, gameTime);
+            //Player.Update();
             EntityManager.Update();
             EnemySpawner.Update();
-
-            //Camera.UpdateCamera(Game1.Viewport);
         }
     }
 }

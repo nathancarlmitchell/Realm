@@ -15,11 +15,11 @@ public static class Input
     private static readonly GraphicsDevice graphicsDevice = Game1.Instance.GraphicsDevice;
     private static readonly ContentManager content = Game1.Instance.Content;
 
-    public static MouseState MouseState,
-        lastMouseState;
+    public static MouseState mouse,
+        previousMouse;
     public static Vector2 MousePosition
     {
-        get { return new Vector2(MouseState.X, MouseState.Y); }
+        get { return new Vector2(mouse.X, mouse.Y); }
     }
 
     private static KeyboardState keyboard,
@@ -29,7 +29,9 @@ public static class Input
     {
         previousKeyboard = keyboard;
         keyboard = Keyboard.GetState();
-        MouseState = Mouse.GetState();
+
+        previousMouse = mouse;
+        mouse = Mouse.GetState();
 
         //TouchCollection touchState = TouchPanel.GetState();
 
@@ -62,20 +64,29 @@ public static class Input
             }
         }
 
+        float zoomIncrement = 0.01f;
+
         if (currentState is GameState)
         {
             // Check keybord input.
             //
-            // Jump.
-            if (keyboard.IsKeyDown(Keys.Space))
+
+            // Adjust zoom if the mouse wheel has moved
+            //if (mouse.ScrollWheelValue > previousMouse.ScrollWheelValue)
+            //    Game1.Camera.Zoom += zoomIncrement;
+            //else if (mouse.ScrollWheelValue < previousMouse.ScrollWheelValue)
+            //    Game1.Camera.Zoom -= zoomIncrement;
+
+            // Ability.
+            if (WasKeyPressed(Keys.Space))
             {
-                //GameState.Player.Jump(GameState.Player.JumpVelocity);
+                Player.UseAbility();
             }
 
-            // Boost.
-            if (keyboard.IsKeyDown(Keys.LeftShift))
+            // Kill.
+            if (WasKeyPressed(Keys.Q))
             {
-                //GameState.Player.Jump(GameState.Player.JumpVelocity * 2);
+                Player.Kill();
             }
 
             // Pause.
@@ -151,15 +162,6 @@ public static class Input
         //        MainMenu();
         //    }
         //}
-
-        //if (currentState is TrophyState)
-        //{
-        //    // Enter.
-        //    if (keyboard.IsKeyDown(Keys.Enter) && !previousKeyboard.IsKeyUp(Keys.Enter))
-        //    {
-        //        MainMenu();
-        //    }
-        //}
     }
 
     // Checks if a key was just pressed down
@@ -173,22 +175,19 @@ public static class Input
         Vector2 direction = new Vector2();
         //Vector2 direction = gamepadState.ThumbSticks.Left;
         direction.Y *= -1; // invert the y-axis
-        if (keyboard.IsKeyDown(Keys.A))
-        {
-            direction.X -= 1;
-        }
 
+        if (keyboard.IsKeyDown(Keys.A))
+            direction.X -= 1;
         if (keyboard.IsKeyDown(Keys.D))
             direction.X += 1;
         if (keyboard.IsKeyDown(Keys.W))
             direction.Y -= 1;
         if (keyboard.IsKeyDown(Keys.S))
             direction.Y += 1;
-        // Clamp the length of the vector to a maximum of 1.
-        //if (direction.LengthSquared() > 1)
-        //    direction.Normalize();
 
-        Game1.Camera.Pos += direction * Player.Speed;
+        // Clamp the length of the vector to a maximum of 1.
+        if (direction.LengthSquared() > 1)
+            direction.Normalize();
 
         return direction;
     }
@@ -196,10 +195,26 @@ public static class Input
     public static Vector2 GetMouseAimDirection()
     {
         Vector2 direction = MousePosition - Player.Instance.Position;
+
+        // Transform mouse input from view to world position
+        Matrix inverse = Matrix.Invert(Game1.Camera.GetTransformation());
+        direction = Vector2.Transform(direction, inverse);
+
         if (direction == Vector2.Zero)
             return Vector2.Zero;
         else
             return Vector2.Normalize(direction);
+    }
+
+    public static Vector2 GetMousePosistion()
+    {
+        Vector2 position = MousePosition;
+
+        // Transform mouse input from view to world position
+        Matrix inverse = Matrix.Invert(Game1.Camera.GetTransformation());
+        position = Vector2.Transform(position, inverse);
+
+        return position;
     }
 
     public static void MainMenu()
@@ -210,8 +225,6 @@ public static class Input
     public static void NewGame()
     {
         Game1.GameState = null;
-        //GameState.Score = 0;
-        //GameState.Coins = 0;
         Game1.Instance.ChangeState(new GameState(game, graphicsDevice, content));
     }
 
@@ -219,6 +232,5 @@ public static class Input
     {
         Game1.Instance.ChangeState(Game1.GameState);
         Game1.Instance.IsMouseVisible = false;
-        //Background.SetAlpha(100);
     }
 }

@@ -1,5 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Realm;
@@ -17,13 +19,16 @@ namespace Realm
         public int PointValue { get; private set; }
         private List<IEnumerator<int>> behaviours = new List<IEnumerator<int>>();
 
+        private int health;
+
         public Enemy(Texture2D image, Vector2 position)
         {
             this.image = image;
             Position = position;
             Radius = image.Width / 2f;
             color = Color.Transparent;
-            PointValue = 1;
+            //PointValue = 1;
+            //health = 2;
         }
 
         public override void Update()
@@ -38,19 +43,23 @@ namespace Realm
                 color = Microsoft.Xna.Framework.Color.White * (1 - timeUntilStart / 60f);
             }
             Position += Velocity;
-            Position = Vector2.Clamp(Position, Size / 2, Game1.ScreenSize - Size / 2);
+            // Keep enemies in bounds
+            //Position = Vector2.Clamp(Position, Size / 2, Game1.ScreenSize - Size / 2);
             Velocity *= 0.8f;
         }
 
         public void WasShot()
         {
-            IsExpired = true;
-            //PlayerStatus.AddPoints(PointValue);
+            health--;
+            if (health == 0)
+                IsExpired = true;
+            Player.Experience += PointValue;
+            Player.ExperienceTotal += PointValue;
             //PlayerStatus.IncreaseMultiplier();
             //Sound.Explosion.Play(0.5f, rand.NextFloat(-0.2f, 0.2f), 0);
         }
 
-        IEnumerable<int> FollowPlayer(float acceleration = 1f)
+        IEnumerable<int> FollowPlayer(float acceleration = 0.5f)
         {
             while (true)
             {
@@ -77,8 +86,10 @@ namespace Realm
 
         public static Enemy CreateSeeker(Vector2 position)
         {
-            var enemy = new Enemy(Art.Enemy, position);
+            var enemy = new Enemy(Art.Enemy2, position);
             enemy.AddBehaviour(enemy.FollowPlayer());
+            enemy.health = 1;
+            enemy.PointValue = 5;
             return enemy;
         }
 
@@ -109,6 +120,8 @@ namespace Realm
         {
             var enemy = new Enemy(Art.Enemy, position);
             enemy.AddBehaviour(enemy.MoveRandomly());
+            enemy.health = 5;
+            enemy.PointValue = 3;
             return enemy;
         }
 

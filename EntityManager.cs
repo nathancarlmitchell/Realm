@@ -68,6 +68,19 @@ namespace Realm
                 && Vector2.DistanceSquared(a.Position, b.Position) < radius * radius;
         }
 
+        public static void Reset()
+        {
+            for (int i = 0; i < enemies.Count; i++)
+            {
+                enemies[i].IsExpired = true;
+            }
+
+            for (int i = 0; i < bullets.Count; i++)
+            {
+                bullets[i].IsExpired = true;
+            }
+        }
+
         static void HandleCollisions()
         {
             // handle collisions between enemies
@@ -95,8 +108,8 @@ namespace Realm
             {
                 if (enemies[i].IsActive && IsColliding(Player.Instance, enemies[i]))
                 {
-                    //Player.Instance.Kill();
-                    enemies.ForEach(x => x.WasShot());
+                    Player.Hit();
+                    enemies[i].IsExpired = true;
                     break;
                 }
             }
