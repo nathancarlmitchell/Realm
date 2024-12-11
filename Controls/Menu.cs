@@ -15,7 +15,7 @@ namespace Realm.Controls
             int scale = Game1.Scale;
 
             int centerHeight = (Game1.ScreenHeight / 2) + (buttons.Count * 20);
-            int centerWidth = (Game1.Width / 2) - ((Art.ButtonTexture.Width * scale) / 2);
+            int centerWidth = (Game1.ScreenWidth / 2) - ((Art.ButtonTexture.Width * scale) / 2);
 
             for (int i = 0; i < buttons.Count; i++)
             {

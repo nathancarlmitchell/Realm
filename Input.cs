@@ -15,6 +15,13 @@ public static class Input
     private static readonly GraphicsDevice graphicsDevice = Game1.Instance.GraphicsDevice;
     private static readonly ContentManager content = Game1.Instance.Content;
 
+    public static MouseState MouseState,
+        lastMouseState;
+    public static Vector2 MousePosition
+    {
+        get { return new Vector2(MouseState.X, MouseState.Y); }
+    }
+
     private static KeyboardState keyboard,
         previousKeyboard;
 
@@ -22,6 +29,7 @@ public static class Input
     {
         previousKeyboard = keyboard;
         keyboard = Keyboard.GetState();
+        MouseState = Mouse.GetState();
 
         //TouchCollection touchState = TouchPanel.GetState();
 
@@ -179,8 +187,19 @@ public static class Input
         // Clamp the length of the vector to a maximum of 1.
         //if (direction.LengthSquared() > 1)
         //    direction.Normalize();
+
         Game1.Camera.Pos += direction * Player.Speed;
+
         return direction;
+    }
+
+    public static Vector2 GetMouseAimDirection()
+    {
+        Vector2 direction = MousePosition - Player.Instance.Position;
+        if (direction == Vector2.Zero)
+            return Vector2.Zero;
+        else
+            return Vector2.Normalize(direction);
     }
 
     public static void MainMenu()

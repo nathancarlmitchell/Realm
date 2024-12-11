@@ -9,7 +9,7 @@ namespace Realm
 {
     public class Game1 : Game
     {
-        private GraphicsDeviceManager _graphics;
+        private GraphicsDeviceManager Graphics;
         private SpriteBatch _spriteBatch;
 
         private State nextState,
@@ -49,13 +49,15 @@ namespace Realm
         public static int Scale { get; set; }
         public static int Width { get; set; }
         public static bool Mute { get; set; }
+        public static bool _Debug { get; set; }
 
         public Game1()
         {
             Instance = this;
-            _graphics = new GraphicsDeviceManager(this);
+            Graphics = new GraphicsDeviceManager(this);
             Content.RootDirectory = "Content";
             IsMouseVisible = true;
+            _Debug = true;
         }
 
         protected override void Initialize()
@@ -66,9 +68,12 @@ namespace Realm
             Scale = 1;
             Width = ScreenWidth;
 
-            _graphics.IsFullScreen = false;
+            Graphics.IsFullScreen = false;
 
-            _graphics.ApplyChanges();
+            Graphics.PreferredBackBufferWidth = 1280;
+            Graphics.PreferredBackBufferHeight = 720;
+
+            Graphics.ApplyChanges();
             Debug.WriteLine(
                 "Screen Size: "
                     + GraphicsAdapter.DefaultAdapter.CurrentDisplayMode.Width
@@ -93,8 +98,8 @@ namespace Realm
 
         private void StartGame()
         {
-            new GameState(this, _graphics.GraphicsDevice, Content);
-            currentState = new MenuState(this, _graphics.GraphicsDevice, Content);
+            new GameState(this, Graphics.GraphicsDevice, Content);
+            currentState = new MenuState(this, Graphics.GraphicsDevice, Content);
         }
 
         public void ChangeState(State state)
@@ -160,21 +165,9 @@ namespace Realm
 
         protected override void Draw(GameTime gameTime)
         {
-            GraphicsDevice.Clear(Color.CornflowerBlue);
-
-            _spriteBatch.Begin(
-                SpriteSortMode.Deferred,
-                null,
-                null,
-                null,
-                null,
-                null,
-                Camera.GetTransformation()
-            );
+            GraphicsDevice.Clear(Color.WhiteSmoke);
 
             currentState.Draw(gameTime, _spriteBatch);
-
-            _spriteBatch.End();
 
             base.Draw(gameTime);
         }

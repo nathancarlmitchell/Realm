@@ -13,18 +13,25 @@ namespace Realm
     {
         public static Texture2D ButtonTexture { get; private set; }
         public static Texture2D Background { get; private set; }
-        public static AnimatedTexture Player { get; private set; }
+        public static Texture2D Projectile { get; private set; }
+        public static Texture2D Enemy { get; private set; }
+        public static Texture2D Player { get; private set; }
         public static SpriteFont HudFont { get; private set; }
+        public static SpriteFont TitleFont { get; private set; }
 
         public static void Load(ContentManager content)
         {
             ButtonTexture = content.Load<Texture2D>("Controls/Button");
             Background = content.Load<Texture2D>("background");
+            Projectile = content.Load<Texture2D>("projectile");
+            Enemy = content.Load<Texture2D>("enemy");
+            Player = content.Load<Texture2D>("player");
 
-            Player = new AnimatedTexture(new Vector2(0, 0), 0, 1f, 0.5f);
-            Player.Load(content, "player", 2, 2);
+            //Player = new AnimatedTexture(new Vector2(0, 0), 0, 1f, 0.5f);
+            //Player.Load(content, "player", 2, 2);
 
             HudFont = content.Load<SpriteFont>("Fonts/HudFont");
+            TitleFont = content.Load<SpriteFont>("Fonts/TitleFont");
         }
     }
 }

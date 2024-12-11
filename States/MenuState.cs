@@ -40,8 +40,15 @@ namespace Realm.States
 
         public override void Draw(GameTime gameTime, SpriteBatch spriteBatch)
         {
+            spriteBatch.Begin();
+
+            // Draw title.
+            Overlay.DrawTitle(spriteBatch);
+
             // Draw menu.
             menu.Draw(gameTime, spriteBatch);
+
+            spriteBatch.End();
         }
 
         public override void PostUpdate(GameTime gameTime)

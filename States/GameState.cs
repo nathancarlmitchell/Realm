@@ -25,14 +25,37 @@ namespace Realm.States
                 //Y = Game1.ScreenHeight / 2,
                 //Height = 64,
                 //Width = 64,
+                Texture = Art.Player,
             };
         }
 
         public override void Draw(GameTime gameTime, SpriteBatch spriteBatch)
         {
+            spriteBatch.Begin(
+                SpriteSortMode.Deferred,
+                null,
+                null,
+                null,
+                null,
+                null,
+                Game1.Camera.GetTransformation()
+            );
+
+            // Draw background.
             Background.Draw(spriteBatch);
+
             // Draw player.
             Player.Draw(spriteBatch);
+
+            // Draw projectiles.
+            EntityManager.Draw(spriteBatch);
+
+            if (Game1._Debug)
+            {
+                Overlay.DrawDebug(spriteBatch);
+            }
+
+            spriteBatch.End();
         }
 
         public override void PostUpdate(GameTime gameTime)
@@ -45,6 +68,8 @@ namespace Realm.States
             float elapsed = (float)gameTime.ElapsedGameTime.TotalSeconds;
             Player.Update(elapsed, gameTime);
             Player.Update();
+            EntityManager.Update();
+            EnemySpawner.Update();
 
             //Camera.UpdateCamera(Game1.Viewport);
         }
