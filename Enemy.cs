@@ -1,16 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
-using Realm;
 
 namespace Realm
 {
     class Enemy : Entity
     {
-        static Random rand = new Random();
+        private static readonly Random rand = new();
         private int timeUntilStart = 60;
         public bool IsActive
         {
@@ -48,26 +46,24 @@ namespace Realm
             Velocity *= 0.8f;
         }
 
+        public void HandleCollision(Enemy other)
+        {
+            var d = Position - other.Position;
+            Velocity += 10 * d / (d.LengthSquared() + 1);
+        }
+
         public void WasShot()
         {
             health--;
             if (health == 0)
+            {
                 IsExpired = true;
-            Player.Experience += PointValue;
-            Player.ExperienceTotal += PointValue;
+                Player.Experience += PointValue;
+                Player.ExperienceTotal += PointValue;
+            }
+
             //PlayerStatus.IncreaseMultiplier();
             //Sound.Explosion.Play(0.5f, rand.NextFloat(-0.2f, 0.2f), 0);
-        }
-
-        IEnumerable<int> FollowPlayer(float acceleration = 0.5f)
-        {
-            while (true)
-            {
-                Velocity += (Player.Instance.Position - Position).ScaleTo(acceleration);
-                if (Velocity != Vector2.Zero)
-                    Orientation = Velocity.ToAngle();
-                yield return 0;
-            }
         }
 
         private void AddBehaviour(IEnumerable<int> behaviour)
@@ -84,13 +80,20 @@ namespace Realm
             }
         }
 
-        public static Enemy CreateSeeker(Vector2 position)
+        private int projectileCooldownRemaining = 0;
+        private readonly int projectileCooldown = 250;
+
+        #region Movement Behaviors
+
+        IEnumerable<int> FollowPlayer(float acceleration = 0.5f)
         {
-            var enemy = new Enemy(Art.Enemy2, position);
-            enemy.AddBehaviour(enemy.FollowPlayer());
-            enemy.health = 1;
-            enemy.PointValue = 5;
-            return enemy;
+            while (true)
+            {
+                Velocity += (Player.Instance.Position - Position).ScaleTo(acceleration);
+                if (Velocity != Vector2.Zero)
+                    Orientation = Velocity.ToAngle();
+                yield return 0;
+            }
         }
 
         IEnumerable<int> MoveRandomly()
@@ -116,19 +119,111 @@ namespace Realm
             }
         }
 
+        #endregion
+
+        #region Attack Behaviors
+
+        IEnumerable<int> Spray(int projectileSpeed = 3, int projectileAmmount = 5)
+        {
+            while (true)
+            {
+                var aim = Player.Instance.Position - Position;
+                if (aim.LengthSquared() > 0 && projectileCooldownRemaining <= 0)
+                {
+                    projectileCooldownRemaining = projectileCooldown - (1 * 1);
+                    float aimAngle = aim.ToAngle();
+                    Quaternion aimQuat = Quaternion.CreateFromYawPitchRoll(0, 0, aimAngle);
+
+                    float randomSpread = rand.NextFloat(-0.1f, 0.1f) + rand.NextFloat(-0.1f, 0.1f);
+
+                    float bulletOffset = 0.05f;
+                    for (var i = 0; i < projectileAmmount; i++)
+                    {
+                        Vector2 vel = Extensions.FromPolar(
+                            aimAngle + randomSpread + (i * bulletOffset),
+                            projectileSpeed
+                        );
+
+                        EntityManager.Add(new EnemyProjectile(Position, vel));
+                        //Sound.Shot.Play(0.2f, rand.NextFloat(-0.2f, 0.2f), 0);
+                    }
+                }
+                if (projectileCooldownRemaining > 0)
+                    projectileCooldownRemaining--;
+
+                yield return 0;
+            }
+        }
+
+        IEnumerable<int> Shoot(int projectileSpeed = 1)
+        {
+            while (true)
+            {
+                var aim = Player.Instance.Position - Position;
+                if (aim.LengthSquared() > 0 && projectileCooldownRemaining <= 0)
+                {
+                    projectileCooldownRemaining = projectileCooldown - (1 * 1);
+                    float aimAngle = aim.ToAngle();
+                    Quaternion aimQuat = Quaternion.CreateFromYawPitchRoll(0, 0, aimAngle);
+                    float randomSpread = rand.NextFloat(-0.1f, 0.1f) + rand.NextFloat(-0.1f, 0.1f);
+                    Vector2 vel = Extensions.FromPolar(aimAngle + randomSpread, projectileSpeed);
+                    EntityManager.Add(new EnemyProjectile(Position, vel));
+                    //Sound.Shot.Play(0.2f, rand.NextFloat(-0.2f, 0.2f), 0);
+                }
+                if (projectileCooldownRemaining > 0)
+                    projectileCooldownRemaining--;
+
+                yield return 0;
+            }
+        }
+
+        IEnumerable<int> Bomb(int projectileSpeed = 3)
+        {
+            while (true)
+            {
+                if (projectileCooldownRemaining <= 0)
+                {
+                    for (int i = 0; i < 35; i++)
+                    {
+                        Vector2 vel = Extensions.FromPolar(i * 10, projectileSpeed);
+                        EntityManager.Add(new EnemyProjectile(Position, vel) { duration = 50 });
+                    }
+                }
+                yield return 0;
+            }
+        }
+
+        #endregion
+
+        #region Enemy Types
+
         public static Enemy CreateWanderer(Vector2 position)
         {
             var enemy = new Enemy(Art.Enemy, position);
+
             enemy.AddBehaviour(enemy.MoveRandomly());
+            enemy.AddBehaviour(enemy.Shoot());
+            enemy.AddBehaviour(enemy.Bomb());
+
             enemy.health = 5;
-            enemy.PointValue = 3;
+            enemy.PointValue = 7;
+
             return enemy;
         }
 
-        public void HandleCollision(Enemy other)
+        public static Enemy CreateSeeker(Vector2 position)
         {
-            var d = Position - other.Position;
-            Velocity += 10 * d / (d.LengthSquared() + 1);
+            var enemy = new Enemy(Art.Enemy2, position);
+
+            enemy.AddBehaviour(enemy.FollowPlayer(0.25f));
+            enemy.AddBehaviour(enemy.Spray());
+
+            enemy.health = 1;
+            enemy.PointValue = 5;
+
+            return enemy;
         }
+
+        #endregion
     }
 }

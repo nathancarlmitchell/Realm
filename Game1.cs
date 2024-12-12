@@ -47,7 +47,25 @@ namespace Realm
             get { return (int)(ScreenSize.Y / 2); }
         }
         public static int Scale { get; set; }
-        public static int Width { get; set; }
+        public static int WorldWidth { get; set; }
+        public static int WorldHeight { get; set; }
+        public static Vector2 WorldSize
+        {
+            get { return new Vector2(WorldWidth, WorldHeight); }
+        }
+
+        public static Rectangle WorldBounds
+        {
+            get
+            {
+                return new Rectangle(
+                    (int)Camera.Pos.X - CenterWidth,
+                    (int)Camera.Pos.Y - CenterHeight,
+                    (int)Camera.Pos.X + CenterWidth,
+                    (int)Camera.Pos.Y + CenterHeight
+                );
+            }
+        }
         public static bool Mute { get; set; }
         public static bool _Debug { get; set; }
 
@@ -66,12 +84,14 @@ namespace Realm
             Mute = false;
             Window.Title = "Realm";
             Scale = 1;
-            Width = ScreenWidth;
 
             Graphics.IsFullScreen = false;
 
             Graphics.PreferredBackBufferWidth = 1280;
             Graphics.PreferredBackBufferHeight = 720;
+
+            WorldWidth = 500000;
+            WorldHeight = 500000;
 
             Graphics.ApplyChanges();
             Debug.WriteLine(
@@ -87,17 +107,18 @@ namespace Realm
         protected override void LoadContent()
         {
             _spriteBatch = new SpriteBatch(GraphicsDevice);
-            Camera = new Camera(Viewport, 2000, 2000, 1f);
 
             Art.Load(Content);
             Sound.Load(Content);
+
+            Camera = new Camera(Viewport, WorldWidth, WorldHeight, 1f);
 
             StartGame();
         }
 
         private void StartGame()
         {
-            new GameState(this, Graphics.GraphicsDevice, Content);
+            //new GameState(this, Graphics.GraphicsDevice, Content);
             currentState = new MenuState(this, Graphics.GraphicsDevice, Content);
         }
 

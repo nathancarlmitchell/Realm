@@ -26,13 +26,21 @@ namespace Realm
         private static Vector2 GetSpawnPosition()
         {
             Vector2 pos;
+
+            int minSpawnDistance = 250;
+            int maxSpawnDistance = 1000;
+
+            float minX = Player.Instance.Position.X - maxSpawnDistance;
+            float minY = Player.Instance.Position.Y - maxSpawnDistance;
+            float maxX = Player.Instance.Position.X + maxSpawnDistance;
+            float maxY = Player.Instance.Position.Y + maxSpawnDistance;
             do
             {
-                pos = new Vector2(
-                    rand.Next((int)Game1.ScreenSize.X),
-                    rand.Next((int)Game1.ScreenSize.Y)
-                );
-            } while (Vector2.DistanceSquared(pos, Player.Instance.Position) < 250 * 250);
+                pos = new Vector2(rand.Next((int)minX, (int)maxX), rand.Next((int)minY, (int)maxY));
+            } while (
+                Vector2.DistanceSquared(pos, Player.Instance.Position)
+                < minSpawnDistance * minSpawnDistance
+            );
             return pos;
         }
 

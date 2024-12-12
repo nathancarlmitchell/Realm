@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -28,6 +29,8 @@ namespace Realm
 
         static List<Enemy> enemies = new List<Enemy>();
         static List<Projectile> bullets = new List<Projectile>();
+        static List<EnemyProjectile> enemiesProjectiles = new List<EnemyProjectile>();
+        static List<Item> items = new List<Item>();
 
         private static void AddEntity(Entity entity)
         {
@@ -36,6 +39,10 @@ namespace Realm
                 bullets.Add(entity as Projectile);
             else if (entity is Enemy)
                 enemies.Add(entity as Enemy);
+            else if (entity is EnemyProjectile)
+                enemiesProjectiles.Add(entity as EnemyProjectile);
+            else if (entity is Item)
+                items.Add(entity as Item);
         }
 
         public static void Update()
@@ -48,10 +55,12 @@ namespace Realm
             foreach (var entity in addedEntities)
                 AddEntity(entity);
             addedEntities.Clear();
+
             // remove any expired entities.
             entities = entities.Where(x => !x.IsExpired).ToList();
             bullets = bullets.Where(x => !x.IsExpired).ToList();
             enemies = enemies.Where(x => !x.IsExpired).ToList();
+            enemiesProjectiles = enemiesProjectiles.Where(x => !x.IsExpired).ToList();
         }
 
         public static void Draw(SpriteBatch spriteBatch)
@@ -70,15 +79,9 @@ namespace Realm
 
         public static void Reset()
         {
-            for (int i = 0; i < enemies.Count; i++)
-            {
-                enemies[i].IsExpired = true;
-            }
-
-            for (int i = 0; i < bullets.Count; i++)
-            {
-                bullets[i].IsExpired = true;
-            }
+            foreach (var entity in entities)
+                if (entity is not Player)
+                    entity.IsExpired = true;
         }
 
         static void HandleCollisions()
@@ -93,7 +96,8 @@ namespace Realm
                     enemies[j].HandleCollision(enemies[i]);
                 }
             }
-            // handle collisions between bullets and enemies
+
+            // handle collisions between player projectiles and enemies
             for (int i = 0; i < enemies.Count; i++)
             for (int j = 0; j < bullets.Count; j++)
             {
@@ -103,6 +107,7 @@ namespace Realm
                     bullets[j].IsExpired = true;
                 }
             }
+
             // handle collisions between the player and enemies
             for (int i = 0; i < enemies.Count; i++)
             {
@@ -111,6 +116,26 @@ namespace Realm
                     Player.Hit();
                     enemies[i].IsExpired = true;
                     break;
+                }
+            }
+
+            // handle collisions between enemy projectiles and player
+            for (int i = 0; i < enemiesProjectiles.Count; i++)
+            {
+                if (IsColliding(Player.Instance, enemiesProjectiles[i]))
+                {
+                    Player.Hit(5);
+                    enemiesProjectiles[i].IsExpired = true;
+                }
+            }
+
+            // handle collisions between player and items
+            for (int i = 0; i < items.Count; i++)
+            {
+                if (IsColliding(Player.Instance, items[i]))
+                {
+                    items[i].Pickup();
+                    items[i].IsExpired = true;
                 }
             }
         }

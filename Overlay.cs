@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 
@@ -6,8 +7,6 @@ namespace Realm
 {
     public static class Overlay
     {
-        //private static readonly SpriteBatch spriteBatch = Game1.Instance.SpriteBatch;
-
         public static void DrawTitle(SpriteBatch spriteBatch)
         {
             // Draw title.
@@ -66,28 +65,12 @@ namespace Realm
         //    );
         //}
 
-        //public static void DrawMobileHUD()
-        //{
-        //    // Draw boost button on mobile.
-        //    if (OperatingSystem.IsAndroid())
-        //    {
-        //        spriteBatch.Draw(
-        //            Art.BoostTexture,
-        //            new Vector2(0, Game1.ScreenHeight - (Art.BoostTexture.Height * 2)),
-        //            Color.White * 0.5f
-        //        );
-        //        spriteBatch.Draw(
-        //            Art.BoostTexture,
-        //            new Vector2(0, Game1.ScreenHeight - (Art.BoostTexture.Height)),
-        //            Color.White * 0.5f
-        //        );
-        //    }
-        //}
-
         public static void DrawStats(SpriteBatch spriteBatch)
         {
-            int x = (int)Game1.Camera.Pos.X + (Game1.ScreenWidth / 2) - 512;
-            int y = (int)Game1.Camera.Pos.Y + Game1.Viewport.Height / 2 - 128;
+            int x = Game1.ScreenWidth - 320;
+            int y = 64;
+            //int x = (int)Game1.Camera.Pos.X + (Game1.ScreenWidth / 2) - 512;
+            //int y = (int)Game1.Camera.Pos.Y + Game1.Viewport.Height / 2 - 128;
             Vector2 pos = new Vector2(x, y);
             Color color = Color.Red;
 
@@ -101,6 +84,12 @@ namespace Realm
                 Art.HudFont,
                 "Experience: " + Player.Experience,
                 new Vector2(x, y + 16),
+                color
+            );
+            spriteBatch.DrawString(
+                Art.HudFont,
+                "ExperienceNextLevel: " + Player.ExperienceNextLevel,
+                new Vector2(x + 128, y),
                 color
             );
             spriteBatch.DrawString(
@@ -149,15 +138,33 @@ namespace Realm
 
         public static void DrawHealth(SpriteBatch spriteBatch)
         {
-            int x = (int)Game1.Camera.Pos.X - Game1.Viewport.Width / 2 + 64;
-            int y = (int)Game1.Camera.Pos.Y + Game1.Viewport.Height / 2 - 128;
+            int x = 32;
+            int y = Game1.Viewport.Height - 128;
+            //int x = (int)Game1.Camera.Pos.X - Game1.Viewport.Width / 2 + 64;
+            //int y = (int)Game1.Camera.Pos.Y + Game1.Viewport.Height / 2 - 128;
 
             int barScale = 4;
             int barHeight = 40;
             int barOffset = 4;
 
+            Vector2 expBarPos = new(x, y - barHeight - barOffset);
             Vector2 healthBarPos = new(x, y);
             Vector2 manaBarPos = new(x, y + barHeight + barOffset);
+
+            // Normalize values.
+            int max = Player.ExperienceNextLevel;
+            int min = 0;
+            int range = (max - min);
+            int normalisedNextLevel = 100 * (max - min) / range;
+
+            int max2 = Player.Experience;
+            int min2 = 0;
+            int range2 = (max2 - min2);
+            int normalisedExperience = 100 * (max2 - min2) / range;
+
+            // Experience bars.
+            Rectangle goldRect = new(0, 0, normalisedExperience * barScale, barHeight);
+            Rectangle blackRectExp = new(0, 0, normalisedNextLevel * barScale, barHeight);
 
             // Health bars.
             Rectangle greenRect = new(0, 0, Player.Health * barScale, barHeight);
@@ -166,6 +173,32 @@ namespace Realm
             // Mana bars.
             Rectangle blueRect = new(0, 0, Player.Mana * barScale, barHeight);
             Rectangle blackRect = new(0, 0, Player.ManaMax * barScale, barHeight);
+
+            // Black bar.
+            spriteBatch.Draw(
+                Art.HealthBar,
+                expBarPos,
+                blackRectExp,
+                Color.Black,
+                0f,
+                Vector2.Zero,
+                1f,
+                0,
+                0
+            );
+
+            // Gold bar.
+            spriteBatch.Draw(
+                Art.HealthBar,
+                expBarPos,
+                goldRect,
+                Color.Goldenrod,
+                0f,
+                Vector2.Zero,
+                1f,
+                0,
+                0
+            );
 
             // Red bar.
             spriteBatch.Draw(
@@ -218,30 +251,59 @@ namespace Realm
                 0,
                 0
             );
+
+            // Experience.
+            spriteBatch.DrawString(
+                Art.HudFont,
+                "Experience: " + Player.ExperienceTotal + " / " + Player.ExperienceNextLevel,
+                new Vector2(x, y - barHeight - barOffset),
+                Color.White
+            );
+
+            // Health.
+            spriteBatch.DrawString(
+                Art.HudFont,
+                "HP: " + Player.Health + " / " + Player.HealthMax,
+                new Vector2(x, y + 0),
+                Color.White
+            );
+
+            // Mana.
+            spriteBatch.DrawString(
+                Art.HudFont,
+                "Mana: " + Player.Mana + " / " + Player.ManaMax,
+                new Vector2(x, y + barHeight + barOffset),
+                Color.White
+            );
         }
 
         public static void DrawDebug(SpriteBatch spriteBatch)
         {
-            //spriteBatch.DrawString(
-            //    Art.DebugFont,
-            //    "Coin Length: " + GameState.coinArray.Count,
-            //    new Vector2(64, Game1.ScreenHeight - 96),
-            //    Color.Black
-            //);
-            //spriteBatch.DrawString(
-            //    Art.DebugFont,
-            //    "Array Length: " + wallArray.Count,
-            //    new Vector2(64, Game1.ScreenHeight - 80),
-            //    Color.Black
-            //);
-
-            float x = Game1.Camera.Pos.X - Game1.Viewport.Width / 2 + 64;
-            float y = Game1.Camera.Pos.Y + Game1.Viewport.Height / 2 - 64;
+            float x = 64;
+            float y = 64;
+            //float x = Game1.Camera.Pos.X - Game1.Viewport.Width / 2 + 64;
+            //float y = Game1.Camera.Pos.Y - Game1.Viewport.Height / 2 + 64;
             Vector2 pos = new Vector2(x, y);
 
             spriteBatch.DrawString(
                 Art.HudFont,
                 "EntityManager.Count: " + EntityManager.Count,
+                pos,
+                Color.White
+            );
+
+            pos = new Vector2(x, y + 16);
+            spriteBatch.DrawString(
+                Art.HudFont,
+                "Camera.Pos: " + Game1.Camera.Pos,
+                pos,
+                Color.White
+            );
+
+            pos = new Vector2(x, y + 32);
+            spriteBatch.DrawString(
+                Art.HudFont,
+                "Player.Pos: " + Player.Instance.Position,
                 pos,
                 Color.White
             );

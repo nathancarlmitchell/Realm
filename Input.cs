@@ -233,4 +233,9 @@ public static class Input
         Game1.Instance.ChangeState(Game1.GameState);
         Game1.Instance.IsMouseVisible = false;
     }
+
+    public static void ExitGame()
+    {
+        Game1.Instance.Exit();
+    }
 }

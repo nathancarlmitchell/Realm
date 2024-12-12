@@ -22,7 +22,7 @@ namespace Realm
         {
             _zoom = initialZoom;
             _rotation = 0.0f;
-            _pos = Vector2.Zero;
+            _pos = Player.Instance.Position;
             _viewportWidth = viewport.Width;
             _viewportHeight = viewport.Height;
             _worldWidth = worldWidth;
@@ -31,7 +31,7 @@ namespace Realm
 
         public static void Reset()
         {
-            Game1.Camera = new Camera(Game1.Viewport, 2000, 2000, 1f);
+            Game1.Camera = new Camera(Game1.Viewport, Game1.WorldWidth, Game1.WorldHeight, 1f);
         }
 
         #region Properties

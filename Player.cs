@@ -39,6 +39,7 @@ namespace Realm
         public static int Dexterity;
 
         public static int Experience;
+        public static int ExperienceNextLevel;
         public static int ExperienceTotal;
 
         public static int Level;
@@ -65,10 +66,11 @@ namespace Realm
             Defense = 1;
             Vitality = 1;
             Wisdom = 1;
-            Speed = 1;
+            Speed = 2;
             Dexterity = 1;
 
             Experience = 0;
+            ExperienceNextLevel = 10;
             ExperienceTotal = 0;
 
             Level = 1;
@@ -76,7 +78,7 @@ namespace Realm
             ProjectileDuration = 24;
             ProjectileMagnitude = 12f;
 
-            Position = Game1.ScreenSize / 2;
+            Position = new Vector2(Game1.WorldWidth / 2, Game1.WorldHeight / 2);
             Radius = image.Width / 2f;
         }
 
@@ -97,6 +99,30 @@ namespace Realm
             }
         }
 
+        private int projectileCooldownRemaining = 0;
+        private readonly int projectileCooldown = 50;
+
+        private void Shoot()
+        {
+            var aim = Input.GetMouseAimDirection();
+            if (aim.LengthSquared() > 0 && projectileCooldownRemaining <= 0)
+            {
+                projectileCooldownRemaining = projectileCooldown - (Dexterity * 1);
+                float aimAngle = aim.ToAngle();
+                Quaternion aimQuat = Quaternion.CreateFromYawPitchRoll(0, 0, aimAngle);
+                float randomSpread = rand.NextFloat(-0.04f, 0.04f) + rand.NextFloat(-0.04f, 0.04f);
+                //Vector2 vel = Extensions.FromPolar(aimAngle + randomSpread, 11f);
+                Vector2 vel = Extensions.FromPolar(aimAngle + randomSpread, ProjectileMagnitude);
+                //Vector2 offset = Vector2.Transform(new Vector2(25, -8), aimQuat);
+                EntityManager.Add(new Projectile(Position, vel));
+                //offset = Vector2.Transform(new Vector2(25, 8), aimQuat);
+                //EntityManager.Add(new Projectile(Position + offset, vel));
+                //Sound.Shot.Play(0.2f, rand.NextFloat(-0.2f, 0.2f), 0);
+            }
+            if (projectileCooldownRemaining > 0)
+                projectileCooldownRemaining--;
+        }
+
         public static void LevelUp()
         {
             Level++;
@@ -104,22 +130,23 @@ namespace Realm
             Attack++;
             Defense++;
 
-            Vitality += Level;
-            Wisdom += Level;
+            Vitality += Level / 2;
+            Wisdom += Level / 2;
 
             if (Level % 3 == 0)
             {
                 Speed++;
             }
 
-            Dexterity += Level;
+            Dexterity += Level / 2;
 
             Experience = 0;
+            ExperienceNextLevel = 10 * Level * Level;
         }
 
-        public static void Hit()
+        public static void Hit(int damage = 25)
         {
-            Health = Health - 25;
+            Health = Health - damage;
             if (Health <= 0)
             {
                 Kill();
@@ -131,15 +158,16 @@ namespace Realm
             EnemySpawner.Reset();
             EntityManager.Reset();
             GameState.Player = new Player();
-            Player.Instance.Position = Game1.ScreenSize / 2;
+            Player.Instance.Position = Game1.WorldSize / 2;
             Camera.Reset();
             Game1.Instance.ChangeState(
-                new MenuState(Game1.Instance, Game1.Instance.GraphicsDevice, Game1.Instance.Content)
+                new GameOverState(
+                    Game1.Instance,
+                    Game1.Instance.GraphicsDevice,
+                    Game1.Instance.Content
+                )
             );
         }
-
-        private int projectileCooldownRemaining = 0;
-        private readonly int projectileCooldown = 50;
 
         private int healthCooldownRemaining = 0;
         private readonly int healthCooldown = 500;
@@ -152,11 +180,14 @@ namespace Realm
             // Update position.
             Velocity = Speed * Input.GetMovementDirection();
             Position += Velocity;
+
+            // Update camera position.
             Game1.Camera.Pos += Velocity;
+
             //Position = Vector2.Clamp(Position, Size / 2, Game1.ScreenSize - Size / 2);
 
             // Check for level up
-            if (Experience >= 10 * Level * Level)
+            if (Experience >= ExperienceNextLevel)
             {
                 Debug.WriteLine("Level up.");
                 LevelUp();
@@ -186,27 +217,7 @@ namespace Realm
             // This may be moved to new Weapon class.
             if (Input.mouse.LeftButton == Microsoft.Xna.Framework.Input.ButtonState.Pressed)
             {
-                var aim = Input.GetMouseAimDirection();
-                if (aim.LengthSquared() > 0 && projectileCooldownRemaining <= 0)
-                {
-                    projectileCooldownRemaining = projectileCooldown - (Dexterity * 1);
-                    float aimAngle = aim.ToAngle();
-                    Quaternion aimQuat = Quaternion.CreateFromYawPitchRoll(0, 0, aimAngle);
-                    float randomSpread =
-                        rand.NextFloat(-0.04f, 0.04f) + rand.NextFloat(-0.04f, 0.04f);
-                    //Vector2 vel = Extensions.FromPolar(aimAngle + randomSpread, 11f);
-                    Vector2 vel = Extensions.FromPolar(
-                        aimAngle + randomSpread,
-                        ProjectileMagnitude
-                    );
-                    //Vector2 offset = Vector2.Transform(new Vector2(25, -8), aimQuat);
-                    EntityManager.Add(new Projectile(Position, vel));
-                    //offset = Vector2.Transform(new Vector2(25, 8), aimQuat);
-                    //EntityManager.Add(new Projectile(Position + offset, vel));
-                    //Sound.Shot.Play(0.2f, rand.NextFloat(-0.2f, 0.2f), 0);
-                }
-                if (projectileCooldownRemaining > 0)
-                    projectileCooldownRemaining--;
+                Shoot();
             }
         }
     }
