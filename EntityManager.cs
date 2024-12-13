@@ -6,6 +6,7 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
 using Realm;
+using Realm.States;
 
 namespace Realm
 {
@@ -30,7 +31,7 @@ namespace Realm
         static List<Enemy> enemies = new List<Enemy>();
         static List<Projectile> bullets = new List<Projectile>();
         static List<EnemyProjectile> enemiesProjectiles = new List<EnemyProjectile>();
-        static List<Item> items = new List<Item>();
+        static List<Potion> potions = new List<Potion>();
 
         private static void AddEntity(Entity entity)
         {
@@ -41,8 +42,8 @@ namespace Realm
                 enemies.Add(entity as Enemy);
             else if (entity is EnemyProjectile)
                 enemiesProjectiles.Add(entity as EnemyProjectile);
-            else if (entity is Item)
-                items.Add(entity as Item);
+            else if (entity is Potion)
+                potions.Add(entity as Potion);
         }
 
         public static void Update()
@@ -80,8 +81,8 @@ namespace Realm
         public static void Reset()
         {
             foreach (var entity in entities)
-                if (entity is not Player)
-                    entity.IsExpired = true;
+                //if (entity is not Player)
+                entity.IsExpired = true;
         }
 
         static void HandleCollisions()
@@ -130,12 +131,12 @@ namespace Realm
             }
 
             // handle collisions between player and items
-            for (int i = 0; i < items.Count; i++)
+            for (int i = 0; i < potions.Count; i++)
             {
-                if (IsColliding(Player.Instance, items[i]))
+                if (IsColliding(Player.Instance, potions[i]))
                 {
-                    items[i].Pickup();
-                    items[i].IsExpired = true;
+                    potions[i].Pickup();
+                    potions[i].IsExpired = true;
                 }
             }
         }

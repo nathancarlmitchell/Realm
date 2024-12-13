@@ -14,10 +14,12 @@ namespace Realm
         public static Texture2D ButtonTexture { get; private set; }
         public static Texture2D Background { get; private set; }
         public static Texture2D Projectile { get; private set; }
+        public static Texture2D Projectile2 { get; private set; }
         public static Texture2D EnemyProjectile { get; private set; }
         public static Texture2D Tile { get; private set; }
         public static Texture2D Enemy { get; private set; }
         public static Texture2D Enemy2 { get; private set; }
+        public static Texture2D Snake { get; private set; }
         public static Texture2D Player { get; private set; }
         public static Texture2D Item { get; private set; }
         public static Texture2D HealthBar { get; private set; }
@@ -29,10 +31,12 @@ namespace Realm
             ButtonTexture = content.Load<Texture2D>("Controls/Button");
             Background = content.Load<Texture2D>("background");
             Projectile = content.Load<Texture2D>("projectile");
+            Projectile2 = content.Load<Texture2D>("projectile2");
             EnemyProjectile = content.Load<Texture2D>("enemy_projectile");
             Tile = content.Load<Texture2D>("tile");
             Enemy = content.Load<Texture2D>("enemy");
             Enemy2 = content.Load<Texture2D>("enemy2");
+            Snake = content.Load<Texture2D>("snake");
             Player = content.Load<Texture2D>("player");
             Item = content.Load<Texture2D>("item");
 

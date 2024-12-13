@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using Realm.States;
 
 namespace Realm
 {
@@ -54,16 +55,14 @@ namespace Realm
 
         public void WasShot()
         {
-            health--;
-            if (health == 0)
+            health -= Player.Attack;
+            if (health <= 0)
             {
                 IsExpired = true;
                 Player.Experience += PointValue;
                 Player.ExperienceTotal += PointValue;
+                //Sound.Explosion.Play(0.5f, rand.NextFloat(-0.2f, 0.2f), 0);
             }
-
-            //PlayerStatus.IncreaseMultiplier();
-            //Sound.Explosion.Play(0.5f, rand.NextFloat(-0.2f, 0.2f), 0);
         }
 
         private void AddBehaviour(IEnumerable<int> behaviour)
@@ -93,6 +92,21 @@ namespace Realm
                 if (Velocity != Vector2.Zero)
                     Orientation = Velocity.ToAngle();
                 yield return 0;
+            }
+        }
+
+        IEnumerable<int> MoveSnake(float speed = 0.2f)
+        {
+            float direction = rand.NextFloat(0, MathHelper.TwoPi);
+            while (true)
+            {
+                direction += rand.NextFloat(-MathHelper.PiOver2, MathHelper.PiOver2);
+                direction = MathHelper.WrapAngle(direction);
+                for (int i = 0; i < 10; i++)
+                {
+                    Velocity += Extensions.FromPolar(direction, speed);
+                    yield return 0;
+                }
             }
         }
 
@@ -183,12 +197,18 @@ namespace Realm
             {
                 if (projectileCooldownRemaining <= 0)
                 {
+                    projectileCooldownRemaining = projectileCooldown - (1 * 1);
+
                     for (int i = 0; i < 35; i++)
                     {
                         Vector2 vel = Extensions.FromPolar(i * 10, projectileSpeed);
                         EntityManager.Add(new EnemyProjectile(Position, vel) { duration = 50 });
                     }
                 }
+
+                if (projectileCooldownRemaining > 0)
+                    projectileCooldownRemaining--;
+
                 yield return 0;
             }
         }
@@ -202,10 +222,10 @@ namespace Realm
             var enemy = new Enemy(Art.Enemy, position);
 
             enemy.AddBehaviour(enemy.MoveRandomly());
-            enemy.AddBehaviour(enemy.Shoot());
+            //enemy.AddBehaviour(enemy.Shoot());
             enemy.AddBehaviour(enemy.Bomb());
 
-            enemy.health = 5;
+            enemy.health = 3;
             enemy.PointValue = 7;
 
             return enemy;
@@ -220,6 +240,19 @@ namespace Realm
 
             enemy.health = 1;
             enemy.PointValue = 5;
+
+            return enemy;
+        }
+
+        public static Enemy CreateSnake(Vector2 position)
+        {
+            var enemy = new Enemy(Art.Snake, position);
+
+            enemy.AddBehaviour(enemy.MoveSnake());
+            enemy.AddBehaviour(enemy.Shoot(2));
+
+            enemy.health = 2;
+            enemy.PointValue = 3;
 
             return enemy;
         }

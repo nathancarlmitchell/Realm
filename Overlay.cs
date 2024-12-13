@@ -2,6 +2,8 @@
 using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using Realm.States;
+using static Realm.InventorySystem;
 
 namespace Realm
 {
@@ -275,6 +277,34 @@ namespace Realm
                 new Vector2(x, y + barHeight + barOffset),
                 Color.White
             );
+        }
+
+        public static void DrawInventory(SpriteBatch spriteBatch)
+        {
+            int x = Game1.Viewport.Width - 256;
+            int y = Game1.Viewport.Height - 128;
+
+            if (Player.Instance is not null)
+            {
+                spriteBatch.DrawString(
+                    Art.HudFont,
+                    "InventoryRecords.Count: " + GameState.i.InventoryRecords.Count,
+                    new Vector2(x, y),
+                    Color.White
+                );
+            }
+
+            //for (int i = 0; GameState.Inventory.Count > 0; i++)
+            //{
+            //    var record = InventoryRecords[i];
+
+            //    spriteBatch.DrawString(
+            //        Art.HudFont,
+            //        "Inventory: " + record.GetType(),
+            //        new Vector2(x, y),
+            //        Color.White
+            //    );
+            //}
         }
 
         public static void DrawDebug(SpriteBatch spriteBatch)

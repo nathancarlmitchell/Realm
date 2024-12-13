@@ -111,14 +111,12 @@ namespace Realm
             Art.Load(Content);
             Sound.Load(Content);
 
-            Camera = new Camera(Viewport, WorldWidth, WorldHeight, 1f);
-
             StartGame();
         }
 
         private void StartGame()
         {
-            //new GameState(this, Graphics.GraphicsDevice, Content);
+            //GameState = new GameState(this, Graphics.GraphicsDevice, Content);
             currentState = new MenuState(this, Graphics.GraphicsDevice, Content);
         }
 
@@ -126,8 +124,6 @@ namespace Realm
         {
             nextState = state;
         }
-
-        private KeyboardState keyboard;
 
         protected override void Update(GameTime gameTime)
         {

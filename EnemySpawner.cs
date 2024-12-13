@@ -1,5 +1,6 @@
 ﻿using System;
 using Microsoft.Xna.Framework;
+using Realm.States;
 
 namespace Realm
 {
@@ -16,6 +17,8 @@ namespace Realm
                 EntityManager.Add(Enemy.CreateSeeker(GetSpawnPosition()));
             if (rand.Next((int)inverseSpawnChance) == 0)
                 EntityManager.Add(Enemy.CreateWanderer(GetSpawnPosition()));
+            if (rand.Next((int)inverseSpawnChance) == 0)
+                EntityManager.Add(Enemy.CreateSnake(GetSpawnPosition()));
             //}
 
             // slowly increase the spawn rate as time progresses

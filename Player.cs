@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Runtime.CompilerServices;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Realm.States;
@@ -24,6 +25,19 @@ namespace Realm
         public int id;
         public string name;
         public string description;
+
+        private static InventorySystem inventory;
+        public static InventorySystem Inventory
+        {
+            get
+            {
+                if (inventory == null)
+                    inventory = new InventorySystem();
+                return inventory;
+            }
+        }
+
+        //public InventorySystem Inventory { get; set; }
 
         public static int Health;
         public static int HealthMax;
@@ -55,6 +69,10 @@ namespace Realm
             name = "Player";
             description = string.Empty;
             image = Art.Player;
+
+            inventory = Inventory;
+
+            instance = this;
 
             Health = 100;
             HealthMax = 100;
@@ -114,7 +132,7 @@ namespace Realm
                 //Vector2 vel = Extensions.FromPolar(aimAngle + randomSpread, 11f);
                 Vector2 vel = Extensions.FromPolar(aimAngle + randomSpread, ProjectileMagnitude);
                 //Vector2 offset = Vector2.Transform(new Vector2(25, -8), aimQuat);
-                EntityManager.Add(new Projectile(Position, vel));
+                EntityManager.Add(new Projectile(Position, vel) { image = Art.Projectile2 });
                 //offset = Vector2.Transform(new Vector2(25, 8), aimQuat);
                 //EntityManager.Add(new Projectile(Position + offset, vel));
                 //Sound.Shot.Play(0.2f, rand.NextFloat(-0.2f, 0.2f), 0);
@@ -142,6 +160,9 @@ namespace Realm
 
             Experience = 0;
             ExperienceNextLevel = 10 * Level * Level;
+
+            Health = HealthMax;
+            Mana = ManaMax;
         }
 
         public static void Hit(int damage = 25)
@@ -157,7 +178,7 @@ namespace Realm
         {
             EnemySpawner.Reset();
             EntityManager.Reset();
-            GameState.Player = new Player();
+            //Player.Instance = new Player();
             Player.Instance.Position = Game1.WorldSize / 2;
             Camera.Reset();
             Game1.Instance.ChangeState(

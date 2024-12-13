@@ -224,7 +224,7 @@ public static class Input
 
     public static void NewGame()
     {
-        Game1.GameState = null;
+        //Game1.GameState = null;
         Game1.Instance.ChangeState(new GameState(game, graphicsDevice, content));
     }
 

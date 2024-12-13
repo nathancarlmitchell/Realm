@@ -5,7 +5,7 @@ namespace Realm
 {
     public abstract class Entity
     {
-        protected Texture2D image;
+        public Texture2D image;
 
         // The tint of the image. This will also allow us to change the transparency.
         protected Color color = Color.White;
