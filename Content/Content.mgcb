@@ -147,11 +147,29 @@
 /processorParam:TextureFormat=Color
 /build:snake.png
 
+#begin Sounds/blip.wav
+/importer:WavImporter
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/build:Sounds/blip.wav
+
 #begin Sounds/button.wav
 /importer:WavImporter
 /processor:SoundEffectProcessor
 /processorParam:Quality=Best
 /build:Sounds/button.wav
+
+#begin Sounds/level_up.wav
+/importer:WavImporter
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/build:Sounds/level_up.wav
+
+#begin Sounds/Music/snd_game.wav
+/importer:WavImporter
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/build:Sounds/Music/snd_game.wav
 
 #begin tile.png
 /importer:TextureImporter

@@ -58,10 +58,14 @@ namespace Realm
             health -= Player.Attack;
             if (health <= 0)
             {
+                //Sound.Explosion.Play(0.5f, rand.NextFloat(-0.2f, 0.2f), 0);
                 IsExpired = true;
                 Player.Experience += PointValue;
                 Player.ExperienceTotal += PointValue;
-                //Sound.Explosion.Play(0.5f, rand.NextFloat(-0.2f, 0.2f), 0);
+                if (rand.Next(15) == 0)
+                {
+                    EntityManager.Add(new Potion { Position = this.Position });
+                }
             }
         }
 

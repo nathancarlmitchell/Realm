@@ -81,7 +81,7 @@ namespace Realm
         protected override void Initialize()
         {
             IsMouseVisible = true;
-            Mute = false;
+            Mute = true;
             Window.Title = "Realm";
             Scale = 1;
 

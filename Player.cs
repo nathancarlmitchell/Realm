@@ -26,18 +26,18 @@ namespace Realm
         public string name;
         public string description;
 
-        private static InventorySystem inventory;
-        public static InventorySystem Inventory
-        {
-            get
-            {
-                if (inventory == null)
-                    inventory = new InventorySystem();
-                return inventory;
-            }
-        }
+        //private static InventorySystem inventory;
+        //public static InventorySystem Inventory
+        //{
+        //    get
+        //    {
+        //        if (inventory == null)
+        //            inventory = new InventorySystem();
+        //        return inventory;
+        //    }
+        //}
 
-        //public InventorySystem Inventory { get; set; }
+        public InventorySystem Inventory { get; set; }
 
         public static int Health;
         public static int HealthMax;
@@ -70,7 +70,7 @@ namespace Realm
             description = string.Empty;
             image = Art.Player;
 
-            inventory = Inventory;
+            Inventory = new InventorySystem();
 
             instance = this;
 
@@ -163,6 +163,8 @@ namespace Realm
 
             Health = HealthMax;
             Mana = ManaMax;
+
+            Sound.Play(Sound.LevelUp, 0.3f);
         }
 
         public static void Hit(int damage = 25)

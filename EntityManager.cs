@@ -62,6 +62,7 @@ namespace Realm
             bullets = bullets.Where(x => !x.IsExpired).ToList();
             enemies = enemies.Where(x => !x.IsExpired).ToList();
             enemiesProjectiles = enemiesProjectiles.Where(x => !x.IsExpired).ToList();
+            potions = potions.Where(x => !x.IsExpired).ToList();
         }
 
         public static void Draw(SpriteBatch spriteBatch)
@@ -135,7 +136,8 @@ namespace Realm
             {
                 if (IsColliding(Player.Instance, potions[i]))
                 {
-                    potions[i].Pickup();
+                    //potions[i].Pickup();
+                    Player.Instance.Inventory.AddItem(potions[i], 1);
                     potions[i].IsExpired = true;
                 }
             }

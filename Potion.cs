@@ -17,15 +17,17 @@ namespace Realm
             this.Position.X = Player.Instance.Position.X + 100;
             this.Position.Y = Player.Instance.Position.Y + 100;
 
-            this.ID = Guid.NewGuid();
+            this.ID = GameState.PotionGuid;
             this.Name = "Potion";
+
+            Debug.WriteLine(ID);
 
             MaximumStackableQuantity = 6;
         }
 
-        public void Pickup()
+        public static void Use()
         {
-            Debug.WriteLine("Pickup()");
+            Debug.WriteLine("Use()");
             int ammount = 25;
             int health = Player.Health;
 
@@ -38,10 +40,6 @@ namespace Realm
             }
 
             Player.Health += ammount;
-
-            //InventorySystem.AddItem(new Potion(), 1);
-            //InventorySystem.Instance.AddItem(this, 1);
-            GameState.AddItem();
         }
     }
 }

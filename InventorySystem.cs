@@ -10,27 +10,8 @@ namespace Realm
 {
     public class InventorySystem
     {
-        private static InventorySystem instance;
-        public static InventorySystem Instance
-        {
-            get
-            {
-                if (instance == null)
-                    instance = new InventorySystem();
-                return instance;
-            }
-        }
-
         private const int MAXIMUM_SLOTS_IN_INVENTORY = 10;
         public readonly List<InventoryRecord> InventoryRecords = new List<InventoryRecord>();
-
-        //public InventorySystem()
-        //{
-        //    Debug.WriteLine("InventorySystem()");
-        //    instance = this;
-        //    //AddItem(new Potion(), 1);
-        //    //AddItem(new Potion(), 1);
-        //}
 
         public void AddItem(Item item, int quantityToAdd)
         {
@@ -48,23 +29,35 @@ namespace Realm
                 {
                     Debug.WriteLine("InventoryRecords.Exists");
                     // Get the item we're going to add quantity to
-                    InventoryRecord inventoryRecord = InventoryRecords.First(x =>
+                    InventoryRecord inventoryRecord = InventoryRecords.FirstOrDefault(x =>
                         (x.InventoryItem.ID == item.ID)
-                        && (x.Quantity < item.MaximumStackableQuantity)
                     );
+                    if (inventoryRecord != null) { }
+                    else
+                    {
+                        Debug.WriteLine("Null");
+                    }
                     // Calculate how many more can be added to this stack
-                    int maximumQuantityYouCanAddToThisStack = (
-                        item.MaximumStackableQuantity - inventoryRecord.Quantity
-                    );
-                    // Add to the stack (either the full quanity, or the amount that would make it reach the stack maximum)
-                    int quantityToAddToStack = Math.Min(
-                        quantityToAdd,
-                        maximumQuantityYouCanAddToThisStack
-                    );
-                    inventoryRecord.AddToQuantity(quantityToAddToStack);
-                    // Decrease the quantityToAdd by the amount we added to the stack.
-                    // If we added the total quantityToAdd to the stack, then this value will be 0, and we'll exit the 'while' loop.
-                    quantityToAdd -= quantityToAddToStack;
+                    //int maximumQuantityYouCanAddToThisStack = (
+                    //    item.MaximumStackableQuantity - inventoryRecord.Quantity
+                    //);
+                    //// Add to the stack (either the full quanity, or the amount that would make it reach the stack maximum)
+                    //int quantityToAddToStack = Math.Min(
+                    //    quantityToAdd,
+                    //    maximumQuantityYouCanAddToThisStack
+                    //);
+                    if (inventoryRecord.Quantity < item.MaximumStackableQuantity)
+                    {
+                        int quantityToAddToStack = 1;
+                        inventoryRecord.AddToQuantity(quantityToAddToStack);
+                        // Decrease the quantityToAdd by the amount we added to the stack.
+                        // If we added the total quantityToAdd to the stack, then this value will be 0, and we'll exit the 'while' loop.
+                        quantityToAdd -= quantityToAddToStack;
+                    }
+                    else
+                    {
+                        quantityToAdd = 0;
+                    }
                 }
                 else
                 {
@@ -87,10 +80,30 @@ namespace Realm
             }
         }
 
+        public void RemoveItem(string name)
+        {
+            for (int i = 0; i < InventoryRecords.Count; i++)
+            {
+                InventoryRecord record = InventoryRecords[i];
+                if (record.InventoryItem != null)
+                {
+                    if (record.InventoryItem.Name == name && record.Quantity > 0)
+                    {
+                        record.Quantity--;
+
+                        if (name == "Potion")
+                        {
+                            Potion.Use();
+                        }
+                    }
+                }
+            }
+        }
+
         public class InventoryRecord
         {
             public Item InventoryItem { get; private set; }
-            public int Quantity { get; private set; }
+            public int Quantity { get; set; }
 
             public InventoryRecord(Item item, int quantity)
             {
@@ -107,6 +120,21 @@ namespace Realm
         int x = Game1.Viewport.Width - 256;
         int y = Game1.Viewport.Height - 128;
 
-        public void Draw(SpriteBatch spriteBatch) { }
+        public void Draw(SpriteBatch spriteBatch)
+        {
+            for (int i = 0; i < InventoryRecords.Count; i++)
+            {
+                InventoryRecord record = InventoryRecords[i];
+                if (record.InventoryItem != null)
+                {
+                    spriteBatch.DrawString(
+                        Art.HudFont,
+                        record.InventoryItem.Name + ": " + record.Quantity,
+                        new Vector2(x, y + (i * 32) + 1),
+                        Color.White
+                    );
+                }
+            }
+        }
     }
 }

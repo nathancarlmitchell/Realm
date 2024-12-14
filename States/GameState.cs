@@ -8,30 +8,20 @@ namespace Realm.States
 {
     public class GameState : State
     {
-        //public static Player Player { get; set; }
-
-        //public static InventorySystem Inventory = new InventorySystem();
         Rectangle targetRectangle;
-        public static InventorySystem i;
+
+        public static Guid PotionGuid = Guid.NewGuid();
 
         public GameState(Game1 game, GraphicsDevice graphicsDevice, ContentManager content)
             : base()
         {
-            //Player = new Player();
             Debug.WriteLine("New GameState created.");
             Game1.Camera = new Camera(Game1.Viewport, Game1.WorldWidth, Game1.WorldHeight, 1f);
             EntityManager.Add(new Player());
             EntityManager.Add(new Potion());
 
-            i = new InventorySystem();
-
             // Define a drawing rectangle based on the number of tiles wide and high, using the texture dimensions.
             targetRectangle = new Rectangle(0, 0, Game1.WorldWidth, Game1.WorldHeight);
-        }
-
-        public static void AddItem()
-        {
-            i.AddItem(new Potion(), 1);
         }
 
         public override void Draw(GameTime gameTime, SpriteBatch spriteBatch)
@@ -80,18 +70,18 @@ namespace Realm.States
 
             // Draw inventory.
             Overlay.DrawInventory(spriteBatch);
-            int x = Game1.Viewport.Width - 256;
-            int y = Game1.Viewport.Height - 128;
+            //int x = Game1.Viewport.Width - 256;
+            //int y = Game1.Viewport.Height - 128;
 
-            if (Player.Instance is not null)
-            {
-                spriteBatch.DrawString(
-                    Art.HudFont,
-                    "InventoryRecords.Count: " + i.InventoryRecords.Count,
-                    new Vector2(x, y),
-                    Color.White
-                );
-            }
+            //if (Player.Instance is not null)
+            //{
+            //    spriteBatch.DrawString(
+            //        Art.HudFont,
+            //        "InventoryRecords.Count: " + i.InventoryRecords.Count,
+            //        new Vector2(x, y),
+            //        Color.White
+            //    );
+            //}
 
             if (Game1._Debug)
             {

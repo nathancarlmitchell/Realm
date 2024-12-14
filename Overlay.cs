@@ -30,42 +30,27 @@ namespace Realm
             spriteBatch.DrawString(font, text, new Vector2(x, y), Color.DarkMagenta);
         }
 
-        //public static void DrawHUD(bool drawScore = true)
-        //{
-        //    // Draw Score.
-        //    if (drawScore)
-        //    {
-        //        var color = Color.Black;
-        //        if (GameState.Score >= GameState.HighScore)
-        //        {
-        //            color = Color.Yellow;
-        //        }
-        //        spriteBatch.DrawString(
-        //            Art.HudFont,
-        //            "Score: " + GameState.Score,
-        //            new Vector2(32, 64),
-        //            color
-        //        );
-        //        spriteBatch.DrawString(
-        //            Art.HudFont,
-        //            "Hi Score: " + GameState.HighScore,
-        //            new Vector2(32, 92),
-        //            color
-        //        );
-        //    }
-
-        //    // Draw coins.
-        //    spriteBatch.DrawString(
-        //        Art.HudFont,
-        //        " x " + GameState.Coins,
-        //        new Vector2(GameState.CoinHUD.X + 16, GameState.CoinHUD.Y - 8),
-        //        Color.Black
-        //    );
-        //    GameState.CoinHUD.CoinTexture.DrawFrame(
-        //        spriteBatch,
-        //        new Vector2(GameState.CoinHUD.X, GameState.CoinHUD.Y)
-        //    );
-        //}
+        public static void DrawScore(SpriteBatch spriteBatch)
+        {
+            // Draw Score.
+            //var color = Color.Black;
+            //if (GameState.Score >= GameState.HighScore)
+            //{
+            //    color = Color.Yellow;
+            //}
+            //spriteBatch.DrawString(
+            //    Art.HudFont,
+            //    "Score: " + GameState.Score,
+            //    new Vector2(32, 64),
+            //    color
+            //);
+            //spriteBatch.DrawString(
+            //    Art.HudFont,
+            //    "Hi Score: " + GameState.HighScore,
+            //    new Vector2(32, 92),
+            //    color
+            //);
+        }
 
         public static void DrawStats(SpriteBatch spriteBatch)
         {
@@ -281,30 +266,7 @@ namespace Realm
 
         public static void DrawInventory(SpriteBatch spriteBatch)
         {
-            int x = Game1.Viewport.Width - 256;
-            int y = Game1.Viewport.Height - 128;
-
-            if (Player.Instance is not null)
-            {
-                spriteBatch.DrawString(
-                    Art.HudFont,
-                    "InventoryRecords.Count: " + GameState.i.InventoryRecords.Count,
-                    new Vector2(x, y),
-                    Color.White
-                );
-            }
-
-            //for (int i = 0; GameState.Inventory.Count > 0; i++)
-            //{
-            //    var record = InventoryRecords[i];
-
-            //    spriteBatch.DrawString(
-            //        Art.HudFont,
-            //        "Inventory: " + record.GetType(),
-            //        new Vector2(x, y),
-            //        Color.White
-            //    );
-            //}
+            Player.Instance.Inventory.Draw(spriteBatch);
         }
 
         public static void DrawDebug(SpriteBatch spriteBatch)

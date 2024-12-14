@@ -11,7 +11,7 @@ namespace Realm
             Coin,
             Button,
             Locked,
-            Unlock,
+            LevelUp,
             Blip,
             Song;
 
@@ -29,15 +29,16 @@ namespace Realm
             //Coin = content.Load<SoundEffect>("Sounds/coin");
             Button = content.Load<SoundEffect>("Sounds/button");
             //Locked = content.Load<SoundEffect>("Sounds/locked");
-            //Unlock = content.Load<SoundEffect>("Sounds/unlock");
-            //Blip = content.Load<SoundEffect>("Sounds/blip");
+            LevelUp = content.Load<SoundEffect>("Sounds/level_up");
+            Blip = content.Load<SoundEffect>("Sounds/blip");
 
-            //Song = content.Load<SoundEffect>("Sounds/Music/8bit bossa");
+            Song = content.Load<SoundEffect>("Sounds/Music/snd_game");
 
-            //songInstance = Song.CreateInstance();
-            //songInstance.IsLooped = true;
-            //songInstance.Volume = 0.4f;
-            //songInstance.Play();
+            songInstance = Song.CreateInstance();
+            songInstance.IsLooped = true;
+            songInstance.Volume = 0.3f;
+            if (!Game1.Mute)
+                songInstance.Play();
 
             //mp3 = content.Load<Song>("Sounds/Music/8bit bossa");
             //MediaPlayer.Play(mp3);

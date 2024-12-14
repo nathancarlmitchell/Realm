@@ -81,7 +81,7 @@ namespace Realm.States
             //}
             //else
             //{
-            text = "Game Over";
+            text = "Score: " + Player.ExperienceTotal;
             color = Color.AliceBlue;
             //}
 

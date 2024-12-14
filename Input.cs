@@ -77,13 +77,19 @@ public static class Input
             //else if (mouse.ScrollWheelValue < previousMouse.ScrollWheelValue)
             //    Game1.Camera.Zoom -= zoomIncrement;
 
+            // Use potion.
+            if (WasKeyPressed(Keys.E))
+            {
+                Player.Instance.Inventory.RemoveItem("Potion");
+            }
+
             // Ability.
             if (WasKeyPressed(Keys.Space))
             {
                 Player.UseAbility();
             }
 
-            // Kill.
+            // Game over.
             if (WasKeyPressed(Keys.Q))
             {
                 Player.Kill();
@@ -93,12 +99,6 @@ public static class Input
             if (keyboard.IsKeyDown(Keys.Escape) || keyboard.IsKeyDown(Keys.P))
             {
                 //game.ChangeState(new PauseState(game, graphicsDevice, content));
-            }
-
-            // Game over.
-            if (keyboard.IsKeyDown(Keys.Q))
-            {
-                //game.ChangeState(new GameOverState(game, graphicsDevice, content));
             }
 
             // Check touch input.
