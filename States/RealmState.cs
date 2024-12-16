@@ -3,11 +3,10 @@ using System.Diagnostics;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 
 namespace Realm.States
 {
-    public class GameState : State
+    public class RealmState : State
     {
         Rectangle targetRectangle;
 
@@ -16,16 +15,18 @@ namespace Realm.States
         public static int HighScore { get; set; }
         public static int Score { get; set; }
 
-        public GameState(Game1 game, GraphicsDevice graphicsDevice, ContentManager content)
+        public RealmState(Game1 game, GraphicsDevice graphicsDevice, ContentManager content)
             : base()
         {
-            Debug.WriteLine("New GameState created.");
+            Debug.WriteLine("New RealmState created.");
             Game1.Camera = new Camera(Game1.Viewport, Game1.WorldWidth, Game1.WorldHeight, 1f);
 
-            //EntityManager.Add(new Player());
-            //EntityManager.Add(new Portal());
-            Player.Vitality = 1;
-            Player.Wisdom = 1;
+            EntityManager.Reset();
+
+            Player.Vitality = 99;
+            Player.Wisdom = 99;
+
+            EntityManager.Add(new Portal());
             Util.LoadGameData();
             // Define a drawing rectangle based on the number of tiles wide and high, using the texture dimensions.
             targetRectangle = new Rectangle(0, 0, Game1.WorldWidth, Game1.WorldHeight);
@@ -45,7 +46,7 @@ namespace Realm.States
 
             // Draw background.
             //Background.Draw(spriteBatch);
-            spriteBatch.Draw(Art.Tile, new Vector2(32, 32), targetRectangle, Color.White);
+            //spriteBatch.Draw(Art.Tile, new Vector2(32, 32), targetRectangle, Color.White);
 
             spriteBatch.End();
 
@@ -108,7 +109,7 @@ namespace Realm.States
         public override void Update(GameTime gameTime)
         {
             EntityManager.Update();
-            EnemySpawner.Update();
+            //EnemySpawner.Update();
 
             // Update score.
             if (Player.ExperienceTotal > HighScore)

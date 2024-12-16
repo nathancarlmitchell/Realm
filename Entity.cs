@@ -23,6 +23,8 @@ namespace Realm
         public virtual void Draw(SpriteBatch spriteBatch)
         {
             spriteBatch.Draw(image, Position, null, color, Orientation, Size / 2f, 1f, 0, 0);
+
+            if (this.GetType() == typeof(Enemy)) { }
         }
     }
 }

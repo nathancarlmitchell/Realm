@@ -46,6 +46,8 @@ namespace Realm.States
 
             butttons = [newGameButton, mainMenuButton, quitGameButton];
             menu = new Menu(butttons);
+
+            Util.SaveGameData();
         }
 
         int textCooldown = 0;

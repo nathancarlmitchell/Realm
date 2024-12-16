@@ -78,9 +78,19 @@ public static class Input
             //    Game1.Camera.Zoom -= zoomIncrement;
 
             // Use potion.
-            if (WasKeyPressed(Keys.E))
+            if (WasKeyPressed(Keys.Q))
             {
-                Player.Instance.Inventory.RemoveItem("Potion");
+                Player.Instance.Inventory.RemoveItem("HealthPotion");
+                // Move to
+                //HealthPotion.Use();
+            }
+
+            // Use potion.
+            if (WasKeyPressed(Keys.F))
+            {
+                Player.Instance.Inventory.RemoveItem("ManaPotion");
+                // Move to
+                //HealthPotion.Use();
             }
 
             // Ability.
@@ -90,9 +100,15 @@ public static class Input
             }
 
             // Game over.
-            if (WasKeyPressed(Keys.Q))
+            if (WasKeyPressed(Keys.E))
             {
-                Player.Kill();
+                Game1.Instance.ChangeState(
+                    new RealmState(
+                        Game1.Instance,
+                        Game1.Instance.GraphicsDevice,
+                        Game1.Instance.Content
+                    )
+                );
             }
 
             // Pause.
@@ -225,7 +241,7 @@ public static class Input
     public static void NewGame()
     {
         //Game1.GameState = null;
-        Game1.Instance.ChangeState(new GameState(game, graphicsDevice, content));
+        Game1.Instance.ChangeState(new RealmState(game, graphicsDevice, content));
     }
 
     public static void ContinueGame()

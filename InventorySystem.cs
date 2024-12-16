@@ -91,9 +91,13 @@ namespace Realm
                     {
                         record.Quantity--;
 
-                        if (name == "Potion")
+                        if (name == "HealthPotion")
                         {
-                            Potion.Use();
+                            HealthPotion.Use();
+                        }
+                        if (name == "ManaPotion")
+                        {
+                            ManaPotion.Use();
                         }
                     }
                 }
@@ -122,16 +126,30 @@ namespace Realm
 
         public void Draw(SpriteBatch spriteBatch)
         {
+            spriteBatch.Draw(Art.Inventory, new Vector2(x, y), Color.White);
+
             for (int i = 0; i < InventoryRecords.Count; i++)
             {
                 InventoryRecord record = InventoryRecords[i];
                 if (record.InventoryItem != null)
                 {
+                    Texture2D image = Art.Item;
+                    if (record.InventoryItem.Name == "HealthPotion")
+                    {
+                        image = Art.HealthPotion;
+                    }
+                    if (record.InventoryItem.Name == "ManaPotion")
+                    {
+                        image = Art.ManaPotion;
+                    }
+
+                    spriteBatch.Draw(image, new Vector2(x + (i * 40), y), Color.White);
+                    // record.InventoryItem.Name +
                     spriteBatch.DrawString(
                         Art.HudFont,
-                        record.InventoryItem.Name + ": " + record.Quantity,
-                        new Vector2(x, y + (i * 32) + 1),
-                        Color.White
+                        "" + record.Quantity,
+                        new Vector2(x + (i * 40) + 4, y),
+                        Color.Black
                     );
                 }
             }

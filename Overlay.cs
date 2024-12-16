@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Realm.States;
-using static Realm.InventorySystem;
 
 namespace Realm
 {
@@ -33,23 +33,23 @@ namespace Realm
         public static void DrawScore(SpriteBatch spriteBatch)
         {
             // Draw Score.
-            //var color = Color.Black;
-            //if (GameState.Score >= GameState.HighScore)
-            //{
-            //    color = Color.Yellow;
-            //}
-            //spriteBatch.DrawString(
-            //    Art.HudFont,
-            //    "Score: " + GameState.Score,
-            //    new Vector2(32, 64),
-            //    color
-            //);
-            //spriteBatch.DrawString(
-            //    Art.HudFont,
-            //    "Hi Score: " + GameState.HighScore,
-            //    new Vector2(32, 92),
-            //    color
-            //);
+            var color = Color.Black;
+            if (Player.ExperienceTotal >= GameState.HighScore)
+            {
+                color = Color.Yellow;
+            }
+            spriteBatch.DrawString(
+                Art.HudFont,
+                "Score: " + Player.ExperienceTotal,
+                new Vector2(32, 64),
+                color
+            );
+            spriteBatch.DrawString(
+                Art.HudFont,
+                "Hi Score: " + GameState.HighScore,
+                new Vector2(32, 92),
+                color
+            );
         }
 
         public static void DrawStats(SpriteBatch spriteBatch)
@@ -138,7 +138,7 @@ namespace Realm
             Vector2 healthBarPos = new(x, y);
             Vector2 manaBarPos = new(x, y + barHeight + barOffset);
 
-            // Normalize values.
+            // Normalize experience values.
             int max = Player.ExperienceNextLevel;
             int min = 0;
             int range = (max - min);
@@ -153,20 +153,26 @@ namespace Realm
             Rectangle goldRect = new(0, 0, normalisedExperience * barScale, barHeight);
             Rectangle blackRectExp = new(0, 0, normalisedNextLevel * barScale, barHeight);
 
+            // Normalize health values.
+            int normalisedHealth = (Player.Health * 100 / Player.HealthMax * 100) / 100;
+
             // Health bars.
-            Rectangle greenRect = new(0, 0, Player.Health * barScale, barHeight);
-            Rectangle redRect = new(0, 0, Player.HealthMax * barScale, barHeight);
+            Rectangle greenRect = new(0, 0, normalisedHealth * barScale, barHeight);
+            Rectangle redRect = new(0, 0, 100 * barScale, barHeight);
+
+            // Normalize mana values.
+            int normalisedMana = (Player.Mana * 100 / Player.ManaMax * 100) / 100;
 
             // Mana bars.
-            Rectangle blueRect = new(0, 0, Player.Mana * barScale, barHeight);
-            Rectangle blackRect = new(0, 0, Player.ManaMax * barScale, barHeight);
+            Rectangle blueRect = new(0, 0, normalisedMana * barScale, barHeight);
+            Rectangle blackRect = new(0, 0, 100 * barScale, barHeight);
 
             // Black bar.
             spriteBatch.Draw(
                 Art.HealthBar,
                 expBarPos,
                 blackRectExp,
-                Color.Black,
+                Color.Black * 0.5f,
                 0f,
                 Vector2.Zero,
                 1f,
@@ -192,7 +198,7 @@ namespace Realm
                 Art.HealthBar,
                 healthBarPos,
                 redRect,
-                Color.DarkRed,
+                Color.DarkRed * 0.5f,
                 0f,
                 Vector2.Zero,
                 1f,
@@ -218,7 +224,7 @@ namespace Realm
                 Art.HealthBar,
                 manaBarPos,
                 blackRect,
-                Color.Black,
+                Color.Black * 0.5f,
                 0f,
                 Vector2.Zero,
                 1f,

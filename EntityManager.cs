@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Reflection.Metadata;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
@@ -31,7 +32,8 @@ namespace Realm
         static List<Enemy> enemies = new List<Enemy>();
         static List<Projectile> bullets = new List<Projectile>();
         static List<EnemyProjectile> enemiesProjectiles = new List<EnemyProjectile>();
-        static List<Potion> potions = new List<Potion>();
+        static List<Item> potions = new List<Item>();
+        static List<Portal> portals = new List<Portal>();
 
         private static void AddEntity(Entity entity)
         {
@@ -42,8 +44,10 @@ namespace Realm
                 enemies.Add(entity as Enemy);
             else if (entity is EnemyProjectile)
                 enemiesProjectiles.Add(entity as EnemyProjectile);
-            else if (entity is Potion)
-                potions.Add(entity as Potion);
+            else if (entity is Portal)
+                portals.Add(entity as Portal);
+            else if (entity is Item)
+                potions.Add(entity as Item);
         }
 
         public static void Update()
@@ -63,6 +67,7 @@ namespace Realm
             enemies = enemies.Where(x => !x.IsExpired).ToList();
             enemiesProjectiles = enemiesProjectiles.Where(x => !x.IsExpired).ToList();
             potions = potions.Where(x => !x.IsExpired).ToList();
+            portals = portals.Where(x => !x.IsExpired).ToList();
         }
 
         public static void Draw(SpriteBatch spriteBatch)
@@ -82,8 +87,8 @@ namespace Realm
         public static void Reset()
         {
             foreach (var entity in entities)
-                //if (entity is not Player)
-                entity.IsExpired = true;
+                if (entity is not Player)
+                    entity.IsExpired = true;
         }
 
         static void HandleCollisions()
@@ -139,6 +144,25 @@ namespace Realm
                     //potions[i].Pickup();
                     Player.Instance.Inventory.AddItem(potions[i], 1);
                     potions[i].IsExpired = true;
+                }
+            }
+
+            // handle collisions between player and items
+            for (int i = 0; i < portals.Count; i++)
+            {
+                if (IsColliding(Player.Instance, portals[i]))
+                {
+                    //potions[i].Pickup();
+                    //Player.Instance.Inventory.AddItem(potions[i], 1);
+                    portals[i].IsExpired = true;
+                    Game1.Instance.ChangeState(
+                        new GameState(
+                            Game1.Instance,
+                            Game1.Instance.GraphicsDevice,
+                            Game1.Instance.Content
+                        )
+                    );
+                    //Player = null;
                 }
             }
         }

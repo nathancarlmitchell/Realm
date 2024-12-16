@@ -75,7 +75,7 @@ namespace Realm
             Graphics = new GraphicsDeviceManager(this);
             Content.RootDirectory = "Content";
             IsMouseVisible = true;
-            _Debug = true;
+            _Debug = false;
         }
 
         protected override void Initialize()
@@ -118,6 +118,7 @@ namespace Realm
         {
             //GameState = new GameState(this, Graphics.GraphicsDevice, Content);
             currentState = new MenuState(this, Graphics.GraphicsDevice, Content);
+            EntityManager.Add(new Player());
         }
 
         public void ChangeState(State state)

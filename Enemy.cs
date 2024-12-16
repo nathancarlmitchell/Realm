@@ -19,6 +19,7 @@ namespace Realm
         private List<IEnumerator<int>> behaviours = new List<IEnumerator<int>>();
 
         private int health;
+        private int healthMax;
 
         public Enemy(Texture2D image, Vector2 position)
         {
@@ -26,8 +27,10 @@ namespace Realm
             Position = position;
             Radius = image.Width / 2f;
             color = Color.Transparent;
-            //PointValue = 1;
-            //health = 2;
+
+            PointValue = 1;
+            health = 1;
+            healthMax = 1;
         }
 
         public override void Update()
@@ -47,6 +50,67 @@ namespace Realm
             Velocity *= 0.8f;
         }
 
+        public void DrawHealthBars(SpriteBatch spriteBatch)
+        {
+            if (health < healthMax)
+            {
+                float x = Position.X - (this.image.Width / 4);
+                float y = Position.Y + (this.image.Height / 2);
+
+                int barScale = 1;
+                int barHeight = 8;
+
+                Vector2 healthBarPos = new(x, y);
+
+                // Normalize values.
+                int max = healthMax;
+                int min = 0;
+                int range = (max - min);
+                int normalisedHealthMax = 25 * (max - min) / range;
+
+                int max2 = health;
+                int min2 = 0;
+                int range2 = (max2 - min2);
+                int normalisedHealth = 25 * (max2 - min2) / range;
+
+                // Experience bars.
+                Rectangle greenRect = new(0, 0, normalisedHealth * barScale, barHeight);
+                Rectangle redRect = new(0, 0, normalisedHealthMax * barScale, barHeight);
+
+                // Red bar.
+                spriteBatch.Draw(
+                    Art.HealthBar,
+                    healthBarPos,
+                    redRect,
+                    Color.DarkRed,
+                    0f,
+                    Vector2.Zero * 0.25f,
+                    1f,
+                    0,
+                    0
+                );
+
+                // Green bar.
+                spriteBatch.Draw(
+                    Art.HealthBar,
+                    healthBarPos,
+                    greenRect,
+                    Color.DarkGreen,
+                    0f,
+                    Vector2.Zero,
+                    1f,
+                    0,
+                    0
+                );
+            }
+        }
+
+        public override void Draw(SpriteBatch spriteBatch)
+        {
+            DrawHealthBars(spriteBatch);
+            base.Draw(spriteBatch);
+        }
+
         public void HandleCollision(Enemy other)
         {
             var d = Position - other.Position;
@@ -62,9 +126,12 @@ namespace Realm
                 IsExpired = true;
                 Player.Experience += PointValue;
                 Player.ExperienceTotal += PointValue;
-                if (rand.Next(15) == 0)
+                if (rand.Next(11) == 0)
                 {
-                    EntityManager.Add(new Potion { Position = this.Position });
+                    if (rand.Next(2) == 0)
+                        EntityManager.Add(new HealthPotion { Position = this.Position });
+                    else
+                        EntityManager.Add(new ManaPotion { Position = this.Position });
                 }
             }
         }
@@ -85,6 +152,37 @@ namespace Realm
 
         private int projectileCooldownRemaining = 0;
         private readonly int projectileCooldown = 250;
+
+        private int healthCooldownRemaining = 0;
+        private readonly int healhCooldown = 250;
+
+        IEnumerable<int> RegenHealth(int amount = 1)
+        {
+            while (true)
+            {
+                if (healthCooldownRemaining <= 0)
+                {
+                    healthCooldownRemaining = healhCooldown - (1 * 1);
+
+                    int heal = health;
+                    heal += amount;
+
+                    if (heal >= healthMax)
+                    {
+                        health = healthMax;
+                    }
+                    else
+                    {
+                        health += amount;
+                    }
+                }
+
+                if (healthCooldownRemaining > 0)
+                    healthCooldownRemaining--;
+
+                yield return 0;
+            }
+        }
 
         #region Movement Behaviors
 
@@ -223,40 +321,46 @@ namespace Realm
 
         public static Enemy CreateWanderer(Vector2 position)
         {
-            var enemy = new Enemy(Art.Enemy, position);
+            var enemy = new Enemy(Art.Enemy, position)
+            {
+                health = 5,
+                healthMax = 5,
+                PointValue = 7,
+            };
 
             enemy.AddBehaviour(enemy.MoveRandomly());
-            //enemy.AddBehaviour(enemy.Shoot());
             enemy.AddBehaviour(enemy.Bomb());
-
-            enemy.health = 3;
-            enemy.PointValue = 7;
+            enemy.AddBehaviour(enemy.RegenHealth());
 
             return enemy;
         }
 
         public static Enemy CreateSeeker(Vector2 position)
         {
-            var enemy = new Enemy(Art.Enemy2, position);
+            var enemy = new Enemy(Art.Enemy2, position)
+            {
+                health = 2,
+                healthMax = 2,
+                PointValue = 5,
+            };
 
             enemy.AddBehaviour(enemy.FollowPlayer(0.25f));
             enemy.AddBehaviour(enemy.Spray());
-
-            enemy.health = 1;
-            enemy.PointValue = 5;
 
             return enemy;
         }
 
         public static Enemy CreateSnake(Vector2 position)
         {
-            var enemy = new Enemy(Art.Snake, position);
+            var enemy = new Enemy(Art.Snake, position)
+            {
+                health = 3,
+                healthMax = 3,
+                PointValue = 3,
+            };
 
             enemy.AddBehaviour(enemy.MoveSnake());
             enemy.AddBehaviour(enemy.Shoot(2));
-
-            enemy.health = 2;
-            enemy.PointValue = 3;
 
             return enemy;
         }

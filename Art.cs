@@ -21,7 +21,11 @@ namespace Realm
         public static Texture2D Enemy2 { get; private set; }
         public static Texture2D Snake { get; private set; }
         public static Texture2D Player { get; private set; }
+        public static Texture2D Portal { get; private set; }
         public static Texture2D Item { get; private set; }
+        public static Texture2D Inventory { get; private set; }
+        public static Texture2D HealthPotion { get; private set; }
+        public static Texture2D ManaPotion { get; private set; }
         public static Texture2D HealthBar { get; private set; }
         public static SpriteFont HudFont { get; private set; }
         public static SpriteFont TitleFont { get; private set; }
@@ -38,7 +42,11 @@ namespace Realm
             Enemy2 = content.Load<Texture2D>("enemy2");
             Snake = content.Load<Texture2D>("snake");
             Player = content.Load<Texture2D>("player");
+            Portal = content.Load<Texture2D>("portal");
             Item = content.Load<Texture2D>("item");
+            Inventory = content.Load<Texture2D>("inventory");
+            HealthPotion = content.Load<Texture2D>("health_potion");
+            ManaPotion = content.Load<Texture2D>("mana_potion");
 
             HealthBar = new Texture2D(Game1.Instance.GraphicsDevice, 1, 1);
             HealthBar.SetData(new[] { Color.White });

@@ -18,6 +18,7 @@ namespace Realm
                     instance = new Player();
                 return instance;
             }
+            set { instance = value; }
         }
 
         private readonly Random rand = new();
@@ -88,12 +89,12 @@ namespace Realm
             Dexterity = 1;
 
             Experience = 0;
-            ExperienceNextLevel = 10;
+            ExperienceNextLevel = 25;
             ExperienceTotal = 0;
 
             Level = 1;
 
-            ProjectileDuration = 24;
+            ProjectileDuration = 32;
             ProjectileMagnitude = 12f;
 
             Position = new Vector2(Game1.WorldWidth / 2, Game1.WorldHeight / 2);
@@ -117,15 +118,11 @@ namespace Realm
             }
         }
 
-        private int projectileCooldownRemaining = 0;
-        private readonly int projectileCooldown = 50;
-
         private void Shoot()
         {
             var aim = Input.GetMouseAimDirection();
-            if (aim.LengthSquared() > 0 && projectileCooldownRemaining <= 0)
+            if (aim.LengthSquared() > 0)
             {
-                projectileCooldownRemaining = projectileCooldown - (Dexterity * 1);
                 float aimAngle = aim.ToAngle();
                 Quaternion aimQuat = Quaternion.CreateFromYawPitchRoll(0, 0, aimAngle);
                 float randomSpread = rand.NextFloat(-0.04f, 0.04f) + rand.NextFloat(-0.04f, 0.04f);
@@ -137,8 +134,6 @@ namespace Realm
                 //EntityManager.Add(new Projectile(Position + offset, vel));
                 //Sound.Shot.Play(0.2f, rand.NextFloat(-0.2f, 0.2f), 0);
             }
-            if (projectileCooldownRemaining > 0)
-                projectileCooldownRemaining--;
         }
 
         public static void LevelUp()
@@ -149,7 +144,7 @@ namespace Realm
             Defense++;
 
             Vitality += Level / 2;
-            Wisdom += Level / 2;
+            Wisdom += Level;
 
             if (Level % 3 == 0)
             {
@@ -158,11 +153,14 @@ namespace Realm
 
             Dexterity += Level / 2;
 
-            Experience = 0;
-            ExperienceNextLevel = 10 * Level * Level;
+            HealthMax += 5;
+            ManaMax += 5;
 
             Health = HealthMax;
             Mana = ManaMax;
+
+            Experience = 0;
+            ExperienceNextLevel = 25 * Level * Level;
 
             Sound.Play(Sound.LevelUp, 0.3f);
         }
@@ -192,11 +190,14 @@ namespace Realm
             );
         }
 
-        private int healthCooldownRemaining = 0;
-        private readonly int healthCooldown = 500;
+        private int healthCooldown = 0;
+        private int healthCooldownCount = 500;
 
-        private int manaCooldownRemaining = 0;
-        private readonly int manaCooldown = 250;
+        private int manaCooldown = 0;
+        private int manaCooldownCount = 500;
+
+        private int projectileCooldown = 0;
+        private readonly int projectileCooldownCount = 100;
 
         public override void Update()
         {
@@ -217,29 +218,34 @@ namespace Realm
             }
 
             // Regenerate Health.
-            if (healthCooldownRemaining <= 0)
+            healthCooldown += Vitality;
+            if (healthCooldown >= healthCooldownCount)
             {
-                healthCooldownRemaining = healthCooldown - (Vitality * 1);
+                healthCooldown = 0;
                 if (Health < HealthMax)
                     Health++;
             }
-            if (healthCooldownRemaining > 0)
-                healthCooldownRemaining--;
+            //if (healthCooldownRemaining >= 0)
+            //    healthCooldown -= (Vitality * 1);
 
             // Regenerate mana.
-            if (manaCooldownRemaining <= 0)
+            manaCooldown += Wisdom;
+            if (manaCooldown >= manaCooldownCount)
             {
-                manaCooldownRemaining = manaCooldown - (Wisdom * 1);
+                manaCooldown = 0;
                 if (Mana < ManaMax)
                     Mana++;
             }
-            if (manaCooldownRemaining > 0)
-                manaCooldownRemaining--;
 
             // Shoot
             // This may be moved to new Weapon class.
-            if (Input.mouse.LeftButton == Microsoft.Xna.Framework.Input.ButtonState.Pressed)
+            projectileCooldown += Dexterity;
+            if (
+                Input.mouse.LeftButton == Microsoft.Xna.Framework.Input.ButtonState.Pressed
+                && projectileCooldown >= projectileCooldownCount
+            )
             {
+                projectileCooldown = 0;
                 Shoot();
             }
         }
