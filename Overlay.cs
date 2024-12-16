@@ -54,7 +54,7 @@ namespace Realm
 
         public static void DrawStats(SpriteBatch spriteBatch)
         {
-            int x = Game1.ScreenWidth - 320;
+            int x = Game1.ScreenWidth - 420;
             int y = 64;
             //int x = (int)Game1.Camera.Pos.X + (Game1.ScreenWidth / 2) - 512;
             //int y = (int)Game1.Camera.Pos.Y + Game1.Viewport.Height / 2 - 128;
@@ -139,19 +139,20 @@ namespace Realm
             Vector2 manaBarPos = new(x, y + barHeight + barOffset);
 
             // Normalize experience values.
-            int max = Player.ExperienceNextLevel;
-            int min = 0;
-            int range = (max - min);
-            int normalisedNextLevel = 100 * (max - min) / range;
+            int normalisedExp = (Player.Experience * 100 / Player.ExperienceNextLevel * 100) / 100;
+            //int max = Player.Experience;
+            //int min = 0;
+            //int range = (max - min);
+            //int normalisedNextLevel = 100 * (max - min) / range;
 
-            int max2 = Player.Experience;
-            int min2 = 0;
-            int range2 = (max2 - min2);
-            int normalisedExperience = 100 * (max2 - min2) / range;
+            //int max2 = Player.ExperienceNextLevel;
+            //int min2 = 0;
+            //int range2 = (max2 - min2);
+            //int normalisedExperience = 100 * (max2 - min2) / range2;
 
             // Experience bars.
-            Rectangle goldRect = new(0, 0, normalisedExperience * barScale, barHeight);
-            Rectangle blackRectExp = new(0, 0, normalisedNextLevel * barScale, barHeight);
+            Rectangle goldRect = new(0, 0, normalisedExp * barScale, barHeight);
+            Rectangle blackRectExp = new(0, 0, 100 * barScale, barHeight);
 
             // Normalize health values.
             int normalisedHealth = (Player.Health * 100 / Player.HealthMax * 100) / 100;
@@ -248,7 +249,7 @@ namespace Realm
             // Experience.
             spriteBatch.DrawString(
                 Art.HudFont,
-                "Experience: " + Player.ExperienceTotal + " / " + Player.ExperienceNextLevel,
+                "Experience: " + Player.Experience + " / " + Player.ExperienceNextLevel,
                 new Vector2(x, y - barHeight - barOffset),
                 Color.White
             );
@@ -278,7 +279,7 @@ namespace Realm
         public static void DrawDebug(SpriteBatch spriteBatch)
         {
             float x = 64;
-            float y = 64;
+            float y = 256;
             //float x = Game1.Camera.Pos.X - Game1.Viewport.Width / 2 + 64;
             //float y = Game1.Camera.Pos.Y - Game1.Viewport.Height / 2 + 64;
             Vector2 pos = new Vector2(x, y);
@@ -302,6 +303,13 @@ namespace Realm
             spriteBatch.DrawString(
                 Art.HudFont,
                 "Player.Pos: " + Player.Instance.Position,
+                pos,
+                Color.White
+            );
+            pos = new Vector2(x, y + 48);
+            spriteBatch.DrawString(
+                Art.HudFont,
+                "Game1.WorldBounds: " + Game1.WorldBounds,
                 pos,
                 Color.White
             );

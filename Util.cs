@@ -4,22 +4,24 @@ using System.Diagnostics;
 using System.IO;
 using System.Text;
 using System.Text.Json;
+using System.Xml.Linq;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
 using Realm.States;
 using SharpDX.Direct2D1;
+using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 
 namespace Realm
 {
     public static class Util
     {
-        private static string gameDataLocation = "GameData.json";
-        private static string skinDataLocation = "SkinData.json";
-        private static string trophyDataLocation = "TrophyData.json";
+        private static string playerDataLocation = "PlayerData.json";
 
-        private static readonly string defaultGameData =
-            @"{""HighScore"":0,""TotalScore"":0,""Coins"":0,""TotalCoins"":0,""GamesPlayed"":0}";
+        //private static string skinDataLocation = "SkinData.json";
+        //private static string trophyDataLocation = "TrophyData.json";
+
+        private static readonly string defaultPlayerData = @"{""ExperienceTotal"":0}";
 
         //private static readonly string defaultSkinData =
         //    @"[{""Name"":""anim_idle_default"",""Selected"":true,""Locked"":false,""Cost"":0,""Frames"":2,""FPS"":2},
@@ -38,71 +40,105 @@ namespace Realm
         //        {""Name"":""Sunscreen"",""Selected"":false,""Locked"":true,""Description"":""Unlock all skins"",""Frames"": 1,""FPS"": 1},
         //        {""Name"":""Bezos"",""Selected"":false,""Locked"":true,""Description"":""Save 100 coins"",""Frames"": 1,""FPS"": 1}]";
 
-        public static void CheckOS()
-        {
-            if (OperatingSystem.IsAndroid())
-            {
-                Debug.WriteLine("Device running Android.");
-                // AppContext.BaseDirectory = "/data/user/0/FlappyBox.Android/files".
-                gameDataLocation = AppContext.BaseDirectory + "/" + gameDataLocation;
-                skinDataLocation = AppContext.BaseDirectory + "/" + skinDataLocation;
-                trophyDataLocation = AppContext.BaseDirectory + "/" + trophyDataLocation;
-            }
-        }
+        //public static void CheckOS()
+        //{
+        //    if (OperatingSystem.IsAndroid())
+        //    {
+        //        Debug.WriteLine("Device running Android.");
+        //        // AppContext.BaseDirectory = "/data/user/0/FlappyBox.Android/files".
+        //        gameDataLocation = AppContext.BaseDirectory + "/" + gameDataLocation;
+        //        skinDataLocation = AppContext.BaseDirectory + "/" + skinDataLocation;
+        //        trophyDataLocation = AppContext.BaseDirectory + "/" + trophyDataLocation;
+        //    }
+        //}
 
-        public static void LoadGameData()
+        public static void LoadPlayerData()
         {
-            GameData gameData = new();
+            PlayerData playerData = new();
 
             try
             {
-                using (StreamReader r = new StreamReader(gameDataLocation))
+                using (StreamReader r = new StreamReader(playerDataLocation))
                 {
-                    Debug.WriteLine(gameDataLocation + ": reading data.");
+                    Debug.WriteLine(playerDataLocation + ": reading data.");
                     string json = r.ReadToEnd();
                     try
                     {
-                        gameData = JsonSerializer.Deserialize<GameData>(json);
+                        playerData = JsonSerializer.Deserialize<PlayerData>(json);
                     }
                     catch (System.Text.Json.JsonException)
                     {
                         Debug.WriteLine($"Error loading game data: {json}");
-                        json = defaultGameData;
+                        json = defaultPlayerData;
 
-                        gameData = JsonSerializer.Deserialize<GameData>(json);
+                        playerData = JsonSerializer.Deserialize<PlayerData>(json);
                         Debug.WriteLine($"Default data loaded: {json}");
                     }
                     Debug.WriteLine(json);
                 }
 
-                GameState.HighScore = gameData.HighScore;
+                Player.ID = playerData.ID;
+                Player.Name = playerData.Name;
+                Player.Description = playerData.Description;
+                //Player.Health = playerData.HealthMax;
+                Player.HealthMax = playerData.HealthMax;
+                //Player.Mana = playerData.ManaMax;
+                Player.ManaMax = playerData.ManaMax;
+                Player.Attack = playerData.Attack;
+                Player.Defense = playerData.Defense;
+                Player.Vitality = playerData.Vitality;
+                Player.Wisdom = playerData.Wisdom;
+                Player.Speed = playerData.Speed;
+                Player.Dexterity = playerData.Dexterity;
+                Player.Experience = playerData.Experience;
+                Player.ExperienceNextLevel = playerData.ExperienceNextLevel;
+                Player.ExperienceTotal = playerData.ExperienceTotal;
+                Player.Level = playerData.Level;
             }
             catch (System.IO.FileNotFoundException)
             {
-                Debug.WriteLine(gameDataLocation + ": file not found.");
-                using (FileStream fs = File.Create(gameDataLocation))
-                {
-                    Debug.WriteLine(gameDataLocation + ": file created.");
-                    byte[] data = new UTF8Encoding(true).GetBytes(defaultGameData);
-                    fs.Write(data, 0, data.Length);
-                }
+                Debug.WriteLine(playerDataLocation + ": file not found.");
+                //using (FileStream fs = File.Create(playerDataLocation))
+                //{
+                //    Debug.WriteLine(playerDataLocation + ": file created.");
+                //    byte[] data = new UTF8Encoding(true).GetBytes(defaultPlayerData);
+                //    fs.Write(data, 0, data.Length);
+                //}
             }
         }
 
-        public static void SaveGameData()
+        public static void SavePlayerData()
         {
-            GameData gameData = new() { HighScore = GameState.HighScore };
-
-            Debug.WriteLine(Player.Instance);
-
-            if (GameState.HighScore <= Player.ExperienceTotal)
+            PlayerData playerData = new()
             {
-                gameData.HighScore = Player.ExperienceTotal;
-            }
+                //if (GameState.HighScore <= Player.ExperienceTotal)
+                //{
+                //    playerData.ExperienceTotal = Player.ExperienceTotal;
+                //}
 
-            string json = JsonSerializer.Serialize(gameData);
+                ID = Player.ID,
+                Name = Player.Name,
+                Description = Player.Description,
+                //Health = Player.Health,
+                HealthMax = Player.HealthMax,
+                //Mana = Player.Mana,
+                ManaMax = Player.ManaMax,
+                Attack = Player.Attack,
+                Defense = Player.Defense,
+                Vitality = Player.Vitality,
+                Wisdom = Player.Wisdom,
+                Speed = Player.Speed,
+                Dexterity = Player.Dexterity,
+                Experience = Player.Experience,
+                ExperienceNextLevel = Player.ExperienceNextLevel,
+                ExperienceTotal = Player.ExperienceTotal,
+                Level = Player.Level,
+            };
+
+            string json = JsonSerializer.Serialize(playerData);
             Debug.WriteLine(json);
-            File.WriteAllText(gameDataLocation, json);
+            File.WriteAllText(playerDataLocation, json);
+
             Debug.WriteLine("GameData Saved.");
         }
 

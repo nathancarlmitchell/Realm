@@ -24,9 +24,12 @@ namespace Realm.States
 
             //EntityManager.Add(new Player());
             //EntityManager.Add(new Portal());
-            Player.Vitality = 1;
-            Player.Wisdom = 1;
-            Util.LoadGameData();
+
+            //Player.Vitality = 1;
+            //Player.Wisdom = 1;
+
+            Util.LoadPlayerData();
+
             // Define a drawing rectangle based on the number of tiles wide and high, using the texture dimensions.
             targetRectangle = new Rectangle(0, 0, Game1.WorldWidth, Game1.WorldHeight);
         }

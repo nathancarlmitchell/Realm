@@ -16,6 +16,8 @@ namespace Realm.States
 
         private bool isHighScore = false;
 
+        private int score;
+
         public GameOverState(Game1 game, GraphicsDevice graphicsDevice, ContentManager content)
             : base()
         {
@@ -23,17 +25,11 @@ namespace Realm.States
 
             //GameState.GamesPlayed++;
 
-            //Util.SaveGameData();
-            //Util.SaveSkinData();
-
-            //if (GameState.Score >= GameState.HighScore)
-            //{
-            //this.isHighScore = true;
-            //}
-
             //Background.SetAlpha(0.33f);
 
             titleFont = Art.TitleFont;
+
+            score = Player.ExperienceTotal;
 
             var newGameButton = new Button() { Text = "New Game" };
             newGameButton.Click += NewGameButton_Click;
@@ -47,7 +43,10 @@ namespace Realm.States
             butttons = [newGameButton, mainMenuButton, quitGameButton];
             menu = new Menu(butttons);
 
-            Util.SaveGameData();
+            EntityManager.RemovePlayer();
+            EntityManager.Add(new Player());
+
+            Util.SavePlayerData();
         }
 
         int textCooldown = 0;
@@ -83,7 +82,7 @@ namespace Realm.States
             //}
             //else
             //{
-            text = "Score: " + Player.ExperienceTotal;
+            text = "Score: " + score;
             color = Color.AliceBlue;
             //}
 

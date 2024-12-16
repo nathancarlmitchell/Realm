@@ -16,7 +16,9 @@ namespace Realm
             get { return timeUntilStart <= 0; }
         }
         public int PointValue { get; private set; }
+
         private List<IEnumerator<int>> behaviours = new List<IEnumerator<int>>();
+        private List<IEnumerator<int>> attackBehaviours = new List<IEnumerator<int>>();
 
         private int health;
         private int healthMax;
@@ -28,9 +30,9 @@ namespace Realm
             Radius = image.Width / 2f;
             color = Color.Transparent;
 
-            PointValue = 1;
-            health = 1;
-            healthMax = 1;
+            //PointValue = 1;
+            //health = 1;
+            //health = healthMax;
         }
 
         public override void Update()
@@ -38,6 +40,12 @@ namespace Realm
             if (timeUntilStart <= 0)
             {
                 ApplyBehaviours();
+
+                // Only attack if on screen.
+                if (!Game1.WorldBounds.Contains(Position.ToPoint()))
+                {
+                    ApplyAttackBehaviours();
+                }
             }
             else
             {
@@ -48,6 +56,16 @@ namespace Realm
             // Keep enemies in bounds
             //Position = Vector2.Clamp(Position, Size / 2, Game1.ScreenSize - Size / 2);
             Velocity *= 0.8f;
+
+            // Despawn enemies that get too far away.
+            if (Vector2.DistanceSquared(Position, Player.Instance.Position) > 25000000)
+            {
+                Debug.WriteLine(
+                    "Despawn distance: "
+                        + Vector2.DistanceSquared(Position, Player.Instance.Position)
+                );
+                IsExpired = true;
+            }
         }
 
         public void DrawHealthBars(SpriteBatch spriteBatch)
@@ -141,12 +159,26 @@ namespace Realm
             behaviours.Add(behaviour.GetEnumerator());
         }
 
+        private void AddAttackBehaviour(IEnumerable<int> behaviour)
+        {
+            behaviours.Add(behaviour.GetEnumerator());
+        }
+
         private void ApplyBehaviours()
         {
             for (int i = 0; i < behaviours.Count; i++)
             {
                 if (!behaviours[i].MoveNext())
                     behaviours.RemoveAt(i--);
+            }
+        }
+
+        private void ApplyAttackBehaviours()
+        {
+            for (int i = 0; i < attackBehaviours.Count; i++)
+            {
+                if (!attackBehaviours[i].MoveNext())
+                    attackBehaviours.RemoveAt(i--);
             }
         }
 
@@ -226,10 +258,10 @@ namespace Realm
                     var bounds = Game1.Viewport.Bounds;
                     bounds.Inflate(-image.Width, -image.Height);
                     // if the enemy is outside the bounds, make it move away from the edge
-                    if (!bounds.Contains(Position.ToPoint()))
-                        direction =
-                            (Game1.ScreenSize / 2 - Position).ToAngle()
-                            + rand.NextFloat(-MathHelper.PiOver2, MathHelper.PiOver2);
+                    //if (!bounds.Contains(Position.ToPoint()))
+                    //direction =
+                    //(Game1.ScreenSize / 2 - Position).ToAngle()
+                    //+ rand.NextFloat(-MathHelper.PiOver2, MathHelper.PiOver2);
                     yield return 0;
                 }
             }
@@ -243,6 +275,12 @@ namespace Realm
         {
             while (true)
             {
+                // Skip updating if off screen.
+                //if (!Game1.WorldBounds.Contains(Position.ToPoint()))
+                //{
+                //    yield break;
+                //}
+
                 var aim = Player.Instance.Position - Position;
                 if (aim.LengthSquared() > 0 && projectileCooldownRemaining <= 0)
                 {
@@ -275,6 +313,12 @@ namespace Realm
         {
             while (true)
             {
+                // Skip updating if off screen.
+                //if (!Game1.WorldBounds.Contains(Position.ToPoint()))
+                //{
+                //    yield break;
+                //}
+
                 var aim = Player.Instance.Position - Position;
                 if (aim.LengthSquared() > 0 && projectileCooldownRemaining <= 0)
                 {
@@ -297,6 +341,12 @@ namespace Realm
         {
             while (true)
             {
+                // Skip updating if off screen.
+                //if (!Game1.WorldBounds.Contains(Position.ToPoint()))
+                //{
+                //    yield break;
+                //}
+
                 if (projectileCooldownRemaining <= 0)
                 {
                     projectileCooldownRemaining = projectileCooldown - (1 * 1);
@@ -323,13 +373,13 @@ namespace Realm
         {
             var enemy = new Enemy(Art.Enemy, position)
             {
-                health = 5,
-                healthMax = 5,
-                PointValue = 7,
+                health = 150,
+                healthMax = 150,
+                PointValue = 15,
             };
 
             enemy.AddBehaviour(enemy.MoveRandomly());
-            enemy.AddBehaviour(enemy.Bomb());
+            enemy.AddAttackBehaviour(enemy.Bomb());
             enemy.AddBehaviour(enemy.RegenHealth());
 
             return enemy;
@@ -339,13 +389,13 @@ namespace Realm
         {
             var enemy = new Enemy(Art.Enemy2, position)
             {
-                health = 2,
-                healthMax = 2,
-                PointValue = 5,
+                health = 50,
+                healthMax = 50,
+                PointValue = 7,
             };
 
             enemy.AddBehaviour(enemy.FollowPlayer(0.25f));
-            enemy.AddBehaviour(enemy.Spray());
+            enemy.AddAttackBehaviour(enemy.Spray());
 
             return enemy;
         }
@@ -354,13 +404,28 @@ namespace Realm
         {
             var enemy = new Enemy(Art.Snake, position)
             {
-                health = 3,
-                healthMax = 3,
-                PointValue = 3,
+                health = 5,
+                healthMax = 5,
+                PointValue = 2,
             };
 
             enemy.AddBehaviour(enemy.MoveSnake());
-            enemy.AddBehaviour(enemy.Shoot(2));
+            enemy.AddAttackBehaviour(enemy.Shoot(2));
+
+            return enemy;
+        }
+
+        public static Enemy CreateSpriteGod(Vector2 position)
+        {
+            var enemy = new Enemy(Art.EnemySpriteGod, position)
+            {
+                health = 1500,
+                healthMax = 1500,
+                PointValue = 200,
+            };
+
+            enemy.AddBehaviour(enemy.MoveSnake());
+            enemy.AddBehaviour(enemy.Bomb(10));
 
             return enemy;
         }

@@ -77,7 +77,7 @@ public static class Input
             //else if (mouse.ScrollWheelValue < previousMouse.ScrollWheelValue)
             //    Game1.Camera.Zoom -= zoomIncrement;
 
-            // Use potion.
+            // Use health potion.
             if (WasKeyPressed(Keys.Q))
             {
                 Player.Instance.Inventory.RemoveItem("HealthPotion");
@@ -85,7 +85,7 @@ public static class Input
                 //HealthPotion.Use();
             }
 
-            // Use potion.
+            // Use mana potion.
             if (WasKeyPressed(Keys.F))
             {
                 Player.Instance.Inventory.RemoveItem("ManaPotion");
@@ -99,9 +99,17 @@ public static class Input
                 Player.UseAbility();
             }
 
-            // Game over.
+            // Level up.
+            if (WasKeyPressed(Keys.Add))
+            {
+                Player.LevelUp();
+            }
+
+            // Return to Nexus.
             if (WasKeyPressed(Keys.E))
             {
+                EntityManager.Reset();
+                Util.SavePlayerData();
                 Game1.Instance.ChangeState(
                     new RealmState(
                         Game1.Instance,
@@ -112,10 +120,10 @@ public static class Input
             }
 
             // Pause.
-            if (keyboard.IsKeyDown(Keys.Escape) || keyboard.IsKeyDown(Keys.P))
-            {
-                //game.ChangeState(new PauseState(game, graphicsDevice, content));
-            }
+            //if (keyboard.IsKeyDown(Keys.Escape) || keyboard.IsKeyDown(Keys.P))
+            //{
+            //    //game.ChangeState(new PauseState(game, graphicsDevice, content));
+            //}
 
             // Check touch input.
             //if (touchState.AnyTouch())
@@ -240,15 +248,14 @@ public static class Input
 
     public static void NewGame()
     {
-        //Game1.GameState = null;
         Game1.Instance.ChangeState(new RealmState(game, graphicsDevice, content));
     }
 
-    public static void ContinueGame()
-    {
-        Game1.Instance.ChangeState(Game1.GameState);
-        Game1.Instance.IsMouseVisible = false;
-    }
+    //public static void ContinueGame()
+    //{
+    //    Game1.Instance.ChangeState(Game1.GameState);
+    //    Game1.Instance.IsMouseVisible = false;
+    //}
 
     public static void ExitGame()
     {

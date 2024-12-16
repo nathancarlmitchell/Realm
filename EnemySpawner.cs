@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using Microsoft.Xna.Framework;
 using Realm.States;
 
@@ -11,15 +12,20 @@ namespace Realm
 
         public static void Update()
         {
-            //if (!Player.Instance.IsDead && EntityManager.Count < 200)
-            //{
-            if (rand.Next((int)inverseSpawnChance) == 0)
-                EntityManager.Add(Enemy.CreateSeeker(GetSpawnPosition()));
-            if (rand.Next((int)inverseSpawnChance) == 0)
-                EntityManager.Add(Enemy.CreateWanderer(GetSpawnPosition()));
-            if (rand.Next((int)inverseSpawnChance) == 0)
-                EntityManager.Add(Enemy.CreateSnake(GetSpawnPosition()));
-            //}
+            if (!Player.Instance.IsExpired && EntityManager.Count < 1000)
+            {
+                if (rand.Next((int)inverseSpawnChance) == 0)
+                    EntityManager.Add(Enemy.CreateSeeker(GetSpawnPosition()));
+                if (rand.Next((int)inverseSpawnChance) == 0)
+                    EntityManager.Add(Enemy.CreateWanderer(GetSpawnPosition()));
+                if (rand.Next((int)inverseSpawnChance) == 0)
+                    EntityManager.Add(Enemy.CreateSnake(GetSpawnPosition()));
+                if (rand.Next((int)1500) == 0)
+                {
+                    Debug.WriteLine("rand.Next((int)2500) == 0");
+                    EntityManager.Add(Enemy.CreateSpriteGod(GetSpawnPosition()));
+                }
+            }
 
             // slowly increase the spawn rate as time progresses
             if (inverseSpawnChance > 20)

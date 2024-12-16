@@ -74,13 +74,12 @@ namespace Realm
             Instance = this;
             Graphics = new GraphicsDeviceManager(this);
             Content.RootDirectory = "Content";
-            IsMouseVisible = true;
-            _Debug = false;
         }
 
         protected override void Initialize()
         {
             IsMouseVisible = true;
+            _Debug = true;
             Mute = true;
             Window.Title = "Realm";
             Scale = 1;
@@ -168,7 +167,7 @@ namespace Realm
 
         protected override void Draw(GameTime gameTime)
         {
-            GraphicsDevice.Clear(Color.WhiteSmoke);
+            GraphicsDevice.Clear(Color.Black);
 
             currentState.Draw(gameTime, _spriteBatch);
 

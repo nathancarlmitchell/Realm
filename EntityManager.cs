@@ -91,6 +91,13 @@ namespace Realm
                     entity.IsExpired = true;
         }
 
+        public static void RemovePlayer()
+        {
+            foreach (var entity in entities)
+                if (entity is Player)
+                    entity.IsExpired = true;
+        }
+
         static void HandleCollisions()
         {
             // handle collisions between enemies
@@ -116,22 +123,22 @@ namespace Realm
             }
 
             // handle collisions between the player and enemies
-            for (int i = 0; i < enemies.Count; i++)
-            {
-                if (enemies[i].IsActive && IsColliding(Player.Instance, enemies[i]))
-                {
-                    Player.Hit();
-                    enemies[i].IsExpired = true;
-                    break;
-                }
-            }
+            //for (int i = 0; i < enemies.Count; i++)
+            //{
+            //    if (enemies[i].IsActive && IsColliding(Player.Instance, enemies[i]))
+            //    {
+            //        Player.Hit();
+            //        enemies[i].IsExpired = true;
+            //        break;
+            //    }
+            //}
 
             // handle collisions between enemy projectiles and player
             for (int i = 0; i < enemiesProjectiles.Count; i++)
             {
                 if (IsColliding(Player.Instance, enemiesProjectiles[i]))
                 {
-                    Player.Hit(5);
+                    Player.Hit(10);
                     enemiesProjectiles[i].IsExpired = true;
                 }
             }

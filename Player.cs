@@ -23,9 +23,9 @@ namespace Realm
 
         private readonly Random rand = new();
 
-        public int id;
-        public string name;
-        public string description;
+        public static Guid ID;
+        public static string Name;
+        public static string Description;
 
         //private static InventorySystem inventory;
         //public static InventorySystem Inventory
@@ -53,6 +53,8 @@ namespace Realm
         public static float Speed;
         public static int Dexterity;
 
+        private static int baseDex = 17;
+
         public static int Experience;
         public static int ExperienceNextLevel;
         public static int ExperienceTotal;
@@ -66,9 +68,9 @@ namespace Realm
 
         public Player()
         {
-            id = 0;
-            name = "Player";
-            description = string.Empty;
+            ID = Guid.NewGuid();
+            Name = "Player";
+            Description = string.Empty;
             image = Art.Player;
 
             Inventory = new InventorySystem();
@@ -81,15 +83,15 @@ namespace Realm
             Mana = 100;
             ManaMax = 100;
 
-            Attack = 1;
-            Defense = 1;
-            Vitality = 1;
-            Wisdom = 1;
-            Speed = 2;
-            Dexterity = 1;
+            Attack = 17;
+            Defense = 0;
+            Vitality = 5;
+            Wisdom = 23;
+            Speed = 17;
+            Dexterity = 17;
 
             Experience = 0;
-            ExperienceNextLevel = 25;
+            ExperienceNextLevel = 50;
             ExperienceTotal = 0;
 
             Level = 1;
@@ -138,29 +140,27 @@ namespace Realm
 
         public static void LevelUp()
         {
-            Level++;
+            Attack = 17 + (Level * 2);
+            Defense = 0 + (int)(Level * 0.5);
 
-            Attack++;
-            Defense++;
+            Vitality = 5 + (Level * 1);
+            Wisdom = 23 + (Level * 1);
 
-            Vitality += Level / 2;
-            Wisdom += Level;
+            Speed = 17 + (Level * 1);
 
-            if (Level % 3 == 0)
-            {
-                Speed++;
-            }
+            Dexterity = 17 + (Level * 2);
 
-            Dexterity += Level / 2;
+            HealthMax = 100 + (Level * 25);
 
-            HealthMax += 5;
-            ManaMax += 5;
+            ManaMax = 100 + (Level * 10);
 
             Health = HealthMax;
             Mana = ManaMax;
 
+            Level++;
+
             Experience = 0;
-            ExperienceNextLevel = 25 * Level * Level;
+            ExperienceNextLevel = 50 + ((Level * 2) * 50);
 
             Sound.Play(Sound.LevelUp, 0.3f);
         }
@@ -191,18 +191,18 @@ namespace Realm
         }
 
         private int healthCooldown = 0;
-        private int healthCooldownCount = 500;
+        private int healthCooldownCount = 160;
 
         private int manaCooldown = 0;
-        private int manaCooldownCount = 500;
+        private int manaCooldownCount = 320;
 
         private int projectileCooldown = 0;
-        private readonly int projectileCooldownCount = 100;
+        private readonly int projectileCooldownCount = 240;
 
         public override void Update()
         {
             // Update position.
-            Velocity = Speed * Input.GetMovementDirection();
+            Velocity = (int)((Speed / 75) * 5.6 + 2) * Input.GetMovementDirection();
             Position += Velocity;
 
             // Update camera position.
@@ -218,18 +218,16 @@ namespace Realm
             }
 
             // Regenerate Health.
-            healthCooldown += Vitality;
+            healthCooldown += 1 + (int)(0.24 * Vitality);
             if (healthCooldown >= healthCooldownCount)
             {
                 healthCooldown = 0;
                 if (Health < HealthMax)
                     Health++;
             }
-            //if (healthCooldownRemaining >= 0)
-            //    healthCooldown -= (Vitality * 1);
 
             // Regenerate mana.
-            manaCooldown += Wisdom;
+            manaCooldown += 1 + (int)(0.12 * Wisdom);
             if (manaCooldown >= manaCooldownCount)
             {
                 manaCooldown = 0;
@@ -239,7 +237,7 @@ namespace Realm
 
             // Shoot
             // This may be moved to new Weapon class.
-            projectileCooldown += Dexterity;
+            projectileCooldown += ((Dexterity * 100) / 150 * 100) / 100;
             if (
                 Input.mouse.LeftButton == Microsoft.Xna.Framework.Input.ButtonState.Pressed
                 && projectileCooldown >= projectileCooldownCount
