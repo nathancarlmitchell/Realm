@@ -219,6 +219,18 @@
 /processorParam:Quality=Best
 /build:Sounds/button.wav
 
+#begin Sounds/Enemy/default_hit.wav
+/importer:WavImporter
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/build:Sounds/Enemy/default_hit.wav
+
+#begin Sounds/enter_realm.wav
+/importer:WavImporter
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/build:Sounds/enter_realm.wav
+
 #begin Sounds/level_up.wav
 /importer:WavImporter
 /processor:SoundEffectProcessor
@@ -230,6 +242,42 @@
 /processor:SoundEffectProcessor
 /processorParam:Quality=Best
 /build:Sounds/Music/snd_game.wav
+
+#begin Sounds/Player/level_up.wav
+/importer:WavImporter
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/build:Sounds/Player/level_up.wav
+
+#begin Sounds/Player/loot_appears.wav
+/importer:WavImporter
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/build:Sounds/Player/loot_appears.wav
+
+#begin Sounds/Player/magic_shoot.wav
+/importer:WavImporter
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/build:Sounds/Player/magic_shoot.wav
+
+#begin Sounds/Player/no_mana.wav
+/importer:WavImporter
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/build:Sounds/Player/no_mana.wav
+
+#begin Sounds/Player/use_potion.wav
+/importer:WavImporter
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/build:Sounds/Player/use_potion.wav
+
+#begin Sounds/Player/wizard_hit.wav
+/importer:WavImporter
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/build:Sounds/Player/wizard_hit.wav
 
 #begin tile.png
 /importer:TextureImporter

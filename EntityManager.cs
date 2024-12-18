@@ -154,13 +154,12 @@ namespace Realm
                 }
             }
 
-            // handle collisions between player and items
+            // handle collisions between player and portal
             for (int i = 0; i < portals.Count; i++)
             {
                 if (IsColliding(Player.Instance, portals[i]))
                 {
-                    //potions[i].Pickup();
-                    //Player.Instance.Inventory.AddItem(potions[i], 1);
+                    Sound.Play(Sound.EnterRealm, 0.4f);
                     portals[i].IsExpired = true;
                     Game1.Instance.ChangeState(
                         new GameState(
@@ -169,7 +168,6 @@ namespace Realm
                             Game1.Instance.Content
                         )
                     );
-                    //Player = null;
                 }
             }
         }

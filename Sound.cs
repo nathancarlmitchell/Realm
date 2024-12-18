@@ -7,13 +7,17 @@ namespace Realm
 {
     static class Sound
     {
-        public static SoundEffect Jump,
-            Coin,
-            Button,
-            Locked,
+        public static SoundEffect Button,
             LevelUp,
+            NoMana,
+            WizardHit,
+            MagicShoot,
+            LootAppears,
+            UsePotion,
             Blip,
-            Song;
+            Song,
+            DefaultHit,
+            EnterRealm;
 
         public static Song mp3;
 
@@ -29,8 +33,15 @@ namespace Realm
             //Coin = content.Load<SoundEffect>("Sounds/coin");
             Button = content.Load<SoundEffect>("Sounds/button");
             //Locked = content.Load<SoundEffect>("Sounds/locked");
-            LevelUp = content.Load<SoundEffect>("Sounds/level_up");
+            LevelUp = content.Load<SoundEffect>("Sounds/Player/level_up");
+            NoMana = content.Load<SoundEffect>("Sounds/Player/no_mana");
+            WizardHit = content.Load<SoundEffect>("Sounds/Player/wizard_hit");
+            MagicShoot = content.Load<SoundEffect>("Sounds/Player/magic_shoot");
+            LootAppears = content.Load<SoundEffect>("Sounds/Player/loot_appears");
+            UsePotion = content.Load<SoundEffect>("Sounds/Player/use_potion");
             Blip = content.Load<SoundEffect>("Sounds/blip");
+            DefaultHit = content.Load<SoundEffect>("Sounds/Enemy/default_hit");
+            EnterRealm = content.Load<SoundEffect>("Sounds/enter_realm");
 
             Song = content.Load<SoundEffect>("Sounds/Music/snd_game");
 

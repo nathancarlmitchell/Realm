@@ -140,18 +140,18 @@ namespace Realm
 
             // Normalize experience values.
             int normalisedExp = (Player.Experience * 100 / Player.ExperienceNextLevel * 100) / 100;
-            //int max = Player.Experience;
-            //int min = 0;
-            //int range = (max - min);
-            //int normalisedNextLevel = 100 * (max - min) / range;
-
-            //int max2 = Player.ExperienceNextLevel;
-            //int min2 = 0;
-            //int range2 = (max2 - min2);
-            //int normalisedExperience = 100 * (max2 - min2) / range2;
 
             // Experience bars.
-            Rectangle goldRect = new(0, 0, normalisedExp * barScale, barHeight);
+            Rectangle goldRect;
+            if (Player.Level < 20)
+            {
+                goldRect = new(0, 0, normalisedExp * barScale, barHeight);
+            }
+            else
+            {
+                goldRect = new(0, 0, 100 * barScale, barHeight);
+            }
+
             Rectangle blackRectExp = new(0, 0, 100 * barScale, barHeight);
 
             // Normalize health values.
@@ -247,9 +247,25 @@ namespace Realm
             );
 
             // Experience.
+            string expString = string.Empty;
+            if (Player.Level < 20)
+            {
+                expString =
+                    "Level "
+                    + Player.Level
+                    + "\nExp: "
+                    + Player.Experience
+                    + " / "
+                    + Player.ExperienceNextLevel;
+            }
+            else
+            {
+                expString = "Experience: " + Player.ExperienceTotal;
+            }
+
             spriteBatch.DrawString(
                 Art.HudFont,
-                "Experience: " + Player.Experience + " / " + Player.ExperienceNextLevel,
+                expString,
                 new Vector2(x, y - barHeight - barOffset),
                 Color.White
             );

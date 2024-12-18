@@ -27,17 +27,6 @@ namespace Realm
         public static string Name;
         public static string Description;
 
-        //private static InventorySystem inventory;
-        //public static InventorySystem Inventory
-        //{
-        //    get
-        //    {
-        //        if (inventory == null)
-        //            inventory = new InventorySystem();
-        //        return inventory;
-        //    }
-        //}
-
         public InventorySystem Inventory { get; set; }
 
         public static int Health;
@@ -118,6 +107,10 @@ namespace Realm
                     EntityManager.Add(new Projectile(Input.GetMousePosistion(), vel));
                 }
             }
+            else
+            {
+                Sound.Play(Sound.NoMana, 0.4f);
+            }
         }
 
         private void Shoot()
@@ -128,13 +121,9 @@ namespace Realm
                 float aimAngle = aim.ToAngle();
                 Quaternion aimQuat = Quaternion.CreateFromYawPitchRoll(0, 0, aimAngle);
                 float randomSpread = rand.NextFloat(-0.04f, 0.04f) + rand.NextFloat(-0.04f, 0.04f);
-                //Vector2 vel = Extensions.FromPolar(aimAngle + randomSpread, 11f);
                 Vector2 vel = Extensions.FromPolar(aimAngle + randomSpread, ProjectileMagnitude);
-                //Vector2 offset = Vector2.Transform(new Vector2(25, -8), aimQuat);
                 EntityManager.Add(new Projectile(Position, vel) { image = Art.Projectile2 });
-                //offset = Vector2.Transform(new Vector2(25, 8), aimQuat);
-                //EntityManager.Add(new Projectile(Position + offset, vel));
-                //Sound.Shot.Play(0.2f, rand.NextFloat(-0.2f, 0.2f), 0);
+                Sound.Play(Sound.MagicShoot, 0.3f);
             }
         }
 
@@ -142,16 +131,12 @@ namespace Realm
         {
             Attack = 17 + (Level * 2);
             Defense = 0 + (int)(Level * 0.5);
-
             Vitality = 5 + (Level * 1);
             Wisdom = 23 + (Level * 1);
-
             Speed = 17 + (Level * 1);
-
             Dexterity = 17 + (Level * 2);
 
             HealthMax = 100 + (Level * 25);
-
             ManaMax = 100 + (Level * 10);
 
             Health = HealthMax;
@@ -162,7 +147,7 @@ namespace Realm
             Experience = 0;
             ExperienceNextLevel = 50 + ((Level * 2) * 50);
 
-            Sound.Play(Sound.LevelUp, 0.3f);
+            Sound.Play(Sound.LevelUp, 0.4f);
         }
 
         public static void Hit(int damage = 25)
@@ -172,13 +157,16 @@ namespace Realm
             {
                 Kill();
             }
+            else
+            {
+                Sound.Play(Sound.WizardHit, 0.4f);
+            }
         }
 
         public static void Kill()
         {
             EnemySpawner.Reset();
             EntityManager.Reset();
-            //Player.Instance = new Player();
             Player.Instance.Position = Game1.WorldSize / 2;
             Camera.Reset();
             Game1.Instance.ChangeState(
@@ -208,12 +196,9 @@ namespace Realm
             // Update camera position.
             Game1.Camera.Pos += Velocity;
 
-            //Position = Vector2.Clamp(Position, Size / 2, Game1.ScreenSize - Size / 2);
-
             // Check for level up
-            if (Experience >= ExperienceNextLevel)
+            if (Level < 20 && Experience >= ExperienceNextLevel)
             {
-                Debug.WriteLine("Level up.");
                 LevelUp();
             }
 

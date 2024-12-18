@@ -146,11 +146,16 @@ namespace Realm
                 Player.ExperienceTotal += PointValue;
                 if (rand.Next(11) == 0)
                 {
+                    Sound.Play(Sound.LootAppears, 0.4f);
                     if (rand.Next(2) == 0)
                         EntityManager.Add(new HealthPotion { Position = this.Position });
                     else
                         EntityManager.Add(new ManaPotion { Position = this.Position });
                 }
+            }
+            else
+            {
+                Sound.Play(Sound.DefaultHit, 0.5f);
             }
         }
 

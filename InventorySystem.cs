@@ -99,6 +99,11 @@ namespace Realm
                         {
                             ManaPotion.Use();
                         }
+                        Sound.Play(Sound.UsePotion, 0.4f);
+                    }
+                    else
+                    {
+                        Sound.Play(Sound.NoMana, 0.4f);
                     }
                 }
             }

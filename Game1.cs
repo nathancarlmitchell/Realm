@@ -80,7 +80,7 @@ namespace Realm
         {
             IsMouseVisible = true;
             _Debug = true;
-            Mute = true;
+            Mute = false;
             Window.Title = "Realm";
             Scale = 1;
 
