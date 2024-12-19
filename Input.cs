@@ -105,6 +105,13 @@ public static class Input
                 Player.LevelUp();
             }
 
+            // Level down.
+            if (WasKeyPressed(Keys.Subtract))
+            {
+                Player.Level -= 2;
+                Player.LevelUp();
+            }
+
             // Return to Nexus.
             if (WasKeyPressed(Keys.E))
             {

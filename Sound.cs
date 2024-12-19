@@ -17,11 +17,17 @@ namespace Realm
             Blip,
             Song,
             DefaultHit,
-            EnterRealm;
+            EnterRealm,
+            Death,
+            InventoryMoveItem,
+            SpriteGodDeath,
+            SpriteGodHit,
+            SnakesHit,
+            SnakesDeath;
 
         public static Song mp3;
 
-        public static SoundEffectInstance songInstance;
+        public static SoundEffectInstance SongInstance;
 
         private static readonly Random rand = new();
 
@@ -42,14 +48,20 @@ namespace Realm
             Blip = content.Load<SoundEffect>("Sounds/blip");
             DefaultHit = content.Load<SoundEffect>("Sounds/Enemy/default_hit");
             EnterRealm = content.Load<SoundEffect>("Sounds/enter_realm");
+            Death = content.Load<SoundEffect>("Sounds/Player/death");
+            InventoryMoveItem = content.Load<SoundEffect>("Sounds/Player/inventory_move_item");
+            SpriteGodDeath = content.Load<SoundEffect>("Sounds/Enemy/sprite_god_death");
+            SpriteGodHit = content.Load<SoundEffect>("Sounds/Enemy/sprite_god_hit");
+            SnakesHit = content.Load<SoundEffect>("Sounds/Enemy/snakes_hit");
+            SnakesDeath = content.Load<SoundEffect>("Sounds/Enemy/snakes_death");
 
             Song = content.Load<SoundEffect>("Sounds/Music/snd_game");
 
-            songInstance = Song.CreateInstance();
-            songInstance.IsLooped = true;
-            songInstance.Volume = 0.3f;
-            if (!Game1.Mute)
-                songInstance.Play();
+            SongInstance = Song.CreateInstance();
+            SongInstance.IsLooped = true;
+            SongInstance.Volume = 0.25f;
+            //if (!Game1.Mute)
+            //SongInstance.Play();
 
             //mp3 = content.Load<Song>("Sounds/Music/8bit bossa");
             //MediaPlayer.Play(mp3);
@@ -61,16 +73,16 @@ namespace Realm
         {
             Game1.Mute = !Game1.Mute;
             //Overlay.ToggleAudio();
-            songInstance.Volume = 0.0f;
+            SongInstance.Volume = 0.0f;
             if (!Game1.Mute)
             {
-                songInstance.Volume = 0.5f;
+                SongInstance.Volume = 0.5f;
             }
         }
 
         public static void SongVolume(float volume)
         {
-            volume = songInstance.Volume + volume;
+            volume = SongInstance.Volume + volume;
 
             if (volume > 1.0f)
             {
@@ -81,7 +93,7 @@ namespace Realm
                 volume = 0.0f;
             }
 
-            songInstance.Volume = volume;
+            SongInstance.Volume = volume;
         }
 
         public static void Play(SoundEffect sound, float volume)

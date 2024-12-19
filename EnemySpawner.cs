@@ -12,7 +12,7 @@ namespace Realm
 
         public static void Update()
         {
-            if (!Player.Instance.IsExpired && EntityManager.Count < 1000)
+            if (!Player.Instance.IsExpired && EntityManager.Count < 1500)
             {
                 if (rand.Next((int)inverseSpawnChance) == 0)
                     EntityManager.Add(Enemy.CreateSeeker(GetSpawnPosition()));
@@ -20,7 +20,8 @@ namespace Realm
                     EntityManager.Add(Enemy.CreateWanderer(GetSpawnPosition()));
                 if (rand.Next((int)inverseSpawnChance) == 0)
                     EntityManager.Add(Enemy.CreateSnake(GetSpawnPosition()));
-                if (rand.Next((int)1500) == 0)
+                // Increase spawn chance with player level.
+                if (rand.Next((int)1500 - Player.Level * 50) == 0)
                 {
                     Debug.WriteLine("rand.Next((int)2500) == 0");
                     EntityManager.Add(Enemy.CreateSpriteGod(GetSpawnPosition()));

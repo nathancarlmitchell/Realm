@@ -152,14 +152,20 @@ namespace Realm
 
         public static void Hit(int damage = 25)
         {
-            Health = Health - damage;
+            int damageModified = damage - Defense;
+            if (damageModified <= damage / 10)
+            {
+                damageModified = damage / 10;
+            }
+
+            Health = Health - damageModified;
             if (Health <= 0)
             {
                 Kill();
             }
             else
             {
-                Sound.Play(Sound.WizardHit, 0.4f);
+                Sound.Play(Sound.WizardHit, 0.45f);
             }
         }
 

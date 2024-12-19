@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Audio;
 using Microsoft.Xna.Framework.Graphics;
 using Realm.States;
 
@@ -22,6 +23,8 @@ namespace Realm
 
         private int health;
         private int healthMax;
+        private SoundEffect deathSound;
+        private SoundEffect hitSound;
 
         public Enemy(Texture2D image, Vector2 position)
         {
@@ -29,6 +32,9 @@ namespace Realm
             Position = position;
             Radius = image.Width / 2f;
             color = Color.Transparent;
+
+            deathSound = Sound.DefaultHit;
+            hitSound = Sound.DefaultHit;
 
             //PointValue = 1;
             //health = 1;
@@ -53,8 +59,7 @@ namespace Realm
                 color = Microsoft.Xna.Framework.Color.White * (1 - timeUntilStart / 60f);
             }
             Position += Velocity;
-            // Keep enemies in bounds
-            //Position = Vector2.Clamp(Position, Size / 2, Game1.ScreenSize - Size / 2);
+
             Velocity *= 0.8f;
 
             // Despawn enemies that get too far away.
@@ -81,19 +86,11 @@ namespace Realm
                 Vector2 healthBarPos = new(x, y);
 
                 // Normalize values.
-                int max = healthMax;
-                int min = 0;
-                int range = (max - min);
-                int normalisedHealthMax = 25 * (max - min) / range;
+                int normalisedHealth = (health * 25 / healthMax * 25) / 25;
 
-                int max2 = health;
-                int min2 = 0;
-                int range2 = (max2 - min2);
-                int normalisedHealth = 25 * (max2 - min2) / range;
-
-                // Experience bars.
+                // Health bars.
                 Rectangle greenRect = new(0, 0, normalisedHealth * barScale, barHeight);
-                Rectangle redRect = new(0, 0, normalisedHealthMax * barScale, barHeight);
+                Rectangle redRect = new(0, 0, 25 * barScale, barHeight);
 
                 // Red bar.
                 spriteBatch.Draw(
@@ -140,13 +137,12 @@ namespace Realm
             health -= Player.Attack;
             if (health <= 0)
             {
-                //Sound.Explosion.Play(0.5f, rand.NextFloat(-0.2f, 0.2f), 0);
+                Sound.Play(deathSound, 0.4f);
                 IsExpired = true;
                 Player.Experience += PointValue;
                 Player.ExperienceTotal += PointValue;
                 if (rand.Next(11) == 0)
                 {
-                    Sound.Play(Sound.LootAppears, 0.4f);
                     if (rand.Next(2) == 0)
                         EntityManager.Add(new HealthPotion { Position = this.Position });
                     else
@@ -155,7 +151,7 @@ namespace Realm
             }
             else
             {
-                Sound.Play(Sound.DefaultHit, 0.5f);
+                Sound.Play(hitSound, 0.5f);
             }
         }
 
@@ -412,6 +408,8 @@ namespace Realm
                 health = 5,
                 healthMax = 5,
                 PointValue = 2,
+                deathSound = Sound.SnakesDeath,
+                hitSound = Sound.SnakesHit,
             };
 
             enemy.AddBehaviour(enemy.MoveSnake());
@@ -427,6 +425,8 @@ namespace Realm
                 health = 1500,
                 healthMax = 1500,
                 PointValue = 200,
+                deathSound = Sound.SpriteGodDeath,
+                hitSound = Sound.SpriteGodHit,
             };
 
             enemy.AddBehaviour(enemy.MoveSnake());

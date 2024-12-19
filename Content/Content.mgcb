@@ -225,6 +225,30 @@
 /processorParam:Quality=Best
 /build:Sounds/Enemy/default_hit.wav
 
+#begin Sounds/Enemy/snakes_death.wav
+/importer:WavImporter
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/build:Sounds/Enemy/snakes_death.wav
+
+#begin Sounds/Enemy/snakes_hit.wav
+/importer:WavImporter
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/build:Sounds/Enemy/snakes_hit.wav
+
+#begin Sounds/Enemy/sprite_god_death.wav
+/importer:WavImporter
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/build:Sounds/Enemy/sprite_god_death.wav
+
+#begin Sounds/Enemy/sprite_god_hit.wav
+/importer:WavImporter
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/build:Sounds/Enemy/sprite_god_hit.wav
+
 #begin Sounds/enter_realm.wav
 /importer:WavImporter
 /processor:SoundEffectProcessor
@@ -242,6 +266,18 @@
 /processor:SoundEffectProcessor
 /processorParam:Quality=Best
 /build:Sounds/Music/snd_game.wav
+
+#begin Sounds/Player/death.wav
+/importer:WavImporter
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/build:Sounds/Player/death.wav
+
+#begin Sounds/Player/inventory_move_item.wav
+/importer:WavImporter
+/processor:SoundEffectProcessor
+/processorParam:Quality=Best
+/build:Sounds/Player/inventory_move_item.wav
 
 #begin Sounds/Player/level_up.wav
 /importer:WavImporter

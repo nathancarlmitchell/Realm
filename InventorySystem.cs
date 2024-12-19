@@ -16,6 +16,7 @@ namespace Realm
         public void AddItem(Item item, int quantityToAdd)
         {
             Debug.WriteLine("Add: " + quantityToAdd);
+            Sound.Play(Sound.InventoryMoveItem, 0.5f);
             while (quantityToAdd > 0)
             {
                 // If an object of this item type already exists in the inventory, and has room to stack more items,

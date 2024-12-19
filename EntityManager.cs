@@ -159,7 +159,7 @@ namespace Realm
             {
                 if (IsColliding(Player.Instance, portals[i]))
                 {
-                    Sound.Play(Sound.EnterRealm, 0.4f);
+                    Sound.Play(Sound.EnterRealm, 0.35f);
                     portals[i].IsExpired = true;
                     Game1.Instance.ChangeState(
                         new GameState(

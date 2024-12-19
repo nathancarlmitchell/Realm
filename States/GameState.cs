@@ -20,6 +20,9 @@ namespace Realm.States
             : base()
         {
             Debug.WriteLine("New GameState created.");
+
+            Sound.SongInstance.Play();
+
             Game1.Camera = new Camera(Game1.Viewport, Game1.WorldWidth, Game1.WorldHeight, 1f);
 
             //EntityManager.Add(new Player());
