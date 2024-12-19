@@ -10,7 +10,7 @@ namespace Realm
 {
     public class InventorySystem
     {
-        private const int MAXIMUM_SLOTS_IN_INVENTORY = 10;
+        private const int MAXIMUM_SLOTS_IN_INVENTORY = 2;
         public readonly List<InventoryRecord> InventoryRecords = new List<InventoryRecord>();
 
         public void AddItem(Item item, int quantityToAdd)

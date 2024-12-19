@@ -81,22 +81,14 @@ namespace Realm.States
             // Draw stats.
             Overlay.DrawStats(spriteBatch);
 
+            // Draw equipment.
+            Overlay.DrawEquipment(spriteBatch);
+
             // Draw inventory.
             Overlay.DrawInventory(spriteBatch);
-            //int x = Game1.Viewport.Width - 256;
-            //int y = Game1.Viewport.Height - 128;
 
+            // Draw score.
             Overlay.DrawScore(spriteBatch);
-
-            //if (Player.Instance is not null)
-            //{
-            //    spriteBatch.DrawString(
-            //        Art.HudFont,
-            //        "InventoryRecords.Count: " + i.InventoryRecords.Count,
-            //        new Vector2(x, y),
-            //        Color.White
-            //    );
-            //}
 
             if (Game1._Debug)
             {

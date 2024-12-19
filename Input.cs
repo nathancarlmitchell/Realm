@@ -237,7 +237,7 @@ public static class Input
             return Vector2.Normalize(direction);
     }
 
-    public static Vector2 GetMousePosistion()
+    public static Vector2 GetMousePosition()
     {
         Vector2 position = MousePosition;
 

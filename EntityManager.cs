@@ -117,7 +117,10 @@ namespace Realm
             {
                 if (IsColliding(enemies[i], bullets[j]))
                 {
-                    enemies[i].WasShot();
+                    enemies[i].WasShot(bullets[j].Damage);
+                    //THIS should be wand type
+                    // Proejectile hits multiple times on update
+                    //if (Player.Instance.Weapon is not Weapon)
                     bullets[j].IsExpired = true;
                 }
             }

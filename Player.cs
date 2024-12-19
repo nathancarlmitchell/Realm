@@ -53,6 +53,8 @@ namespace Realm
         public static int ProjectileDuration;
         public static float ProjectileMagnitude;
 
+        public Weapon Weapon;
+
         public Texture2D Texture;
 
         public Player()
@@ -88,6 +90,8 @@ namespace Realm
             ProjectileDuration = 32;
             ProjectileMagnitude = 12f;
 
+            Weapon = new Weapon(Art.Wand, Art.Projectile2);
+
             Position = new Vector2(Game1.WorldWidth / 2, Game1.WorldHeight / 2);
             Radius = image.Width / 2f;
         }
@@ -95,6 +99,8 @@ namespace Realm
         public static void UseAbility()
         {
             int abilityCost = 25;
+
+            int damage = Instance.rand.Next(10, 15);
 
             if (Mana >= abilityCost)
             {
@@ -104,7 +110,9 @@ namespace Realm
                 for (int i = 0; i < 35; i++)
                 {
                     Vector2 vel = Extensions.FromPolar(i * 10, ProjectileMagnitude);
-                    EntityManager.Add(new Projectile(Input.GetMousePosistion(), vel));
+                    EntityManager.Add(
+                        new Projectile(Input.GetMousePosition(), vel) { Damage = damage }
+                    );
                 }
             }
             else
@@ -115,16 +123,7 @@ namespace Realm
 
         private void Shoot()
         {
-            var aim = Input.GetMouseAimDirection();
-            if (aim.LengthSquared() > 0)
-            {
-                float aimAngle = aim.ToAngle();
-                Quaternion aimQuat = Quaternion.CreateFromYawPitchRoll(0, 0, aimAngle);
-                float randomSpread = rand.NextFloat(-0.04f, 0.04f) + rand.NextFloat(-0.04f, 0.04f);
-                Vector2 vel = Extensions.FromPolar(aimAngle + randomSpread, ProjectileMagnitude);
-                EntityManager.Add(new Projectile(Position, vel) { image = Art.Projectile2 });
-                Sound.Play(Sound.MagicShoot, 0.3f);
-            }
+            Weapon.Shoot();
         }
 
         public static void LevelUp()
@@ -237,6 +236,9 @@ namespace Realm
                 projectileCooldown = 0;
                 Shoot();
             }
+
+            // Update weapon.
+            this.Weapon.Update();
         }
     }
 }

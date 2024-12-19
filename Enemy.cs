@@ -132,9 +132,10 @@ namespace Realm
             Velocity += 10 * d / (d.LengthSquared() + 1);
         }
 
-        public void WasShot()
+        public void WasShot(int damage)
         {
-            health -= Player.Attack;
+            Debug.WriteLine(damage);
+            health -= (int)damage;
             if (health <= 0)
             {
                 Sound.Play(deathSound, 0.4f);

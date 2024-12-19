@@ -31,6 +31,9 @@ namespace Realm
         public static SpriteFont HudFont { get; private set; }
         public static SpriteFont TitleFont { get; private set; }
 
+        // Weapons.
+        public static Texture2D Wand { get; private set; }
+
         public static void Load(ContentManager content)
         {
             ButtonTexture = content.Load<Texture2D>("Controls/Button");
@@ -49,6 +52,9 @@ namespace Realm
             Inventory = content.Load<Texture2D>("inventory");
             HealthPotion = content.Load<Texture2D>("health_potion");
             ManaPotion = content.Load<Texture2D>("mana_potion");
+
+            // Weapons.
+            Wand = content.Load<Texture2D>("Weapons/Wands/wand");
 
             HealthBar = new Texture2D(Game1.Instance.GraphicsDevice, 1, 1);
             HealthBar.SetData(new[] { Color.White });

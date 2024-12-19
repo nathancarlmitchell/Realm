@@ -287,6 +287,19 @@ namespace Realm
             );
         }
 
+        public static void DrawEquipment(SpriteBatch spriteBatch)
+        {
+            // Draw weapon.
+            Player.Instance.Weapon.Draw(spriteBatch);
+            //new Weapon(Art.Wand, Art.EnemyProjectile).Draw(spriteBatch);
+
+            // Draw ability.
+
+            // Draw armor.
+
+            // Draw ring.
+        }
+
         public static void DrawInventory(SpriteBatch spriteBatch)
         {
             Player.Instance.Inventory.Draw(spriteBatch);
