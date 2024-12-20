@@ -75,7 +75,8 @@ namespace Realm
                     {
                         // Throw an exception, or somehow let the user know they are out of inventory space.
                         // This exception here is just a quick example. Do something better in your code.
-                        throw new Exception("There is no more space in the inventory");
+                        Debug.WriteLine("There is no more space in the inventory");
+                        return;
                     }
                 }
             }

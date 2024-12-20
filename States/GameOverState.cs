@@ -101,17 +101,17 @@ namespace Realm.States
 
         private void NewGameButton_Click(object sender, EventArgs e)
         {
-            Input.NewGame();
+            StateManager.NewGame();
         }
 
         private void MainMenuButton_Click(object sender, EventArgs e)
         {
-            Input.MainMenu();
+            StateManager.MainMenu();
         }
 
         private void QuitGameButton_Click(object sender, EventArgs e)
         {
-            Input.ExitGame();
+            StateManager.ExitGame();
         }
 
         public override void PostUpdate(GameTime gameTime)

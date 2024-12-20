@@ -31,7 +31,8 @@ namespace Realm
         // The current rotation, scale and draw depth for the animation.
         public float Rotation,
             Scale,
-            Depth;
+            Depth,
+            Opacity;
 
         // The origin point of the animated texture.
         public Vector2 Origin;
@@ -42,6 +43,7 @@ namespace Realm
             this.Rotation = rotation;
             this.Scale = scale;
             this.Depth = depth;
+            this.Opacity = 1f;
         }
 
         public void Load(ContentManager content, string asset, int frameCount, int framesPerSec)
@@ -86,7 +88,7 @@ namespace Realm
                 myTexture,
                 screenPos,
                 sourcerect,
-                Color.White,
+                Color.White * Opacity,
                 Rotation,
                 Origin,
                 Scale,

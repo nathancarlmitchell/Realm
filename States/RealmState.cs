@@ -14,6 +14,8 @@ namespace Realm.States
         public static Guid ManaPotionGuid = Guid.NewGuid();
         public static int HighScore { get; set; }
         public static int Score { get; set; }
+        private readonly Portal portal;
+        private LootBag lootBag;
 
         public RealmState(Game1 game, GraphicsDevice graphicsDevice, ContentManager content)
             : base()
@@ -23,7 +25,8 @@ namespace Realm.States
 
             EntityManager.Reset();
 
-            EntityManager.Add(new Portal());
+            //EntityManager.Add(new Portal());
+            portal = new Portal();
 
             Util.LoadPlayerData();
 
@@ -36,22 +39,6 @@ namespace Realm.States
         public override void Draw(GameTime gameTime, SpriteBatch spriteBatch)
         {
             spriteBatch.Begin(
-                SpriteSortMode.FrontToBack,
-                BlendState.AlphaBlend,
-                SamplerState.LinearWrap,
-                DepthStencilState.Default,
-                RasterizerState.CullNone,
-                null,
-                Game1.Camera.GetTransformation()
-            );
-
-            // Draw background.
-            //Background.Draw(spriteBatch);
-            //spriteBatch.Draw(Art.Tile, new Vector2(32, 32), targetRectangle, Color.White);
-
-            spriteBatch.End();
-
-            spriteBatch.Begin(
                 SpriteSortMode.Deferred,
                 null,
                 null,
@@ -61,10 +48,10 @@ namespace Realm.States
                 Game1.Camera.GetTransformation()
             );
 
-            // Draw player.
-            //Player.Draw(spriteBatch);
+            // Draw portal.
+            portal.Draw(spriteBatch, gameTime);
 
-            // Draw projectiles.
+            // Draw player.
             EntityManager.Draw(spriteBatch);
 
             spriteBatch.End();
@@ -78,21 +65,10 @@ namespace Realm.States
             Overlay.DrawStats(spriteBatch);
 
             // Draw inventory.
-            Overlay.DrawInventory(spriteBatch);
-            //int x = Game1.Viewport.Width - 256;
-            //int y = Game1.Viewport.Height - 128;
+            //Overlay.DrawInventory(spriteBatch);
 
+            // Draw score.
             Overlay.DrawScore(spriteBatch);
-
-            //if (Player.Instance is not null)
-            //{
-            //    spriteBatch.DrawString(
-            //        Art.HudFont,
-            //        "InventoryRecords.Count: " + i.InventoryRecords.Count,
-            //        new Vector2(x, y),
-            //        Color.White
-            //    );
-            //}
 
             if (Game1._Debug)
             {
@@ -110,13 +86,8 @@ namespace Realm.States
         public override void Update(GameTime gameTime)
         {
             EntityManager.Update();
-            //EnemySpawner.Update();
 
-            // Update score.
-            if (Player.ExperienceTotal > HighScore)
-            {
-                HighScore = Player.ExperienceTotal;
-            }
+            portal.Update(gameTime);
         }
     }
 }

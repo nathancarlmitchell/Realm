@@ -27,6 +27,8 @@ namespace Realm
         public static string Name;
         public static string Description;
 
+        public static float Opacity;
+
         public InventorySystem Inventory { get; set; }
 
         public static int Health;
@@ -50,9 +52,6 @@ namespace Realm
 
         public static int Level;
 
-        public static int ProjectileDuration;
-        public static float ProjectileMagnitude;
-
         public Weapon Weapon;
 
         public Texture2D Texture;
@@ -63,6 +62,8 @@ namespace Realm
             Name = "Player";
             Description = string.Empty;
             image = Art.Player;
+
+            Opacity = 1f;
 
             Inventory = new InventorySystem();
 
@@ -87,9 +88,6 @@ namespace Realm
 
             Level = 1;
 
-            ProjectileDuration = 32;
-            ProjectileMagnitude = 12f;
-
             Weapon = new Weapon(Art.Wand, Art.Projectile2);
 
             Position = new Vector2(Game1.WorldWidth / 2, Game1.WorldHeight / 2);
@@ -109,7 +107,7 @@ namespace Realm
                 // Spell bomb.
                 for (int i = 0; i < 35; i++)
                 {
-                    Vector2 vel = Extensions.FromPolar(i * 10, ProjectileMagnitude);
+                    Vector2 vel = Extensions.FromPolar(i * 10, Instance.Weapon.ProjectileMagnitude);
                     EntityManager.Add(
                         new Projectile(Input.GetMousePosition(), vel) { Damage = damage }
                     );
@@ -174,13 +172,7 @@ namespace Realm
             EntityManager.Reset();
             Player.Instance.Position = Game1.WorldSize / 2;
             Camera.Reset();
-            Game1.Instance.ChangeState(
-                new GameOverState(
-                    Game1.Instance,
-                    Game1.Instance.GraphicsDevice,
-                    Game1.Instance.Content
-                )
-            );
+            StateManager.GameOver();
         }
 
         private int healthCooldown = 0;
@@ -191,6 +183,21 @@ namespace Realm
 
         private int projectileCooldown = 0;
         private readonly int projectileCooldownCount = 240;
+
+        public override void Draw(SpriteBatch spriteBatch)
+        {
+            spriteBatch.Draw(
+                image,
+                Position,
+                null,
+                color * Opacity,
+                Orientation,
+                Size / 2f,
+                1f,
+                0,
+                0
+            );
+        }
 
         public override void Update()
         {

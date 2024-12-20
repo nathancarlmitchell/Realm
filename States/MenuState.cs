@@ -30,12 +30,12 @@ namespace Realm.States
 
         private void QuitGameButton_Click(object sender, EventArgs e)
         {
-            Game1.Instance.Exit();
+            StateManager.ExitGame();
         }
 
         private void NewGameButton_Click(object sender, EventArgs e)
         {
-            Input.NewGame();
+            StateManager.NewGame();
         }
 
         public override void Draw(GameTime gameTime, SpriteBatch spriteBatch)

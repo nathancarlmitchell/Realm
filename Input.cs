@@ -22,6 +22,11 @@ public static class Input
         get { return new Vector2(mouse.X, mouse.Y); }
     }
 
+    public static Rectangle MouseBounds
+    {
+        get { return new Rectangle((int)Input.MousePosition.X, (int)Input.MousePosition.Y, 1, 1); }
+    }
+
     private static KeyboardState keyboard,
         previousKeyboard;
 
@@ -38,29 +43,29 @@ public static class Input
         // Universal input.
         //
         // Toggle Mute
-        //if (keyboard.IsKeyDown(Keys.M) && !previousKeyboard.IsKeyDown(Keys.M))
-        //{
-        //    Sound.ToggleMute();
-        //}
+        if (WasKeyPressed(Keys.M))
+        {
+            Sound.ToggleMute();
+        }
 
-        //// Volume up
-        //if (keyboard.IsKeyDown(Keys.Add) && !previousKeyboard.IsKeyDown(Keys.Add))
-        //{
-        //    Sound.SongVolume(0.05f);
-        //}
+        // Volume up
+        if (WasKeyPressed(Keys.PageUp))
+        {
+            Sound.SongVolume(0.05f);
+        }
 
-        //// Volume down
-        //if (keyboard.IsKeyDown(Keys.Subtract) && !previousKeyboard.IsKeyDown(Keys.Subtract))
-        //{
-        //    Sound.SongVolume(-0.05f);
-        //}
+        // Volume down
+        if (WasKeyPressed(Keys.PageDown))
+        {
+            Sound.SongVolume(-0.05f);
+        }
 
         // State specific input.
         if (currentState is MenuState)
         {
             if (keyboard.IsKeyDown(Keys.Enter) && !previousKeyboard.IsKeyDown(Keys.Enter))
             {
-                NewGame();
+                StateManager.NewGame();
             }
         }
 
@@ -162,14 +167,14 @@ public static class Input
         //    }
         //}
 
-        //if (currentState is GameOverState)
-        //{
-        //    // New game.
-        //    if (keyboard.IsKeyDown(Keys.Enter))
-        //    {
-        //        NewGame();
-        //    }
-        //}
+        if (currentState is GameOverState)
+        {
+            // New game.
+            if (keyboard.IsKeyDown(Keys.Enter))
+            {
+                StateManager.NewGame();
+            }
+        }
 
         //if (currentState is SkinsState)
         //{
@@ -246,26 +251,5 @@ public static class Input
         position = Vector2.Transform(position, inverse);
 
         return position;
-    }
-
-    public static void MainMenu()
-    {
-        game.ChangeState(new MenuState(game, graphicsDevice, content));
-    }
-
-    public static void NewGame()
-    {
-        Game1.Instance.ChangeState(new RealmState(game, graphicsDevice, content));
-    }
-
-    //public static void ContinueGame()
-    //{
-    //    Game1.Instance.ChangeState(Game1.GameState);
-    //    Game1.Instance.IsMouseVisible = false;
-    //}
-
-    public static void ExitGame()
-    {
-        Game1.Instance.Exit();
     }
 }

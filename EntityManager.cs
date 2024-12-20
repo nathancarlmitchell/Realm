@@ -44,8 +44,8 @@ namespace Realm
                 enemies.Add(entity as Enemy);
             else if (entity is EnemyProjectile)
                 enemiesProjectiles.Add(entity as EnemyProjectile);
-            else if (entity is Portal)
-                portals.Add(entity as Portal);
+            //else if (entity is Portal)
+            //    portals.Add(entity as Portal);
             else if (entity is Item)
                 potions.Add(entity as Item);
         }
@@ -67,7 +67,7 @@ namespace Realm
             enemies = enemies.Where(x => !x.IsExpired).ToList();
             enemiesProjectiles = enemiesProjectiles.Where(x => !x.IsExpired).ToList();
             potions = potions.Where(x => !x.IsExpired).ToList();
-            portals = portals.Where(x => !x.IsExpired).ToList();
+            //portals = portals.Where(x => !x.IsExpired).ToList();
         }
 
         public static void Draw(SpriteBatch spriteBatch)
@@ -158,21 +158,21 @@ namespace Realm
             }
 
             // handle collisions between player and portal
-            for (int i = 0; i < portals.Count; i++)
-            {
-                if (IsColliding(Player.Instance, portals[i]))
-                {
-                    Sound.Play(Sound.EnterRealm, 0.35f);
-                    portals[i].IsExpired = true;
-                    Game1.Instance.ChangeState(
-                        new GameState(
-                            Game1.Instance,
-                            Game1.Instance.GraphicsDevice,
-                            Game1.Instance.Content
-                        )
-                    );
-                }
-            }
+            //for (int i = 0; i < portals.Count; i++)
+            //{
+            //    if (IsColliding(Player.Instance, portals[i]))
+            //    {
+            //        Sound.Play(Sound.EnterRealm, 0.35f);
+            //        portals[i].IsExpired = true;
+            //        Game1.Instance.ChangeState(
+            //            new GameState(
+            //                Game1.Instance,
+            //                Game1.Instance.GraphicsDevice,
+            //                Game1.Instance.Content
+            //            )
+            //        );
+            //    }
+            //}
         }
     }
 }

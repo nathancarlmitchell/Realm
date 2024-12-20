@@ -4,42 +4,64 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Timers;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using Realm.Controls;
 using Realm.States;
 
 namespace Realm
 {
-    public class Portal : Item
+    public class Portal
     {
+        private AnimatedTexture image;
+        private Vector2 position;
+        private Rectangle bounds
+        {
+            get { return new Rectangle((int)position.X + 64, (int)position.Y + 64, 32, 32); }
+        }
+        private bool intersects = false;
+        private Button enterButton;
+
         public Portal()
         {
-            this.image = Art.Portal;
-            this.Radius = image.Width / 2;
-            this.Position.X = Player.Instance.Position.X + 100;
-            this.Position.Y = Player.Instance.Position.Y + 100;
-
-            //this.ID = GameState.Portal;
-            this.Name = "Portal";
-
-            Debug.WriteLine(ID);
-
-            MaximumStackableQuantity = 6;
+            image = Art.Portal;
+            position.X = Player.Instance.Position.X + 100;
+            position.Y = Player.Instance.Position.Y + 100;
         }
 
-        public override void Draw(SpriteBatch spriteBatch)
+        public void Update(GameTime gameTime)
         {
-            base.Draw(spriteBatch);
+            float elapsed = (float)gameTime.ElapsedGameTime.TotalSeconds;
+            image.UpdateFrame(elapsed);
 
-            spriteBatch.DrawString(
-                Art.HudFont,
-                "Enter",
-                new Vector2(
-                    this.Position.X - (this.image.Width / 4),
-                    this.Position.Y + (this.image.Height / 2)
-                ),
-                Color.Black
-            );
+            intersects = false;
+            if (Player.Instance.Bounds.Intersects(bounds))
+            {
+                intersects = true;
+                Player.Opacity -= 0.025f;
+            }
+            else
+            {
+                Player.Opacity += 0.025f;
+                if (Player.Opacity > 1)
+                {
+                    Player.Opacity = 1;
+                }
+            }
+
+            if (Player.Opacity <= -0.5)
+            {
+                StateManager.EnterPortal();
+                Player.Opacity = 1f;
+            }
+
+            //image.Opacity = Player.Opacity;
+        }
+
+        public void Draw(SpriteBatch spriteBatch, GameTime gameTime)
+        {
+            image.DrawFrame(spriteBatch, position);
         }
     }
 }

@@ -142,13 +142,9 @@ namespace Realm
                 IsExpired = true;
                 Player.Experience += PointValue;
                 Player.ExperienceTotal += PointValue;
-                if (rand.Next(11) == 0)
-                {
-                    if (rand.Next(2) == 0)
-                        EntityManager.Add(new HealthPotion { Position = this.Position });
-                    else
-                        EntityManager.Add(new ManaPotion { Position = this.Position });
-                }
+
+                // Spawn loot.
+                ItemSpawner.Spawn(this.Position);
             }
             else
             {

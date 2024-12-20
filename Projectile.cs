@@ -5,7 +5,7 @@ namespace Realm
 {
     class Projectile : Entity
     {
-        private int duration = Player.ProjectileDuration;
+        private int duration = Player.Instance.Weapon.ProjectileDuration;
         public int Damage;
 
         public Projectile(Vector2 position, Vector2 velocity)

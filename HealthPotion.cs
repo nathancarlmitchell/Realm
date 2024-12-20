@@ -14,13 +14,8 @@ namespace Realm
         public HealthPotion()
         {
             this.image = Art.HealthPotion;
-            this.Position.X = Player.Instance.Position.X + 100;
-            this.Position.Y = Player.Instance.Position.Y + 100;
-
             this.ID = GameState.HealthPotionGuid;
             this.Name = "HealthPotion";
-
-            Debug.WriteLine(ID);
 
             MaximumStackableQuantity = 6;
         }

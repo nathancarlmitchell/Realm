@@ -35,8 +35,6 @@ namespace Realm
         {
             SoundEffect.MasterVolume = 0.75f;
 
-            //Jump = content.Load<SoundEffect>("Sounds/jump");
-            //Coin = content.Load<SoundEffect>("Sounds/coin");
             Button = content.Load<SoundEffect>("Sounds/button");
             //Locked = content.Load<SoundEffect>("Sounds/locked");
             LevelUp = content.Load<SoundEffect>("Sounds/Player/level_up");
@@ -60,8 +58,8 @@ namespace Realm
             SongInstance = Song.CreateInstance();
             SongInstance.IsLooped = true;
             SongInstance.Volume = 0.25f;
-            //if (!Game1.Mute)
-            //SongInstance.Play();
+            if (!Game1.Mute)
+                SongInstance.Play();
 
             //mp3 = content.Load<Song>("Sounds/Music/8bit bossa");
             //MediaPlayer.Play(mp3);
@@ -72,7 +70,7 @@ namespace Realm
         public static void ToggleMute()
         {
             Game1.Mute = !Game1.Mute;
-            //Overlay.ToggleAudio();
+            Overlay.ToggleAudio();
             SongInstance.Volume = 0.0f;
             if (!Game1.Mute)
             {

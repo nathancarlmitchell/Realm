@@ -291,7 +291,6 @@ namespace Realm
         {
             // Draw weapon.
             Player.Instance.Weapon.Draw(spriteBatch);
-            //new Weapon(Art.Wand, Art.EnemyProjectile).Draw(spriteBatch);
 
             // Draw ability.
 
@@ -309,8 +308,6 @@ namespace Realm
         {
             float x = 64;
             float y = 256;
-            //float x = Game1.Camera.Pos.X - Game1.Viewport.Width / 2 + 64;
-            //float y = Game1.Camera.Pos.Y - Game1.Viewport.Height / 2 + 64;
             Vector2 pos = new Vector2(x, y);
 
             spriteBatch.DrawString(
@@ -344,37 +341,36 @@ namespace Realm
             );
         }
 
-        //private static float muteCooldown = 1.0f;
+        private static float muteCooldown = 1.0f;
 
-        //public static void ToggleAudio()
-        //{
-        //    muteCooldown = 1.0f;
-        //}
+        public static void ToggleAudio()
+        {
+            muteCooldown = 1.0f;
+        }
 
-        //public static void DrawAudio()
-        //{
-        //    if (muteCooldown > 0.0f)
-        //    {
-        //        muteCooldown -= 0.005f;
-        //        spriteBatch.Begin();
-        //        if (Game1.Mute)
-        //        {
-        //            spriteBatch.Draw(
-        //                Art.MuteTexture,
-        //                new Vector2(0, Game1.ScreenHeight - (Art.MuteTexture.Height)),
-        //                Color.White * muteCooldown
-        //            );
-        //        }
-        //        else
-        //        {
-        //            spriteBatch.Draw(
-        //                Art.UnmuteTexture,
-        //                new Vector2(0, Game1.ScreenHeight - (Art.UnmuteTexture.Height)),
-        //                Color.White * muteCooldown
-        //            );
-        //        }
-        //        spriteBatch.End();
-        //    }
-        //}
+        public static void DrawAudio(SpriteBatch spriteBatch)
+        {
+            if (muteCooldown > 0.0f)
+            {
+                muteCooldown -= 0.005f;
+
+                if (Game1.Mute)
+                {
+                    spriteBatch.Draw(
+                        Art.Mute,
+                        new Vector2(0, Game1.ScreenHeight - (Art.Mute.Height)),
+                        Color.White * muteCooldown
+                    );
+                }
+                else
+                {
+                    spriteBatch.Draw(
+                        Art.Unmute,
+                        new Vector2(0, Game1.ScreenHeight - (Art.Unmute.Height)),
+                        Color.White * muteCooldown
+                    );
+                }
+            }
+        }
     }
 }

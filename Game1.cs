@@ -53,6 +53,7 @@ namespace Realm
         {
             get { return new Vector2(WorldWidth, WorldHeight); }
         }
+        public static GameTime GameTime;
 
         public static Rectangle WorldBounds
         {
@@ -79,7 +80,7 @@ namespace Realm
         protected override void Initialize()
         {
             IsMouseVisible = true;
-            _Debug = true;
+            _Debug = false;
             Mute = false;
             Window.Title = "Realm";
             Scale = 1;
@@ -167,7 +168,7 @@ namespace Realm
 
         protected override void Draw(GameTime gameTime)
         {
-            GraphicsDevice.Clear(Color.Black);
+            GraphicsDevice.Clear(Color.White);
 
             currentState.Draw(gameTime, _spriteBatch);
 

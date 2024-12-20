@@ -14,13 +14,11 @@ namespace Realm
         public ManaPotion()
         {
             this.image = Art.ManaPotion;
-            this.Position.X = Player.Instance.Position.X + 100;
-            this.Position.Y = Player.Instance.Position.Y + 100;
+            //this.Position.X = Player.Instance.Position.X + 100;
+            //this.Position.Y = Player.Instance.Position.Y + 100;
 
             this.ID = GameState.ManaPotionGuid;
             this.Name = "ManaPotion";
-
-            Debug.WriteLine(ID);
 
             MaximumStackableQuantity = 6;
         }

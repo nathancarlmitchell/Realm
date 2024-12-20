@@ -25,12 +25,6 @@ namespace Realm.States
 
             Game1.Camera = new Camera(Game1.Viewport, Game1.WorldWidth, Game1.WorldHeight, 1f);
 
-            //EntityManager.Add(new Player());
-            //EntityManager.Add(new Portal());
-
-            //Player.Vitality = 1;
-            //Player.Wisdom = 1;
-
             Util.LoadPlayerData();
 
             // Define a drawing rectangle based on the number of tiles wide and high, using the texture dimensions.
@@ -74,6 +68,15 @@ namespace Realm.States
             spriteBatch.End();
 
             spriteBatch.Begin();
+
+            // Draw audio.
+            Overlay.DrawAudio(spriteBatch);
+
+            // Draw loot.
+            for (int i = 0; i < ItemSpawner.LootBags.Count; i++)
+            {
+                ItemSpawner.LootBags[i].DrawLoot(spriteBatch);
+            }
 
             // Draw health and mana.
             Overlay.DrawHealth(spriteBatch);
