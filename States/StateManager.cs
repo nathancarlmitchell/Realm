@@ -19,6 +19,19 @@ namespace Realm.States
             );
         }
 
+        public static void Nexus()
+        {
+            EntityManager.Reset();
+            Util.SavePlayerData();
+            Game1.Instance.ChangeState(
+                new RealmState(
+                    Game1.Instance,
+                    Game1.Instance.GraphicsDevice,
+                    Game1.Instance.Content
+                )
+            );
+        }
+
         public static void MainMenu()
         {
             Game1.Instance.ChangeState(

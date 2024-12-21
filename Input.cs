@@ -120,52 +120,9 @@ public static class Input
             // Return to Nexus.
             if (WasKeyPressed(Keys.E))
             {
-                EntityManager.Reset();
-                Util.SavePlayerData();
-                Game1.Instance.ChangeState(
-                    new RealmState(
-                        Game1.Instance,
-                        Game1.Instance.GraphicsDevice,
-                        Game1.Instance.Content
-                    )
-                );
+                StateManager.Nexus();
             }
-
-            // Pause.
-            //if (keyboard.IsKeyDown(Keys.Escape) || keyboard.IsKeyDown(Keys.P))
-            //{
-            //    //game.ChangeState(new PauseState(game, graphicsDevice, content));
-            //}
-
-            // Check touch input.
-            //if (touchState.AnyTouch())
-            //{
-            //    int x = (int)touchState.GetPosition().X;
-            //    int y = (int)touchState.GetPosition().Y;
-
-            //    //int xBoost = Art.BoostTexture.Width;
-            //    //int yBoost = Game1.ScreenHeight - (Art.BoostTexture.Height * 2);
-
-            //    // Boost.
-            //    //if (x < xBoost && y > yBoost)
-            //    //{
-            //    //    GameState.Player.Jump(GameState.Player.JumpVelocity * 2);
-            //    //    return;
-            //    //}
-
-            //    // Jump.
-            //    //GameState.Player.Jump(GameState.Player.JumpVelocity);
-            //}
         }
-
-        //if (currentState is PauseState)
-        //{
-        //    // Continue game.
-        //    if (keyboard.IsKeyDown(Keys.Space) || keyboard.IsKeyDown(Keys.Enter))
-        //    {
-        //        ContinueGame();
-        //    }
-        //}
 
         if (currentState is GameOverState)
         {
@@ -251,5 +208,12 @@ public static class Input
         position = Vector2.Transform(position, inverse);
 
         return position;
+    }
+
+    public static bool GetMouseClick()
+    {
+        return previousMouse.LeftButton == ButtonState.Released
+            && mouse.LeftButton == ButtonState.Pressed;
+        //previousKeyboard.IsKeyUp(key) && keyboard.IsKeyDown(key)
     }
 }

@@ -10,7 +10,7 @@ namespace Realm
 {
     public class InventorySystem
     {
-        private const int MAXIMUM_SLOTS_IN_INVENTORY = 2;
+        public const int MAXIMUM_SLOTS_IN_INVENTORY = 4;
         public readonly List<InventoryRecord> InventoryRecords = new List<InventoryRecord>();
 
         public void AddItem(Item item, int quantityToAdd)
@@ -82,6 +82,11 @@ namespace Realm
             }
         }
 
+        public bool CheckItem(Item item, int quantityToAdd)
+        {
+            return !InventoryRecords.Exists(x => (x.InventoryItem.ID == item.ID));
+        }
+
         public void RemoveItem(string name)
         {
             for (int i = 0; i < InventoryRecords.Count; i++)
@@ -140,21 +145,26 @@ namespace Realm
                 InventoryRecord record = InventoryRecords[i];
                 if (record.InventoryItem != null)
                 {
-                    Texture2D image = Art.Item;
-                    if (record.InventoryItem.Name == "HealthPotion")
-                    {
-                        image = Art.HealthPotion;
-                    }
-                    if (record.InventoryItem.Name == "ManaPotion")
-                    {
-                        image = Art.ManaPotion;
-                    }
+                    Texture2D image = record.InventoryItem.image;
+                    //if (record.InventoryItem.Name == "HealthPotion")
+                    //{
+                    //    image = Art.HealthPotion;
+                    //}
+                    //if (record.InventoryItem.Name == "ManaPotion")
+                    //{
+                    //    image = Art.ManaPotion;
+                    //}
 
                     spriteBatch.Draw(image, new Vector2(x + (i * 40), y), Color.White);
                     // record.InventoryItem.Name +
+                    string text = string.Empty;
+                    if (record.InventoryItem.MaximumStackableQuantity > 1)
+                    {
+                        text = "" + record.Quantity;
+                    }
                     spriteBatch.DrawString(
                         Art.HudFont,
-                        "" + record.Quantity,
+                        text,
                         new Vector2(x + (i * 40) + 4, y),
                         Color.Black
                     );

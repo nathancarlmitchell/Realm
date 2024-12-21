@@ -23,7 +23,8 @@ namespace Realm
             SpriteGodDeath,
             SpriteGodHit,
             SnakesHit,
-            SnakesDeath;
+            SnakesDeath,
+            Error;
 
         public static Song mp3;
 
@@ -36,6 +37,7 @@ namespace Realm
             SoundEffect.MasterVolume = 0.75f;
 
             Button = content.Load<SoundEffect>("Sounds/button");
+            Error = content.Load<SoundEffect>("Sounds/error");
             //Locked = content.Load<SoundEffect>("Sounds/locked");
             LevelUp = content.Load<SoundEffect>("Sounds/Player/level_up");
             NoMana = content.Load<SoundEffect>("Sounds/Player/no_mana");
@@ -58,8 +60,6 @@ namespace Realm
             SongInstance = Song.CreateInstance();
             SongInstance.IsLooped = true;
             SongInstance.Volume = 0.25f;
-            if (!Game1.Mute)
-                SongInstance.Play();
 
             //mp3 = content.Load<Song>("Sounds/Music/8bit bossa");
             //MediaPlayer.Play(mp3);
@@ -76,6 +76,12 @@ namespace Realm
             {
                 SongInstance.Volume = 0.5f;
             }
+        }
+
+        public static void PlaySong()
+        {
+            if (!Game1.Mute)
+                SongInstance.Play();
         }
 
         public static void SongVolume(float volume)

@@ -18,10 +18,10 @@ namespace Realm
         {
             List<Item> items = new List<Item>();
 
-            items.Add(new Weapon(Art.Wand, Art.Projectile2));
             if (rand.Next(10) == 0)
             {
-                if (rand.Next(3) == 0)
+                items.Add(new Weapon(Art.Wand, Art.Projectile2));
+                if (rand.Next(2) == 0)
                     items.Add(new HealthPotion());
                 else
                     items.Add(new ManaPotion());
@@ -32,6 +32,7 @@ namespace Realm
                 LootBag bag = new LootBag() { Position = pos, Items = items };
                 EntityManager.Add(bag);
                 LootBags.Add(bag);
+                Sound.Play(Sound.LootAppears, 0.4f);
             }
         }
 

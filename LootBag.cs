@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Audio;
 using Microsoft.Xna.Framework.Graphics;
 
 namespace Realm
@@ -13,11 +14,13 @@ namespace Realm
     {
         public List<Item> Items = [];
         private bool isOpen;
+        private bool clicked;
 
         public LootBag()
         {
             image = Art.LootBag;
             isOpen = false;
+            clicked = false;
         }
 
         public void Add(Item item) { }
@@ -31,9 +34,15 @@ namespace Realm
             if (Player.Instance.Bounds.Intersects(this.Bounds))
             {
                 isOpen = true;
+                if (Input.GetMouseClick())
+                {
+                    Debug.WriteLine("click");
+                    clicked = true;
+                }
                 return;
             }
             isOpen = false;
+            clicked = false;
         }
 
         public void DrawLoot(SpriteBatch spriteBatch)
@@ -65,6 +74,30 @@ namespace Realm
                     )
                     {
                         Items[i].Hover = true;
+                        if (clicked)
+                        {
+                            if (
+                                Player.Instance.Inventory.InventoryRecords.Count
+                                    < InventorySystem.MAXIMUM_SLOTS_IN_INVENTORY
+                                && Player.Instance.Inventory.CheckItem(Items[i], 1)
+                            )
+                            {
+                                Player.Instance.Inventory.AddItem(Items[i], 1);
+                                Items[i].IsExpired = true;
+                                Items.RemoveAt(i);
+                                if (Items.Count <= 0)
+                                {
+                                    this.IsExpired = true;
+                                }
+                            }
+                            else
+                            {
+                                Sound.Play(Sound.Error, 0.4f);
+                            }
+
+                            clicked = false;
+                            return;
+                        }
                     }
                     else
                     {
