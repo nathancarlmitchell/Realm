@@ -31,12 +31,26 @@ namespace Realm
         public static Texture2D HealthBar { get; private set; }
         public static Texture2D Mute { get; private set; }
         public static Texture2D Unmute { get; private set; }
-        public static Texture2D LootBag { get; private set; }
+
         public static SpriteFont HudFont { get; private set; }
         public static SpriteFont TitleFont { get; private set; }
 
         // Weapons.
         public static Texture2D Wand { get; private set; }
+
+        // Stat potions.
+        public static Texture2D Attack { get; private set; }
+        public static Texture2D Defense { get; private set; }
+        public static Texture2D Dexterity { get; private set; }
+        public static Texture2D Life { get; private set; }
+        public static Texture2D Mana { get; private set; }
+        public static Texture2D Speed { get; private set; }
+        public static Texture2D Vitalty { get; private set; }
+        public static Texture2D Wisdom { get; private set; }
+
+        // Loot bags.
+        public static Texture2D LootBag { get; private set; }
+        public static Texture2D LootBagBlue { get; private set; }
 
         public static void Load(ContentManager content)
         {
@@ -47,7 +61,10 @@ namespace Realm
             Portal.Load(content, "portal", 7, 8);
             HealthPotion = content.Load<Texture2D>("health_potion");
             ManaPotion = content.Load<Texture2D>("mana_potion");
+
+            // Loot bags.
             LootBag = content.Load<Texture2D>("loot_bag");
+            LootBagBlue = content.Load<Texture2D>("Items/Bags/blue");
 
             // Controls.
             ButtonTexture = content.Load<Texture2D>("Controls/Button");
@@ -77,6 +94,16 @@ namespace Realm
 
             // Weapons.
             Wand = content.Load<Texture2D>("Weapons/Wands/wand");
+
+            // Stat potions.
+            Attack = content.Load<Texture2D>("Items/Potions/attack");
+            Defense = content.Load<Texture2D>("Items/Potions/defense");
+            Dexterity = content.Load<Texture2D>("Items/Potions/dexterity");
+            Life = content.Load<Texture2D>("Items/Potions/life");
+            Mana = content.Load<Texture2D>("Items/Potions/mana");
+            Speed = content.Load<Texture2D>("Items/Potions/speed");
+            Vitalty = content.Load<Texture2D>("Items/Potions/vitality");
+            Wisdom = content.Load<Texture2D>("Items/Potions/wisdom");
 
             // Fonts.
             HudFont = content.Load<SpriteFont>("Fonts/HudFont");

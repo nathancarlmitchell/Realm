@@ -85,36 +85,62 @@ namespace Realm
                 new Vector2(x + 128, y + 16),
                 color
             );
+
+            color = Color.Red;
+            Color maxColor = Color.LimeGreen;
+
+            if (Player.Attack >= Player.MaxAttack)
+                color = maxColor;
             spriteBatch.DrawString(
                 Art.HudFont,
                 "Attack: " + Player.Attack,
                 new Vector2(x, y + 32),
                 color
             );
+
+            color = Color.Red;
+            if (Player.Defense >= Player.MaxDefense)
+                color = maxColor;
             spriteBatch.DrawString(
                 Art.HudFont,
-                "Defence: " + Player.Defense,
+                "Defense: " + Player.Defense,
                 new Vector2(x, y + 48),
                 color
             );
+
+            color = Color.Red;
+            if (Player.Vitality >= Player.MaxVitality)
+                color = maxColor;
             spriteBatch.DrawString(
                 Art.HudFont,
                 "Vitality: " + Player.Vitality,
                 new Vector2(x, y + 64),
                 color
             );
+
+            color = Color.Red;
+            if (Player.Wisdom >= Player.MaxWisdom)
+                color = maxColor;
             spriteBatch.DrawString(
                 Art.HudFont,
                 "Wisdom: " + Player.Wisdom,
                 new Vector2(x, y + 80),
                 color
             );
+
+            color = Color.Red;
+            if (Player.Speed >= Player.MaxSpeed)
+                color = maxColor;
             spriteBatch.DrawString(
                 Art.HudFont,
                 "Speed: " + Player.Speed,
                 new Vector2(x, y + 96),
                 color
             );
+
+            color = Color.Red;
+            if (Player.Dexterity >= Player.MaxDexterity)
+                color = maxColor;
             spriteBatch.DrawString(
                 Art.HudFont,
                 "Dexterity: " + Player.Dexterity,
@@ -290,7 +316,7 @@ namespace Realm
         public static void DrawEquipment(SpriteBatch spriteBatch)
         {
             // Draw weapon.
-            Player.Instance.Weapon.Draw(spriteBatch);
+            Player.Instance.Weapon.DrawEquipped(spriteBatch);
 
             // Draw ability.
 

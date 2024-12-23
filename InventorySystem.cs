@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Xml.Linq;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Realm.States;
@@ -10,8 +11,8 @@ namespace Realm
 {
     public class InventorySystem
     {
-        public const int MAXIMUM_SLOTS_IN_INVENTORY = 4;
-        public readonly List<InventoryRecord> InventoryRecords = new List<InventoryRecord>();
+        public const int MAXIMUM_SLOTS_IN_INVENTORY = 6;
+        public readonly List<InventoryRecord> InventoryRecords = [];
 
         public void AddItem(Item item, int quantityToAdd)
         {
@@ -96,7 +97,7 @@ namespace Realm
                 < InventorySystem.MAXIMUM_SLOTS_IN_INVENTORY;
         }
 
-        public void RemoveItem(string name)
+        public void DropItem(string name)
         {
             for (int i = 0; i < InventoryRecords.Count; i++)
             {
@@ -105,18 +106,88 @@ namespace Realm
                 {
                     if (record.InventoryItem.Name == name && record.Quantity > 0)
                     {
-                        if (name == "HealthPotion")
+                        record.Quantity--;
+                        if (record.Quantity <= 0)
                         {
-                            if (Player.Health >= Player.HealthMax)
-                                return;
-                            HealthPotion.Use();
+                            InventoryRecords.RemoveAt(i);
+                            return;
                         }
+                    }
+                }
+            }
+        }
 
-                        if (name == "ManaPotion")
+        // This should really be called UseItem()
+        public void UsePotion(string name)
+        {
+            for (int i = 0; i < InventoryRecords.Count; i++)
+            {
+                InventoryRecord record = InventoryRecords[i];
+                if (record.InventoryItem != null)
+                {
+                    if (record.InventoryItem.Name == name && record.Quantity > 0)
+                    {
+                        switch (record.InventoryItem.Name)
                         {
-                            if (Player.Mana >= Player.ManaMax)
-                                return;
-                            ManaPotion.Use();
+                            case "Health Potion":
+                                if (Player.Health >= Player.HealthMax)
+                                    return;
+                                Potion.Use(Potions.Health);
+                                break;
+
+                            case "Mana Potion":
+                                if (Player.Mana >= Player.ManaMax)
+                                    return;
+                                Potion.Use(Potions.Mana);
+                                break;
+
+                            case "Attack Potion":
+                                if (Player.Attack >= Player.MaxAttack)
+                                    return;
+                                Potion.Use(Potions.Attack);
+                                break;
+
+                            case "Defense Potion":
+                                if (Player.Defense >= Player.MaxDefense)
+                                    return;
+                                Potion.Use(Potions.Defense);
+                                break;
+
+                            case "Speed Potion":
+                                if (Player.Speed >= Player.MaxSpeed)
+                                    return;
+                                Potion.Use(Potions.Speed);
+                                break;
+
+                            case "Dexterity Potion":
+                                if (Player.Dexterity >= Player.MaxDexterity)
+                                    return;
+                                Potion.Use(Potions.Dexterity);
+                                break;
+
+                            case "Vitality Potion":
+                                if (Player.Vitality >= Player.MaxVitality)
+                                    return;
+                                Potion.Use(Potions.Vitality);
+                                break;
+
+                            case "Wisdom Potion":
+                                if (Player.Wisdom >= Player.MaxWisdom)
+                                    return;
+                                Potion.Use(Potions.Wisdom);
+                                break;
+
+                            case "Life Potion":
+                                if (Player.HealthMax >= Player.MaxHealth)
+                                    return;
+                                Potion.Use(Potions.Life);
+                                break;
+
+                            case "ManaMax Potion":
+                                if (Player.ManaMax >= Player.MaxMana)
+                                    return;
+                                Potion.Use(Potions.ManaMax);
+                                break;
                         }
 
                         record.Quantity--;
@@ -157,17 +228,22 @@ namespace Realm
 
         public void Draw(SpriteBatch spriteBatch)
         {
+            // Draw inventory border.
             spriteBatch.Draw(Art.Inventory, new Vector2(x, y), Color.White);
 
+            // Loop through items in inventory.
             for (int i = 0; i < InventoryRecords.Count; i++)
             {
                 InventoryRecord record = InventoryRecords[i];
                 if (record.InventoryItem != null)
                 {
-                    Texture2D image = record.InventoryItem.image;
+                    spriteBatch.Draw(
+                        record.InventoryItem.image,
+                        new Vector2(x + (i * 40), y),
+                        Color.White
+                    );
 
-                    spriteBatch.Draw(image, new Vector2(x + (i * 40), y), Color.White);
-
+                    // Draw quantity if max stack is greater than 1.
                     string text = string.Empty;
                     if (record.InventoryItem.MaximumStackableQuantity > 1)
                     {
@@ -180,6 +256,60 @@ namespace Realm
                         new Vector2(x + (i * 40) + 4, y),
                         Color.Black
                     );
+                }
+
+                var bounds = new Rectangle(
+                    x + (i * 40),
+                    y,
+                    record.InventoryItem.image.Width,
+                    record.InventoryItem.image.Height
+                );
+
+                // Mouse over inventory item.
+                if (bounds.Intersects(Input.MouseBounds))
+                {
+                    string text = $"{record.InventoryItem.Name}";
+
+                    int textX = (int)(Art.HudFont.MeasureString(text).X / 2);
+                    int textY = (int)(Art.HudFont.MeasureString(text).Y / 2);
+
+                    spriteBatch.DrawString(
+                        Art.HudFont,
+                        text,
+                        new Vector2(x - textX, y - record.InventoryItem.image.Height - textY),
+                        Color.Red
+                    );
+
+                    // Drop / use item if clicked.
+                    if (Input.GetMouseClick())
+                    {
+                        if (record.InventoryItem is Potion)
+                        {
+                            // Use potion.
+                            Debug.WriteLine(record.InventoryItem.Name);
+                            UsePotion(record.InventoryItem.Name);
+                            return;
+                        }
+
+                        // Drop item.
+                        for (int x = 0; x < ItemSpawner.LootBags.Count; x++)
+                        {
+                            // Add item to exisiting bag
+                            if (Player.Instance.Bounds.Intersects(ItemSpawner.LootBags[x].Bounds))
+                            {
+                                ItemSpawner.LootBags[x].Add(record.InventoryItem);
+                                DropItem(record.InventoryItem.Name);
+                                return;
+                            }
+                        }
+
+                        Debug.WriteLine(record.InventoryItem);
+                        List<Item> items = [record.InventoryItem];
+                        LootBag bag = new() { Position = Player.Instance.Position, Items = items };
+                        ItemSpawner.LootBags.Add(bag);
+                        EntityManager.Add(bag);
+                        DropItem(record.InventoryItem.Name);
+                    }
                 }
             }
         }

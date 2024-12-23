@@ -85,7 +85,7 @@ namespace Realm
         }
 
         //This method needs to be replaced by drawing from the inventory.
-        public override void Draw(SpriteBatch spriteBatch)
+        public void DrawEquipped(SpriteBatch spriteBatch)
         {
             spriteBatch.Draw(Art.Border, new Vector2(x, y), Color.White);
             spriteBatch.Draw(Art.Wand, new Vector2(x, y), Color.White);

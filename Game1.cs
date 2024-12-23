@@ -168,7 +168,7 @@ namespace Realm
 
         protected override void Draw(GameTime gameTime)
         {
-            GraphicsDevice.Clear(Color.White);
+            GraphicsDevice.Clear(Color.Black);
 
             currentState.Draw(gameTime, _spriteBatch);
 

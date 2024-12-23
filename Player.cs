@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Runtime.CompilerServices;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using Microsoft.Xna.Framework.Input;
 using Realm.States;
 
 namespace Realm
@@ -39,12 +40,28 @@ namespace Realm
 
         public static int Attack;
         public static int Defense;
-        public static int Vitality;
-        public static int Wisdom;
         public static float Speed;
         public static int Dexterity;
+        public static int Vitality;
+        public static int Wisdom;
 
-        private static int baseDex = 17;
+        private static int baseHealth = 100;
+        private static int baseMana = 100;
+        private static int baseAttack = 17;
+        private static int baseDefense = 0;
+        private static float baseSpeed = 17;
+        private static int baseDexterity = 17;
+        private static int BaseVitality = 5;
+        private static int baseWisdom = 23;
+
+        public static int MaxHealth = 700;
+        public static int MaxMana = 385;
+        public static int MaxAttack = 75;
+        public static int MaxDefense = 25;
+        public static float MaxSpeed = 50;
+        public static int MaxDexterity = 75;
+        public static int MaxVitality = 40;
+        public static int MaxWisdom = 60;
 
         public static int Experience;
         public static int ExperienceNextLevel;
@@ -208,7 +225,7 @@ namespace Realm
             // Update camera position.
             Game1.Camera.Pos += Velocity;
 
-            // Check for level up
+            // Check for level up.
             if (Level < 20 && Experience >= ExperienceNextLevel)
             {
                 LevelUp();
@@ -236,7 +253,7 @@ namespace Realm
             // This may be moved to new Weapon class.
             projectileCooldown += ((Dexterity * 100) / 150 * 100) / 100;
             if (
-                Input.mouse.LeftButton == Microsoft.Xna.Framework.Input.ButtonState.Pressed
+                Input.mouse.LeftButton == ButtonState.Pressed
                 && projectileCooldown >= projectileCooldownCount
             )
             {

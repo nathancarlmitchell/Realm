@@ -13,6 +13,14 @@ namespace Realm.States
 
         public static Guid HealthPotionGuid = Guid.NewGuid();
         public static Guid ManaPotionGuid = Guid.NewGuid();
+        public static Guid AttackPotionGuid = Guid.NewGuid();
+        public static Guid DefensePotionGuid = Guid.NewGuid();
+        public static Guid DexterityPotionGuid = Guid.NewGuid();
+        public static Guid LifePotionGuid = Guid.NewGuid();
+        public static Guid ManaGuid = Guid.NewGuid();
+        public static Guid SpeedPotionGuid = Guid.NewGuid();
+        public static Guid VitalityPotionGuid = Guid.NewGuid();
+        public static Guid WisdomPotionGuid = Guid.NewGuid();
         public static int HighScore { get; set; }
         public static int Score { get; set; }
 

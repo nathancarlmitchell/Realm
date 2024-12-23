@@ -23,7 +23,7 @@ namespace Realm
                 // Increase spawn chance with player level.
                 if (rand.Next((int)1500 - Player.Level * 50) == 0)
                 {
-                    Debug.WriteLine("rand.Next((int)2500) == 0");
+                    Debug.WriteLine("(int)1500 - Player.Level * 50) == 0)");
                     EntityManager.Add(Enemy.CreateSpriteGod(GetSpawnPosition()));
                 }
             }

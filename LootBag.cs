@@ -23,7 +23,10 @@ namespace Realm
             clicked = false;
         }
 
-        public void Add(Item item) { }
+        public void Add(Item item)
+        {
+            Items.Add(item);
+        }
 
         public void Remove(Item item) { }
 
@@ -31,22 +34,24 @@ namespace Realm
 
         public override void Update()
         {
+            isOpen = false;
+            clicked = false;
+
+            // Check if player is touching bag.
             if (Player.Instance.Bounds.Intersects(this.Bounds))
             {
                 isOpen = true;
                 if (Input.GetMouseClick())
                 {
-                    Debug.WriteLine("click");
                     clicked = true;
                 }
-                return;
+                //return;
             }
-            isOpen = false;
-            clicked = false;
         }
 
         public void DrawLoot(SpriteBatch spriteBatch)
         {
+            // Draw contents of loot bag if player is touching.
             if (isOpen)
             {
                 for (int i = 0; i < Items.Count; i++)
@@ -54,20 +59,20 @@ namespace Realm
                     int x = Game1.ScreenWidth / 2 + (i * 64);
                     int y = 200;
 
+                    // Draw item border.
                     spriteBatch.Draw(
                         Art.Border,
                         new Vector2(x - Art.Border.Width / 2, y - Art.Border.Height / 2),
                         Color.White
                     );
 
-                    Vector2 pos = new Vector2(x, y);
+                    Items[i].Position = new Vector2(x, y);
 
-                    Items[i].Position = pos;
-
+                    // Check if mouse is over item.
                     if (
                         new Rectangle(
-                            (int)pos.X - Items[i].Width / 2,
-                            (int)pos.Y - Items[i].Height / 2,
+                            x - Items[i].Width / 2,
+                            y - Items[i].Height / 2,
                             64,
                             64
                         ).Intersects(Input.MouseBounds)
@@ -76,15 +81,19 @@ namespace Realm
                         Items[i].Hover = true;
                         if (clicked)
                         {
-                            // Place clicked item in inventory if it can stack or has room.
+                            // Place clicked item in inventory if it can stack,
+                            // or free slots in inventory.
                             if (
                                 Player.Instance.Inventory.HasRoom()
                                 || Player.Instance.Inventory.CanStack(Items[i], 1)
                             )
                             {
+                                // Add item to inventory and remove from bag.
                                 Player.Instance.Inventory.AddItem(Items[i], 1);
                                 Items[i].IsExpired = true;
                                 Items.RemoveAt(i);
+
+                                // Despawn loot bag if it is empty.
                                 if (Items.Count <= 0)
                                 {
                                     this.IsExpired = true;
@@ -92,6 +101,7 @@ namespace Realm
                             }
                             else
                             {
+                                // Error, no room in inventory.
                                 Sound.Play(Sound.Error, 0.4f);
                             }
 

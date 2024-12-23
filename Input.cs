@@ -85,7 +85,7 @@ public static class Input
             // Use health potion.
             if (WasKeyPressed(Keys.Q))
             {
-                Player.Instance.Inventory.RemoveItem("HealthPotion");
+                Player.Instance.Inventory.UsePotion("Health Potion");
                 // Move to
                 //HealthPotion.Use();
             }
@@ -93,7 +93,7 @@ public static class Input
             // Use mana potion.
             if (WasKeyPressed(Keys.F))
             {
-                Player.Instance.Inventory.RemoveItem("ManaPotion");
+                Player.Instance.Inventory.UsePotion("Mana Potion");
                 // Move to
                 //HealthPotion.Use();
             }
