@@ -73,37 +73,37 @@ namespace Realm
             }
         }
 
-        //public override void Update()
-        //{
-        //    hover = false;
+        public override void Update()
+        {
+            hover = false;
 
-        //    if (bounds.Intersects(Input.MouseBounds))
-        //    {
-        //        // Mouse over weapon.
-        //        hover = true;
-        //    }
-        //}
+            if (bounds.Intersects(Input.MouseBounds))
+            {
+                // Mouse over weapon.
+                hover = true;
+            }
+        }
 
-        // This method needs to be replaced by drawing from the inventory.
-        //public override void Draw(SpriteBatch spriteBatch)
-        //{
-        //    spriteBatch.Draw(Art.Border, new Vector2(x, y), Color.White);
-        //    spriteBatch.Draw(Art.Wand, new Vector2(x, y), Color.White);
+        //This method needs to be replaced by drawing from the inventory.
+        public override void Draw(SpriteBatch spriteBatch)
+        {
+            spriteBatch.Draw(Art.Border, new Vector2(x, y), Color.White);
+            spriteBatch.Draw(Art.Wand, new Vector2(x, y), Color.White);
 
-        //    if (hover)
-        //    {
-        //        string text =
-        //            $"T{Teir} - {Name}{Environment.NewLine}{Description}{Environment.NewLine}Damge: {DamageMin} - {DamageMax}";
+            if (hover)
+            {
+                string text =
+                    $"T{Teir} - {Name}{Environment.NewLine}{Description}{Environment.NewLine}Damge: {DamageMin} - {DamageMax}";
 
-        //        int textY = (int)(Art.HudFont.MeasureString(text).Y / 2);
+                int textY = (int)(Art.HudFont.MeasureString(text).Y / 2);
 
-        //        spriteBatch.DrawString(
-        //            Art.HudFont,
-        //            text,
-        //            new Vector2(x, y - image.Height - textY),
-        //            Color.Red
-        //        );
-        //    }
-        //}
+                spriteBatch.DrawString(
+                    Art.HudFont,
+                    text,
+                    new Vector2(x, y - image.Height - textY),
+                    Color.Red
+                );
+            }
+        }
     }
 }

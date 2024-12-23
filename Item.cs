@@ -33,18 +33,16 @@ namespace Realm
 
         public override void Update()
         {
-            int x = (int)Player.Instance.Position.X;
-            int y = (int)Player.Instance.Position.Y;
+            //int x = (int)Player.Instance.Position.X;
+            //int y = (int)Player.Instance.Position.Y;
 
-            //this.Position = new Vector2(x, y);
-
-            if (Bounds.Intersects(Input.MouseBounds))
-            {
-                Hover = true;
-                Debug.WriteLine(Bounds);
-                return;
-            }
-            Hover = false;
+            //if (Bounds.Intersects(Input.MouseBounds))
+            //{
+            //    Hover = true;
+            //    Debug.WriteLine(Bounds);
+            //    return;
+            //}
+            //Hover = false;
         }
 
         public void DrawLoot(SpriteBatch spriteBatch, int x, int y)

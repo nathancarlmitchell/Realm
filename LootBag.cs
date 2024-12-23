@@ -76,10 +76,10 @@ namespace Realm
                         Items[i].Hover = true;
                         if (clicked)
                         {
+                            // Place clicked item in inventory if it can stack or has room.
                             if (
-                                Player.Instance.Inventory.InventoryRecords.Count
-                                    < InventorySystem.MAXIMUM_SLOTS_IN_INVENTORY
-                                && Player.Instance.Inventory.CheckItem(Items[i], 1)
+                                Player.Instance.Inventory.HasRoom()
+                                || Player.Instance.Inventory.CanStack(Items[i], 1)
                             )
                             {
                                 Player.Instance.Inventory.AddItem(Items[i], 1);

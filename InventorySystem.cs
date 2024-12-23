@@ -82,9 +82,18 @@ namespace Realm
             }
         }
 
-        public bool CheckItem(Item item, int quantityToAdd)
+        public bool CanStack(Item item, int quantityToAdd)
         {
-            return !InventoryRecords.Exists(x => (x.InventoryItem.ID == item.ID));
+            // Return true if item exisits in inventory and can stack
+            return InventoryRecords.Exists(x =>
+                (x.InventoryItem.ID == item.ID) && (x.Quantity < item.MaximumStackableQuantity)
+            );
+        }
+
+        public bool HasRoom()
+        {
+            return Player.Instance.Inventory.InventoryRecords.Count
+                < InventorySystem.MAXIMUM_SLOTS_IN_INVENTORY;
         }
 
         public void RemoveItem(string name)
@@ -96,16 +105,26 @@ namespace Realm
                 {
                     if (record.InventoryItem.Name == name && record.Quantity > 0)
                     {
-                        record.Quantity--;
-
                         if (name == "HealthPotion")
                         {
+                            if (Player.Health >= Player.HealthMax)
+                                return;
                             HealthPotion.Use();
                         }
+
                         if (name == "ManaPotion")
                         {
+                            if (Player.Mana >= Player.ManaMax)
+                                return;
                             ManaPotion.Use();
                         }
+
+                        record.Quantity--;
+                        if (record.Quantity <= 0)
+                        {
+                            InventoryRecords.RemoveAt(i);
+                        }
+
                         Sound.Play(Sound.UsePotion, 0.4f);
                     }
                     else
@@ -146,22 +165,15 @@ namespace Realm
                 if (record.InventoryItem != null)
                 {
                     Texture2D image = record.InventoryItem.image;
-                    //if (record.InventoryItem.Name == "HealthPotion")
-                    //{
-                    //    image = Art.HealthPotion;
-                    //}
-                    //if (record.InventoryItem.Name == "ManaPotion")
-                    //{
-                    //    image = Art.ManaPotion;
-                    //}
 
                     spriteBatch.Draw(image, new Vector2(x + (i * 40), y), Color.White);
-                    // record.InventoryItem.Name +
+
                     string text = string.Empty;
                     if (record.InventoryItem.MaximumStackableQuantity > 1)
                     {
                         text = "" + record.Quantity;
                     }
+
                     spriteBatch.DrawString(
                         Art.HudFont,
                         text,
