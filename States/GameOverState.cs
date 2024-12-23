@@ -24,7 +24,7 @@ namespace Realm.States
             Game1.Instance.IsMouseVisible = true;
 
             Sound.SongInstance.Stop();
-            Sound.Play(Sound.Death, 0.3f);
+            Sound.Play(Sound.Death, 0.4f);
 
             //GameState.GamesPlayed++;
 
