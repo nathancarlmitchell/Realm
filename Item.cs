@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Reflection.Metadata;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Xna.Framework;
@@ -9,15 +10,43 @@ using Microsoft.Xna.Framework.Graphics;
 
 namespace Realm
 {
-    public abstract class Item : Entity
+    public class Item : Entity
     {
         public Guid ID { get; set; }
         public string Name { get; set; }
+
+        public string imageName;
+
+        //public string ImageName { get; set; }
+
+        public string ImageName
+        {
+            get
+            {
+                if (image is not null)
+                {
+                    return image.Name;
+                }
+                return imageName;
+            }
+            set { imageName = value; }
+        }
+
         public int MaximumStackableQuantity { get; set; }
         public bool Hover;
 
         public Item()
         {
+            //if (ImageName is not null)
+            //{
+            //    Debug.WriteLine("ImageName:" + ImageName);
+            //    image = Game1.Instance.Content.Load<Texture2D>(ImageName);
+            //}
+            //else
+            //{
+            //    Debug.WriteLine("ImageName: is null" + this.ImageName);
+            //}
+
             MaximumStackableQuantity = 1;
             Hover = false;
         }

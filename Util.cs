@@ -8,15 +8,16 @@ using System.Xml.Linq;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
+using Realm.Data;
 using Realm.States;
-using SharpDX.Direct2D1;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 
 namespace Realm
 {
     public static class Util
     {
         private static string playerDataLocation = "PlayerData.json";
+        private static string weaponDataLocation = "WeaponData.json";
+        private static string inventoryDataLocation = "InventoryData.json";
 
         //private static string skinDataLocation = "SkinData.json";
         //private static string trophyDataLocation = "TrophyData.json";
@@ -58,7 +59,7 @@ namespace Realm
 
             try
             {
-                using (StreamReader r = new StreamReader(playerDataLocation))
+                using (StreamReader r = new(playerDataLocation))
                 {
                     Debug.WriteLine(playerDataLocation + ": reading data.");
                     string json = r.ReadToEnd();
@@ -111,11 +112,6 @@ namespace Realm
         {
             PlayerData playerData = new()
             {
-                //if (GameState.HighScore <= Player.ExperienceTotal)
-                //{
-                //    playerData.ExperienceTotal = Player.ExperienceTotal;
-                //}
-
                 ID = Player.ID,
                 Name = Player.Name,
                 Description = Player.Description,
@@ -140,6 +136,77 @@ namespace Realm
             File.WriteAllText(playerDataLocation, json);
 
             Debug.WriteLine("GameData Saved.");
+        }
+
+        public static void LoadWeaponData()
+        {
+            WeaponData weaponData = new();
+        }
+
+        public static void SaveInventoryData()
+        {
+            List<InventoryData> inventoryData = [];
+
+            for (int i = 0; i < Player.Instance.Inventory.InventoryRecords.Count; i++)
+            {
+                InventoryData item = new()
+                {
+                    InventoryItem = Player.Instance.Inventory.InventoryRecords[i].InventoryItem,
+                    Quantity = Player.Instance.Inventory.InventoryRecords[i].Quantity,
+                };
+
+                inventoryData.Add(item);
+            }
+
+            string json = JsonSerializer.Serialize(inventoryData);
+            Debug.WriteLine(json);
+            File.WriteAllText(inventoryDataLocation, json);
+            Debug.WriteLine("InventoryData Saved.");
+        }
+
+        public static void LoadInventoryData()
+        {
+            List<InventoryData> inventoryData = [];
+            try
+            {
+                using (StreamReader r = new StreamReader(inventoryDataLocation))
+                {
+                    Debug.WriteLine(inventoryDataLocation + ": reading data.");
+                    string json = r.ReadToEnd();
+                    Debug.WriteLine(json);
+                    try
+                    {
+                        inventoryData = JsonSerializer.Deserialize<List<InventoryData>>(json);
+                    }
+                    catch (System.Text.Json.JsonException)
+                    {
+                        Debug.WriteLine($"Error loading inventory data: {json}");
+                        //json = defaultSkinData;
+                        //skinData = JsonSerializer.Deserialize<List<SkinData>>(json);
+                        //Debug.WriteLine($"Default data loaded: {json}");
+                    }
+
+                    for (int i = 0; i < inventoryData.Count; i++)
+                    {
+                        Player.Instance.Inventory.InventoryRecords.Add(
+                            new InventorySystem.InventoryRecord(
+                                inventoryData[i].InventoryItem,
+                                inventoryData[i].Quantity
+                            )
+                        );
+                    }
+                }
+            }
+            catch (System.IO.FileNotFoundException)
+            {
+                Debug.WriteLine(inventoryDataLocation + ": file not found.");
+                //using (FileStream fs = File.Create(inventoryDataLocation))
+                //{
+                //Debug.WriteLine(inventoryDataLocation + ": file created.");
+                //byte[] data = new UTF8Encoding(true).GetBytes(defaultSkinData);
+                //fs.Write(data, 0, data.Length);
+                //}
+            }
         }
 
         //public static void LoadSkinData(ContentManager content)

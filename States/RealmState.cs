@@ -29,6 +29,7 @@ namespace Realm.States
             portal = new Portal();
 
             Util.LoadPlayerData();
+            Util.LoadInventoryData();
 
             //Player.Vitality = 99;
             //Player.Wisdom = 99;

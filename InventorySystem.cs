@@ -209,12 +209,17 @@ namespace Realm
         public class InventoryRecord
         {
             public Item InventoryItem { get; private set; }
+
             public int Quantity { get; set; }
 
             public InventoryRecord(Item item, int quantity)
             {
                 InventoryItem = item;
                 Quantity = quantity;
+                Debug.WriteLine("Item: " + item.ImageName);
+                Debug.WriteLine("Item: " + item.image);
+                if (item.ImageName is not null)
+                    item.image = Game1.Instance.Content.Load<Texture2D>(item.ImageName);
             }
 
             public void AddToQuantity(int amountToAdd)

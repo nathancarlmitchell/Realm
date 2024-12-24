@@ -56,8 +56,7 @@ namespace Realm
         {
             int x = Game1.ScreenWidth - 420;
             int y = 64;
-            //int x = (int)Game1.Camera.Pos.X + (Game1.ScreenWidth / 2) - 512;
-            //int y = (int)Game1.Camera.Pos.Y + Game1.Viewport.Height / 2 - 128;
+
             Vector2 pos = new Vector2(x, y);
             Color color = Color.Red;
 
@@ -153,8 +152,6 @@ namespace Realm
         {
             int x = 32;
             int y = Game1.Viewport.Height - 128;
-            //int x = (int)Game1.Camera.Pos.X - Game1.Viewport.Width / 2 + 64;
-            //int y = (int)Game1.Camera.Pos.Y + Game1.Viewport.Height / 2 - 128;
 
             int barScale = 4;
             int barHeight = 40;
@@ -297,19 +294,28 @@ namespace Realm
             );
 
             // Health.
+            Color maxColor = Color.LimeGreen;
+            Color defaultColor = Color.White;
+
+            var color = defaultColor;
+            if (Player.HealthMax >= Player.MaxHealth)
+                color = maxColor;
             spriteBatch.DrawString(
                 Art.HudFont,
                 "HP: " + Player.Health + " / " + Player.HealthMax,
                 new Vector2(x, y + 0),
-                Color.White
+                color
             );
 
             // Mana.
+            color = defaultColor;
+            if (Player.ManaMax >= Player.MaxMana)
+                color = maxColor;
             spriteBatch.DrawString(
                 Art.HudFont,
                 "Mana: " + Player.Mana + " / " + Player.ManaMax,
                 new Vector2(x, y + barHeight + barOffset),
-                Color.White
+                color
             );
         }
 

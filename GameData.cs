@@ -1,6 +1,7 @@
-﻿namespace Realm;
-
-public class GameData
+﻿namespace Realm
 {
-    public int HighScore { get; set; }
+    public class GameData(int HighScore)
+    {
+        public int HighScore { get; set; } = HighScore;
+    }
 }

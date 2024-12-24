@@ -51,6 +51,7 @@ namespace Realm
         // Loot bags.
         public static Texture2D LootBag { get; private set; }
         public static Texture2D LootBagBlue { get; private set; }
+        public static Texture2D LootBagWhite { get; private set; }
 
         public static void Load(ContentManager content)
         {
@@ -65,6 +66,7 @@ namespace Realm
             // Loot bags.
             LootBag = content.Load<Texture2D>("loot_bag");
             LootBagBlue = content.Load<Texture2D>("Items/Bags/blue");
+            LootBagWhite = content.Load<Texture2D>("Items/Bags/white");
 
             // Controls.
             ButtonTexture = content.Load<Texture2D>("Controls/Button");

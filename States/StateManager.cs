@@ -23,6 +23,7 @@ namespace Realm.States
         {
             EntityManager.Reset();
             Util.SavePlayerData();
+            Util.SaveInventoryData();
             Game1.Instance.ChangeState(
                 new RealmState(
                     Game1.Instance,
