@@ -1,12 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Reflection.Metadata;
-using System.Text;
-using System.Threading.Tasks;
-using Microsoft.Xna.Framework.Graphics;
-
-namespace Realm.States
+﻿namespace Realm.States
 {
     public static class StateManager
     {
@@ -22,8 +14,11 @@ namespace Realm.States
         public static void Nexus()
         {
             EntityManager.Reset();
+
             Util.SavePlayerData();
             Util.SaveInventoryData();
+            //Util.SaveWeaponData();
+
             Game1.Instance.ChangeState(
                 new RealmState(
                     Game1.Instance,
@@ -38,6 +33,13 @@ namespace Realm.States
             Game1.Instance.ChangeState(
                 new MenuState(Game1.Instance, Game1.Instance.GraphicsDevice, Game1.Instance.Content)
             );
+        }
+
+        public static void SelectClass()
+        {
+            //Game1.Instance.ChangeState(
+            //    new MenuState(Game1.Instance, Game1.Instance.GraphicsDevice, Game1.Instance.Content)
+            //);
         }
 
         public static void NewGame()

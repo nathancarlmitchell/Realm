@@ -24,7 +24,7 @@ namespace Realm
                 // then add as many as we can to that stack.
                 if (
                     InventoryRecords.Exists(x =>
-                        (x.InventoryItem.ID == item.ID)
+                        (x.InventoryItem.Name == item.Name)
                         && (x.Quantity < item.MaximumStackableQuantity)
                     )
                 )
@@ -32,7 +32,7 @@ namespace Realm
                     Debug.WriteLine("InventoryRecords.Exists");
                     // Get the item we're going to add quantity to
                     InventoryRecord inventoryRecord = InventoryRecords.FirstOrDefault(x =>
-                        (x.InventoryItem.ID == item.ID)
+                        (x.InventoryItem.Name == item.Name)
                     );
                     if (inventoryRecord != null) { }
                     else
@@ -87,14 +87,13 @@ namespace Realm
         {
             // Return true if item exisits in inventory and can stack
             return InventoryRecords.Exists(x =>
-                (x.InventoryItem.ID == item.ID) && (x.Quantity < item.MaximumStackableQuantity)
+                (x.InventoryItem.Name == item.Name) && (x.Quantity < item.MaximumStackableQuantity)
             );
         }
 
         public bool HasRoom()
         {
-            return Player.Instance.Inventory.InventoryRecords.Count
-                < InventorySystem.MAXIMUM_SLOTS_IN_INVENTORY;
+            return Player.Instance.Inventory.InventoryRecords.Count < MAXIMUM_SLOTS_IN_INVENTORY;
         }
 
         public void DropItem(string name)
@@ -273,22 +272,22 @@ namespace Realm
                 // Mouse over inventory item.
                 if (bounds.Intersects(Input.MouseBounds))
                 {
-                    string text = $"{record.InventoryItem.Name}";
+                    string itemName = $"{record.InventoryItem.Name}";
 
-                    int textX = (int)(Art.HudFont.MeasureString(text).X / 2);
-                    int textY = (int)(Art.HudFont.MeasureString(text).Y / 2);
+                    int textX = (int)(Art.HudFont.MeasureString(itemName).X / 2);
+                    int textY = (int)(Art.HudFont.MeasureString(itemName).Y / 2);
 
                     spriteBatch.DrawString(
                         Art.HudFont,
-                        text,
+                        itemName,
                         new Vector2(x - textX, y - record.InventoryItem.image.Height - textY),
                         Color.Red
                     );
 
-                    // Drop / use item if clicked.
+                    // Inventory item clicked.
                     if (Input.GetMouseClick())
                     {
-                        if (record.InventoryItem is Potion)
+                        if (record.InventoryItem.Consumable)
                         {
                             // Use potion.
                             Debug.WriteLine(record.InventoryItem.Name);

@@ -22,7 +22,9 @@ namespace Realm
         public static Texture2D Enemy2 { get; private set; }
         public static Texture2D EnemySpriteGod { get; private set; }
         public static Texture2D Snake { get; private set; }
-        public static Texture2D Player { get; private set; }
+        public static Texture2D Wizard { get; private set; }
+        public static Texture2D Archer { get; private set; }
+        public static Texture2D ArcherProjectile { get; private set; }
         public static AnimatedTexture Portal { get; private set; }
         public static Texture2D Item { get; private set; }
         public static Texture2D Inventory { get; private set; }
@@ -80,9 +82,12 @@ namespace Realm
             HealthBar.SetData(new[] { Color.White });
 
             // Player.
-            Player = content.Load<Texture2D>("player");
+            Wizard = content.Load<Texture2D>("player");
             Projectile = content.Load<Texture2D>("projectile");
             Projectile2 = content.Load<Texture2D>("projectile2");
+
+            Archer = content.Load<Texture2D>("Classes/archer");
+            ArcherProjectile = content.Load<Texture2D>("Projectiles/archer");
 
             Item = content.Load<Texture2D>("item");
             Inventory = content.Load<Texture2D>("inventory");

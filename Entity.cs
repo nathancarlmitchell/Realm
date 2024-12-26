@@ -32,7 +32,10 @@ namespace Realm
         {
             get { return image == null ? Vector2.Zero : new Vector2(image.Width, image.Height); }
         }
+
         public abstract void Update();
+
+        public virtual void Update(GameTime gameTime) { }
 
         public virtual void Draw(SpriteBatch spriteBatch)
         {

@@ -108,32 +108,12 @@ namespace Realm
             );
 
             color = Color.Red;
-            if (Player.Vitality >= Player.MaxVitality)
-                color = maxColor;
-            spriteBatch.DrawString(
-                Art.HudFont,
-                "Vitality: " + Player.Vitality,
-                new Vector2(x, y + 64),
-                color
-            );
-
-            color = Color.Red;
-            if (Player.Wisdom >= Player.MaxWisdom)
-                color = maxColor;
-            spriteBatch.DrawString(
-                Art.HudFont,
-                "Wisdom: " + Player.Wisdom,
-                new Vector2(x, y + 80),
-                color
-            );
-
-            color = Color.Red;
             if (Player.Speed >= Player.MaxSpeed)
                 color = maxColor;
             spriteBatch.DrawString(
                 Art.HudFont,
                 "Speed: " + Player.Speed,
-                new Vector2(x, y + 96),
+                new Vector2(x, y + 64),
                 color
             );
 
@@ -143,6 +123,26 @@ namespace Realm
             spriteBatch.DrawString(
                 Art.HudFont,
                 "Dexterity: " + Player.Dexterity,
+                new Vector2(x, y + 80),
+                color
+            );
+
+            color = Color.Red;
+            if (Player.Vitality >= Player.MaxVitality)
+                color = maxColor;
+            spriteBatch.DrawString(
+                Art.HudFont,
+                "Vitality: " + Player.Vitality,
+                new Vector2(x, y + 96),
+                color
+            );
+
+            color = Color.Red;
+            if (Player.Wisdom >= Player.MaxWisdom)
+                color = maxColor;
+            spriteBatch.DrawString(
+                Art.HudFont,
+                "Wisdom: " + Player.Wisdom,
                 new Vector2(x, y + 112),
                 color
             );

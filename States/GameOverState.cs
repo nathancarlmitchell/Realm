@@ -4,6 +4,7 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input.Touch;
+using Realm.CharacterClasses;
 using Realm.Controls;
 
 namespace Realm.States
@@ -47,7 +48,7 @@ namespace Realm.States
             menu = new Menu(butttons);
 
             EntityManager.RemovePlayer();
-            EntityManager.Add(new Player());
+            EntityManager.Add(new Archer());
 
             Util.SavePlayerData();
         }

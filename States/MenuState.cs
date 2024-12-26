@@ -21,6 +21,9 @@ namespace Realm.States
             var newGameButton = new Button() { Text = "New Game" };
             newGameButton.Click += NewGameButton_Click;
 
+            var classButton = new Button() { Text = "Class" };
+            classButton.Click += ClassButton_Click;
+
             var quitGameButton = new Button() { Text = "Quit" };
             quitGameButton.Click += QuitGameButton_Click;
 
@@ -36,6 +39,11 @@ namespace Realm.States
         private void NewGameButton_Click(object sender, EventArgs e)
         {
             StateManager.NewGame();
+        }
+
+        private void ClassButton_Click(object sender, EventArgs e)
+        {
+            StateManager.SelectClass();
         }
 
         public override void Draw(GameTime gameTime, SpriteBatch spriteBatch)

@@ -1,8 +1,11 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using Realm.CharacterClasses;
+using Realm.Data;
 using Realm.States;
 
 namespace Realm
@@ -69,6 +72,7 @@ namespace Realm
         }
         public static bool Mute { get; set; }
         public static bool _Debug { get; set; }
+        public List<Weapon> Weapons { get; set; }
 
         public Game1()
         {
@@ -116,9 +120,14 @@ namespace Realm
 
         private void StartGame()
         {
-            //GameState = new GameState(this, Graphics.GraphicsDevice, Content);
             currentState = new MenuState(this, Graphics.GraphicsDevice, Content);
-            EntityManager.Add(new Player());
+
+            Weapons = Util.LoadWeaponData();
+
+            EntityManager.Add(new Archer());
+
+            Util.LoadPlayerData();
+            Util.LoadInventoryData();
         }
 
         public void ChangeState(State state)

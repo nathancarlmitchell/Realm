@@ -107,14 +107,14 @@ public static class Input
             // Level up.
             if (WasKeyPressed(Keys.Add))
             {
-                Player.LevelUp();
+                Player.Instance.LevelUp();
             }
 
             // Level down.
             if (WasKeyPressed(Keys.Subtract))
             {
                 Player.Level -= 2;
-                Player.LevelUp();
+                Player.Instance.LevelUp();
             }
 
             // Return to Nexus.

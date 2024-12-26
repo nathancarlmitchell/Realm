@@ -27,6 +27,7 @@ namespace Realm
         public Potion(Potions potion)
         {
             MaximumStackableQuantity = 6;
+            Consumable = true;
 
             switch (potion)
             {

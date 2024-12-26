@@ -138,9 +138,81 @@ namespace Realm
             Debug.WriteLine("GameData Saved.");
         }
 
-        public static void LoadWeaponData()
+        public static void SaveWeaponData()
         {
-            WeaponData weaponData = new();
+            List<WeaponData> weaponData = [];
+
+            Weapon playerWeapon = Player.Instance.Weapon;
+
+            WeaponData weapon = new()
+            {
+                Type = playerWeapon.Type,
+                Description = playerWeapon.Description,
+                Teir = playerWeapon.Teir,
+                DamageMin = playerWeapon.DamageMin,
+                DamageMax = playerWeapon.DamageMax,
+                ProjectileMagnitude = playerWeapon.ProjectileMagnitude,
+                ProjectileDuration = playerWeapon.ProjectileDuration,
+                Name = playerWeapon.Name,
+                ImageName = playerWeapon.ImageName,
+                ProjectileImageName = playerWeapon.ProjectileImageName,
+            };
+
+            weaponData.Add(weapon);
+
+            string json = JsonSerializer.Serialize(weaponData);
+            Debug.WriteLine(json);
+            File.WriteAllText(weaponDataLocation, json);
+            Debug.WriteLine("WeaponData Saved.");
+        }
+
+        public static List<Weapon> LoadWeaponData()
+        {
+            List<WeaponData> weaponData = [];
+            List<Weapon> weapons = [];
+
+            try
+            {
+                using (StreamReader r = new(weaponDataLocation))
+                {
+                    Debug.WriteLine(weaponDataLocation + ": reading data.");
+                    string json = r.ReadToEnd();
+                    Debug.WriteLine(json);
+                    try
+                    {
+                        weaponData = JsonSerializer.Deserialize<List<WeaponData>>(json);
+                    }
+                    catch (System.Text.Json.JsonException)
+                    {
+                        Debug.WriteLine($"Error loading weapon data: {json}");
+                    }
+                }
+
+                for (int i = 0; i < weaponData.Count; i++)
+                {
+                    weapons.Add(
+                        new Weapon()
+                        {
+                            Type = weaponData[i].Type,
+                            Name = weaponData[i].Name,
+                            Description = weaponData[i].Description,
+                            Teir = weaponData[i].Teir,
+                            DamageMin = weaponData[i].DamageMin,
+                            DamageMax = weaponData[i].DamageMax,
+                            ProjectileMagnitude = weaponData[i].ProjectileMagnitude,
+                            ProjectileDuration = weaponData[i].ProjectileDuration,
+                            ImageName = weaponData[i].ImageName,
+                            ProjectileImageName = weaponData[i].ProjectileImageName,
+                        }
+                    );
+                }
+            }
+            catch (System.IO.FileNotFoundException)
+            {
+                Debug.WriteLine(weaponDataLocation + ": file not found.");
+            }
+
+            return weapons;
         }
 
         public static void SaveInventoryData()
@@ -169,7 +241,7 @@ namespace Realm
             List<InventoryData> inventoryData = [];
             try
             {
-                using (StreamReader r = new StreamReader(inventoryDataLocation))
+                using (StreamReader r = new(inventoryDataLocation))
                 {
                     Debug.WriteLine(inventoryDataLocation + ": reading data.");
                     string json = r.ReadToEnd();
@@ -200,12 +272,6 @@ namespace Realm
             catch (System.IO.FileNotFoundException)
             {
                 Debug.WriteLine(inventoryDataLocation + ": file not found.");
-                //using (FileStream fs = File.Create(inventoryDataLocation))
-                //{
-                //Debug.WriteLine(inventoryDataLocation + ": file created.");
-                //byte[] data = new UTF8Encoding(true).GetBytes(defaultSkinData);
-                //fs.Write(data, 0, data.Length);
-                //}
             }
         }
 
@@ -369,7 +435,7 @@ namespace Realm
         public static string WrapText(SpriteFont spriteFont, string text, float maxLineWidth)
         {
             string[] words = text.Split(' ');
-            StringBuilder sb = new StringBuilder();
+            StringBuilder sb = new();
             float lineWidth = 0f;
             float spaceWidth = spriteFont.MeasureString(" ").X;
 

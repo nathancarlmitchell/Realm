@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Content;
@@ -14,8 +15,7 @@ namespace Realm.States
         public static Guid ManaPotionGuid = Guid.NewGuid();
         public static int HighScore { get; set; }
         public static int Score { get; set; }
-        private readonly Portal portal;
-        private LootBag lootBag;
+        private List<Portal> portalList;
 
         public RealmState(Game1 game, GraphicsDevice graphicsDevice, ContentManager content)
             : base()
@@ -25,14 +25,13 @@ namespace Realm.States
 
             EntityManager.Reset();
 
-            //EntityManager.Add(new Portal());
-            portal = new Portal();
+            var portalPos = new Vector2(
+                Player.Instance.Position.X - 25,
+                Player.Instance.Position.Y - 100
+            );
 
-            Util.LoadPlayerData();
-            Util.LoadInventoryData();
+            portalList = [new Portal(), new Portal(portalPos, Portal.Destination.CharacterSelect)];
 
-            //Player.Vitality = 99;
-            //Player.Wisdom = 99;
             // Define a drawing rectangle based on the number of tiles wide and high, using the texture dimensions.
             targetRectangle = new Rectangle(0, 0, Game1.WorldWidth, Game1.WorldHeight);
         }
@@ -50,7 +49,10 @@ namespace Realm.States
             );
 
             // Draw portal.
-            portal.Draw(spriteBatch, gameTime);
+            foreach (Portal portal in portalList)
+            {
+                portal.Draw(spriteBatch, gameTime);
+            }
 
             // Draw player.
             EntityManager.Draw(spriteBatch);
@@ -88,7 +90,10 @@ namespace Realm.States
         {
             EntityManager.Update();
 
-            portal.Update(gameTime);
+            foreach (Portal portal in portalList)
+            {
+                portal.Update(gameTime);
+            }
         }
     }
 }

@@ -3,7 +3,6 @@ using System.Diagnostics;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
-using static System.Windows.Forms.VisualStyles.VisualStyleElement;
 
 namespace Realm.States
 {
@@ -81,9 +80,9 @@ namespace Realm.States
             Overlay.DrawAudio(spriteBatch);
 
             // Draw loot.
-            for (int i = 0; i < ItemSpawner.LootBags.Count; i++)
+            foreach (LootBag bag in ItemSpawner.LootBags)
             {
-                ItemSpawner.LootBags[i].DrawLoot(spriteBatch);
+                bag.DrawLoot(spriteBatch);
             }
 
             // Draw health and mana.

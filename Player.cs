@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Drawing;
 using System.Runtime.CompilerServices;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -45,23 +46,23 @@ namespace Realm
         public static int Vitality;
         public static int Wisdom;
 
-        private static int baseHealth = 100;
-        private static int baseMana = 100;
-        private static int baseAttack = 17;
-        private static int baseDefense = 0;
-        private static float baseSpeed = 17;
-        private static int baseDexterity = 17;
-        private static int BaseVitality = 5;
-        private static int baseWisdom = 23;
+        public static int baseHealth = 100;
+        public static int baseMana = 100;
+        public static int baseAttack = 17;
+        public static int baseDefense = 0;
+        public static float baseSpeed = 17;
+        public static int baseDexterity = 17;
+        public static int BaseVitality = 5;
+        public static int baseWisdom = 23;
 
-        public static int MaxHealth = 700;
-        public static int MaxMana = 385;
-        public static int MaxAttack = 75;
-        public static int MaxDefense = 25;
-        public static float MaxSpeed = 50;
-        public static int MaxDexterity = 75;
-        public static int MaxVitality = 40;
-        public static int MaxWisdom = 60;
+        public static int MaxHealth;
+        public static int MaxMana;
+        public static int MaxAttack;
+        public static int MaxDefense;
+        public static float MaxSpeed;
+        public static int MaxDexterity;
+        public static int MaxVitality;
+        public static int MaxWisdom;
 
         public static int Experience;
         public static int ExperienceNextLevel;
@@ -73,12 +74,25 @@ namespace Realm
 
         public Texture2D Texture;
 
+        public enum Class
+        {
+            Wizard, // 0
+            Archer, // 1
+        }
+
+        public Class PlayerClass { get; set; }
+
+        public enum PlayerWeaponType
+        {
+            Wand, // 0
+            Bow, // 1
+        }
+
+        public PlayerWeaponType WeaponType { get; set; }
+
         public Player()
         {
             ID = Guid.NewGuid();
-            Name = "Player";
-            Description = string.Empty;
-            image = Art.Player;
 
             Opacity = 1f;
 
@@ -86,29 +100,32 @@ namespace Realm
 
             instance = this;
 
-            Health = 100;
-            HealthMax = 100;
-
-            Mana = 100;
-            ManaMax = 100;
-
-            Attack = 17;
-            Defense = 0;
-            Vitality = 5;
-            Wisdom = 23;
-            Speed = 17;
-            Dexterity = 17;
-
             Experience = 0;
             ExperienceNextLevel = 50;
             ExperienceTotal = 0;
 
             Level = 1;
 
-            Weapon = new Weapon(Art.Wand, Art.Projectile2);
-
             Position = new Vector2(Game1.WorldWidth / 2, Game1.WorldHeight / 2);
-            Radius = image.Width / 2f;
+
+            Weapon = new Weapon();
+
+            // Radius is not accurate,
+            // Archer is smaller.
+            Radius = 64 / 2f;
+        }
+
+        public virtual void LevelUp()
+        {
+            Health = HealthMax;
+            Mana = ManaMax;
+
+            Level++;
+
+            Experience = 0;
+            ExperienceNextLevel = 50 + ((Level * 2) * 50);
+
+            Sound.Play(Sound.LevelUp, 0.4f);
         }
 
         public static void UseAbility()
@@ -139,29 +156,6 @@ namespace Realm
         private void Shoot()
         {
             Weapon.Shoot();
-        }
-
-        public static void LevelUp()
-        {
-            Attack = 17 + (Level * 2);
-            Defense = 0 + (int)(Level * 0.5);
-            Vitality = 5 + (Level * 1);
-            Wisdom = 23 + (Level * 1);
-            Speed = 17 + (Level * 1);
-            Dexterity = 17 + (Level * 2);
-
-            HealthMax = 100 + (Level * 25);
-            ManaMax = 100 + (Level * 10);
-
-            Health = HealthMax;
-            Mana = ManaMax;
-
-            Level++;
-
-            Experience = 0;
-            ExperienceNextLevel = 50 + ((Level * 2) * 50);
-
-            Sound.Play(Sound.LevelUp, 0.4f);
         }
 
         public static void Hit(int damage = 25)

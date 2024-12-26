@@ -1,22 +1,32 @@
 ﻿using System;
 using System.Diagnostics;
+using System.Linq;
 using System.Xml.Linq;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using Realm.Data;
 
 namespace Realm
 {
     public class Weapon : Item
     {
-        public string Description { get; set; }
+        public enum WeaponType
+        {
+            Wand, // 0
+            Bow, // 1
+        }
+
+        public WeaponType Type { get; set; }
+
         public int Teir { get; set; }
 
-        public int DamageMin;
-        public int DamageMax;
-        public int FireRate;
-        public float ProjectileMagnitude;
-        public int ProjectileDuration;
+        public int DamageMin { get; set; }
+        public int DamageMax { get; set; }
+        public int FireRate { get; set; }
+        public float ProjectileMagnitude { get; set; }
+        public int ProjectileDuration { get; set; }
         public Texture2D ProjectileImage;
+        public string ProjectileImageName { get; set; }
 
         private readonly Random rand = new();
         private Rectangle bounds;
@@ -42,6 +52,45 @@ namespace Realm
             DamageMax = 55;
 
             bounds = new Rectangle(x, y, image.Width, image.Height);
+        }
+
+        public static Weapon LoadWeapon(string weaponName)
+        {
+            Weapon weaponData = Game1.Instance.Weapons.FirstOrDefault(x => (x.Name == weaponName));
+
+            if (weaponData.Type.ToString() == Player.Instance.WeaponType.ToString())
+            {
+                Texture2D weaponTexture = Game1.Instance.Content.Load<Texture2D>(
+                    weaponData.ImageName
+                );
+
+                Texture2D projectileTexture = Game1.Instance.Content.Load<Texture2D>(
+                    weaponData.ProjectileImageName
+                );
+
+                Weapon weapon = new(weaponTexture, projectileTexture)
+                {
+                    Type = weaponData.Type,
+                    Name = weaponData.Name,
+                    Description = weaponData.Description,
+                    Teir = weaponData.Teir,
+                    DamageMin = weaponData.DamageMin,
+                    DamageMax = weaponData.DamageMax,
+                    ProjectileMagnitude = weaponData.ProjectileMagnitude,
+                    ProjectileDuration = weaponData.ProjectileDuration,
+                    ProjectileImageName = weaponData.ProjectileImageName,
+                };
+
+                return weapon;
+            }
+
+            Sound.Play(Sound.Error, 0.4f);
+            return null;
+        }
+
+        public Weapon()
+        {
+            // Initialized in Player.cs.
         }
 
         public void Shoot()
@@ -88,7 +137,7 @@ namespace Realm
         public void DrawEquipped(SpriteBatch spriteBatch)
         {
             spriteBatch.Draw(Art.Border, new Vector2(x, y), Color.White);
-            spriteBatch.Draw(Art.Wand, new Vector2(x, y), Color.White);
+            spriteBatch.Draw(this.image, new Vector2(x, y), Color.White);
 
             if (hover)
             {

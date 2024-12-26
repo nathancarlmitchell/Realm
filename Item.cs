@@ -14,10 +14,9 @@ namespace Realm
     {
         public Guid ID { get; set; }
         public string Name { get; set; }
+        public string Description { get; set; }
 
-        public string imageName;
-
-        //public string ImageName { get; set; }
+        private string imageName;
 
         public string ImageName
         {
@@ -33,20 +32,11 @@ namespace Realm
         }
 
         public int MaximumStackableQuantity { get; set; }
+        public bool Consumable { get; set; } = false;
         public bool Hover;
 
         public Item()
         {
-            //if (ImageName is not null)
-            //{
-            //    Debug.WriteLine("ImageName:" + ImageName);
-            //    image = Game1.Instance.Content.Load<Texture2D>(ImageName);
-            //}
-            //else
-            //{
-            //    Debug.WriteLine("ImageName: is null" + this.ImageName);
-            //}
-
             MaximumStackableQuantity = 1;
             Hover = false;
         }
