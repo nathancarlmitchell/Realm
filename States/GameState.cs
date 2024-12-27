@@ -85,6 +85,9 @@ namespace Realm.States
                 bag.DrawLoot(spriteBatch);
             }
 
+            Debug.WriteLine(ItemSpawner.LootBags.Count);
+            //Debug.WriteLine(EntityManager.Count);
+
             // Draw health and mana.
             Overlay.DrawHealth(spriteBatch);
 
@@ -116,7 +119,8 @@ namespace Realm.States
         public override void Update(GameTime gameTime)
         {
             EntityManager.Update();
-            EnemySpawner.Update();
+            //EnemySpawner.Update();
+            Player.Instance.Inventory.Update();
 
             // Update score.
             if (Player.ExperienceTotal > HighScore)

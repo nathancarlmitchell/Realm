@@ -216,4 +216,14 @@ public static class Input
             && mouse.LeftButton == ButtonState.Pressed;
         //previousKeyboard.IsKeyUp(key) && keyboard.IsKeyDown(key)
     }
+
+    public static bool MousePressed()
+    {
+        return mouse.LeftButton == ButtonState.Pressed;
+    }
+
+    public static bool MouseReleased()
+    {
+        return previousMouse.LeftButton == ButtonState.Released;
+    }
 }

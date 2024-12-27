@@ -37,6 +37,11 @@ namespace Realm
             isOpen = false;
             clicked = false;
 
+            if (Items.Count == 0)
+            {
+                ItemSpawner.LootBags.Remove(this);
+            }
+
             // Check if player is touching bag.
             if (Player.Instance.Bounds.Intersects(this.Bounds))
             {
@@ -96,6 +101,7 @@ namespace Realm
                                 // Despawn loot bag if it is empty.
                                 if (Items.Count <= 0)
                                 {
+                                    this.isOpen = false;
                                     this.IsExpired = true;
                                 }
                             }

@@ -190,8 +190,16 @@ namespace Realm
 
                 for (int i = 0; i < weaponData.Count; i++)
                 {
+                    Texture2D weaponTexture = Game1.Instance.Content.Load<Texture2D>(
+                        weaponData[i].ImageName
+                    );
+
+                    Texture2D projectileTexture = Game1.Instance.Content.Load<Texture2D>(
+                        weaponData[i].ProjectileImageName
+                    );
+
                     weapons.Add(
-                        new Weapon()
+                        new Weapon(weaponTexture, projectileTexture)
                         {
                             Type = weaponData[i].Type,
                             Name = weaponData[i].Name,

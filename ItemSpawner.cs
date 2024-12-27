@@ -22,6 +22,10 @@ namespace Realm
             List<Item> items = [];
             Texture2D bagTexture = Art.LootBag;
 
+            // Drop weapon.
+            int randomWeapon = rand.Next(Game1.Instance.Weapons.Count);
+            items.Add(Game1.Instance.Weapons[randomWeapon]);
+
             // Drop stat potion.
             if (rand.Next(15) == 0)
             {

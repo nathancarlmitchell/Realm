@@ -7,6 +7,8 @@ using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Realm.States;
 
+// https://scottlilly.com/how-to-build-stackable-inventory-for-a-game-in-c/
+
 namespace Realm
 {
     public class InventorySystem
@@ -30,6 +32,8 @@ namespace Realm
                 )
                 {
                     Debug.WriteLine("InventoryRecords.Exists");
+                    Debug.WriteLine(item.Name);
+
                     // Get the item we're going to add quantity to
                     InventoryRecord inventoryRecord = InventoryRecords.FirstOrDefault(x =>
                         (x.InventoryItem.Name == item.Name)
@@ -96,24 +100,49 @@ namespace Realm
             return Player.Instance.Inventory.InventoryRecords.Count < MAXIMUM_SLOTS_IN_INVENTORY;
         }
 
-        public void DropItem(string name)
+        public void DropItem(InventoryRecord record)
         {
             for (int i = 0; i < InventoryRecords.Count; i++)
             {
-                InventoryRecord record = InventoryRecords[i];
-                if (record.InventoryItem != null)
+                InventoryRecord r = InventoryRecords[i];
+                if (r.InventoryItem != null)
                 {
-                    if (record.InventoryItem.Name == name && record.Quantity > 0)
+                    Debug.WriteLine(r.InventoryItem.Name);
+                    Debug.WriteLine(record.InventoryItem.Name);
+                    if (r.InventoryItem.Name == record.InventoryItem.Name && r.Quantity > 0)
                     {
-                        record.Quantity--;
-                        if (record.Quantity <= 0)
+                        r.Quantity--;
+                        Debug.WriteLine(r.Quantity);
+                        if (r.Quantity <= 0)
                         {
+                            Debug.WriteLine("r.Quantity <= 0");
                             InventoryRecords.RemoveAt(i);
-                            return;
+                            Debug.WriteLine(InventoryRecords.Count);
+                            for (int x = 0; x < InventoryRecords.Count; x++)
+                            {
+                                Debug.WriteLine(InventoryRecords[x].InventoryItem.Name);
+                            }
                         }
                     }
                 }
             }
+
+            for (int x = 0; x < ItemSpawner.LootBags.Count; x++)
+            {
+                // Add item to exisiting bag
+                if (Player.Instance.Bounds.Intersects(ItemSpawner.LootBags[x].Bounds))
+                {
+                    ItemSpawner.LootBags[x].Add(record.InventoryItem);
+                    //DropItem(record.InventoryItem.Name);
+                    return;
+                }
+            }
+
+            Debug.WriteLine(record.InventoryItem);
+            List<Item> items = [record.InventoryItem];
+            LootBag bag = new() { Position = Player.Instance.Position, Items = items };
+            ItemSpawner.LootBags.Add(bag);
+            EntityManager.Add(bag);
         }
 
         // This should really be called UseItem()
@@ -230,10 +259,66 @@ namespace Realm
         int x = Game1.Viewport.Width - 256;
         int y = Game1.Viewport.Height - 128;
 
+        public bool SwapItem = false;
+
+        private bool hover = false;
+        private bool mousePressed = false;
+        private int inventorySlot = 0;
+
+        public void Update()
+        {
+            for (int i = 0; i < InventoryRecords.Count; i++)
+            {
+                InventoryRecord record = InventoryRecords[i];
+                var bounds = new Rectangle(
+                    x + (i * 40),
+                    y,
+                    record.InventoryItem.image.Width,
+                    record.InventoryItem.image.Height
+                );
+
+                if (bounds.Intersects(Input.MouseBounds))
+                {
+                    hover = true;
+                    inventorySlot = i;
+
+                    // Mouse pressed.
+                    if (Input.MousePressed())
+                    {
+                        mousePressed = true;
+                        return;
+                    }
+                }
+            }
+
+            // Mouse released.
+            if (mousePressed && Input.MouseReleased())
+            {
+                mousePressed = false;
+                if (Input.MouseBounds.Intersects(Player.Instance.Weapon.WeaponSlotBounds))
+                {
+                    Weapon.LoadWeapon(InventoryRecords[inventorySlot].InventoryItem.Name);
+                }
+                else
+                {
+                    DropItem(InventoryRecords[inventorySlot]);
+                }
+            }
+        }
+
         public void Draw(SpriteBatch spriteBatch)
         {
             // Draw inventory border.
             spriteBatch.Draw(Art.Inventory, new Vector2(x, y), Color.White);
+
+            if (mousePressed)
+            {
+                spriteBatch.Draw(
+                    InventoryRecords[inventorySlot].InventoryItem.image,
+                    Input.MousePosition,
+                    Color.White * 0.5f
+                );
+            }
 
             // Loop through items in inventory.
             for (int i = 0; i < InventoryRecords.Count; i++)
@@ -272,6 +357,15 @@ namespace Realm
                 // Mouse over inventory item.
                 if (bounds.Intersects(Input.MouseBounds))
                 {
+                    if (SwapItem)
+                    {
+                        Weapon weapon = Weapon.LoadWeapon(record.InventoryItem.Name);
+
+                        Player.Instance.Weapon = weapon;
+                        SwapItem = false;
+                        return;
+                    }
+
                     string itemName = $"{record.InventoryItem.Name}";
 
                     int textX = (int)(Art.HudFont.MeasureString(itemName).X / 2);
@@ -296,23 +390,23 @@ namespace Realm
                         }
 
                         // Drop item.
-                        for (int x = 0; x < ItemSpawner.LootBags.Count; x++)
-                        {
-                            // Add item to exisiting bag
-                            if (Player.Instance.Bounds.Intersects(ItemSpawner.LootBags[x].Bounds))
-                            {
-                                ItemSpawner.LootBags[x].Add(record.InventoryItem);
-                                DropItem(record.InventoryItem.Name);
-                                return;
-                            }
-                        }
+                        //for (int x = 0; x < ItemSpawner.LootBags.Count; x++)
+                        //{
+                        //    // Add item to exisiting bag
+                        //    if (Player.Instance.Bounds.Intersects(ItemSpawner.LootBags[x].Bounds))
+                        //    {
+                        //        ItemSpawner.LootBags[x].Add(record.InventoryItem);
+                        //        DropItem(record.InventoryItem.Name);
+                        //        return;
+                        //    }
+                        //}
 
-                        Debug.WriteLine(record.InventoryItem);
-                        List<Item> items = [record.InventoryItem];
-                        LootBag bag = new() { Position = Player.Instance.Position, Items = items };
-                        ItemSpawner.LootBags.Add(bag);
-                        EntityManager.Add(bag);
-                        DropItem(record.InventoryItem.Name);
+                        //Debug.WriteLine(record.InventoryItem);
+                        //List<Item> items = [record.InventoryItem];
+                        //LootBag bag = new() { Position = Player.Instance.Position, Items = items };
+                        //ItemSpawner.LootBags.Add(bag);
+                        //EntityManager.Add(bag);
+                        //DropItem(record.InventoryItem.Name);
                     }
                 }
             }

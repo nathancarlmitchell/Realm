@@ -29,7 +29,7 @@ namespace Realm
         public string ProjectileImageName { get; set; }
 
         private readonly Random rand = new();
-        private Rectangle bounds;
+        public Rectangle WeaponSlotBounds;
 
         static int x = Game1.ScreenWidth - 420;
         static int y = 512;
@@ -38,20 +38,11 @@ namespace Realm
         public Weapon(Texture2D image, Texture2D projectileImage)
         {
             ID = Guid.NewGuid();
-            Name = "Fire Wand";
-            Description = "A wizard's most important tool.";
-            Teir = 0;
 
             this.image = image;
             ProjectileImage = projectileImage;
 
-            ProjectileDuration = 32;
-            ProjectileMagnitude = 12f;
-
-            DamageMin = 30;
-            DamageMax = 55;
-
-            bounds = new Rectangle(x, y, image.Width, image.Height);
+            WeaponSlotBounds = new Rectangle(x, y, image.Width, image.Height);
         }
 
         public static Weapon LoadWeapon(string weaponName)
@@ -81,6 +72,7 @@ namespace Realm
                     ProjectileImageName = weaponData.ProjectileImageName,
                 };
 
+                Player.Instance.Weapon = weapon;
                 return weapon;
             }
 
@@ -126,12 +118,30 @@ namespace Realm
         {
             hover = false;
 
-            if (bounds.Intersects(Input.MouseBounds))
+            if (WeaponSlotBounds.Intersects(Input.MouseBounds))
             {
                 // Mouse over weapon.
                 hover = true;
+
+                // Mouse pressed.
+                if (Input.MousePressed())
+                {
+                    mousePressed = true;
+                    return;
+                }
+            }
+
+            // Mouse released.
+            if (mousePressed && Input.MouseReleased())
+            {
+                mousePressed = false;
+
+                // DO SOMETHING ELSE.
+                //Player.Instance.Inventory.SwapItem = true;
             }
         }
+
+        private bool mousePressed = false;
 
         //This method needs to be replaced by drawing from the inventory.
         public void DrawEquipped(SpriteBatch spriteBatch)
@@ -141,8 +151,9 @@ namespace Realm
 
             if (hover)
             {
+                string description = Util.WrapText(Art.HudFont, Description, 350);
                 string text =
-                    $"T{Teir} - {Name}{Environment.NewLine}{Description}{Environment.NewLine}Damge: {DamageMin} - {DamageMax}";
+                    $"T{Teir} - {Name}{Environment.NewLine}{description}{Environment.NewLine}Damge: {DamageMin} - {DamageMax}";
 
                 int textY = (int)(Art.HudFont.MeasureString(text).Y / 2);
 
@@ -152,6 +163,11 @@ namespace Realm
                     new Vector2(x, y - image.Height - textY),
                     Color.Red
                 );
+            }
+
+            if (mousePressed)
+            {
+                spriteBatch.Draw(this.image, Input.MousePosition, Color.White * 0.5f);
             }
         }
     }

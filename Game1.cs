@@ -123,8 +123,9 @@ namespace Realm
             currentState = new MenuState(this, Graphics.GraphicsDevice, Content);
 
             Weapons = Util.LoadWeaponData();
+            Debug.WriteLine("Weapons.Count: " + Weapons.Count);
 
-            EntityManager.Add(new Archer());
+            EntityManager.Add(new Wizard());
 
             Util.LoadPlayerData();
             Util.LoadInventoryData();
