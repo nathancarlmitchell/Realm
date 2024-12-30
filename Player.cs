@@ -166,7 +166,7 @@ namespace Realm
                 damageModified = damage / 10;
             }
 
-            // Health = Health - damageModified;
+            //Health = Health - damageModified;
             if (Health <= 0)
             {
                 Kill();

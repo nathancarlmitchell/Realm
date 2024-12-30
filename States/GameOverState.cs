@@ -48,7 +48,7 @@ namespace Realm.States
             menu = new Menu(butttons);
 
             EntityManager.RemovePlayer();
-            EntityManager.Add(new Archer());
+            EntityManager.Add(new Wizard());
 
             Util.SavePlayerData();
         }

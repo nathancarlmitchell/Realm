@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using System.Windows.Forms;
 using System.Xml.Linq;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -236,7 +237,7 @@ namespace Realm
 
         public class InventoryRecord
         {
-            public Item InventoryItem { get; private set; }
+            public Item InventoryItem { get; set; }
 
             public int Quantity { get; set; }
 
@@ -263,10 +264,14 @@ namespace Realm
 
         private bool hover = false;
         private bool mousePressed = false;
+        private bool dragItem = false;
         private int inventorySlot = 0;
 
         public void Update()
         {
+            hover = false;
+            //mousePressed = false;
+
             for (int i = 0; i < InventoryRecords.Count; i++)
             {
                 InventoryRecord record = InventoryRecords[i];
@@ -280,29 +285,42 @@ namespace Realm
                 if (bounds.Intersects(Input.MouseBounds))
                 {
                     hover = true;
-                    inventorySlot = i;
+                }
 
-                    // Mouse pressed.
-                    if (Input.MousePressed())
+                // Set invetory slot to drag.
+                if (Input.MousePressed())
+                {
+                    Debug.WriteLine("MousePressed");
+                    if (!mousePressed && hover)
                     {
-                        mousePressed = true;
-                        return;
+                        inventorySlot = i;
+                        dragItem = true;
+                        Debug.WriteLine("dragItem");
                     }
+
+                    mousePressed = true;
+                    return;
                 }
             }
 
             // Mouse released.
-            if (mousePressed && Input.MouseReleased())
+            if (Input.MouseReleased() && dragItem)
             {
-                mousePressed = false;
+                // Swap Weapon.
                 if (Input.MouseBounds.Intersects(Player.Instance.Weapon.WeaponSlotBounds))
                 {
+                    Weapon currentWepon = Player.Instance.Weapon;
                     Weapon.LoadWeapon(InventoryRecords[inventorySlot].InventoryItem.Name);
+                    InventoryRecords[inventorySlot].InventoryItem = currentWepon;
                 }
                 else
                 {
                     DropItem(InventoryRecords[inventorySlot]);
                 }
+
+                Debug.WriteLine("dragItem");
+                mousePressed = false;
+                dragItem = false;
             }
         }
 
@@ -311,7 +329,7 @@ namespace Realm
             // Draw inventory border.
             spriteBatch.Draw(Art.Inventory, new Vector2(x, y), Color.White);
 
-            if (mousePressed)
+            if (dragItem)
             {
                 spriteBatch.Draw(
                     InventoryRecords[inventorySlot].InventoryItem.image,
@@ -388,25 +406,6 @@ namespace Realm
                             UsePotion(record.InventoryItem.Name);
                             return;
                         }
-
-                        // Drop item.
-                        //for (int x = 0; x < ItemSpawner.LootBags.Count; x++)
-                        //{
-                        //    // Add item to exisiting bag
-                        //    if (Player.Instance.Bounds.Intersects(ItemSpawner.LootBags[x].Bounds))
-                        //    {
-                        //        ItemSpawner.LootBags[x].Add(record.InventoryItem);
-                        //        DropItem(record.InventoryItem.Name);
-                        //        return;
-                        //    }
-                        //}
-
-                        //Debug.WriteLine(record.InventoryItem);
-                        //List<Item> items = [record.InventoryItem];
-                        //LootBag bag = new() { Position = Player.Instance.Position, Items = items };
-                        //ItemSpawner.LootBags.Add(bag);
-                        //EntityManager.Add(bag);
-                        //DropItem(record.InventoryItem.Name);
                     }
                 }
             }

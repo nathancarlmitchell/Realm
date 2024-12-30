@@ -34,6 +34,8 @@ namespace Realm.States
 
             Util.LoadPlayerData();
 
+            ItemSpawner.Reset();
+
             // Define a drawing rectangle based on the number of tiles wide and high, using the texture dimensions.
             targetRectangle = new Rectangle(0, 0, Game1.WorldWidth, Game1.WorldHeight);
         }
@@ -85,9 +87,6 @@ namespace Realm.States
                 bag.DrawLoot(spriteBatch);
             }
 
-            Debug.WriteLine(ItemSpawner.LootBags.Count);
-            //Debug.WriteLine(EntityManager.Count);
-
             // Draw health and mana.
             Overlay.DrawHealth(spriteBatch);
 
@@ -119,7 +118,7 @@ namespace Realm.States
         public override void Update(GameTime gameTime)
         {
             EntityManager.Update();
-            //EnemySpawner.Update();
+            EnemySpawner.Update();
             Player.Instance.Inventory.Update();
 
             // Update score.

@@ -117,31 +117,38 @@ namespace Realm
         public override void Update()
         {
             hover = false;
+            dragItem = false;
+            //mousePressed = false;
 
             if (WeaponSlotBounds.Intersects(Input.MouseBounds))
             {
                 // Mouse over weapon.
                 hover = true;
+            }
 
-                // Mouse pressed.
-                if (Input.MousePressed())
+            // Mouse pressed.
+            if (Input.MousePressed())
+            {
+                if (!mousePressed && hover)
                 {
-                    mousePressed = true;
-                    return;
+                    dragItem = true;
                 }
+                mousePressed = true;
+                //return;
             }
 
             // Mouse released.
-            if (mousePressed && Input.MouseReleased())
+            if (Input.MouseReleased())
             {
                 mousePressed = false;
-
+                dragItem = false;
                 // DO SOMETHING ELSE.
                 //Player.Instance.Inventory.SwapItem = true;
             }
         }
 
         private bool mousePressed = false;
+        private bool dragItem = false;
 
         //This method needs to be replaced by drawing from the inventory.
         public void DrawEquipped(SpriteBatch spriteBatch)
@@ -165,7 +172,7 @@ namespace Realm
                 );
             }
 
-            if (mousePressed)
+            if (dragItem)
             {
                 spriteBatch.Draw(this.image, Input.MousePosition, Color.White * 0.5f);
             }

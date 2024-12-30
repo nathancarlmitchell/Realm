@@ -52,6 +52,8 @@ namespace Realm
 
         // Loot bags.
         public static Texture2D LootBag { get; private set; }
+        public static Texture2D LootBagPink { get; private set; }
+        public static Texture2D LootBagPurple { get; private set; }
         public static Texture2D LootBagBlue { get; private set; }
         public static Texture2D LootBagWhite { get; private set; }
 
@@ -67,6 +69,8 @@ namespace Realm
 
             // Loot bags.
             LootBag = content.Load<Texture2D>("loot_bag");
+            LootBagPink = content.Load<Texture2D>("Items/Bags/pink");
+            LootBagPurple = content.Load<Texture2D>("Items/Bags/purple");
             LootBagBlue = content.Load<Texture2D>("Items/Bags/blue");
             LootBagWhite = content.Load<Texture2D>("Items/Bags/white");
 

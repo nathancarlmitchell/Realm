@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using static Realm.InventorySystem;
 
 namespace Realm
 {
@@ -17,14 +18,30 @@ namespace Realm
         // Move to GameState?
         public static List<LootBag> LootBags = [];
 
+        public static void Reset()
+        {
+            LootBags = [];
+        }
+
         public static void Spawn(Vector2 pos)
         {
             List<Item> items = [];
             Texture2D bagTexture = Art.LootBag;
 
             // Drop weapon.
-            int randomWeapon = rand.Next(Game1.Instance.Weapons.Count);
-            items.Add(Game1.Instance.Weapons[randomWeapon]);
+            if (rand.Next(15) == 0)
+            {
+                // Drop the next highest teir.
+                if (Game1.Instance.Weapons.Exists(x => (x.Teir == Player.Instance.Weapon.Teir + 1)))
+                {
+                    bagTexture = Art.LootBagPink;
+                    //int randomWeapon = rand.Next(Game1.Instance.Weapons.Count);
+                    Weapon nextWeapon = Game1.Instance.Weapons.FirstOrDefault(x =>
+                        (x.Teir == Player.Instance.Weapon.Teir + 1)
+                    );
+                    items.Add(nextWeapon);
+                }
+            }
 
             // Drop stat potion.
             if (rand.Next(15) == 0)
@@ -64,7 +81,6 @@ namespace Realm
 
             if (rand.Next(10) == 0)
             {
-                //items.Add(new Weapon(Art.Wand, Art.Projectile2));
                 if (rand.Next(2) == 0)
                     items.Add(new Potion(Potions.Mana));
                 else

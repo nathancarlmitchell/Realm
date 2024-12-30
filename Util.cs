@@ -95,16 +95,11 @@ namespace Realm
                 Player.ExperienceNextLevel = playerData.ExperienceNextLevel;
                 Player.ExperienceTotal = playerData.ExperienceTotal;
                 Player.Level = playerData.Level;
+                Weapon.LoadWeapon(playerData.Weapon.Name);
             }
             catch (System.IO.FileNotFoundException)
             {
                 Debug.WriteLine(playerDataLocation + ": file not found.");
-                //using (FileStream fs = File.Create(playerDataLocation))
-                //{
-                //    Debug.WriteLine(playerDataLocation + ": file created.");
-                //    byte[] data = new UTF8Encoding(true).GetBytes(defaultPlayerData);
-                //    fs.Write(data, 0, data.Length);
-                //}
             }
         }
 
@@ -129,6 +124,7 @@ namespace Realm
                 ExperienceNextLevel = Player.ExperienceNextLevel,
                 ExperienceTotal = Player.ExperienceTotal,
                 Level = Player.Level,
+                Weapon = Player.Instance.Weapon,
             };
 
             string json = JsonSerializer.Serialize(playerData);

@@ -23,4 +23,5 @@ public class PlayerData
     public int ExperienceNextLevel { get; set; }
     public int ExperienceTotal { get; set; }
     public int Level { get; set; }
+    public Weapon Weapon { get; set; }
 }
