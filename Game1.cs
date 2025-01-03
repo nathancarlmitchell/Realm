@@ -123,12 +123,18 @@ namespace Realm
             currentState = new MenuState(this, Graphics.GraphicsDevice, Content);
 
             Weapons = Util.LoadWeaponData();
-            Debug.WriteLine("Weapons.Count: " + Weapons.Count);
-
-            EntityManager.Add(new Wizard());
 
             Util.LoadPlayerData();
+
+            if (Player.PlayerClass.ToString() == "Wizard")
+                _ = new Wizard();
+
+            if (Player.PlayerClass.ToString() == "Archer")
+                _ = new Archer();
+
             Util.LoadInventoryData();
+
+            EntityManager.Add(Player.Instance);
         }
 
         public void ChangeState(State state)

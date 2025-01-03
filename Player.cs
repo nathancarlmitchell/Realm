@@ -23,7 +23,7 @@ namespace Realm
             set { instance = value; }
         }
 
-        private readonly Random rand = new();
+        public static readonly Random rand = new();
 
         public static Guid ID;
         public static string Name;
@@ -80,7 +80,7 @@ namespace Realm
             Archer, // 1
         }
 
-        public Class PlayerClass { get; set; }
+        public static Class PlayerClass { get; set; }
 
         public enum PlayerWeaponType
         {
@@ -128,30 +128,7 @@ namespace Realm
             Sound.Play(Sound.LevelUp, 0.4f);
         }
 
-        public static void UseAbility()
-        {
-            int abilityCost = 25;
-
-            int damage = Instance.rand.Next(10, 15);
-
-            if (Mana >= abilityCost)
-            {
-                Mana -= abilityCost;
-
-                // Spell bomb.
-                for (int i = 0; i < 35; i++)
-                {
-                    Vector2 vel = Extensions.FromPolar(i * 10, Instance.Weapon.ProjectileMagnitude);
-                    EntityManager.Add(
-                        new Projectile(Input.GetMousePosition(), vel) { Damage = damage }
-                    );
-                }
-            }
-            else
-            {
-                Sound.Play(Sound.NoMana, 0.4f);
-            }
-        }
+        public virtual void UseAbility() { }
 
         private void Shoot()
         {
@@ -166,14 +143,14 @@ namespace Realm
                 damageModified = damage / 10;
             }
 
-            //Health = Health - damageModified;
+            Health = Health - damageModified;
             if (Health <= 0)
             {
                 Kill();
             }
             else
             {
-                Sound.Play(Sound.WizardHit, 0.45f);
+                Sound.Play(Sound.PlayerHit, 0.45f);
             }
         }
 
@@ -257,6 +234,9 @@ namespace Realm
 
             // Update weapon.
             this.Weapon.Update();
+
+            // Update
+            this.Inventory.Update();
         }
     }
 }

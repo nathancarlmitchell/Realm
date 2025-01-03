@@ -10,7 +10,7 @@ namespace Realm
         public static SoundEffect Button,
             LevelUp,
             NoMana,
-            WizardHit,
+            PlayerHit,
             MagicShoot,
             LootAppears,
             UsePotion,
@@ -41,7 +41,7 @@ namespace Realm
             //Locked = content.Load<SoundEffect>("Sounds/locked");
             LevelUp = content.Load<SoundEffect>("Sounds/Player/level_up");
             NoMana = content.Load<SoundEffect>("Sounds/Player/no_mana");
-            WizardHit = content.Load<SoundEffect>("Sounds/Player/wizard_hit");
+            PlayerHit = content.Load<SoundEffect>("Sounds/Player/wizard_hit");
             MagicShoot = content.Load<SoundEffect>("Sounds/Player/magic_shoot");
             LootAppears = content.Load<SoundEffect>("Sounds/Player/loot_appears");
             UsePotion = content.Load<SoundEffect>("Sounds/Player/use_potion");

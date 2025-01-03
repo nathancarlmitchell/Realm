@@ -25,6 +25,7 @@ namespace Realm
         private int healthMax;
         private SoundEffect deathSound;
         private SoundEffect hitSound;
+        public List<Guid> HitBy;
 
         public Enemy(Texture2D image, Vector2 position)
         {
@@ -35,6 +36,8 @@ namespace Realm
 
             deathSound = Sound.DefaultHit;
             hitSound = Sound.DefaultHit;
+
+            HitBy = [];
 
             //PointValue = 1;
             //health = 1;

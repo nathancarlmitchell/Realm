@@ -17,6 +17,9 @@ namespace Realm
         public const int MAXIMUM_SLOTS_IN_INVENTORY = 6;
         public readonly List<InventoryRecord> InventoryRecords = [];
 
+        int x = Game1.Viewport.Width - 256;
+        int y = Game1.Viewport.Height - 128;
+
         public void AddItem(Item item, int quantityToAdd)
         {
             Debug.WriteLine("Add: " + quantityToAdd);
@@ -245,8 +248,6 @@ namespace Realm
             {
                 InventoryItem = item;
                 Quantity = quantity;
-                Debug.WriteLine("Item: " + item.ImageName);
-                Debug.WriteLine("Item: " + item.image);
                 if (item.ImageName is not null)
                     item.image = Game1.Instance.Content.Load<Texture2D>(item.ImageName);
             }
@@ -257,10 +258,7 @@ namespace Realm
             }
         }
 
-        int x = Game1.Viewport.Width - 256;
-        int y = Game1.Viewport.Height - 128;
-
-        public bool SwapItem = false;
+        private bool consume = false;
 
         private bool hover = false;
         private bool mousePressed = false;
@@ -270,14 +268,23 @@ namespace Realm
         public void Update()
         {
             hover = false;
-            //mousePressed = false;
 
             for (int i = 0; i < InventoryRecords.Count; i++)
             {
                 InventoryRecord record = InventoryRecords[i];
+
+                int posX = x + (i * 40);
+                int posY = y;
+
+                if (i > 3)
+                {
+                    posX = x + ((i - 4) * 40);
+                    posY = y + 40;
+                }
+
                 var bounds = new Rectangle(
-                    x + (i * 40),
-                    y,
+                    posX,
+                    posY,
                     record.InventoryItem.image.Width,
                     record.InventoryItem.image.Height
                 );
@@ -285,40 +292,71 @@ namespace Realm
                 if (bounds.Intersects(Input.MouseBounds))
                 {
                     hover = true;
-                }
-
-                // Set invetory slot to drag.
-                if (Input.MousePressed())
-                {
-                    Debug.WriteLine("MousePressed");
-                    if (!mousePressed && hover)
+                    // Consume Item.
+                    if (Input.GetMouseClick())
                     {
-                        inventorySlot = i;
-                        dragItem = true;
-                        Debug.WriteLine("dragItem");
+                        if (record.InventoryItem.Consumable)
+                        {
+                            consume = true;
+                            mousePressed = true;
+                            return;
+                        }
                     }
 
-                    mousePressed = true;
-                    return;
+                    // Start item drag.
+                    if (Input.MousePressed())
+                    {
+                        if (!mousePressed && hover)
+                        {
+                            inventorySlot = i;
+                            dragItem = true;
+                        }
+
+                        mousePressed = true;
+                        return;
+                    }
                 }
             }
 
-            // Mouse released.
-            if (Input.MouseReleased() && dragItem)
+            if (Input.MousePressed())
             {
-                // Swap Weapon.
-                if (Input.MouseBounds.Intersects(Player.Instance.Weapon.WeaponSlotBounds))
-                {
-                    Weapon currentWepon = Player.Instance.Weapon;
-                    Weapon.LoadWeapon(InventoryRecords[inventorySlot].InventoryItem.Name);
-                    InventoryRecords[inventorySlot].InventoryItem = currentWepon;
-                }
-                else
-                {
-                    DropItem(InventoryRecords[inventorySlot]);
-                }
+                mousePressed = true;
+            }
 
-                Debug.WriteLine("dragItem");
+            // Mouse released.
+            if (Input.MouseReleased())
+            {
+                if (dragItem)
+                {
+                    // Swap Weapon.
+                    if (Input.MouseBounds.Intersects(Player.Instance.Weapon.WeaponSlotBounds))
+                    {
+                        Weapon currentWepon = Player.Instance.Weapon;
+                        Weapon newWeapon = Weapon.LoadWeapon(
+                            InventoryRecords[inventorySlot].InventoryItem.Name
+                        );
+
+                        if (newWeapon != null)
+                        {
+                            InventoryRecords[inventorySlot].InventoryItem = currentWepon;
+                        }
+                    }
+                    // Drop item.
+                    else
+                    {
+                        // If outside inventory bounds.
+                        var bounds = new Rectangle(
+                            x,
+                            y,
+                            (40 * MAXIMUM_SLOTS_IN_INVENTORY) / 2,
+                            40 * 2
+                        );
+                        if (!Input.MouseBounds.Intersects(bounds))
+                        {
+                            DropItem(InventoryRecords[inventorySlot]);
+                        }
+                    }
+                }
                 mousePressed = false;
                 dragItem = false;
             }
@@ -341,12 +379,21 @@ namespace Realm
             // Loop through items in inventory.
             for (int i = 0; i < InventoryRecords.Count; i++)
             {
+                int posX = x + (i * 40);
+                int posY = y;
+
+                if (i > 3)
+                {
+                    posX = x + ((i - 4) * 40);
+                    posY = y + 40;
+                }
+
                 InventoryRecord record = InventoryRecords[i];
                 if (record.InventoryItem != null)
                 {
                     spriteBatch.Draw(
                         record.InventoryItem.image,
-                        new Vector2(x + (i * 40), y),
+                        new Vector2(posX, posY),
                         Color.White
                     );
 
@@ -360,14 +407,14 @@ namespace Realm
                     spriteBatch.DrawString(
                         Art.HudFont,
                         text,
-                        new Vector2(x + (i * 40) + 4, y),
+                        new Vector2(posX + 4, posY),
                         Color.Black
                     );
                 }
 
                 var bounds = new Rectangle(
-                    x + (i * 40),
-                    y,
+                    posX,
+                    posY,
                     record.InventoryItem.image.Width,
                     record.InventoryItem.image.Height
                 );
@@ -375,37 +422,27 @@ namespace Realm
                 // Mouse over inventory item.
                 if (bounds.Intersects(Input.MouseBounds))
                 {
-                    if (SwapItem)
-                    {
-                        Weapon weapon = Weapon.LoadWeapon(record.InventoryItem.Name);
-
-                        Player.Instance.Weapon = weapon;
-                        SwapItem = false;
-                        return;
-                    }
-
                     string itemName = $"{record.InventoryItem.Name}";
 
-                    int textX = (int)(Art.HudFont.MeasureString(itemName).X / 2);
+                    int textX = (int)(Art.HudFont.MeasureString(itemName).X / 4);
                     int textY = (int)(Art.HudFont.MeasureString(itemName).Y / 2);
 
                     spriteBatch.DrawString(
                         Art.HudFont,
                         itemName,
-                        new Vector2(x - textX, y - record.InventoryItem.image.Height - textY),
+                        new Vector2(
+                            posX - textX,
+                            posY - (record.InventoryItem.image.Height * 2) - textY
+                        ),
                         Color.Red
                     );
 
                     // Inventory item clicked.
-                    if (Input.GetMouseClick())
+                    if (consume)
                     {
-                        if (record.InventoryItem.Consumable)
-                        {
-                            // Use potion.
-                            Debug.WriteLine(record.InventoryItem.Name);
-                            UsePotion(record.InventoryItem.Name);
-                            return;
-                        }
+                        // Use potion.
+                        consume = false;
+                        UsePotion(record.InventoryItem.Name);
                     }
                 }
             }

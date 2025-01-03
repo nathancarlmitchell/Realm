@@ -1,4 +1,6 @@
-﻿using Microsoft.Xna.Framework;
+﻿using System;
+using System.Collections.Generic;
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using SharpDX.Direct3D9;
 
@@ -23,6 +25,7 @@ namespace Realm
         public float Orientation;
         public float Radius = 20; // used for circular collision detection
         public bool IsExpired; // true if the entity was destroyed and should be deleted.
+
         public Rectangle Bounds
         {
             get { return new Rectangle((int)Position.X, (int)Position.Y, Width, Height); }

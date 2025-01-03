@@ -81,6 +81,7 @@ namespace Realm
                 Player.ID = playerData.ID;
                 Player.Name = playerData.Name;
                 Player.Description = playerData.Description;
+                Player.PlayerClass = playerData.PlayerClass;
                 //Player.Health = playerData.HealthMax;
                 Player.HealthMax = playerData.HealthMax;
                 //Player.Mana = playerData.ManaMax;
@@ -110,6 +111,7 @@ namespace Realm
                 ID = Player.ID,
                 Name = Player.Name,
                 Description = Player.Description,
+                PlayerClass = Player.PlayerClass,
                 //Health = Player.Health,
                 HealthMax = Player.HealthMax,
                 //Mana = Player.Mana,

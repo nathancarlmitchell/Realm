@@ -32,7 +32,7 @@ namespace Realm.States
 
             Game1.Camera = new Camera(Game1.Viewport, Game1.WorldWidth, Game1.WorldHeight, 1f);
 
-            Util.LoadPlayerData();
+            Util.SavePlayerData();
 
             ItemSpawner.Reset();
 
@@ -119,7 +119,6 @@ namespace Realm.States
         {
             EntityManager.Update();
             EnemySpawner.Update();
-            Player.Instance.Inventory.Update();
 
             // Update score.
             if (Player.ExperienceTotal > HighScore)

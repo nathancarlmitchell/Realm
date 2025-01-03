@@ -1,4 +1,6 @@
-﻿using static Realm.Weapon;
+﻿using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Audio;
+using static Realm.Weapon;
 
 namespace Realm.CharacterClasses
 {
@@ -12,6 +14,7 @@ namespace Realm.CharacterClasses
                 "The Wizard deals damage from a long distance and blasts enemies with powerful spells.";
 
             image = Art.Wizard;
+            Sound.PlayerHit = Game1.Instance.Content.Load<SoundEffect>("Sounds/Player/wizard_hit");
 
             WeaponType = PlayerWeaponType.Wand;
 
@@ -63,6 +66,33 @@ namespace Realm.CharacterClasses
             ManaMax = baseMana + (Level * 10);
 
             base.LevelUp();
+        }
+
+        public override void UseAbility()
+        {
+            base.UseAbility();
+
+            int abilityCost = 25;
+
+            int damage = rand.Next(10, 15);
+
+            if (Mana >= abilityCost)
+            {
+                Mana -= abilityCost;
+
+                // Spell bomb.
+                for (int i = 0; i < 35; i++)
+                {
+                    Vector2 vel = Extensions.FromPolar(i * 10, Instance.Weapon.ProjectileMagnitude);
+                    EntityManager.Add(
+                        new Projectile(Input.GetMousePosition(), vel) { Damage = damage }
+                    );
+                }
+            }
+            else
+            {
+                Sound.Play(Sound.NoMana, 0.4f);
+            }
         }
     }
 }

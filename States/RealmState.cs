@@ -20,7 +20,6 @@ namespace Realm.States
         public RealmState(Game1 game, GraphicsDevice graphicsDevice, ContentManager content)
             : base()
         {
-            Debug.WriteLine("New RealmState created.");
             Game1.Camera = new Camera(Game1.Viewport, Game1.WorldWidth, Game1.WorldHeight, 1f);
 
             EntityManager.Reset();
@@ -67,8 +66,11 @@ namespace Realm.States
             // Draw stats.
             Overlay.DrawStats(spriteBatch);
 
+            // Draw equipment.
+            Overlay.DrawEquipment(spriteBatch);
+
             // Draw inventory.
-            //Overlay.DrawInventory(spriteBatch);
+            Overlay.DrawInventory(spriteBatch);
 
             // Draw score.
             Overlay.DrawScore(spriteBatch);

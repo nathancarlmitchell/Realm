@@ -7,6 +7,7 @@ public class PlayerData
     public Guid ID { get; set; }
     public string Name { get; set; }
     public string Description { get; set; }
+    public Player.Class PlayerClass { get; set; }
 
     //public int Health { get; set; }
     public int HealthMax { get; set; }

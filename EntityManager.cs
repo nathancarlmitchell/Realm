@@ -115,13 +115,19 @@ namespace Realm
             for (int i = 0; i < enemies.Count; i++)
             for (int j = 0; j < bullets.Count; j++)
             {
-                if (IsColliding(enemies[i], bullets[j]))
+                bool hit =
+                    !enemies[i].HitBy.Contains(bullets[j].ID)
+                    && IsColliding(enemies[i], bullets[j]);
+
+                if (hit)
                 {
+                    enemies[i].HitBy.Add(bullets[j].ID);
                     enemies[i].WasShot(bullets[j].Damage);
-                    //THIS should be wand type
-                    // Proejectile hits multiple times on update
-                    //if (Player.Instance.Weapon is not Weapon)
-                    bullets[j].IsExpired = true;
+                    //TODO should be a variable within the projectile maybe?
+                    if (Player.Instance.Weapon.Type.ToString() != ("Wand"))
+                    {
+                        bullets[j].IsExpired = true;
+                    }
                 }
             }
 

@@ -101,7 +101,7 @@ public static class Input
             // Ability.
             if (WasKeyPressed(Keys.Space))
             {
-                Player.UseAbility();
+                Player.Instance.UseAbility();
             }
 
             // Level up.

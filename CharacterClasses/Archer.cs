@@ -1,4 +1,7 @@
-﻿namespace Realm.CharacterClasses
+﻿using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Audio;
+
+namespace Realm.CharacterClasses
 {
     public class Archer : Player
     {
@@ -10,6 +13,7 @@
                 "The archer has a long-range attack and can acquire very powerful weapons.";
 
             image = Art.Archer;
+            Sound.PlayerHit = Game1.Instance.Content.Load<SoundEffect>("Sounds/Player/archer_hit");
 
             WeaponType = PlayerWeaponType.Bow;
 
@@ -61,6 +65,38 @@
             ManaMax = baseMana + (Level * 5);
 
             base.LevelUp();
+        }
+
+        public override void UseAbility()
+        {
+            base.UseAbility();
+
+            int abilityCost = 25;
+
+            int damage = rand.Next(10, 15);
+
+            if (Mana >= abilityCost)
+            {
+                Mana -= abilityCost;
+
+                var aim = Input.GetMouseAimDirection();
+                float aimAngle = aim.ToAngle();
+
+                Vector2 vel = Extensions.FromPolar(aimAngle, Weapon.ProjectileMagnitude);
+
+                EntityManager.Add(
+                    new Projectile(Player.Instance.Position, vel)
+                    {
+                        Damage = damage,
+                        Duration = Weapon.ProjectileDuration + 25,
+                        image = Weapon.ProjectileImage,
+                    }
+                );
+            }
+            else
+            {
+                Sound.Play(Sound.NoMana, 0.4f);
+            }
         }
     }
 }

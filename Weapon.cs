@@ -31,8 +31,8 @@ namespace Realm
         private readonly Random rand = new();
         public Rectangle WeaponSlotBounds;
 
-        static int x = Game1.ScreenWidth - 420;
-        static int y = 512;
+        static int x = Game1.Viewport.Width - 256;
+        static int y = Game1.Viewport.Height - 128 - 160;
         bool hover = false;
 
         public Weapon(Texture2D image, Texture2D projectileImage)
@@ -85,7 +85,7 @@ namespace Realm
             // Initialized in Player.cs.
         }
 
-        public void Shoot()
+        public virtual void Shoot()
         {
             double damgeModifier = (0.5 + Player.Attack / 50);
             double damage = rand.Next(DamageMin, DamageMax) * damgeModifier;
@@ -110,6 +110,35 @@ namespace Realm
                     }
                 );
 
+                if (this.Type.ToString() == "Bow")
+                {
+                    vel = Extensions.FromPolar(
+                        aimAngle + randomSpread - 0.35f,
+                        this.ProjectileMagnitude
+                    );
+
+                    EntityManager.Add(
+                        new Projectile(Player.Instance.Position, vel)
+                        {
+                            image = this.ProjectileImage,
+                            Damage = (int)damage,
+                        }
+                    );
+
+                    vel = Extensions.FromPolar(
+                        aimAngle + randomSpread + 0.35f,
+                        this.ProjectileMagnitude
+                    );
+
+                    EntityManager.Add(
+                        new Projectile(Player.Instance.Position, vel)
+                        {
+                            image = this.ProjectileImage,
+                            Damage = (int)damage,
+                        }
+                    );
+                }
+
                 Sound.Play(Sound.MagicShoot, 0.3f);
             }
         }
@@ -117,8 +146,7 @@ namespace Realm
         public override void Update()
         {
             hover = false;
-            dragItem = false;
-            //mousePressed = false;
+            //dragItem = false;
 
             if (WeaponSlotBounds.Intersects(Input.MouseBounds))
             {
@@ -127,24 +155,24 @@ namespace Realm
             }
 
             // Mouse pressed.
-            if (Input.MousePressed())
-            {
-                if (!mousePressed && hover)
-                {
-                    dragItem = true;
-                }
-                mousePressed = true;
-                //return;
-            }
+            //if (Input.MousePressed())
+            //{
+            //    if (!mousePressed && hover)
+            //    {
+            //        dragItem = true;
+            //    }
+            //    mousePressed = true;
+            //    //return;
+            //}
 
             // Mouse released.
-            if (Input.MouseReleased())
-            {
-                mousePressed = false;
-                dragItem = false;
-                // DO SOMETHING ELSE.
-                //Player.Instance.Inventory.SwapItem = true;
-            }
+            //if (Input.MouseReleased())
+            //{
+            //    mousePressed = false;
+            //    dragItem = false;
+            //    // DO SOMETHING ELSE.
+            //    //Player.Instance.Inventory.SwapItem = true;
+            //}
         }
 
         private bool mousePressed = false;
@@ -172,10 +200,10 @@ namespace Realm
                 );
             }
 
-            if (dragItem)
-            {
-                spriteBatch.Draw(this.image, Input.MousePosition, Color.White * 0.5f);
-            }
+            //if (dragItem)
+            //{
+            //    spriteBatch.Draw(this.image, Input.MousePosition, Color.White * 0.5f);
+            //}
         }
     }
 }
