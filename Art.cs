@@ -24,9 +24,10 @@ namespace Realm
         public static Texture2D Snake { get; private set; }
         public static Texture2D Wizard { get; private set; }
         public static Texture2D Archer { get; private set; }
+        public static Texture2D Knight { get; private set; }
         public static Texture2D ArcherProjectile { get; private set; }
+        public static Texture2D ShieldProjectile { get; private set; }
         public static AnimatedTexture Portal { get; private set; }
-        public static Texture2D Item { get; private set; }
         public static Texture2D Inventory { get; private set; }
         public static Texture2D HealthPotion { get; private set; }
         public static Texture2D ManaPotion { get; private set; }
@@ -47,7 +48,7 @@ namespace Realm
         public static Texture2D Life { get; private set; }
         public static Texture2D Mana { get; private set; }
         public static Texture2D Speed { get; private set; }
-        public static Texture2D Vitalty { get; private set; }
+        public static Texture2D Vitality { get; private set; }
         public static Texture2D Wisdom { get; private set; }
 
         // Loot bags.
@@ -56,6 +57,11 @@ namespace Realm
         public static Texture2D LootBagPurple { get; private set; }
         public static Texture2D LootBagBlue { get; private set; }
         public static Texture2D LootBagWhite { get; private set; }
+        public static Texture2D LootBagGold { get; private set; }
+
+        // Status effects (debuff indicator icons — see Entity.DrawDebuffIndicators).
+        public static Texture2D Paralyzed { get; private set; }
+        public static Texture2D Stunned { get; private set; }
 
         public static void Load(ContentManager content)
         {
@@ -73,6 +79,7 @@ namespace Realm
             LootBagPurple = content.Load<Texture2D>("Items/Bags/purple");
             LootBagBlue = content.Load<Texture2D>("Items/Bags/blue");
             LootBagWhite = content.Load<Texture2D>("Items/Bags/white");
+            LootBagGold = content.Load<Texture2D>("Items/Bags/gold");
 
             // Controls.
             ButtonTexture = content.Load<Texture2D>("Controls/Button");
@@ -86,14 +93,16 @@ namespace Realm
             HealthBar.SetData(new[] { Color.White });
 
             // Player.
-            Wizard = content.Load<Texture2D>("player");
+            Wizard = content.Load<Texture2D>("Classes/wizard");
             Projectile = content.Load<Texture2D>("projectile");
             Projectile2 = content.Load<Texture2D>("projectile2");
 
             Archer = content.Load<Texture2D>("Classes/archer");
             ArcherProjectile = content.Load<Texture2D>("Projectiles/archer");
 
-            Item = content.Load<Texture2D>("item");
+            Knight = content.Load<Texture2D>("Classes/knight");
+            ShieldProjectile = content.Load<Texture2D>("Projectiles/shield");
+
             Inventory = content.Load<Texture2D>("inventory");
 
             // Enemies.
@@ -113,8 +122,12 @@ namespace Realm
             Life = content.Load<Texture2D>("Items/Potions/life");
             Mana = content.Load<Texture2D>("Items/Potions/mana");
             Speed = content.Load<Texture2D>("Items/Potions/speed");
-            Vitalty = content.Load<Texture2D>("Items/Potions/vitality");
+            Vitality = content.Load<Texture2D>("Items/Potions/vitality");
             Wisdom = content.Load<Texture2D>("Items/Potions/wisdom");
+
+            // Status effects.
+            Paralyzed = content.Load<Texture2D>("StatusEffects/paralyzed");
+            Stunned = content.Load<Texture2D>("StatusEffects/stunned");
 
             // Fonts.
             HudFont = content.Load<SpriteFont>("Fonts/HudFont");

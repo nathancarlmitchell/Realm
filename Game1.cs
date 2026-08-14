@@ -4,8 +4,6 @@ using System.Diagnostics;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
-using Realm.CharacterClasses;
-using Realm.Data;
 using Realm.States;
 
 namespace Realm
@@ -18,10 +16,24 @@ namespace Realm
         private State nextState,
             currentState;
 
-        public static State GameState,
-            MenuState;
-
         public static Camera Camera;
+
+        // The window stays the original 1280x720 — the sidebar carves its
+        // width out of that instead of adding to it, so the gameplay/camera
+        // area is narrower (WindowWidth - SidebarWidth) than it used to be.
+        // Everything that renders or reasons about the visible game world
+        // (Camera, on-screen checks, overlays drawn on top of gameplay
+        // content like the loot bag popup) should use GameplayViewportWidth/
+        // Height, not ScreenWidth/Viewport.Width — otherwise it ignores the
+        // sidebar and draws underneath it.
+        public const int WindowWidth = 1280;
+        public const int WindowHeight = 720;
+        public const int SidebarWidth = 300;
+        public const int GameplayViewportWidth = WindowWidth - SidebarWidth;
+        public const int GameplayViewportHeight = WindowHeight;
+
+        // Left edge of the HUD sidebar, in screen space.
+        public static int SidebarX => GameplayViewportWidth;
 
         // Helpful static properties.
         public static Game1 Instance { get; private set; }
@@ -60,19 +72,34 @@ namespace Realm
 
         public static Rectangle WorldBounds
         {
-            get
-            {
-                return new Rectangle(
-                    (int)Camera.Pos.X - CenterWidth,
-                    (int)Camera.Pos.Y - CenterHeight,
-                    (int)Camera.Pos.X + CenterWidth,
-                    (int)Camera.Pos.Y + CenterHeight
-                );
-            }
+            get { return GetWorldBounds(1f); }
         }
+
+        // Same box as WorldBounds, scaled around the camera. Pass > 1 to
+        // include a margin beyond the visible screen (e.g. for enemy
+        // "on screen" attack checks that should trigger slightly early).
+        // Uses the fixed gameplay viewport, not the (wider) window, so
+        // "on screen" still means the actual visible play area.
+        public static Rectangle GetWorldBounds(float scale)
+        {
+            int halfWidth = (int)((GameplayViewportWidth / 2) * scale);
+            int halfHeight = (int)((GameplayViewportHeight / 2) * scale);
+            return new Rectangle(
+                (int)Camera.Pos.X - halfWidth,
+                (int)Camera.Pos.Y - halfHeight,
+                2 * halfWidth,
+                2 * halfHeight
+            );
+        }
+
         public static bool Mute { get; set; }
         public static bool _Debug { get; set; }
         public List<Weapon> Weapons { get; set; }
+        public List<Armor> Armors { get; set; }
+        public List<Ring> Rings { get; set; }
+        public List<Spell> Spells { get; set; }
+        public List<Quiver> Quivers { get; set; }
+        public List<Shield> Shields { get; set; }
 
         public Game1()
         {
@@ -91,8 +118,8 @@ namespace Realm
 
             Graphics.IsFullScreen = false;
 
-            Graphics.PreferredBackBufferWidth = 1280;
-            Graphics.PreferredBackBufferHeight = 720;
+            Graphics.PreferredBackBufferWidth = WindowWidth;
+            Graphics.PreferredBackBufferHeight = WindowHeight;
 
             WorldWidth = 500000;
             WorldHeight = 500000;
@@ -123,16 +150,16 @@ namespace Realm
             currentState = new MenuState(this, Graphics.GraphicsDevice, Content);
 
             Weapons = Util.LoadWeaponData();
+            Armors = Util.LoadArmorData();
+            Rings = Util.LoadRingData();
+            Spells = Util.LoadSpellData();
+            Quivers = Util.LoadQuiverData();
+            Shields = Util.LoadShieldData();
 
-            Util.LoadPlayerData();
+            Util.LoadBankData();
+            Util.LoadFameData();
 
-            if (Player.PlayerClass.ToString() == "Wizard")
-                _ = new Wizard();
-
-            if (Player.PlayerClass.ToString() == "Archer")
-                _ = new Archer();
-
-            Util.LoadInventoryData();
+            Util.LoadOrCreatePlayer(Util.DetermineLastPlayedClass());
 
             EntityManager.Add(Player.Instance);
         }
@@ -146,30 +173,7 @@ namespace Realm
         {
             if (nextState != null)
             {
-                //if (nextState is GameState && GameState != null)
-                //{
-                //    currentState = GameState;
-                //    Debug.WriteLine("restoring GameState");
-                //}
-                //else if (nextState is MenuState && MenuState != null)
-                //{
-                //    currentState = MenuState;
-                //    Debug.WriteLine("restoring MenuState");
-                //}
-                //else if (nextState is MenuState)
-                //{
-                //    MenuState = nextState;
-                //    currentState = nextState;
-                //    Debug.WriteLine("nextState is MenuState");
-                //}
-                //else
-                //{
-                //    Debug.WriteLine("Next State.");
-                //    currentState = nextState;
-                //}
-
                 currentState = nextState;
-
                 nextState = null;
             }
 

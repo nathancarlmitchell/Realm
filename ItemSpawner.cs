@@ -15,13 +15,47 @@ namespace Realm
     {
         private static readonly Random rand = new();
 
-        // Move to GameState?
+        // Move to RealmState?
         public static List<LootBag> LootBags = [];
 
         public static void Reset()
         {
             LootBags = [];
         }
+
+        private static (LootBag bag, float distSq) FindNearestOpenBag()
+        {
+            LootBag nearest = null;
+            float nearestDistSq = float.MaxValue;
+
+            foreach (LootBag bag in LootBags)
+            {
+                if (!Player.Instance.Bounds.Intersects(bag.Bounds))
+                    continue;
+
+                float distSq = Vector2.DistanceSquared(Player.Instance.Position, bag.Position);
+                if (distSq < nearestDistSq)
+                {
+                    nearestDistSq = distSq;
+                    nearest = bag;
+                }
+            }
+
+            return (nearest, nearestDistSq);
+        }
+
+        // Whichever bag the player is touching and closest to, so only one bag's
+        // contents render/accept clicks at a time — otherwise two bags in pickup
+        // range at once draw their item portraits on top of each other, since
+        // each bag lays out its items at the same fixed screen position.
+        public static LootBag NearestOpenBag() => FindNearestOpenBag().bag;
+
+        // Same "closest wins" comparison, exposed as a distance rather than a
+        // bag reference — lets other proximity-gated UI (BankSystem, via
+        // Portal) decide whether a loot bag beats it for focus, e.g. when a bag
+        // is dropped right next to the bank portal. float.MaxValue if no bag is
+        // currently in pickup range.
+        public static float NearestOpenBagDistanceSquared() => FindNearestOpenBag().distSq;
 
         public static void Spawn(Vector2 pos)
         {
@@ -31,15 +65,74 @@ namespace Realm
             // Drop weapon.
             if (rand.Next(15) == 0)
             {
-                // Drop the next highest teir.
-                if (Game1.Instance.Weapons.Exists(x => (x.Teir == Player.Instance.Weapon.Teir + 1)))
+                // Drop the next highest tier — picked at random among every
+                // catalog entry at that tier (both WeaponTypes), not just the
+                // first match. WeaponData.json lists every Wand before any
+                // Bow, so FirstOrDefault would always resolve to a Wand
+                // regardless of the player's actual class.
+                List<Weapon> nextTierWeapons = Game1
+                    .Instance.Weapons.Where(x => x.Tier == Player.Instance.Weapon.Tier + 1)
+                    .ToList();
+
+                if (nextTierWeapons.Count > 0)
                 {
                     bagTexture = Art.LootBagPink;
-                    //int randomWeapon = rand.Next(Game1.Instance.Weapons.Count);
-                    Weapon nextWeapon = Game1.Instance.Weapons.FirstOrDefault(x =>
-                        (x.Teir == Player.Instance.Weapon.Teir + 1)
+                    items.Add(nextTierWeapons[rand.Next(nextTierWeapons.Count)]);
+                }
+            }
+
+            // Drop armor.
+            if (rand.Next(15) == 0)
+            {
+                // Same reasoning as the weapon drop above — ArmorData.json
+                // lists every Robe before any Leather piece.
+                List<Armor> nextTierArmors = Game1
+                    .Instance.Armors.Where(x => x.Tier == Player.Instance.Armor.Tier + 1)
+                    .ToList();
+
+                if (nextTierArmors.Count > 0)
+                {
+                    bagTexture = Art.LootBagPurple;
+                    items.Add(nextTierArmors[rand.Next(nextTierArmors.Count)]);
+                }
+            }
+
+            // Drop ring.
+            if (rand.Next(15) == 0)
+            {
+                // Drop the next highest tier.
+                if (Game1.Instance.Rings.Exists(x => (x.Tier == Player.Instance.Ring.Tier + 1)))
+                {
+                    bagTexture = Art.LootBagWhite;
+                    Ring nextRing = Game1.Instance.Rings.FirstOrDefault(x =>
+                        (x.Tier == Player.Instance.Ring.Tier + 1)
                     );
-                    items.Add(nextWeapon);
+                    items.Add(nextRing);
+                }
+            }
+
+            // Drop ability item.
+            if (rand.Next(15) == 0)
+            {
+                // Same "wrong class is possible" spirit as weapon/armor drops
+                // above — not filtered to the player's own class. Spell and
+                // Quiver are separate catalogs (not a single shared list like
+                // Weapons/Armors), so concatenate both next-tier results
+                // before picking at random.
+                List<AbilityItem> nextTierAbilityItems = Game1
+                    .Instance.Spells.Where(x => x.Tier == Player.Instance.AbilityItem.Tier + 1)
+                    .Cast<AbilityItem>()
+                    .Concat(
+                        Game1.Instance.Quivers.Where(x =>
+                            x.Tier == Player.Instance.AbilityItem.Tier + 1
+                        )
+                    )
+                    .ToList();
+
+                if (nextTierAbilityItems.Count > 0)
+                {
+                    bagTexture = Art.LootBagGold;
+                    items.Add(nextTierAbilityItems[rand.Next(nextTierAbilityItems.Count)]);
                 }
             }
 
@@ -102,11 +195,5 @@ namespace Realm
                 Sound.Play(Sound.LootAppears, 0.4f);
             }
         }
-
-        //public static void Update()
-        //{
-        //    // Remove items from bag
-        //    // Remove bag if no items left
-        //}
     }
 }

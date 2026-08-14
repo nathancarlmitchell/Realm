@@ -24,6 +24,11 @@ namespace Realm
 
     public class Potion : Item
     {
+        // Required by System.Text.Json to deserialize a saved Potion (it's a
+        // registered polymorphic Item subtype) — all fields are populated via
+        // property setters after construction, same as Weapon's parameterless ctor.
+        public Potion() { }
+
         public Potion(Potions potion)
         {
             MaximumStackableQuantity = 6;
@@ -33,61 +38,71 @@ namespace Realm
             {
                 case Potions.Health:
                     this.image = Art.HealthPotion;
-                    this.ID = GameState.HealthPotionGuid;
+                    this.ImageName = "health_potion";
+                    this.ID = RealmState.HealthPotionGuid;
                     this.Name = "Health Potion";
                     break;
 
                 case Potions.Mana:
                     this.image = Art.ManaPotion;
-                    this.ID = GameState.ManaPotionGuid;
+                    this.ImageName = "mana_potion";
+                    this.ID = RealmState.ManaPotionGuid;
                     this.Name = "Mana Potion";
                     break;
 
                 case Potions.Attack:
                     this.image = Art.Attack;
-                    this.ID = GameState.AttackPotionGuid;
+                    this.ImageName = "Items/Potions/attack";
+                    this.ID = RealmState.AttackPotionGuid;
                     this.Name = "Attack Potion";
                     break;
 
                 case Potions.Defense:
                     this.image = Art.Defense;
-                    this.ID = GameState.DefensePotionGuid;
+                    this.ImageName = "Items/Potions/defense";
+                    this.ID = RealmState.DefensePotionGuid;
                     this.Name = "Defense Potion";
                     break;
 
                 case Potions.Speed:
                     this.image = Art.Speed;
-                    this.ID = GameState.SpeedPotionGuid;
+                    this.ImageName = "Items/Potions/speed";
+                    this.ID = RealmState.SpeedPotionGuid;
                     this.Name = "Speed Potion";
                     break;
 
                 case Potions.Dexterity:
                     this.image = Art.Dexterity;
-                    this.ID = GameState.DexterityPotionGuid;
+                    this.ImageName = "Items/Potions/dexterity";
+                    this.ID = RealmState.DexterityPotionGuid;
                     this.Name = "Dexterity Potion";
                     break;
 
                 case Potions.Vitality:
-                    this.image = Art.Vitalty;
-                    this.ID = GameState.VitalityPotionGuid;
+                    this.image = Art.Vitality;
+                    this.ImageName = "Items/Potions/vitality";
+                    this.ID = RealmState.VitalityPotionGuid;
                     this.Name = "Vitality Potion";
                     break;
 
                 case Potions.Wisdom:
                     this.image = Art.Wisdom;
-                    this.ID = GameState.WisdomPotionGuid;
+                    this.ImageName = "Items/Potions/wisdom";
+                    this.ID = RealmState.WisdomPotionGuid;
                     this.Name = "Wisdom Potion";
                     break;
 
                 case Potions.Life:
                     this.image = Art.Life;
-                    this.ID = GameState.LifePotionGuid;
+                    this.ImageName = "Items/Potions/life";
+                    this.ID = RealmState.LifePotionGuid;
                     this.Name = "Life Potion";
                     break;
 
                 case Potions.ManaMax:
                     this.image = Art.Mana;
-                    this.ID = GameState.ManaGuid;
+                    this.ImageName = "Items/Potions/mana";
+                    this.ID = RealmState.ManaGuid;
                     this.Name = "ManaMax Potion";
                     break;
 
@@ -104,57 +119,65 @@ namespace Realm
             switch (potion)
             {
                 case Potions.Health:
-                    int health = Player.Health;
+                    int health = Player.Instance.Health;
                     health += amount;
-                    if (health > Player.HealthMax)
+                    if (health > Player.Instance.HealthMax)
                     {
-                        Player.Health = Player.HealthMax;
+                        Player.Instance.Health = Player.Instance.HealthMax;
                         return;
                     }
-                    Player.Health += amount;
+                    Player.Instance.Health += amount;
                     break;
 
                 case Potions.Mana:
-                    int mana = Player.Mana;
+                    int mana = Player.Instance.Mana;
                     mana += amount;
-                    if (mana > Player.ManaMax)
+                    if (mana > Player.Instance.ManaMax)
                     {
-                        Player.Mana = Player.ManaMax;
+                        Player.Instance.Mana = Player.Instance.ManaMax;
                         return;
                     }
-                    Player.Mana += amount;
+                    Player.Instance.Mana += amount;
                     break;
 
                 case Potions.Attack:
-                    Player.Attack += 1;
+                    Player.Instance.PotionAttackBonus += 1;
+                    Player.Instance.RecalculateStats();
                     break;
 
                 case Potions.Defense:
-                    Player.Defense += 1;
+                    Player.Instance.PotionDefenseBonus += 1;
+                    Player.Instance.RecalculateStats();
                     break;
 
                 case Potions.Speed:
-                    Player.Speed += 1;
+                    Player.Instance.PotionSpeedBonus += 1;
+                    Player.Instance.RecalculateStats();
                     break;
 
                 case Potions.Dexterity:
-                    Player.Dexterity += 1;
+                    Player.Instance.PotionDexterityBonus += 1;
+                    Player.Instance.RecalculateStats();
                     break;
 
                 case Potions.Vitality:
-                    Player.Vitality += 1;
+                    Player.Instance.PotionVitalityBonus += 1;
+                    Player.Instance.RecalculateStats();
                     break;
 
                 case Potions.Wisdom:
-                    Player.Wisdom += 1;
+                    Player.Instance.PotionWisdomBonus += 1;
+                    Player.Instance.RecalculateStats();
                     break;
 
                 case Potions.Life:
-                    Player.HealthMax += 5;
+                    Player.Instance.PotionHealthMaxBonus += 5;
+                    Player.Instance.RecalculateStats();
                     break;
 
                 case Potions.ManaMax:
-                    Player.ManaMax += 5;
+                    Player.Instance.PotionManaMaxBonus += 5;
+                    Player.Instance.RecalculateStats();
                     break;
 
                 default:

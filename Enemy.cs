@@ -27,6 +27,24 @@ namespace Realm
         private SoundEffect hitSound;
         public List<Guid> HitBy;
 
+        // Paralyzes this enemy, blocking its movement (Update() below) for
+        // durationFrames. Backed by Entity's general debuff system (refreshes
+        // on re-trigger rather than stacking, ticked/drawn via
+        // UpdateDebuffs()/DrawDebuffIndicators() below). Default is 3 seconds
+        // at 60fps.
+        public void Paralyze(int durationFrames = 180)
+        {
+            ApplyDebuff(DebuffType.Paralyzed, durationFrames);
+        }
+
+        // Stuns this enemy, blocking its attacks (Update() below) for
+        // durationFrames — movement is unaffected, unlike Paralyze() above.
+        // Default is 3 seconds at 60fps.
+        public void Stun(int durationFrames = 180)
+        {
+            ApplyDebuff(DebuffType.Stunned, durationFrames);
+        }
+
         public Enemy(Texture2D image, Vector2 position)
         {
             this.image = image;
@@ -38,20 +56,23 @@ namespace Realm
             hitSound = Sound.DefaultHit;
 
             HitBy = [];
-
-            //PointValue = 1;
-            //health = 1;
-            //health = healthMax;
         }
 
         public override void Update()
         {
+            UpdateDebuffs();
+
             if (timeUntilStart <= 0)
             {
                 ApplyBehaviours();
 
-                // Only attack if on screen.
-                if (!Game1.WorldBounds.Contains(Position.ToPoint()))
+                // Attack if on screen, or just slightly off it. Stunned
+                // blocks this (Paralyzed doesn't — it only blocks movement
+                // below).
+                if (
+                    !HasDebuff(DebuffType.Stunned)
+                    && Game1.GetWorldBounds(1.25f).Contains(Position.ToPoint())
+                )
                 {
                     ApplyAttackBehaviours();
                 }
@@ -61,7 +82,16 @@ namespace Realm
                 timeUntilStart--;
                 color = Microsoft.Xna.Framework.Color.White * (1 - timeUntilStart / 60f);
             }
-            Position += Velocity;
+
+            // Paralyzed enemies keep "thinking" (behaviours above still run
+            // and accumulate into Velocity), they just don't act on it —
+            // Velocity still decays at its normal rate below, so there's no
+            // backlog dump of pent-up motion the instant the paralysis ends.
+            // Stunned doesn't block movement — only attacks, above.
+            if (!HasDebuff(DebuffType.Paralyzed))
+            {
+                Position += Velocity;
+            }
 
             Velocity *= 0.8f;
 
@@ -127,6 +157,7 @@ namespace Realm
         {
             DrawHealthBars(spriteBatch);
             base.Draw(spriteBatch);
+            DrawDebuffIndicators(spriteBatch);
         }
 
         public void HandleCollision(Enemy other)
@@ -139,12 +170,15 @@ namespace Realm
         {
             Debug.WriteLine(damage);
             health -= (int)damage;
+
+            EntityManager.Add(new DamageNumber(Position, damage, Color.Yellow));
+
             if (health <= 0)
             {
                 Sound.Play(deathSound, 0.4f);
                 IsExpired = true;
-                Player.Experience += PointValue;
-                Player.ExperienceTotal += PointValue;
+                Player.Instance.Experience += PointValue;
+                Player.Instance.ExperienceTotal += PointValue;
 
                 // Spawn loot.
                 ItemSpawner.Spawn(this.Position);
@@ -162,7 +196,7 @@ namespace Realm
 
         private void AddAttackBehaviour(IEnumerable<int> behaviour)
         {
-            behaviours.Add(behaviour.GetEnumerator());
+            attackBehaviours.Add(behaviour.GetEnumerator());
         }
 
         private void ApplyBehaviours()
@@ -187,7 +221,7 @@ namespace Realm
         private readonly int projectileCooldown = 250;
 
         private int healthCooldownRemaining = 0;
-        private readonly int healhCooldown = 250;
+        private readonly int healthCooldown = 250;
 
         IEnumerable<int> RegenHealth(int amount = 1)
         {
@@ -195,7 +229,7 @@ namespace Realm
             {
                 if (healthCooldownRemaining <= 0)
                 {
-                    healthCooldownRemaining = healhCooldown - (1 * 1);
+                    healthCooldownRemaining = healthCooldown - (1 * 1);
 
                     int heal = health;
                     heal += amount;
@@ -256,13 +290,6 @@ namespace Realm
                 {
                     Velocity += Extensions.FromPolar(direction, 0.4f);
                     Orientation -= 0.05f;
-                    var bounds = Game1.Viewport.Bounds;
-                    bounds.Inflate(-image.Width, -image.Height);
-                    // if the enemy is outside the bounds, make it move away from the edge
-                    //if (!bounds.Contains(Position.ToPoint()))
-                    //direction =
-                    //(Game1.ScreenSize / 2 - Position).ToAngle()
-                    //+ rand.NextFloat(-MathHelper.PiOver2, MathHelper.PiOver2);
                     yield return 0;
                 }
             }
@@ -276,12 +303,6 @@ namespace Realm
         {
             while (true)
             {
-                // Skip updating if off screen.
-                //if (!Game1.WorldBounds.Contains(Position.ToPoint()))
-                //{
-                //    yield break;
-                //}
-
                 var aim = Player.Instance.Position - Position;
                 if (aim.LengthSquared() > 0 && projectileCooldownRemaining <= 0)
                 {
@@ -300,7 +321,6 @@ namespace Realm
                         );
 
                         EntityManager.Add(new EnemyProjectile(Position, vel));
-                        //Sound.Shot.Play(0.2f, rand.NextFloat(-0.2f, 0.2f), 0);
                     }
                 }
                 if (projectileCooldownRemaining > 0)
@@ -314,12 +334,6 @@ namespace Realm
         {
             while (true)
             {
-                // Skip updating if off screen.
-                //if (!Game1.WorldBounds.Contains(Position.ToPoint()))
-                //{
-                //    yield break;
-                //}
-
                 var aim = Player.Instance.Position - Position;
                 if (aim.LengthSquared() > 0 && projectileCooldownRemaining <= 0)
                 {
@@ -329,7 +343,6 @@ namespace Realm
                     float randomSpread = rand.NextFloat(-0.1f, 0.1f) + rand.NextFloat(-0.1f, 0.1f);
                     Vector2 vel = Extensions.FromPolar(aimAngle + randomSpread, projectileSpeed);
                     EntityManager.Add(new EnemyProjectile(Position, vel));
-                    //Sound.Shot.Play(0.2f, rand.NextFloat(-0.2f, 0.2f), 0);
                 }
                 if (projectileCooldownRemaining > 0)
                     projectileCooldownRemaining--;
@@ -342,12 +355,6 @@ namespace Realm
         {
             while (true)
             {
-                // Skip updating if off screen.
-                //if (!Game1.WorldBounds.Contains(Position.ToPoint()))
-                //{
-                //    yield break;
-                //}
-
                 if (projectileCooldownRemaining <= 0)
                 {
                     projectileCooldownRemaining = projectileCooldown - (1 * 1);

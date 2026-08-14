@@ -15,7 +15,8 @@ namespace Realm.CharacterClasses
             image = Art.Archer;
             Sound.PlayerHit = Game1.Instance.Content.Load<SoundEffect>("Sounds/Player/archer_hit");
 
-            WeaponType = PlayerWeaponType.Bow;
+            WeaponType = Weapon.WeaponType.Bow;
+            ArmorType = Armor.ArmorType.Leather;
 
             baseHealth = 150;
             baseMana = 100;
@@ -27,7 +28,7 @@ namespace Realm.CharacterClasses
             baseWisdom = 15;
 
             MaxHealth = 750;
-            MaxMana = 250;
+            MaxMana = 300;
             MaxAttack = 75;
             MaxDefense = 25;
             MaxSpeed = 55;
@@ -35,49 +36,103 @@ namespace Realm.CharacterClasses
             MaxVitality = 40;
             MaxWisdom = 50;
 
-            Health = baseHealth;
-            HealthMax = baseHealth;
-
-            Mana = baseMana;
-            ManaMax = baseMana;
-
-            Attack = baseAttack;
-            Defense = baseDefense;
-            Speed = baseSpeed;
-            Dexterity = baseDexterity;
-            Vitality = BaseVitality;
-            Wisdom = baseWisdom;
-
             Weapon = Weapon.LoadWeapon("Shortbow");
             Weapon.Type = Weapon.WeaponType.Bow;
+
+            Armor = Armor.LoadArmor("Leather Vest");
+            Ring = Ring.LoadRing("Plain Ring");
+            AbilityItem = Quiver.LoadQuiver("Worn Quiver");
+
+            // HealthMax/ManaMax/Attack/Defense/etc. are already set by
+            // RecalculateStats(), triggered above by equipping starting gear
+            // (at Level 1 its formula reduces to exactly the plain base
+            // values). Health/Mana (current, not max) still need setting.
+            Health = HealthMax;
+            Mana = ManaMax;
+        }
+
+        // Uses (Level - 1) rather than Level so a fresh Level-1 character gets
+        // exactly the base values with no formula bonus yet — matching
+        // LevelUp() below, which increments Level before calling this, so by
+        // the time this runs Level is already the new level.
+        public override void RecalculateStats()
+        {
+            Attack =
+                baseAttack
+                + ((Level - 1) * 2)
+                + PotionAttackBonus
+                + EquipmentAttackBonus
+                + TemporaryAttackBonus;
+            Defense =
+                baseDefense
+                + (int)((Level - 1) * 0.5)
+                + PotionDefenseBonus
+                + EquipmentDefenseBonus
+                + TemporaryDefenseBonus;
+            Vitality =
+                BaseVitality
+                + ((Level - 1) * 1)
+                + PotionVitalityBonus
+                + EquipmentVitalityBonus
+                + TemporaryVitalityBonus;
+            Wisdom =
+                baseWisdom
+                + ((Level - 1) * 1)
+                + PotionWisdomBonus
+                + EquipmentWisdomBonus
+                + TemporaryWisdomBonus;
+            Speed =
+                baseSpeed
+                + ((Level - 1) * 1)
+                + PotionSpeedBonus
+                + EquipmentSpeedBonus
+                + TemporarySpeedBonus;
+            Dexterity =
+                baseDexterity
+                + ((Level - 1) * 1)
+                + PotionDexterityBonus
+                + EquipmentDexterityBonus
+                + TemporaryDexterityBonus;
+
+            HealthMax =
+                baseHealth
+                + ((Level - 1) * 25)
+                + PotionHealthMaxBonus
+                + EquipmentMaxHealthBonus
+                + TemporaryHealthMaxBonus;
+            ManaMax =
+                baseMana
+                + ((Level - 1) * 5)
+                + PotionManaMaxBonus
+                + EquipmentMaxManaBonus
+                + TemporaryManaMaxBonus;
         }
 
         public override void LevelUp()
         {
-            Attack = baseAttack + (Level * 2);
-            Defense = baseDefense + (int)(Level * 0.5);
-            Vitality = BaseVitality + (Level * 1);
-            Wisdom = baseWisdom + (Level * 1);
-            Speed = baseSpeed + (Level * 1);
-            Dexterity = baseDexterity + (Level * 1);
-
-            HealthMax = baseHealth + (Level * 25);
-            ManaMax = baseMana + (Level * 5);
+            Level++;
+            RecalculateStats();
 
             base.LevelUp();
         }
+
+        public override bool CanEquipAbilityItem(AbilityItem item) => item is Quiver;
 
         public override void UseAbility()
         {
             base.UseAbility();
 
-            int abilityCost = 25;
-
-            int damage = rand.Next(10, 15);
-
-            if (Mana >= abilityCost)
+            if (!Weapon.IsEquipped)
             {
-                Mana -= abilityCost;
+                Sound.Play(Sound.Error, 0.4f);
+                return;
+            }
+
+            int damage = rand.Next(AbilityItem.MinDamage, AbilityItem.MaxDamage);
+
+            if (Mana >= AbilityCost)
+            {
+                Mana -= AbilityCost;
 
                 var aim = Input.GetMouseAimDirection();
                 float aimAngle = aim.ToAngle();
@@ -90,6 +145,8 @@ namespace Realm.CharacterClasses
                         Damage = damage,
                         Duration = Weapon.ProjectileDuration + 25,
                         image = Weapon.ProjectileImage,
+                        ExpiresOnHit = false,
+                        ParalyzesOnHit = true,
                     }
                 );
             }

@@ -2,7 +2,6 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
-using Microsoft.Xna.Framework.Input.Touch;
 using Realm;
 
 namespace Realm.Controls
@@ -93,7 +92,6 @@ namespace Realm.Controls
             }
         }
 
-        //public void Update(GameTime gameTime, TouchCollection touchCollection
         public void Update(GameTime gameTime)
         {
             previousMouse = mouse;
@@ -115,35 +113,6 @@ namespace Realm.Controls
                     Pressed();
                 }
             }
-
-            // Check touch input.
-            //if (touchCollection.Moved())
-            //{
-            //    foreach (TouchLocation tl in touchCollection)
-            //    {
-            //        int x = (int)tl.Position.X;
-            //        int y = (int)tl.Position.Y;
-            //        var touchRectangle = new Rectangle(x, y, 1, 1);
-            //        if (touchRectangle.Intersects(Rectangle))
-            //        {
-            //            isHovering = true;
-            //        }
-            //    }
-            //}
-
-            //if (touchCollection.Released())
-            //{
-            //    foreach (TouchLocation tl in touchCollection)
-            //    {
-            //        int x = (int)tl.Position.X;
-            //        int y = (int)tl.Position.Y;
-            //        var touchRectangle = new Rectangle(x, y, 1, 1);
-            //        if (touchRectangle.Intersects(Rectangle))
-            //        {
-            //            Pressed();
-            //        }
-            //    }
-            //}
         }
         #endregion
     }

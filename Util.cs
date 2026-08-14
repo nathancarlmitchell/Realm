@@ -8,6 +8,7 @@ using System.Xml.Linq;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
+using Realm.CharacterClasses;
 using Realm.Data;
 using Realm.States;
 
@@ -15,125 +16,359 @@ namespace Realm
 {
     public static class Util
     {
-        private static string playerDataLocation = "PlayerData.json";
-        private static string weaponDataLocation = "WeaponData.json";
-        private static string inventoryDataLocation = "InventoryData.json";
+        private static string PlayerDataLocation(Player.Class playerClass) =>
+            Path.Combine(AppContext.BaseDirectory, $"PlayerData_{playerClass}.json");
 
-        //private static string skinDataLocation = "SkinData.json";
-        //private static string trophyDataLocation = "TrophyData.json";
+        private static string playerDataLocation => PlayerDataLocation(Player.PlayerClass);
 
-        private static readonly string defaultPlayerData = @"{""ExperienceTotal"":0}";
+        private static string InventoryDataLocation(Player.Class playerClass) =>
+            Path.Combine(AppContext.BaseDirectory, $"InventoryData_{playerClass}.json");
 
-        //private static readonly string defaultSkinData =
-        //    @"[{""Name"":""anim_idle_default"",""Selected"":true,""Locked"":false,""Cost"":0,""Frames"":2,""FPS"":2},
-        //        {""Name"":""anim_idle_pink"",""Selected"":false,""Locked"":true,""Cost"":3,""Frames"":2,""FPS"":2},
-        //        {""Name"":""anim_idle_clear"",""Selected"":false,""Locked"":true,""Cost"":5,""Frames"":2,""FPS"":2},
-        //        {""Name"":""anim_idle_rubiks"",""Selected"":false,""Locked"":true,""Cost"":10,""Frames"":4,""FPS"":12},
-        //        {""Name"":""anim_idle_companion"",""Selected"":false,""Locked"":true,""Cost"":15,""Frames"":4,""FPS"":8},
-        //        {""Name"":""anim_idle_dice"",""Selected"":false,""Locked"":true,""Cost"":10,""Frames"":6,""FPS"":12},
-        //        {""Name"":""anim_idle_locked"",""Selected"":false,""Locked"":true,""Cost"":10,""Frames"":2,""FPS"":2},
-        //        {""Name"":""anim_idle_tv"",""Selected"":false,""Locked"":true,""Cost"":15,""Frames"":4,""FPS"":16}]";
+        private static string inventoryDataLocation => InventoryDataLocation(Player.PlayerClass);
 
-        //private static readonly string defaultTrophyData =
-        //    @"[{""Name"":""Tiny Wings"",""Selected"":false,""Locked"":true,""Description"":""Score 1,000 points"",""Frames"": 1,""FPS"": 1},
-        //        {""Name"":""Angry Birds"",""Selected"":false,""Locked"":true,""Description"":""Score 5,000 points"",""Frames"": 1,""FPS"": 1},
-        //        {""Name"":""Flight Simulator"",""Selected"":false,""Locked"":true,""Description"":""Score 10,000 points"",""Frames"": 1,""FPS"": 1},
-        //        {""Name"":""Sunscreen"",""Selected"":false,""Locked"":true,""Description"":""Unlock all skins"",""Frames"": 1,""FPS"": 1},
-        //        {""Name"":""Bezos"",""Selected"":false,""Locked"":true,""Description"":""Save 100 coins"",""Frames"": 1,""FPS"": 1}]";
+        // Not per-class like PlayerData/InventoryData — the bank is shared
+        // across every class's save.
+        private static string bankDataLocation = Path.Combine(
+            AppContext.BaseDirectory,
+            "BankData.json"
+        );
 
-        //public static void CheckOS()
-        //{
-        //    if (OperatingSystem.IsAndroid())
-        //    {
-        //        Debug.WriteLine("Device running Android.");
-        //        // AppContext.BaseDirectory = "/data/user/0/FlappyBox.Android/files".
-        //        gameDataLocation = AppContext.BaseDirectory + "/" + gameDataLocation;
-        //        skinDataLocation = AppContext.BaseDirectory + "/" + skinDataLocation;
-        //        trophyDataLocation = AppContext.BaseDirectory + "/" + trophyDataLocation;
-        //    }
-        //}
+        // Not per-class, same reasoning as bankDataLocation — Fame is an
+        // account-level total, not tied to any one class's save.
+        private static string fameDataLocation = Path.Combine(
+            AppContext.BaseDirectory,
+            "FameData.json"
+        );
 
-        public static void LoadPlayerData()
+        private static string weaponDataLocation = Path.Combine(
+            AppContext.BaseDirectory,
+            "WeaponData.json"
+        );
+
+        private static string armorDataLocation = Path.Combine(
+            AppContext.BaseDirectory,
+            "ArmorData.json"
+        );
+
+        private static string ringDataLocation = Path.Combine(
+            AppContext.BaseDirectory,
+            "RingData.json"
+        );
+
+        private static string spellDataLocation = Path.Combine(
+            AppContext.BaseDirectory,
+            "SpellData.json"
+        );
+
+        private static string quiverDataLocation = Path.Combine(
+            AppContext.BaseDirectory,
+            "QuiverData.json"
+        );
+
+        private static string shieldDataLocation = Path.Combine(
+            AppContext.BaseDirectory,
+            "ShieldData.json"
+        );
+
+        // Read-only peek at a class's save data, without touching Player.Instance or
+        // Player.PlayerClass. Returns null if that class has no save yet.
+        public static PlayerData PeekPlayerData(Player.Class playerClass)
         {
-            PlayerData playerData = new();
-
             try
             {
-                using (StreamReader r = new(playerDataLocation))
-                {
-                    Debug.WriteLine(playerDataLocation + ": reading data.");
-                    string json = r.ReadToEnd();
-                    try
-                    {
-                        playerData = JsonSerializer.Deserialize<PlayerData>(json);
-                    }
-                    catch (System.Text.Json.JsonException)
-                    {
-                        Debug.WriteLine($"Error loading game data: {json}");
-                        json = defaultPlayerData;
-
-                        playerData = JsonSerializer.Deserialize<PlayerData>(json);
-                        Debug.WriteLine($"Default data loaded: {json}");
-                    }
-                    Debug.WriteLine(json);
-                }
-
-                Player.ID = playerData.ID;
-                Player.Name = playerData.Name;
-                Player.Description = playerData.Description;
-                Player.PlayerClass = playerData.PlayerClass;
-                //Player.Health = playerData.HealthMax;
-                Player.HealthMax = playerData.HealthMax;
-                //Player.Mana = playerData.ManaMax;
-                Player.ManaMax = playerData.ManaMax;
-                Player.Attack = playerData.Attack;
-                Player.Defense = playerData.Defense;
-                Player.Vitality = playerData.Vitality;
-                Player.Wisdom = playerData.Wisdom;
-                Player.Speed = playerData.Speed;
-                Player.Dexterity = playerData.Dexterity;
-                Player.Experience = playerData.Experience;
-                Player.ExperienceNextLevel = playerData.ExperienceNextLevel;
-                Player.ExperienceTotal = playerData.ExperienceTotal;
-                Player.Level = playerData.Level;
-                Weapon.LoadWeapon(playerData.Weapon.Name);
+                using StreamReader r = new(PlayerDataLocation(playerClass));
+                string json = r.ReadToEnd();
+                return JsonSerializer.Deserialize<PlayerData>(json);
             }
             catch (System.IO.FileNotFoundException)
             {
-                Debug.WriteLine(playerDataLocation + ": file not found.");
+                return null;
             }
+            catch (System.Text.Json.JsonException)
+            {
+                return null;
+            }
+        }
+
+        // Resets a class's save data (stats, level, equipment, inventory) back to a
+        // fresh Level-1 character, the same as a never-played class — except its
+        // High Score persists, since that's meant to survive a character's death or
+        // deletion rather than reset with everything else. Does not touch
+        // Player.Instance if that class happens to be currently loaded in memory —
+        // callers that care (e.g. deleting the character you're actively playing)
+        // need to reset the live instance themselves, or a later autosave would
+        // silently recreate the file from stale in-memory stats.
+        public static void DeleteCharacterData(Player.Class playerClass)
+        {
+            PlayerData existing = PeekPlayerData(playerClass);
+            int highScore = existing?.HighScore ?? 0;
+
+            // Whatever Score this character had built up is about to be wiped
+            // either way (file deleted outright, or reset back to defaults
+            // below) — salvage it into the account-level Fame total before
+            // that happens. Unlike HighScore, Score isn't otherwise preserved
+            // by a delete, so there's no double-counting risk here.
+            FameSystem.AddFame(existing?.ExperienceTotal ?? 0);
+            SaveFameData();
+
+            string inventoryPath = InventoryDataLocation(playerClass);
+            if (File.Exists(inventoryPath))
+                File.Delete(inventoryPath);
+
+            string playerPath = PlayerDataLocation(playerClass);
+
+            if (highScore <= 0)
+            {
+                if (File.Exists(playerPath))
+                    File.Delete(playerPath);
+                return;
+            }
+
+            // Preserve the High Score by writing back a fresh default character
+            // instead of deleting the file outright. LoadOrCreatePlayer always
+            // reconstructs the class from scratch first (ResetPlayer) and then
+            // copies several fields (Level, Experience, etc.) straight from the
+            // save with no null-check, so this has to be a fully valid Level-1
+            // snapshot, not a blank/zeroed one — BuildPlayerData against a
+            // just-reset Player.Instance gives exactly that. The swap is safe
+            // because nothing else runs on this thread between saving and
+            // restoring Player.Instance/PlayerClass. ResetPlayer's freshly
+            // constructed instance also naturally has HasBeenPlayed = false,
+            // which is what should land in the file here (unlike HighScore,
+            // that flag is meant to reset on delete).
+            Player previousInstance = Player.Instance;
+            Player.Class previousClass = Player.PlayerClass;
+
+            ResetPlayer(playerClass);
+            PlayerData defaultData = BuildPlayerData();
+            defaultData.HighScore = highScore;
+
+            Player.Instance = previousInstance;
+            Player.PlayerClass = previousClass;
+
+            string json = JsonSerializer.Serialize(defaultData);
+            File.WriteAllText(playerPath, json);
+        }
+
+        // There's no single save file to read a "last played class" from anymore now
+        // that saves are per-class, so infer it from whichever class's save file was
+        // written most recently. Falls back to Wizard if neither exists yet.
+        public static Player.Class DetermineLastPlayedClass()
+        {
+            (Player.Class playerClass, string path)[] candidates =
+            [
+                (Player.Class.Wizard, PlayerDataLocation(Player.Class.Wizard)),
+                (Player.Class.Archer, PlayerDataLocation(Player.Class.Archer)),
+                (Player.Class.Knight, PlayerDataLocation(Player.Class.Knight)),
+            ];
+
+            Player.Class? mostRecent = null;
+            DateTime mostRecentWriteTime = DateTime.MinValue;
+
+            foreach (var (playerClass, path) in candidates)
+            {
+                if (!File.Exists(path))
+                    continue;
+
+                // Strictly greater (not >=) on later candidates so an exact
+                // tie keeps whichever class was checked first — matches the
+                // original two-class comparison, which favored Wizard on a
+                // tie against Archer.
+                DateTime writeTime = File.GetLastWriteTimeUtc(path);
+                if (mostRecent == null || writeTime > mostRecentWriteTime)
+                {
+                    mostRecent = playerClass;
+                    mostRecentWriteTime = writeTime;
+                }
+            }
+
+            return mostRecent ?? Player.Class.Wizard;
+        }
+
+        // Used by the main menu's Nexus button to decide whether jumping straight
+        // into gameplay makes sense, or no class has ever actually been played yet
+        // (Player.Instance defaults to a fresh Wizard at boot regardless — see
+        // DetermineLastPlayedClass — so that alone can't answer this).
+        public static bool AnyCharacterHasBeenPlayed() =>
+            (PeekPlayerData(Player.Class.Wizard)?.HasBeenPlayed ?? false)
+            || (PeekPlayerData(Player.Class.Archer)?.HasBeenPlayed ?? false)
+            || (PeekPlayerData(Player.Class.Knight)?.HasBeenPlayed ?? false);
+
+        // Constructs the given class at its base stats, discarding whatever the
+        // current Player.Instance is — no save is read or applied.
+        public static void ResetPlayer(Player.Class playerClass)
+        {
+            Player.PlayerClass = playerClass;
+
+            switch (playerClass)
+            {
+                case Player.Class.Wizard:
+                    _ = new Wizard();
+                    break;
+                case Player.Class.Archer:
+                    _ = new Archer();
+                    break;
+                case Player.Class.Knight:
+                    _ = new Knight();
+                    break;
+            }
+        }
+
+        // Constructs the given class and, if it has a save, layers that save's stats
+        // (and inventory) on top. Used both at game boot and when a character is
+        // chosen from Character Select, so there's exactly one place that knows how
+        // to do this correctly (construct first, then apply save data — not the
+        // other way around, which discards the loaded stats as soon as the
+        // constructor resets them to base values).
+        public static void LoadOrCreatePlayer(Player.Class playerClass)
+        {
+            PlayerData saved = PeekPlayerData(playerClass);
+
+            ResetPlayer(playerClass);
+
+            if (saved != null)
+            {
+                Player.Instance.ID = saved.ID;
+                Player.Instance.Name = saved.Name;
+                Player.Instance.Description = saved.Description;
+                Player.Instance.Experience = saved.Experience;
+                Player.Instance.ExperienceNextLevel = saved.ExperienceNextLevel;
+                Player.Instance.ExperienceTotal = saved.ExperienceTotal;
+                Player.Instance.HighScore = saved.HighScore;
+                Player.Instance.HasBeenPlayed = saved.HasBeenPlayed;
+                Player.Instance.Level = saved.Level;
+
+                Player.Instance.PotionAttackBonus = saved.PotionAttackBonus;
+                Player.Instance.PotionDefenseBonus = saved.PotionDefenseBonus;
+                Player.Instance.PotionSpeedBonus = saved.PotionSpeedBonus;
+                Player.Instance.PotionDexterityBonus = saved.PotionDexterityBonus;
+                Player.Instance.PotionVitalityBonus = saved.PotionVitalityBonus;
+                Player.Instance.PotionWisdomBonus = saved.PotionWisdomBonus;
+                Player.Instance.PotionHealthMaxBonus = saved.PotionHealthMaxBonus;
+                Player.Instance.PotionManaMaxBonus = saved.PotionManaMaxBonus;
+
+                Player.Instance.Inventory.HealthPotionCharges = saved.HealthPotionCharges;
+                Player.Instance.Inventory.ManaPotionCharges = saved.ManaPotionCharges;
+
+                // Deliberately NOT restoring HealthMax/ManaMax/Attack/Defense/
+                // Vitality/Wisdom/Speed/Dexterity directly from saved.* here —
+                // those are derived values that already had whatever gear was
+                // equipped at save time baked in. Re-equipping that same gear
+                // below (via EquipWeapon/EquipArmor/EquipRing) recomputes them
+                // correctly from Level + Potion*Bonus (restored above) + the
+                // now-equipped item's live bonus; restoring the raw baked
+                // totals AND re-equipping would double-count the gear bonus.
+                //
+                // A saved Weapon/Armor/Ring is never actually null after a JSON
+                // round-trip (it's a real object, just blank) — a null Name is
+                // what indicates the slot was unequipped when saved. Without this
+                // check, an unequipped slot would silently re-equip the class's
+                // constructor-default item on every reload.
+                if (saved.Weapon != null)
+                {
+                    if (saved.Weapon.Name != null)
+                        Weapon.LoadWeapon(saved.Weapon.Name);
+                    else
+                        Player.Instance.EquipWeapon(new Weapon());
+                }
+
+                if (saved.Armor != null)
+                {
+                    if (saved.Armor.Name != null)
+                        Armor.LoadArmor(saved.Armor.Name);
+                    else
+                        Player.Instance.EquipArmor(new Armor());
+                }
+
+                if (saved.Ring != null)
+                {
+                    if (saved.Ring.Name != null)
+                        Ring.LoadRing(saved.Ring.Name);
+                    else
+                        Player.Instance.EquipRing(new Ring());
+                }
+
+                // Spell/Quiver/Shield are only populated when actually
+                // equipped (see SavePlayerData's `as Spell`/`as Quiver`/
+                // `as Shield` — a blank AbilityItem casts to none of them),
+                // so all three being null unambiguously means "unequipped" —
+                // same signal Weapon/Armor/Ring get from a null Name. Without
+                // this else, ResetPlayer's constructor-equipped default
+                // Tier-0 ability item was never cleared, so it stayed
+                // equipped alongside whatever the player had actually dragged
+                // into inventory — the reported duplicate ability item.
+                if (saved.Spell != null && saved.Spell.Name != null)
+                    Spell.LoadSpell(saved.Spell.Name);
+                else if (saved.Quiver != null && saved.Quiver.Name != null)
+                    Quiver.LoadQuiver(saved.Quiver.Name);
+                else if (saved.Shield != null && saved.Shield.Name != null)
+                    Shield.LoadShield(saved.Shield.Name);
+                else
+                    Player.Instance.EquipAbilityItem(new AbilityItem());
+
+                Player.Instance.Health = Player.Instance.HealthMax;
+                Player.Instance.Mana = Player.Instance.ManaMax;
+            }
+
+            LoadInventoryData();
         }
 
         public static void SavePlayerData()
         {
-            PlayerData playerData = new()
-            {
-                ID = Player.ID,
-                Name = Player.Name,
-                Description = Player.Description,
-                PlayerClass = Player.PlayerClass,
-                //Health = Player.Health,
-                HealthMax = Player.HealthMax,
-                //Mana = Player.Mana,
-                ManaMax = Player.ManaMax,
-                Attack = Player.Attack,
-                Defense = Player.Defense,
-                Vitality = Player.Vitality,
-                Wisdom = Player.Wisdom,
-                Speed = Player.Speed,
-                Dexterity = Player.Dexterity,
-                Experience = Player.Experience,
-                ExperienceNextLevel = Player.ExperienceNextLevel,
-                ExperienceTotal = Player.ExperienceTotal,
-                Level = Player.Level,
-                Weapon = Player.Instance.Weapon,
-            };
+            PlayerData playerData = BuildPlayerData();
 
             string json = JsonSerializer.Serialize(playerData);
             Debug.WriteLine(json);
             File.WriteAllText(playerDataLocation, json);
 
             Debug.WriteLine("GameData Saved.");
+        }
+
+        // Snapshots Player.Instance/Player.PlayerClass into a PlayerData DTO. Shared
+        // by SavePlayerData (snapshotting the live, currently-playing character) and
+        // DeleteCharacterData (snapshotting a freshly-constructed default character,
+        // to write back after wiping a save while preserving its High Score).
+        private static PlayerData BuildPlayerData()
+        {
+            return new PlayerData
+            {
+                ID = Player.Instance.ID,
+                Name = Player.Instance.Name,
+                Description = Player.Instance.Description,
+                PlayerClass = Player.PlayerClass,
+                //Health = Player.Instance.Health,
+                HealthMax = Player.Instance.HealthMax,
+                //Mana = Player.Instance.Mana,
+                ManaMax = Player.Instance.ManaMax,
+                Attack = Player.Instance.Attack,
+                Defense = Player.Instance.Defense,
+                Vitality = Player.Instance.Vitality,
+                Wisdom = Player.Instance.Wisdom,
+                Speed = Player.Instance.Speed,
+                Dexterity = Player.Instance.Dexterity,
+                Experience = Player.Instance.Experience,
+                ExperienceNextLevel = Player.Instance.ExperienceNextLevel,
+                ExperienceTotal = Player.Instance.ExperienceTotal,
+                HighScore = Player.Instance.HighScore,
+                HasBeenPlayed = Player.Instance.HasBeenPlayed,
+                Level = Player.Instance.Level,
+                Weapon = Player.Instance.Weapon,
+                Armor = Player.Instance.Armor,
+                Ring = Player.Instance.Ring,
+                Spell = Player.Instance.AbilityItem as Spell,
+                Quiver = Player.Instance.AbilityItem as Quiver,
+                Shield = Player.Instance.AbilityItem as Shield,
+                HealthPotionCharges = Player.Instance.Inventory.HealthPotionCharges,
+                ManaPotionCharges = Player.Instance.Inventory.ManaPotionCharges,
+                PotionAttackBonus = Player.Instance.PotionAttackBonus,
+                PotionDefenseBonus = Player.Instance.PotionDefenseBonus,
+                PotionSpeedBonus = Player.Instance.PotionSpeedBonus,
+                PotionDexterityBonus = Player.Instance.PotionDexterityBonus,
+                PotionVitalityBonus = Player.Instance.PotionVitalityBonus,
+                PotionWisdomBonus = Player.Instance.PotionWisdomBonus,
+                PotionHealthMaxBonus = Player.Instance.PotionHealthMaxBonus,
+                PotionManaMaxBonus = Player.Instance.PotionManaMaxBonus,
+            };
         }
 
         public static void SaveWeaponData()
@@ -146,7 +381,7 @@ namespace Realm
             {
                 Type = playerWeapon.Type,
                 Description = playerWeapon.Description,
-                Teir = playerWeapon.Teir,
+                Tier = playerWeapon.Tier,
                 DamageMin = playerWeapon.DamageMin,
                 DamageMax = playerWeapon.DamageMax,
                 ProjectileMagnitude = playerWeapon.ProjectileMagnitude,
@@ -202,7 +437,7 @@ namespace Realm
                             Type = weaponData[i].Type,
                             Name = weaponData[i].Name,
                             Description = weaponData[i].Description,
-                            Teir = weaponData[i].Teir,
+                            Tier = weaponData[i].Tier,
                             DamageMin = weaponData[i].DamageMin,
                             DamageMax = weaponData[i].DamageMax,
                             ProjectileMagnitude = weaponData[i].ProjectileMagnitude,
@@ -221,19 +456,313 @@ namespace Realm
             return weapons;
         }
 
+        public static List<Armor> LoadArmorData()
+        {
+            List<ArmorData> armorData = [];
+            List<Armor> armors = [];
+
+            try
+            {
+                using (StreamReader r = new(armorDataLocation))
+                {
+                    Debug.WriteLine(armorDataLocation + ": reading data.");
+                    string json = r.ReadToEnd();
+                    Debug.WriteLine(json);
+                    try
+                    {
+                        armorData = JsonSerializer.Deserialize<List<ArmorData>>(json);
+                    }
+                    catch (System.Text.Json.JsonException)
+                    {
+                        Debug.WriteLine($"Error loading armor data: {json}");
+                    }
+                }
+
+                for (int i = 0; i < armorData.Count; i++)
+                {
+                    Texture2D armorTexture = Game1.Instance.Content.Load<Texture2D>(
+                        armorData[i].ImageName
+                    );
+
+                    armors.Add(
+                        new Armor(armorTexture)
+                        {
+                            Name = armorData[i].Name,
+                            Description = armorData[i].Description,
+                            Type = armorData[i].Type,
+                            Tier = armorData[i].Tier,
+                            MaxHealthBonus = armorData[i].MaxHealthBonus,
+                            MaxManaBonus = armorData[i].MaxManaBonus,
+                            AttackBonus = armorData[i].AttackBonus,
+                            DefenseBonus = armorData[i].DefenseBonus,
+                            SpeedBonus = armorData[i].SpeedBonus,
+                            DexterityBonus = armorData[i].DexterityBonus,
+                            VitalityBonus = armorData[i].VitalityBonus,
+                            WisdomBonus = armorData[i].WisdomBonus,
+                            ImageName = armorData[i].ImageName,
+                        }
+                    );
+                }
+            }
+            catch (System.IO.FileNotFoundException)
+            {
+                Debug.WriteLine(armorDataLocation + ": file not found.");
+            }
+
+            return armors;
+        }
+
+        public static List<Ring> LoadRingData()
+        {
+            List<RingData> ringData = [];
+            List<Ring> rings = [];
+
+            try
+            {
+                using (StreamReader r = new(ringDataLocation))
+                {
+                    Debug.WriteLine(ringDataLocation + ": reading data.");
+                    string json = r.ReadToEnd();
+                    Debug.WriteLine(json);
+                    try
+                    {
+                        ringData = JsonSerializer.Deserialize<List<RingData>>(json);
+                    }
+                    catch (System.Text.Json.JsonException)
+                    {
+                        Debug.WriteLine($"Error loading ring data: {json}");
+                    }
+                }
+
+                for (int i = 0; i < ringData.Count; i++)
+                {
+                    Texture2D ringTexture = Game1.Instance.Content.Load<Texture2D>(
+                        ringData[i].ImageName
+                    );
+
+                    rings.Add(
+                        new Ring(ringTexture)
+                        {
+                            Name = ringData[i].Name,
+                            Description = ringData[i].Description,
+                            Tier = ringData[i].Tier,
+                            MaxHealthBonus = ringData[i].MaxHealthBonus,
+                            MaxManaBonus = ringData[i].MaxManaBonus,
+                            AttackBonus = ringData[i].AttackBonus,
+                            DefenseBonus = ringData[i].DefenseBonus,
+                            SpeedBonus = ringData[i].SpeedBonus,
+                            DexterityBonus = ringData[i].DexterityBonus,
+                            VitalityBonus = ringData[i].VitalityBonus,
+                            WisdomBonus = ringData[i].WisdomBonus,
+                            ImageName = ringData[i].ImageName,
+                        }
+                    );
+                }
+            }
+            catch (System.IO.FileNotFoundException)
+            {
+                Debug.WriteLine(ringDataLocation + ": file not found.");
+            }
+
+            return rings;
+        }
+
+        public static List<Spell> LoadSpellData()
+        {
+            List<SpellData> spellData = [];
+            List<Spell> spells = [];
+
+            try
+            {
+                using (StreamReader r = new(spellDataLocation))
+                {
+                    Debug.WriteLine(spellDataLocation + ": reading data.");
+                    string json = r.ReadToEnd();
+                    Debug.WriteLine(json);
+                    try
+                    {
+                        spellData = JsonSerializer.Deserialize<List<SpellData>>(json);
+                    }
+                    catch (System.Text.Json.JsonException)
+                    {
+                        Debug.WriteLine($"Error loading spell data: {json}");
+                    }
+                }
+
+                for (int i = 0; i < spellData.Count; i++)
+                {
+                    Texture2D spellTexture = Game1.Instance.Content.Load<Texture2D>(
+                        spellData[i].ImageName
+                    );
+
+                    spells.Add(
+                        new Spell(spellTexture)
+                        {
+                            Name = spellData[i].Name,
+                            Description = spellData[i].Description,
+                            Tier = spellData[i].Tier,
+                            MaxHealthBonus = spellData[i].MaxHealthBonus,
+                            MaxManaBonus = spellData[i].MaxManaBonus,
+                            AttackBonus = spellData[i].AttackBonus,
+                            DefenseBonus = spellData[i].DefenseBonus,
+                            SpeedBonus = spellData[i].SpeedBonus,
+                            DexterityBonus = spellData[i].DexterityBonus,
+                            VitalityBonus = spellData[i].VitalityBonus,
+                            WisdomBonus = spellData[i].WisdomBonus,
+                            ManaCost = spellData[i].ManaCost,
+                            MinDamage = spellData[i].MinDamage,
+                            MaxDamage = spellData[i].MaxDamage,
+                            ImageName = spellData[i].ImageName,
+                        }
+                    );
+                }
+            }
+            catch (System.IO.FileNotFoundException)
+            {
+                Debug.WriteLine(spellDataLocation + ": file not found.");
+            }
+
+            return spells;
+        }
+
+        public static List<Quiver> LoadQuiverData()
+        {
+            List<QuiverData> quiverData = [];
+            List<Quiver> quivers = [];
+
+            try
+            {
+                using (StreamReader r = new(quiverDataLocation))
+                {
+                    Debug.WriteLine(quiverDataLocation + ": reading data.");
+                    string json = r.ReadToEnd();
+                    Debug.WriteLine(json);
+                    try
+                    {
+                        quiverData = JsonSerializer.Deserialize<List<QuiverData>>(json);
+                    }
+                    catch (System.Text.Json.JsonException)
+                    {
+                        Debug.WriteLine($"Error loading quiver data: {json}");
+                    }
+                }
+
+                for (int i = 0; i < quiverData.Count; i++)
+                {
+                    Texture2D quiverTexture = Game1.Instance.Content.Load<Texture2D>(
+                        quiverData[i].ImageName
+                    );
+
+                    quivers.Add(
+                        new Quiver(quiverTexture)
+                        {
+                            Name = quiverData[i].Name,
+                            Description = quiverData[i].Description,
+                            Tier = quiverData[i].Tier,
+                            MaxHealthBonus = quiverData[i].MaxHealthBonus,
+                            MaxManaBonus = quiverData[i].MaxManaBonus,
+                            AttackBonus = quiverData[i].AttackBonus,
+                            DefenseBonus = quiverData[i].DefenseBonus,
+                            SpeedBonus = quiverData[i].SpeedBonus,
+                            DexterityBonus = quiverData[i].DexterityBonus,
+                            VitalityBonus = quiverData[i].VitalityBonus,
+                            WisdomBonus = quiverData[i].WisdomBonus,
+                            ManaCost = quiverData[i].ManaCost,
+                            MinDamage = quiverData[i].MinDamage,
+                            MaxDamage = quiverData[i].MaxDamage,
+                            ImageName = quiverData[i].ImageName,
+                        }
+                    );
+                }
+            }
+            catch (System.IO.FileNotFoundException)
+            {
+                Debug.WriteLine(quiverDataLocation + ": file not found.");
+            }
+
+            return quivers;
+        }
+
+        public static List<Shield> LoadShieldData()
+        {
+            List<ShieldData> shieldData = [];
+            List<Shield> shields = [];
+
+            try
+            {
+                using (StreamReader r = new(shieldDataLocation))
+                {
+                    Debug.WriteLine(shieldDataLocation + ": reading data.");
+                    string json = r.ReadToEnd();
+                    Debug.WriteLine(json);
+                    try
+                    {
+                        shieldData = JsonSerializer.Deserialize<List<ShieldData>>(json);
+                    }
+                    catch (System.Text.Json.JsonException)
+                    {
+                        Debug.WriteLine($"Error loading shield data: {json}");
+                    }
+                }
+
+                for (int i = 0; i < shieldData.Count; i++)
+                {
+                    Texture2D shieldTexture = Game1.Instance.Content.Load<Texture2D>(
+                        shieldData[i].ImageName
+                    );
+
+                    shields.Add(
+                        new Shield(shieldTexture)
+                        {
+                            Name = shieldData[i].Name,
+                            Description = shieldData[i].Description,
+                            Tier = shieldData[i].Tier,
+                            MaxHealthBonus = shieldData[i].MaxHealthBonus,
+                            MaxManaBonus = shieldData[i].MaxManaBonus,
+                            AttackBonus = shieldData[i].AttackBonus,
+                            DefenseBonus = shieldData[i].DefenseBonus,
+                            SpeedBonus = shieldData[i].SpeedBonus,
+                            DexterityBonus = shieldData[i].DexterityBonus,
+                            VitalityBonus = shieldData[i].VitalityBonus,
+                            WisdomBonus = shieldData[i].WisdomBonus,
+                            ManaCost = shieldData[i].ManaCost,
+                            MinDamage = shieldData[i].MinDamage,
+                            MaxDamage = shieldData[i].MaxDamage,
+                            ImageName = shieldData[i].ImageName,
+                        }
+                    );
+                }
+            }
+            catch (System.IO.FileNotFoundException)
+            {
+                Debug.WriteLine(shieldDataLocation + ": file not found.");
+            }
+
+            return shields;
+        }
+
         public static void SaveInventoryData()
         {
             List<InventoryData> inventoryData = [];
 
-            for (int i = 0; i < Player.Instance.Inventory.InventoryRecords.Count; i++)
+            // Every slot, including empty (null) ones, written as an explicit
+            // null-item entry — so the saved list stays exactly
+            // MAXIMUM_SLOTS_IN_INVENTORY long and LoadInventoryData can place
+            // each entry back at the same index, preserving gaps instead of
+            // compacting them away.
+            for (int i = 0; i < Player.Instance.Inventory.InventoryRecords.Length; i++)
             {
-                InventoryData item = new()
-                {
-                    InventoryItem = Player.Instance.Inventory.InventoryRecords[i].InventoryItem,
-                    Quantity = Player.Instance.Inventory.InventoryRecords[i].Quantity,
-                };
+                InventorySystem.InventoryRecord record = Player.Instance.Inventory.InventoryRecords[
+                    i
+                ];
 
-                inventoryData.Add(item);
+                inventoryData.Add(
+                    new InventoryData
+                    {
+                        InventoryItem = record?.InventoryItem,
+                        Quantity = record?.Quantity ?? 0,
+                    }
+                );
             }
 
             string json = JsonSerializer.Serialize(inventoryData);
@@ -259,19 +788,49 @@ namespace Realm
                     catch (System.Text.Json.JsonException)
                     {
                         Debug.WriteLine($"Error loading inventory data: {json}");
-                        //json = defaultSkinData;
-                        //skinData = JsonSerializer.Deserialize<List<SkinData>>(json);
-                        //Debug.WriteLine($"Default data loaded: {json}");
                     }
 
-                    for (int i = 0; i < inventoryData.Count; i++)
+                    // Placed at the same index it was saved from — not
+                    // appended — so positions survive the round trip. Old
+                    // saves (a compact list with no gaps, from before this
+                    // format) still load correctly this way, since their
+                    // sequential indices are already exactly slots 0..N-1.
+                    int count = Math.Min(
+                        inventoryData.Count,
+                        InventorySystem.MAXIMUM_SLOTS_IN_INVENTORY
+                    );
+                    for (int i = 0; i < count; i++)
                     {
-                        Player.Instance.Inventory.InventoryRecords.Add(
+                        if (inventoryData[i].InventoryItem == null)
+                            continue;
+
+                        string itemName = inventoryData[i].InventoryItem.Name;
+
+                        // Older saves (from before Health/Mana potions got their own
+                        // dedicated charge counters) may still have them recorded
+                        // here — fold them into the counters instead of re-adding
+                        // them to the general grid.
+                        if (itemName == "Health Potion")
+                        {
+                            Player.Instance.Inventory.HealthPotionCharges += inventoryData[
+                                i
+                            ].Quantity;
+                            continue;
+                        }
+
+                        if (itemName == "Mana Potion")
+                        {
+                            Player.Instance.Inventory.ManaPotionCharges += inventoryData[
+                                i
+                            ].Quantity;
+                            continue;
+                        }
+
+                        Player.Instance.Inventory.InventoryRecords[i] =
                             new InventorySystem.InventoryRecord(
                                 inventoryData[i].InventoryItem,
                                 inventoryData[i].Quantity
-                            )
-                        );
+                            );
                     }
                 }
             }
@@ -281,161 +840,128 @@ namespace Realm
             }
         }
 
-        //public static void LoadSkinData(ContentManager content)
-        //{
-        //    List<SkinData> skinData = new List<SkinData>();
-        //    SkinsState.Skins = new List<Skin>();
+        public static void SaveBankData()
+        {
+            List<InventoryData> bankData = [];
 
-        //    try
-        //    {
-        //        using (StreamReader r = new StreamReader(skinDataLocation))
-        //        {
-        //            Debug.WriteLine(skinDataLocation + ": reading data.");
-        //            string json = r.ReadToEnd();
-        //            try
-        //            {
-        //                skinData = JsonSerializer.Deserialize<List<SkinData>>(json);
-        //            }
-        //            catch (System.Text.Json.JsonException)
-        //            {
-        //                Debug.WriteLine($"Error loading skin data: {json}");
-        //                json = defaultSkinData;
-        //                skinData = JsonSerializer.Deserialize<List<SkinData>>(json);
-        //                Debug.WriteLine($"Default data loaded: {json}");
-        //            }
+            // Every slot, including empty (null) ones — same reasoning as
+            // SaveInventoryData, so positions survive a reload.
+            for (int i = 0; i < BankSystem.Records.Length; i++)
+            {
+                InventorySystem.InventoryRecord record = BankSystem.Records[i];
 
-        //            for (int i = 0; i < skinData.Count; i++)
-        //            {
-        //                Skin skin = new(content, skinData[i].Name)
-        //                {
-        //                    Name = skinData[i].Name,
-        //                    Selected = skinData[i].Selected,
-        //                    Locked = skinData[i].Locked,
-        //                    Cost = skinData[i].Cost,
-        //                    Frames = skinData[i].Frames,
-        //                    FPS = skinData[i].FPS,
-        //                };
-        //                skin.LoadTexture(content, skin.Name);
-        //                SkinsState.Skins.Add(skin);
-        //            }
-        //        }
-        //    }
-        //    catch (System.IO.FileNotFoundException)
-        //    {
-        //        Debug.WriteLine(skinDataLocation + ": file not found.");
-        //        using (FileStream fs = File.Create(skinDataLocation))
-        //        {
-        //            Debug.WriteLine(skinDataLocation + ": file created.");
-        //            byte[] data = new UTF8Encoding(true).GetBytes(defaultSkinData);
-        //            fs.Write(data, 0, data.Length);
-        //        }
-        //    }
-        //}
+                bankData.Add(
+                    new InventoryData
+                    {
+                        InventoryItem = record?.InventoryItem,
+                        Quantity = record?.Quantity ?? 0,
+                    }
+                );
+            }
 
-        //public static void SaveSkinData()
-        //{
-        //    if (SkinsState.Skins is not null)
-        //    {
-        //        List<SkinData> skinData = new List<SkinData>();
-        //        for (int i = 0; i < SkinsState.Skins.Count; i++)
-        //        {
-        //            SkinData skin = new()
-        //            {
-        //                Name = SkinsState.Skins[i].Name,
-        //                Selected = SkinsState.Skins[i].Selected,
-        //                Locked = SkinsState.Skins[i].Locked,
-        //                Cost = SkinsState.Skins[i].Cost,
-        //                Frames = SkinsState.Skins[i].Frames,
-        //                FPS = SkinsState.Skins[i].FPS,
-        //            };
-        //            skinData.Add(skin);
-        //        }
-        //        string json = JsonSerializer.Serialize(skinData);
-        //        File.WriteAllText(skinDataLocation, json);
-        //        Debug.WriteLine("SkinData Saved.");
-        //    }
-        //}
+            string json = JsonSerializer.Serialize(bankData);
+            Debug.WriteLine(json);
+            File.WriteAllText(bankDataLocation, json);
+            Debug.WriteLine("BankData Saved.");
+        }
 
-        //public static void LoadTrophyData(ContentManager content)
-        //{
-        //    List<TrophyData> trophyData = new List<TrophyData>();
-        //    TrophyState.Trophys = new List<Trophy>();
+        public static void LoadBankData()
+        {
+            List<InventoryData> bankData = [];
+            try
+            {
+                using (StreamReader r = new(bankDataLocation))
+                {
+                    Debug.WriteLine(bankDataLocation + ": reading data.");
+                    string json = r.ReadToEnd();
+                    Debug.WriteLine(json);
+                    try
+                    {
+                        bankData = JsonSerializer.Deserialize<List<InventoryData>>(json);
+                    }
+                    catch (System.Text.Json.JsonException)
+                    {
+                        Debug.WriteLine($"Error loading bank data: {json}");
+                    }
 
-        //    try
-        //    {
-        //        using (StreamReader r = new StreamReader(trophyDataLocation))
-        //        {
-        //            Debug.WriteLine(trophyDataLocation + ": reading data.");
-        //            string json = r.ReadToEnd();
-        //            try
-        //            {
-        //                trophyData = JsonSerializer.Deserialize<List<TrophyData>>(json);
-        //            }
-        //            catch (System.Text.Json.JsonException)
-        //            {
-        //                Debug.WriteLine("Invalid JSON:" + json);
-        //            }
-        //            for (int i = 0; i < trophyData.Count; i++)
-        //            {
-        //                Trophy trophy = new(content, trophyData[i].Name)
-        //                {
-        //                    Name = trophyData[i].Name,
-        //                    Selected = false,
-        //                    Locked = trophyData[i].Locked,
-        //                    Description = trophyData[i].Description,
-        //                    Frames = trophyData[i].Frames,
-        //                    FPS = trophyData[i].FPS,
-        //                };
-        //                //trophy.LoadTexture(content, skin.Name);
-        //                TrophyState.Trophys.Add(trophy);
-        //            }
-        //        }
-        //    }
-        //    catch (System.IO.FileNotFoundException)
-        //    {
-        //        Debug.WriteLine(trophyDataLocation + ": file not found.");
-        //        using (FileStream fs = File.Create(trophyDataLocation))
-        //        {
-        //            Debug.WriteLine(trophyDataLocation + ": file created.");
-        //            byte[] data = new UTF8Encoding(true).GetBytes(defaultTrophyData);
-        //            fs.Write(data, 0, data.Length);
-        //        }
-        //        LoadTrophyData(content);
-        //    }
-        //}
+                    // Placed at the same index it was saved from — see
+                    // LoadInventoryData for why. A pre-shrink save with more
+                    // than MAXIMUM_SLOTS_IN_BANK entries (from when the bank
+                    // was 16 slots) simply loses whatever doesn't fit past the
+                    // new cap.
+                    int count = Math.Min(bankData.Count, BankSystem.MAXIMUM_SLOTS_IN_BANK);
+                    for (int i = 0; i < count; i++)
+                    {
+                        if (bankData[i].InventoryItem == null)
+                            continue;
 
-        //public static void SaveTrophyData()
-        //{
-        //    if (TrophyState.Trophys is not null)
-        //    {
-        //        List<TrophyData> trophyData = new List<TrophyData>();
-        //        for (int i = 0; i < TrophyState.Trophys.Count; i++)
-        //        {
-        //            TrophyData trophy = new()
-        //            {
-        //                Name = TrophyState.Trophys[i].Name,
-        //                Selected = false,
-        //                Locked = TrophyState.Trophys[i].Locked,
-        //                Description = TrophyState.Trophys[i].Description,
-        //                Frames = TrophyState.Trophys[i].Frames,
-        //                FPS = TrophyState.Trophys[i].FPS,
-        //            };
-        //            trophyData.Add(trophy);
-        //        }
-        //        string json = JsonSerializer.Serialize(trophyData);
-        //        File.WriteAllText(trophyDataLocation, json);
-        //        Debug.WriteLine("TrophyData Saved.");
-        //    }
-        //}
+                        BankSystem.Records[i] = new InventorySystem.InventoryRecord(
+                            bankData[i].InventoryItem,
+                            bankData[i].Quantity
+                        );
+                    }
+                }
+            }
+            catch (System.IO.FileNotFoundException)
+            {
+                Debug.WriteLine(bankDataLocation + ": file not found.");
+            }
+        }
 
-        //public static void ResetTrophyData()
-        //{
+        public static void SaveFameData()
+        {
+            FameData fameData = new() { Fame = FameSystem.Fame };
+            string json = JsonSerializer.Serialize(fameData);
+            File.WriteAllText(fameDataLocation, json);
+            Debug.WriteLine("FameData Saved.");
+        }
 
-        //}
+        public static void LoadFameData()
+        {
+            try
+            {
+                using StreamReader r = new(fameDataLocation);
+                string json = r.ReadToEnd();
+                FameData fameData = JsonSerializer.Deserialize<FameData>(json);
+                FameSystem.Fame = fameData?.Fame ?? 0;
+            }
+            catch (System.IO.FileNotFoundException)
+            {
+                Debug.WriteLine(fameDataLocation + ": file not found.");
+            }
+        }
 
         public static int CenterText(String text, SpriteFont font, int x)
         {
             return x - ((int)font.MeasureString(text).X / 2);
+        }
+
+        // Draws text with a semi-transparent background panel sized to fit it,
+        // so hover tooltips (equip slots, bank, inventory) stay readable
+        // regardless of what's behind them in the game world/UI. Reuses
+        // Art.HealthBar — a solid white 1x1 pixel already loaded for the
+        // health bar fill — stretched and tinted, the standard MonoGame way to
+        // draw a solid-color rectangle without a dedicated texture.
+        public static void DrawTooltip(
+            SpriteBatch spriteBatch,
+            SpriteFont font,
+            string text,
+            Vector2 position,
+            Color textColor
+        )
+        {
+            const int padding = 4;
+            Vector2 size = font.MeasureString(text);
+
+            Rectangle background = new(
+                (int)(position.X - padding),
+                (int)(position.Y - padding),
+                (int)(size.X + (padding * 2)),
+                (int)(size.Y + (padding * 2))
+            );
+
+            spriteBatch.Draw(Art.HealthBar, background, Color.WhiteSmoke * 0.75f);
+            spriteBatch.DrawString(font, text, position, textColor);
         }
 
         public static string WrapText(SpriteFont spriteFont, string text, float maxLineWidth)

@@ -37,11 +37,6 @@ namespace Realm
             isOpen = false;
             clicked = false;
 
-            if (Items.Count == 0)
-            {
-                ItemSpawner.LootBags.Remove(this);
-            }
-
             // Check if player is touching bag.
             if (Player.Instance.Bounds.Intersects(this.Bounds))
             {
@@ -50,18 +45,26 @@ namespace Realm
                 {
                     clicked = true;
                 }
-                //return;
             }
         }
 
         public void DrawLoot(SpriteBatch spriteBatch)
         {
-            // Draw contents of loot bag if player is touching.
-            if (isOpen)
+            // Draw contents of loot bag if player is touching it, and it's the
+            // closest such bag — otherwise multiple open bags would draw their
+            // item portraits on top of each other. Also defers to the bank
+            // panel if that's currently open — Portal.Update() already decided
+            // the bank wins whenever it's at least as close as the nearest bag,
+            // so a true result here means this bag lost that comparison.
+            if (isOpen && ItemSpawner.NearestOpenBag() == this && !BankSystem.IsOpen)
             {
                 for (int i = 0; i < Items.Count; i++)
                 {
-                    int x = Game1.ScreenWidth / 2 + (i * 64);
+                    // Centered over the play area, not the wider window
+                    // (which includes the HUD sidebar) — this popup overlays
+                    // gameplay content, so it should stay visually centered
+                    // on what the player is actually looking at.
+                    int x = Game1.GameplayViewportWidth / 2 + (i * 64);
                     int y = 200;
 
                     // Draw item border.
@@ -86,29 +89,45 @@ namespace Realm
                         Items[i].Hover = true;
                         if (clicked)
                         {
-                            // Place clicked item in inventory if it can stack,
-                            // or free slots in inventory.
-                            if (
-                                Player.Instance.Inventory.HasRoom()
-                                || Player.Instance.Inventory.CanStack(Items[i], 1)
-                            )
+                            bool pickedUp = false;
+                            bool usedInPlace = false;
+
+                            if (Player.Instance.Inventory.CanAddItem(Items[i]))
                             {
-                                // Add item to inventory and remove from bag.
-                                Player.Instance.Inventory.AddItem(Items[i], 1);
+                                pickedUp = Player.Instance.Inventory.AddItem(Items[i], 1);
+                            }
+                            else if (Items[i].Consumable)
+                            {
+                                // No room to pick it up (stack/inventory full) — drink
+                                // it where it lies instead of just rejecting the click.
+                                usedInPlace = Player.Instance.Inventory.UsePotionEffect(
+                                    Items[i].Name
+                                );
+                                Sound.Play(usedInPlace ? Sound.UsePotion : Sound.Error, 0.4f);
+                            }
+                            else
+                            {
+                                Sound.Play(Sound.Error, 0.4f);
+                            }
+
+                            if (pickedUp || usedInPlace)
+                            {
                                 Items[i].IsExpired = true;
                                 Items.RemoveAt(i);
 
-                                // Despawn loot bag if it is empty.
+                                // Despawn loot bag if it is empty. Remove it from
+                                // ItemSpawner.LootBags right here rather than
+                                // waiting for a future Update() — an expired
+                                // entity never gets Update() called on it again,
+                                // so that removal would never actually happen,
+                                // leaving a ghost bag that can silently absorb
+                                // anything dropped at this spot afterward.
                                 if (Items.Count <= 0)
                                 {
                                     this.isOpen = false;
                                     this.IsExpired = true;
+                                    ItemSpawner.LootBags.Remove(this);
                                 }
-                            }
-                            else
-                            {
-                                // Error, no room in inventory.
-                                Sound.Play(Sound.Error, 0.4f);
                             }
 
                             clicked = false;

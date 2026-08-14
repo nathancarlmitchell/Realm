@@ -1,0 +1,132 @@
+using System.Collections.Generic;
+using System.Linq;
+using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Content;
+using Microsoft.Xna.Framework.Graphics;
+
+namespace Realm.States
+{
+    public class NexusState : State
+    {
+        Rectangle targetRectangle;
+
+        private List<Portal> portalList;
+
+        public NexusState(Game1 game, GraphicsDevice graphicsDevice, ContentManager content)
+            : base()
+        {
+            Game1.Camera = new Camera(
+                Game1.GameplayViewportWidth,
+                Game1.GameplayViewportHeight,
+                Game1.WorldWidth,
+                Game1.WorldHeight,
+                1f
+            );
+
+            EntityManager.Reset();
+
+            // IsOpen is a static field, so it would otherwise persist stale
+            // across a state transition (e.g. leaving with the bank open,
+            // returning to a freshly-constructed NexusState) — reset it here so
+            // every fresh Nexus entry starts with the bank closed.
+            BankSystem.IsOpen = false;
+
+            var portalPos = new Vector2(
+                Player.Instance.Position.X - 25,
+                Player.Instance.Position.Y - 100
+            );
+
+            var bankPortalPos = new Vector2(
+                Player.Instance.Position.X + 150,
+                Player.Instance.Position.Y - 100
+            );
+
+            portalList =
+            [
+                new Portal(),
+                new Portal(portalPos, Portal.Destination.CharacterSelect),
+                new Portal(bankPortalPos, Portal.Destination.Bank),
+            ];
+
+            // Define a drawing rectangle based on the number of tiles wide and high, using the texture dimensions.
+            targetRectangle = new Rectangle(0, 0, Game1.WorldWidth, Game1.WorldHeight);
+        }
+
+        public override void Draw(GameTime gameTime, SpriteBatch spriteBatch)
+        {
+            spriteBatch.Begin(
+                SpriteSortMode.Deferred,
+                null,
+                null,
+                null,
+                null,
+                null,
+                Game1.Camera.GetTransformation()
+            );
+
+            // Draw background.
+            spriteBatch.Draw(Art.Tile, new Vector2(32, 32), targetRectangle, Color.WhiteSmoke);
+
+            // Draw portal.
+            foreach (Portal portal in portalList)
+            {
+                portal.Draw(spriteBatch, gameTime);
+            }
+
+            // Draw player.
+            EntityManager.Draw(spriteBatch);
+
+            spriteBatch.End();
+
+            spriteBatch.Begin();
+
+            // Draw loot. Iterate a snapshot — DrawLoot() can remove the bag from
+            // ItemSpawner.LootBags (when the last item is picked up), which would
+            // otherwise throw for mutating the list mid-enumeration. Matches
+            // RealmState.Draw() — without this, bags dropped in the Nexus render
+            // (via EntityManager.Draw above) but can never actually be opened,
+            // since DrawLoot() is where the click-to-pickup logic lives.
+            foreach (LootBag bag in ItemSpawner.LootBags.ToList())
+            {
+                bag.DrawLoot(spriteBatch);
+            }
+
+            // Draw the HUD sidebar (stats, XP, health, mana, ability,
+            // equipment, inventory, in that order).
+            Overlay.DrawSidebar(spriteBatch);
+
+            // Draw bank (only visible while open).
+            BankSystem.Draw(spriteBatch);
+
+            // Drag ghosts draw last, after both panels' own contents, so
+            // dragging between the two never gets covered up by whichever
+            // panel happens to draw later.
+            Player.Instance.Inventory.DrawDragGhost(spriteBatch);
+            BankSystem.DrawDragGhost(spriteBatch);
+
+            // Draw score.
+            Overlay.DrawScore(spriteBatch);
+
+            if (Game1._Debug)
+            {
+                Overlay.DrawDebug(spriteBatch);
+            }
+
+            spriteBatch.End();
+        }
+
+        public override void PostUpdate(GameTime gameTime) { }
+
+        public override void Update(GameTime gameTime)
+        {
+            EntityManager.Update();
+
+            foreach (Portal portal in portalList)
+            {
+                portal.Update(gameTime);
+            }
+
+            BankSystem.Update();
+        }
+    }
+}

@@ -1,7 +1,6 @@
 ﻿using System;
 using Microsoft.Xna.Framework.Audio;
 using Microsoft.Xna.Framework.Content;
-using Microsoft.Xna.Framework.Media;
 
 namespace Realm
 {
@@ -26,8 +25,6 @@ namespace Realm
             SnakesDeath,
             Error;
 
-        public static Song mp3;
-
         public static SoundEffectInstance SongInstance;
 
         private static readonly Random rand = new();
@@ -38,7 +35,6 @@ namespace Realm
 
             Button = content.Load<SoundEffect>("Sounds/button");
             Error = content.Load<SoundEffect>("Sounds/error");
-            //Locked = content.Load<SoundEffect>("Sounds/locked");
             LevelUp = content.Load<SoundEffect>("Sounds/Player/level_up");
             NoMana = content.Load<SoundEffect>("Sounds/Player/no_mana");
             PlayerHit = content.Load<SoundEffect>("Sounds/Player/wizard_hit");
@@ -60,11 +56,6 @@ namespace Realm
             SongInstance = Song.CreateInstance();
             SongInstance.IsLooped = true;
             SongInstance.Volume = 0.25f;
-
-            //mp3 = content.Load<Song>("Sounds/Music/8bit bossa");
-            //MediaPlayer.Play(mp3);
-            //MediaPlayer.IsRepeating = true;
-            //MediaPlayer.MediaStateChanged += MediaPlayer_MediaStateChanged;
         }
 
         public static void ToggleMute()

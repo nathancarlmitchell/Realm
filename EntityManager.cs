@@ -33,7 +33,6 @@ namespace Realm
         static List<Projectile> bullets = new List<Projectile>();
         static List<EnemyProjectile> enemiesProjectiles = new List<EnemyProjectile>();
         static List<Item> potions = new List<Item>();
-        static List<Portal> portals = new List<Portal>();
 
         private static void AddEntity(Entity entity)
         {
@@ -44,8 +43,6 @@ namespace Realm
                 enemies.Add(entity as Enemy);
             else if (entity is EnemyProjectile)
                 enemiesProjectiles.Add(entity as EnemyProjectile);
-            //else if (entity is Portal)
-            //    portals.Add(entity as Portal);
             else if (entity is Item)
                 potions.Add(entity as Item);
         }
@@ -55,7 +52,13 @@ namespace Realm
             isUpdating = true;
             EntityManager.HandleCollisions();
             foreach (var entity in entities)
-                entity.Update();
+            {
+                // An entity expired between frames (e.g. RemovePlayer()/Reset()) shouldn't
+                // get one more tick of behavior — that's what let a just-deselected
+                // character's weapon fire once when switching classes.
+                if (!entity.IsExpired)
+                    entity.Update();
+            }
             isUpdating = false;
             foreach (var entity in addedEntities)
                 AddEntity(entity);
@@ -67,13 +70,26 @@ namespace Realm
             enemies = enemies.Where(x => !x.IsExpired).ToList();
             enemiesProjectiles = enemiesProjectiles.Where(x => !x.IsExpired).ToList();
             potions = potions.Where(x => !x.IsExpired).ToList();
-            //portals = portals.Where(x => !x.IsExpired).ToList();
         }
 
         public static void Draw(SpriteBatch spriteBatch)
         {
+            // Draw the player last so it always renders above projectiles,
+            // enemies, and other ground clutter, regardless of the order
+            // entities happened to be added in (SpriteSortMode.Deferred draws
+            // in submission order, so a projectile spawned after the player
+            // would otherwise paint right over it).
             foreach (var entity in entities)
-                entity.Draw(spriteBatch);
+            {
+                if (entity is not Player)
+                    entity.Draw(spriteBatch);
+            }
+
+            foreach (var entity in entities)
+            {
+                if (entity is Player)
+                    entity.Draw(spriteBatch);
+            }
         }
 
         private static bool IsColliding(Entity a, Entity b)
@@ -123,31 +139,27 @@ namespace Realm
                 {
                     enemies[i].HitBy.Add(bullets[j].ID);
                     enemies[i].WasShot(bullets[j].Damage);
-                    //TODO should be a variable within the projectile maybe?
-                    if (Player.Instance.Weapon.Type.ToString() != ("Wand"))
+                    if (bullets[j].ParalyzesOnHit)
+                    {
+                        enemies[i].Paralyze();
+                    }
+                    if (bullets[j].StunsOnHit)
+                    {
+                        enemies[i].Stun();
+                    }
+                    if (bullets[j].ExpiresOnHit)
                     {
                         bullets[j].IsExpired = true;
                     }
                 }
             }
 
-            // handle collisions between the player and enemies
-            //for (int i = 0; i < enemies.Count; i++)
-            //{
-            //    if (enemies[i].IsActive && IsColliding(Player.Instance, enemies[i]))
-            //    {
-            //        Player.Hit();
-            //        enemies[i].IsExpired = true;
-            //        break;
-            //    }
-            //}
-
             // handle collisions between enemy projectiles and player
             for (int i = 0; i < enemiesProjectiles.Count; i++)
             {
                 if (IsColliding(Player.Instance, enemiesProjectiles[i]))
                 {
-                    Player.Hit(10);
+                    Player.Instance.Hit(10);
                     enemiesProjectiles[i].IsExpired = true;
                 }
             }
@@ -157,28 +169,10 @@ namespace Realm
             {
                 if (IsColliding(Player.Instance, potions[i]))
                 {
-                    //potions[i].Pickup();
-                    Player.Instance.Inventory.AddItem(potions[i], 1);
-                    potions[i].IsExpired = true;
+                    if (Player.Instance.Inventory.AddItem(potions[i], 1))
+                        potions[i].IsExpired = true;
                 }
             }
-
-            // handle collisions between player and portal
-            //for (int i = 0; i < portals.Count; i++)
-            //{
-            //    if (IsColliding(Player.Instance, portals[i]))
-            //    {
-            //        Sound.Play(Sound.EnterRealm, 0.35f);
-            //        portals[i].IsExpired = true;
-            //        Game1.Instance.ChangeState(
-            //            new GameState(
-            //                Game1.Instance,
-            //                Game1.Instance.GraphicsDevice,
-            //                Game1.Instance.Content
-            //            )
-            //        );
-            //    }
-            //}
         }
     }
 }

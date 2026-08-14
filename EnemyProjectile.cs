@@ -23,7 +23,7 @@ namespace Realm
                 Orientation = Velocity.ToAngle();
             Position += Velocity * 1f;
             // delete bullets that go off-screen
-            if (!Game1.WorldBounds.Contains(Position.ToPoint()))
+            if (!Game1.GetWorldBounds(1.25f).Contains(Position.ToPoint()))
                 IsExpired = true;
             if (durationCooldown > duration)
             {

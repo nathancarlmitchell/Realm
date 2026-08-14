@@ -7,7 +7,7 @@ namespace Realm.Data
         public Weapon.WeaponType Type { get; set; }
         public string Name { get; set; }
         public string Description { get; set; }
-        public int Teir { get; set; }
+        public int Tier { get; set; }
         public int DamageMin { get; set; }
         public int DamageMax { get; set; }
         public float ProjectileMagnitude { get; set; }

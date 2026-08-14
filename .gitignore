@@ -1,0 +1,11 @@
+# Build output
+bin/
+obj/
+
+# Visual Studio
+.vs/
+*.user
+*.suo
+
+# Claude Code local settings (per-machine, not project config)
+.claude/settings.local.json

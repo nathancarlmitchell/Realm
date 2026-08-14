@@ -30,308 +30,257 @@ namespace Realm
             spriteBatch.DrawString(font, text, new Vector2(x, y), Color.DarkMagenta);
         }
 
+        // Account-level total, shared across every class — unlike Score/Hi
+        // Score below, which belong to whichever class is currently loaded.
+        public static void DrawFame(SpriteBatch spriteBatch)
+        {
+            SpriteFont font = Art.HudFont;
+            string text = "Fame: " + FameSystem.Fame;
+
+            int x = (int)((Game1.ScreenWidth / 2) - (font.MeasureString(text).X / 2));
+            int y = (128 / Game1.Scale) + 48;
+
+            spriteBatch.DrawString(font, text, new Vector2(x, y), Color.White);
+        }
+
         public static void DrawScore(SpriteBatch spriteBatch)
         {
             // Draw Score.
             var color = Color.Black;
-            if (Player.ExperienceTotal >= GameState.HighScore)
+            if (Player.Instance.ExperienceTotal >= Player.Instance.HighScore)
             {
                 color = Color.Yellow;
             }
             spriteBatch.DrawString(
                 Art.HudFont,
-                "Score: " + Player.ExperienceTotal,
+                "Score: " + Player.Instance.ExperienceTotal,
                 new Vector2(32, 64),
                 color
             );
             spriteBatch.DrawString(
                 Art.HudFont,
-                "Hi Score: " + GameState.HighScore,
+                "Hi Score: " + Player.Instance.HighScore,
                 new Vector2(32, 92),
                 color
             );
         }
 
-        public static void DrawStats(SpriteBatch spriteBatch)
+        // Sidebar layout. All sections are stacked top-to-bottom at a fixed
+        // x, in this order: stats, XP, health, mana, ability, equipment,
+        // inventory. Bars are half the scale/height of the old gameplay-area
+        // versions (which were sized for a much wider strip) so they fit the
+        // narrower sidebar with margin on both sides.
+        private const int SidebarPadding = 20;
+        private const int SidebarBarScale = 2;
+        private const int SidebarBarHeight = 24;
+
+        // Draws the sidebar panel background plus every HUD section, in the
+        // order the user asked for. Replaces what used to be four separate
+        // calls (DrawStats/DrawHealth/DrawEquipment/DrawInventory) from each
+        // gameplay state's Draw() — consolidated here so RealmState and
+        // NexusState can't drift out of sync on section order.
+        public static void DrawSidebar(SpriteBatch spriteBatch)
         {
-            int x = Game1.ScreenWidth - 420;
-            int y = 64;
+            Rectangle panelRect = new(
+                Game1.SidebarX,
+                0,
+                Game1.SidebarWidth,
+                Game1.GameplayViewportHeight
+            );
+            spriteBatch.Draw(Art.HealthBar, panelRect, Color.Black * 0.5f);
 
-            Vector2 pos = new Vector2(x, y);
-            Color color = Color.Red;
+            DrawStats(spriteBatch);
+            DrawExperience(spriteBatch);
+            DrawHealthSection(spriteBatch);
+            DrawManaSection(spriteBatch);
+            DrawAbilitySection(spriteBatch);
+            DrawEquipment(spriteBatch);
+            DrawInventory(spriteBatch);
+        }
 
-            spriteBatch.DrawString(
-                Art.HudFont,
-                "Level: " + Player.Level,
-                new Vector2(x, y + 0),
-                color
-            );
-            spriteBatch.DrawString(
-                Art.HudFont,
-                "Experience: " + Player.Experience,
-                new Vector2(x, y + 16),
-                color
-            );
-            spriteBatch.DrawString(
-                Art.HudFont,
-                "ExperienceNextLevel: " + Player.ExperienceNextLevel,
-                new Vector2(x + 128, y),
-                color
-            );
-            spriteBatch.DrawString(
-                Art.HudFont,
-                "ExperienceTotal: " + Player.ExperienceTotal,
-                new Vector2(x + 128, y + 16),
-                color
-            );
+        // The six core stats. Level/Experience text used to live here too,
+        // duplicating what the XP section below already shows — dropped in
+        // favor of just "Level: N", since the actual progress bar belongs
+        // with Experience/ExperienceNextLevel instead.
+        private static void DrawStats(SpriteBatch spriteBatch)
+        {
+            int x = Game1.SidebarX + SidebarPadding;
+            int y = 20;
 
-            color = Color.Red;
             Color maxColor = Color.LimeGreen;
 
-            if (Player.Attack >= Player.MaxAttack)
-                color = maxColor;
             spriteBatch.DrawString(
                 Art.HudFont,
-                "Attack: " + Player.Attack,
-                new Vector2(x, y + 32),
+                "Level: " + Player.Instance.Level,
+                new Vector2(x, y),
+                Color.Red
+            );
+
+            Color color = Player.Instance.Attack >= Player.Instance.MaxAttack ? maxColor : Color.Red;
+            spriteBatch.DrawString(
+                Art.HudFont,
+                "Attack: " + Player.Instance.Attack,
+                new Vector2(x, y + 20),
                 color
             );
 
-            color = Color.Red;
-            if (Player.Defense >= Player.MaxDefense)
-                color = maxColor;
+            color = Player.Instance.Defense >= Player.Instance.MaxDefense ? maxColor : Color.Red;
             spriteBatch.DrawString(
                 Art.HudFont,
-                "Defense: " + Player.Defense,
-                new Vector2(x, y + 48),
+                "Defense: " + Player.Instance.Defense,
+                new Vector2(x, y + 36),
                 color
             );
 
-            color = Color.Red;
-            if (Player.Speed >= Player.MaxSpeed)
-                color = maxColor;
+            color = Player.Instance.Speed >= Player.Instance.MaxSpeed ? maxColor : Color.Red;
             spriteBatch.DrawString(
                 Art.HudFont,
-                "Speed: " + Player.Speed,
-                new Vector2(x, y + 64),
+                "Speed: " + Player.Instance.Speed,
+                new Vector2(x, y + 52),
                 color
             );
 
-            color = Color.Red;
-            if (Player.Dexterity >= Player.MaxDexterity)
-                color = maxColor;
+            color = Player.Instance.Dexterity >= Player.Instance.MaxDexterity ? maxColor : Color.Red;
             spriteBatch.DrawString(
                 Art.HudFont,
-                "Dexterity: " + Player.Dexterity,
-                new Vector2(x, y + 80),
+                "Dexterity: " + Player.Instance.Dexterity,
+                new Vector2(x, y + 68),
                 color
             );
 
-            color = Color.Red;
-            if (Player.Vitality >= Player.MaxVitality)
-                color = maxColor;
+            color = Player.Instance.Vitality >= Player.Instance.MaxVitality ? maxColor : Color.Red;
             spriteBatch.DrawString(
                 Art.HudFont,
-                "Vitality: " + Player.Vitality,
-                new Vector2(x, y + 96),
+                "Vitality: " + Player.Instance.Vitality,
+                new Vector2(x, y + 84),
                 color
             );
 
-            color = Color.Red;
-            if (Player.Wisdom >= Player.MaxWisdom)
-                color = maxColor;
+            color = Player.Instance.Wisdom >= Player.Instance.MaxWisdom ? maxColor : Color.Red;
             spriteBatch.DrawString(
                 Art.HudFont,
-                "Wisdom: " + Player.Wisdom,
-                new Vector2(x, y + 112),
+                "Wisdom: " + Player.Instance.Wisdom,
+                new Vector2(x, y + 100),
                 color
             );
         }
 
-        public static void DrawHealth(SpriteBatch spriteBatch)
+        private static void DrawExperience(SpriteBatch spriteBatch)
         {
-            int x = 32;
-            int y = Game1.Viewport.Height - 128;
+            int x = Game1.SidebarX + SidebarPadding;
+            int y = 160;
 
-            int barScale = 4;
-            int barHeight = 40;
-            int barOffset = 4;
+            string expString =
+                Player.Instance.Level < 20
+                    ? "Exp: " + Player.Instance.Experience + " / " + Player.Instance.ExperienceNextLevel
+                    : "Experience: " + Player.Instance.ExperienceTotal;
+            spriteBatch.DrawString(Art.HudFont, expString, new Vector2(x, y), Color.White);
 
-            Vector2 expBarPos = new(x, y - barHeight - barOffset);
-            Vector2 healthBarPos = new(x, y);
-            Vector2 manaBarPos = new(x, y + barHeight + barOffset);
+            int normalisedExp = (Player.Instance.Experience * 100 / Player.Instance.ExperienceNextLevel * 100) / 100;
+            Rectangle goldRect =
+                Player.Instance.Level < 20
+                    ? new(0, 0, normalisedExp * SidebarBarScale, SidebarBarHeight)
+                    : new(0, 0, 100 * SidebarBarScale, SidebarBarHeight);
+            Rectangle blackRect = new(0, 0, 100 * SidebarBarScale, SidebarBarHeight);
 
-            // Normalize experience values.
-            int normalisedExp = (Player.Experience * 100 / Player.ExperienceNextLevel * 100) / 100;
+            Vector2 barPos = new(x, y + 20);
+            spriteBatch.Draw(Art.HealthBar, barPos, blackRect, Color.Black * 0.5f, 0f, Vector2.Zero, 1f, 0, 0);
+            spriteBatch.Draw(Art.HealthBar, barPos, goldRect, Color.Goldenrod, 0f, Vector2.Zero, 1f, 0, 0);
+        }
 
-            // Experience bars.
-            Rectangle goldRect;
-            if (Player.Level < 20)
-            {
-                goldRect = new(0, 0, normalisedExp * barScale, barHeight);
-            }
-            else
-            {
-                goldRect = new(0, 0, 100 * barScale, barHeight);
-            }
+        private static void DrawHealthSection(SpriteBatch spriteBatch)
+        {
+            int x = Game1.SidebarX + SidebarPadding;
+            int y = 224;
 
-            Rectangle blackRectExp = new(0, 0, 100 * barScale, barHeight);
-
-            // Normalize health values.
-            int normalisedHealth = (Player.Health * 100 / Player.HealthMax * 100) / 100;
-
-            // Health bars.
-            Rectangle greenRect = new(0, 0, normalisedHealth * barScale, barHeight);
-            Rectangle redRect = new(0, 0, 100 * barScale, barHeight);
-
-            // Normalize mana values.
-            int normalisedMana = (Player.Mana * 100 / Player.ManaMax * 100) / 100;
-
-            // Mana bars.
-            Rectangle blueRect = new(0, 0, normalisedMana * barScale, barHeight);
-            Rectangle blackRect = new(0, 0, 100 * barScale, barHeight);
-
-            // Black bar.
-            spriteBatch.Draw(
-                Art.HealthBar,
-                expBarPos,
-                blackRectExp,
-                Color.Black * 0.5f,
-                0f,
-                Vector2.Zero,
-                1f,
-                0,
-                0
-            );
-
-            // Gold bar.
-            spriteBatch.Draw(
-                Art.HealthBar,
-                expBarPos,
-                goldRect,
-                Color.Goldenrod,
-                0f,
-                Vector2.Zero,
-                1f,
-                0,
-                0
-            );
-
-            // Red bar.
-            spriteBatch.Draw(
-                Art.HealthBar,
-                healthBarPos,
-                redRect,
-                Color.DarkRed * 0.5f,
-                0f,
-                Vector2.Zero,
-                1f,
-                0,
-                0
-            );
-
-            // Green bar.
-            spriteBatch.Draw(
-                Art.HealthBar,
-                healthBarPos,
-                greenRect,
-                Color.DarkGreen,
-                0f,
-                Vector2.Zero,
-                1f,
-                0,
-                0
-            );
-
-            // Black bar.
-            spriteBatch.Draw(
-                Art.HealthBar,
-                manaBarPos,
-                blackRect,
-                Color.Black * 0.5f,
-                0f,
-                Vector2.Zero,
-                1f,
-                0,
-                0
-            );
-
-            // Blue bar.
-            spriteBatch.Draw(
-                Art.HealthBar,
-                manaBarPos,
-                blueRect,
-                Color.DarkBlue,
-                0f,
-                Vector2.Zero,
-                1f,
-                0,
-                0
-            );
-
-            // Experience.
-            string expString = string.Empty;
-            if (Player.Level < 20)
-            {
-                expString =
-                    "Level "
-                    + Player.Level
-                    + "\nExp: "
-                    + Player.Experience
-                    + " / "
-                    + Player.ExperienceNextLevel;
-            }
-            else
-            {
-                expString = "Experience: " + Player.ExperienceTotal;
-            }
-
+            Color color = Player.Instance.HealthMax >= Player.Instance.MaxHealth ? Color.LimeGreen : Color.White;
             spriteBatch.DrawString(
                 Art.HudFont,
-                expString,
-                new Vector2(x, y - barHeight - barOffset),
-                Color.White
+                "HP: " + Player.Instance.Health + " / " + Player.Instance.HealthMax,
+                new Vector2(x, y),
+                color
             );
 
-            // Health.
+            int normalisedHealth = (Player.Instance.Health * 100 / Player.Instance.HealthMax * 100) / 100;
+            Rectangle greenRect = new(0, 0, normalisedHealth * SidebarBarScale, SidebarBarHeight);
+            Rectangle redRect = new(0, 0, 100 * SidebarBarScale, SidebarBarHeight);
+
+            Vector2 barPos = new(x, y + 20);
+            spriteBatch.Draw(Art.HealthBar, barPos, redRect, Color.DarkRed * 0.5f, 0f, Vector2.Zero, 1f, 0, 0);
+            spriteBatch.Draw(Art.HealthBar, barPos, greenRect, Color.DarkGreen, 0f, Vector2.Zero, 1f, 0, 0);
+        }
+
+        private static void DrawManaSection(SpriteBatch spriteBatch)
+        {
+            int x = Game1.SidebarX + SidebarPadding;
+            int y = 288;
+
+            Color color = Player.Instance.ManaMax >= Player.Instance.MaxMana ? Color.LimeGreen : Color.White;
+            spriteBatch.DrawString(
+                Art.HudFont,
+                "Mana: " + Player.Instance.Mana + " / " + Player.Instance.ManaMax,
+                new Vector2(x, y),
+                color
+            );
+
+            int normalisedMana = (Player.Instance.Mana * 100 / Player.Instance.ManaMax * 100) / 100;
+            Rectangle blueRect = new(0, 0, normalisedMana * SidebarBarScale, SidebarBarHeight);
+            Rectangle blackRect = new(0, 0, 100 * SidebarBarScale, SidebarBarHeight);
+
+            Vector2 barPos = new(x, y + 20);
+            spriteBatch.Draw(Art.HealthBar, barPos, blackRect, Color.Black * 0.5f, 0f, Vector2.Zero, 1f, 0, 0);
+            spriteBatch.Draw(Art.HealthBar, barPos, blueRect, Color.DarkBlue, 0f, Vector2.Zero, 1f, 0, 0);
+        }
+
+        // Grouped right after Mana since it's mana-cost based — resolved via
+        // AskUserQuestion whether this should move into the sidebar at all
+        // (it wasn't in the original list of six items); the user chose to
+        // move it, grouped with mana.
+        private static void DrawAbilitySection(SpriteBatch spriteBatch)
+        {
+            int x = Game1.SidebarX + SidebarPadding;
+            int y = 352;
+            int abilityBarHeight = SidebarBarHeight / 2;
+
             Color maxColor = Color.LimeGreen;
             Color defaultColor = Color.White;
+            Color color = Player.Instance.Mana >= Player.Instance.AbilityCost ? maxColor : defaultColor;
+            string abilityString =
+                Player.Instance.Mana >= Player.Instance.AbilityCost
+                    ? "Ability: Ready (Cost: " + Player.Instance.AbilityCost + ")"
+                    : "Ability: " + Player.Instance.Mana + " / " + Player.Instance.AbilityCost;
+            spriteBatch.DrawString(Art.HudFont, abilityString, new Vector2(x, y), color);
 
-            var color = defaultColor;
-            if (Player.HealthMax >= Player.MaxHealth)
-                color = maxColor;
-            spriteBatch.DrawString(
-                Art.HudFont,
-                "HP: " + Player.Health + " / " + Player.HealthMax,
-                new Vector2(x, y + 0),
-                color
+            // Clamped since Mana can exceed AbilityCost, unlike Health/Mana
+            // which are capped at their Max.
+            int normalisedAbility = Math.Min(
+                100,
+                (Player.Instance.Mana * 100 / Player.Instance.AbilityCost * 100) / 100
             );
+            Rectangle cyanRect = new(0, 0, normalisedAbility * SidebarBarScale, abilityBarHeight);
+            Rectangle blackRect = new(0, 0, 100 * SidebarBarScale, abilityBarHeight);
 
-            // Mana.
-            color = defaultColor;
-            if (Player.ManaMax >= Player.MaxMana)
-                color = maxColor;
-            spriteBatch.DrawString(
-                Art.HudFont,
-                "Mana: " + Player.Mana + " / " + Player.ManaMax,
-                new Vector2(x, y + barHeight + barOffset),
-                color
-            );
+            Vector2 barPos = new(x, y + 20);
+            spriteBatch.Draw(Art.HealthBar, barPos, blackRect, Color.Black * 0.5f, 0f, Vector2.Zero, 1f, 0, 0);
+            spriteBatch.Draw(Art.HealthBar, barPos, cyanRect, Color.DarkCyan, 0f, Vector2.Zero, 1f, 0, 0);
         }
 
-        public static void DrawEquipment(SpriteBatch spriteBatch)
+        private static void DrawEquipment(SpriteBatch spriteBatch)
         {
             // Draw weapon.
             Player.Instance.Weapon.DrawEquipped(spriteBatch);
 
             // Draw ability.
+            Player.Instance.AbilityItem.DrawEquipped(spriteBatch);
 
             // Draw armor.
+            Player.Instance.Armor.DrawEquipped(spriteBatch);
 
             // Draw ring.
+            Player.Instance.Ring.DrawEquipped(spriteBatch);
         }
 
-        public static void DrawInventory(SpriteBatch spriteBatch)
+        private static void DrawInventory(SpriteBatch spriteBatch)
         {
             Player.Instance.Inventory.Draw(spriteBatch);
         }
@@ -371,6 +320,24 @@ namespace Realm
                 pos,
                 Color.White
             );
+
+            string[] potionBonusLines =
+            {
+                "PotionAttackBonus: " + Player.Instance.PotionAttackBonus,
+                "PotionDefenseBonus: " + Player.Instance.PotionDefenseBonus,
+                "PotionSpeedBonus: " + Player.Instance.PotionSpeedBonus,
+                "PotionDexterityBonus: " + Player.Instance.PotionDexterityBonus,
+                "PotionVitalityBonus: " + Player.Instance.PotionVitalityBonus,
+                "PotionWisdomBonus: " + Player.Instance.PotionWisdomBonus,
+                "PotionHealthMaxBonus: " + Player.Instance.PotionHealthMaxBonus,
+                "PotionManaMaxBonus: " + Player.Instance.PotionManaMaxBonus,
+            };
+
+            for (int i = 0; i < potionBonusLines.Length; i++)
+            {
+                pos = new Vector2(x, y + 72 + (i * 16));
+                spriteBatch.DrawString(Art.HudFont, potionBonusLines[i], pos, Color.White);
+            }
         }
 
         private static float muteCooldown = 1.0f;

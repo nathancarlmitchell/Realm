@@ -19,20 +19,35 @@ namespace Realm
         private int _worldWidth;
         private int _worldHeight;
 
-        public Camera(Viewport viewport, int worldWidth, int worldHeight, float initialZoom)
+        // Takes explicit gameplay-viewport dimensions rather than a Viewport
+        // struct — deliberately decoupled from the window's actual backbuffer
+        // size (Game1.Viewport), which is wider than the gameplay area to
+        // make room for the HUD sidebar. Passing Game1.Viewport here would
+        // center the world in the middle of the whole window and let the
+        // visible play area grow into the sidebar strip.
+        public Camera(int viewportWidth, int viewportHeight, int worldWidth, int worldHeight, float initialZoom)
         {
             _zoom = initialZoom;
             _rotation = 0.0f;
             _pos = Player.Instance.Position;
-            _viewportWidth = viewport.Width;
-            _viewportHeight = viewport.Height;
+            _viewportWidth = viewportWidth;
+            _viewportHeight = viewportHeight;
             _worldWidth = worldWidth;
             _worldHeight = worldHeight;
         }
 
+        public int ViewportWidth => _viewportWidth;
+        public int ViewportHeight => _viewportHeight;
+
         public static void Reset()
         {
-            Game1.Camera = new Camera(Game1.Viewport, Game1.WorldWidth, Game1.WorldHeight, 1f);
+            Game1.Camera = new Camera(
+                Game1.GameplayViewportWidth,
+                Game1.GameplayViewportHeight,
+                Game1.WorldWidth,
+                Game1.WorldHeight,
+                1f
+            );
         }
 
         #region Properties

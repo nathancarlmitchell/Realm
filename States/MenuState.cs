@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
-using Microsoft.Xna.Framework.Input.Touch;
 using Realm.Controls;
 
 namespace Realm.States
@@ -18,16 +17,16 @@ namespace Realm.States
         {
             Game1.Instance.IsMouseVisible = true;
 
-            var newGameButton = new Button() { Text = "New Game" };
+            var newGameButton = new Button() { Text = "Nexus" };
             newGameButton.Click += NewGameButton_Click;
 
-            var classButton = new Button() { Text = "Class" };
+            var classButton = new Button() { Text = "Character Select" };
             classButton.Click += ClassButton_Click;
 
             var quitGameButton = new Button() { Text = "Quit" };
             quitGameButton.Click += QuitGameButton_Click;
 
-            buttons = [newGameButton, quitGameButton];
+            buttons = [newGameButton, classButton, quitGameButton];
             menu = new Menu(buttons);
         }
 
@@ -38,7 +37,7 @@ namespace Realm.States
 
         private void NewGameButton_Click(object sender, EventArgs e)
         {
-            StateManager.NewGame();
+            StateManager.EnterNexus();
         }
 
         private void ClassButton_Click(object sender, EventArgs e)
@@ -52,6 +51,7 @@ namespace Realm.States
 
             // Draw title.
             Overlay.DrawTitle(spriteBatch);
+            Overlay.DrawFame(spriteBatch);
 
             // Draw menu.
             menu.Draw(gameTime, spriteBatch);
@@ -59,10 +59,7 @@ namespace Realm.States
             spriteBatch.End();
         }
 
-        public override void PostUpdate(GameTime gameTime)
-        {
-            //throw new NotImplementedException();
-        }
+        public override void PostUpdate(GameTime gameTime) { }
 
         public override void Update(GameTime gameTime)
         {

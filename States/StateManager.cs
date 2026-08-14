@@ -7,7 +7,7 @@
             Sound.Play(Sound.EnterRealm, 0.35f);
 
             Game1.Instance.ChangeState(
-                new GameState(Game1.Instance, Game1.Instance.GraphicsDevice, Game1.Instance.Content)
+                new RealmState(Game1.Instance, Game1.Instance.GraphicsDevice, Game1.Instance.Content)
             );
         }
 
@@ -17,10 +17,11 @@
 
             Util.SavePlayerData();
             Util.SaveInventoryData();
-            //Util.SaveWeaponData();
+            Util.SaveBankData();
+            Util.SaveFameData();
 
             Game1.Instance.ChangeState(
-                new RealmState(
+                new NexusState(
                     Game1.Instance,
                     Game1.Instance.GraphicsDevice,
                     Game1.Instance.Content
@@ -30,6 +31,13 @@
 
         public static void MainMenu()
         {
+            EntityManager.Reset();
+
+            Util.SavePlayerData();
+            Util.SaveInventoryData();
+            Util.SaveBankData();
+            Util.SaveFameData();
+
             Game1.Instance.ChangeState(
                 new MenuState(Game1.Instance, Game1.Instance.GraphicsDevice, Game1.Instance.Content)
             );
@@ -37,15 +45,60 @@
 
         public static void SelectClass()
         {
-            //Game1.Instance.ChangeState(
-            //    new MenuState(Game1.Instance, Game1.Instance.GraphicsDevice, Game1.Instance.Content)
-            //);
+            // Mirrors Nexus()/MainMenu() — this is also a "leaving gameplay" exit
+            // point (the in-world Character Select portal, and the main menu's
+            // Character Select button), so it needs the same save as those or
+            // whatever was last changed in-memory (e.g. an equipment drag) is
+            // silently discarded the next time this class is loaded, while the
+            // other exit points correctly persist it — a real inconsistency, not
+            // just a missed no-op.
+            EntityManager.Reset();
+
+            Util.SavePlayerData();
+            Util.SaveInventoryData();
+            Util.SaveBankData();
+            Util.SaveFameData();
+
+            Game1.Instance.ChangeState(
+                new CharacterSelectState(
+                    Game1.Instance,
+                    Game1.Instance.GraphicsDevice,
+                    Game1.Instance.Content
+                )
+            );
+        }
+
+        // Used by the main menu's Nexus button and its Enter-key shortcut. Neither
+        // has a class in mind of its own (unlike CharacterSelectState.SelectCharacter
+        // or GameOver's New Game button, which call NewGame() directly), so this is
+        // the one place that needs to ask "has anything ever actually been played?"
+        // first — if not, Player.Instance is only ever a boot-time default (see
+        // Util.DetermineLastPlayedClass), and jumping straight into gameplay with it
+        // would silently start a Wizard nobody chose.
+        public static void EnterNexus()
+        {
+            if (Util.AnyCharacterHasBeenPlayed())
+                NewGame();
+            else
+                SelectClass();
         }
 
         public static void NewGame()
         {
+            // The single choke point every "start playing" entry reaches
+            // (Character Select, EnterNexus above, and GameOver's New Game
+            // button) — persisting HasBeenPlayed here, rather than at each
+            // call site, guarantees Character Select's Delete link appears
+            // as soon as a character is actually entered, even if nothing
+            // else ever saves again.
+            Player.Instance.HasBeenPlayed = true;
+            Util.SavePlayerData();
+            Util.SaveInventoryData();
+            Util.SaveBankData();
+            Util.SaveFameData();
+
             Game1.Instance.ChangeState(
-                new RealmState(
+                new NexusState(
                     Game1.Instance,
                     Game1.Instance.GraphicsDevice,
                     Game1.Instance.Content
@@ -63,12 +116,6 @@
                 )
             );
         }
-
-        //public static void ContinueGame()
-        //{
-        //    Game1.Instance.ChangeState(Game1.GameState);
-        //    Game1.Instance.IsMouseVisible = false;
-        //}
 
         public static void ExitGame()
         {

@@ -3,8 +3,6 @@ using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
-using Microsoft.Xna.Framework.Input.Touch;
-using Realm.CharacterClasses;
 using Realm.Controls;
 
 namespace Realm.States
@@ -14,8 +12,6 @@ namespace Realm.States
         private readonly List<Button> butttons;
         private readonly Menu menu;
         private readonly SpriteFont titleFont;
-
-        private bool isHighScore = false;
 
         private int score;
 
@@ -27,13 +23,13 @@ namespace Realm.States
             Sound.SongInstance.Stop();
             Sound.Play(Sound.Death, 0.4f);
 
-            //GameState.GamesPlayed++;
-
-            //Background.SetAlpha(0.33f);
-
             titleFont = Art.TitleFont;
 
-            score = Player.ExperienceTotal;
+            score = Player.Instance.ExperienceTotal;
+
+            // Salvage this run's Score into the account-level Fame total
+            // before it's wiped by the reset below.
+            FameSystem.AddFame(score);
 
             var newGameButton = new Button() { Text = "New Game" };
             newGameButton.Click += NewGameButton_Click;
@@ -47,53 +43,53 @@ namespace Realm.States
             butttons = [newGameButton, mainMenuButton, quitGameButton];
             menu = new Menu(butttons);
 
+            // The character that just died resets to its base stats — its High Score
+            // is kept as a permanent record, but nothing else carries over (including
+            // HasBeenPlayed), so a death leaves the save looking the same as an
+            // explicit Delete: back to defaults, with Character Select correctly
+            // hiding the Delete link again until this class is played some more.
+            Player.Class diedClass = Player.PlayerClass;
+            int highScore = Player.Instance.HighScore;
+
             EntityManager.RemovePlayer();
-            EntityManager.Add(new Archer());
+
+            Util.ResetPlayer(diedClass);
+            Player.Instance.HighScore = highScore;
+
+            EntityManager.Add(Player.Instance);
 
             Util.SavePlayerData();
+            Util.SaveInventoryData();
+            Util.SaveBankData();
+            Util.SaveFameData();
         }
-
-        int textCooldown = 0;
 
         public override void Draw(GameTime gameTime, SpriteBatch spriteBatch)
         {
             spriteBatch.Begin();
 
-            //Background.Draw(gameTime, spriteBatch);
-
-            // Draw HUD.
-            //Overlay.DrawHUD();
-
             int x;
             int y = 128;
 
-            string text;
-            Color color;
-
-            //if (isHighScore)
-            //{
-            //    textCooldown++;
-            //    text = "High Score";
-            //    color = Color.Gold;
-            //    if (textCooldown > 5)
-            //    {
-            //        color = Color.AliceBlue;
-            //    }
-            //    if (textCooldown > 10)
-            //    {
-            //        textCooldown = 0;
-            //    }
-            //}
-            //else
-            //{
-            text = "Score: " + score;
-            color = Color.AliceBlue;
-            //}
+            string text = "Score: " + score;
+            Color color = Color.AliceBlue;
 
             x = (int)(CenterWidth - (titleFont.MeasureString(text).X / 2));
 
             spriteBatch.DrawString(titleFont, text, new Vector2(x - 4, y + 4), Color.Black * 0.5f);
             spriteBatch.DrawString(titleFont, text, new Vector2(x, y), color);
+
+            string fameText = "Fame Earned: " + score;
+            int fameY = y + (int)titleFont.MeasureString(text).Y;
+            int fameX = (int)(CenterWidth - (titleFont.MeasureString(fameText).X / 2));
+
+            spriteBatch.DrawString(
+                titleFont,
+                fameText,
+                new Vector2(fameX - 4, fameY + 4),
+                Color.Black * 0.5f
+            );
+            spriteBatch.DrawString(titleFont, fameText, new Vector2(fameX, fameY), color);
 
             menu.Draw(gameTime, spriteBatch);
 
@@ -102,7 +98,12 @@ namespace Realm.States
 
         private void NewGameButton_Click(object sender, EventArgs e)
         {
-            StateManager.NewGame();
+            // Not a direct NewGame() — the class that just died was reset to
+            // HasBeenPlayed = false in the constructor above, same as an explicit
+            // Delete, so if that was the only character ever played, nothing
+            // qualifies as "played" anymore and this needs to defer to Character
+            // Select instead of silently restarting the same class.
+            StateManager.EnterNexus();
         }
 
         private void MainMenuButton_Click(object sender, EventArgs e)
@@ -115,20 +116,10 @@ namespace Realm.States
             StateManager.ExitGame();
         }
 
-        public override void PostUpdate(GameTime gameTime)
-        {
-            //throw new NotImplementedException();
-        }
+        public override void PostUpdate(GameTime gameTime) { }
 
         public override void Update(GameTime gameTime)
         {
-            //float elapsed = (float)gameTime.ElapsedGameTime.TotalSeconds;
-
-            //Background.Update(gameTime);
-
-            //GameState.CoinHUD.CoinTexture.UpdateFrame(elapsed);
-
-            //TouchCollection touchCollection = TouchPanel.GetState();
             foreach (var button in butttons)
             {
                 button.Update(gameTime);

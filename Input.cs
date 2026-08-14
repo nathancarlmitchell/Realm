@@ -38,8 +38,6 @@ public static class Input
         previousMouse = mouse;
         mouse = Mouse.GetState();
 
-        //TouchCollection touchState = TouchPanel.GetState();
-
         // Universal input.
         //
         // Toggle Mute
@@ -60,60 +58,66 @@ public static class Input
             Sound.SongVolume(-0.05f);
         }
 
+        // Toggle debug HUD (Overlay.DrawDebug).
+        if (WasKeyPressed(Keys.F3))
+        {
+            Game1._Debug = !Game1._Debug;
+        }
+
+        // Return to main menu. Only from the hub (NexusState) — not from the
+        // active dungeon (RealmState).
+        if (WasKeyPressed(Keys.Escape) && currentState is NexusState)
+        {
+            StateManager.MainMenu();
+        }
+
         // State specific input.
         if (currentState is MenuState)
         {
             if (keyboard.IsKeyDown(Keys.Enter) && !previousKeyboard.IsKeyDown(Keys.Enter))
             {
-                StateManager.NewGame();
+                StateManager.EnterNexus();
             }
         }
 
-        float zoomIncrement = 0.01f;
-
-        if (currentState is GameState)
+        // Ability. Usable in the Nexus as well as the dungeon (unlike potions/
+        // leveling below), so the player can try it out or just mess around
+        // without needing to be in an active RealmState.
+        if (
+            (currentState is RealmState || currentState is NexusState)
+            && WasKeyPressed(Keys.Space)
+        )
         {
-            // Check keybord input.
-            //
+            Player.Instance.UseAbility();
+        }
 
-            // Adjust zoom if the mouse wheel has moved
-            //if (mouse.ScrollWheelValue > previousMouse.ScrollWheelValue)
-            //    Game1.Camera.Zoom += zoomIncrement;
-            //else if (mouse.ScrollWheelValue < previousMouse.ScrollWheelValue)
-            //    Game1.Camera.Zoom -= zoomIncrement;
-
+        if (currentState is RealmState)
+        {
             // Use health potion.
             if (WasKeyPressed(Keys.Q))
             {
                 Player.Instance.Inventory.UsePotion("Health Potion");
-                // Move to
-                //HealthPotion.Use();
             }
 
             // Use mana potion.
             if (WasKeyPressed(Keys.F))
             {
                 Player.Instance.Inventory.UsePotion("Mana Potion");
-                // Move to
-                //HealthPotion.Use();
             }
 
-            // Ability.
-            if (WasKeyPressed(Keys.Space))
-            {
-                Player.Instance.UseAbility();
-            }
-
-            // Level up.
-            if (WasKeyPressed(Keys.Add))
+            // Level up. Capped like normal leveling — past 20, EnemySpawner's
+            // spawn-chance formula (1500 - Level * 50) goes negative and crashes.
+            if (WasKeyPressed(Keys.Add) && Player.Instance.Level < 20)
             {
                 Player.Instance.LevelUp();
             }
 
-            // Level down.
-            if (WasKeyPressed(Keys.Subtract))
+            // Level down. Floored at 1 so it can't push Level negative, which would
+            // make LevelUp()'s ExperienceNextLevel go negative and auto-trigger
+            // itself every frame until Level recovered.
+            if (WasKeyPressed(Keys.Subtract) && Player.Instance.Level > 1)
             {
-                Player.Level -= 2;
+                Player.Instance.Level -= 2;
                 Player.Instance.LevelUp();
             }
 
@@ -126,35 +130,14 @@ public static class Input
 
         if (currentState is GameOverState)
         {
-            // New game.
+            // New game. See GameOverState.NewGameButton_Click for why this is
+            // EnterNexus() rather than a direct NewGame().
             if (keyboard.IsKeyDown(Keys.Enter))
             {
-                StateManager.NewGame();
+                StateManager.EnterNexus();
             }
         }
 
-        //if (currentState is SkinsState)
-        //{
-        //    // Left.
-        //    if (keyboard.IsKeyDown(Keys.Left) && !previousKeyboard.IsKeyDown(Keys.Left))
-        //    {
-        //        SkinsState.LeftArrowKey(-1);
-        //        Util.SaveSkinData();
-        //    }
-
-        //    // Right.
-        //    if (keyboard.IsKeyDown(Keys.Right) && !previousKeyboard.IsKeyDown(Keys.Right))
-        //    {
-        //        SkinsState.RightArrowKey();
-        //        Util.SaveSkinData();
-        //    }
-
-        //    // Enter.
-        //    if (keyboard.IsKeyDown(Keys.Enter) && !previousKeyboard.IsKeyDown(Keys.Enter))
-        //    {
-        //        MainMenu();
-        //    }
-        //}
     }
 
     // Checks if a key was just pressed down
@@ -166,7 +149,6 @@ public static class Input
     public static Vector2 GetMovementDirection()
     {
         Vector2 direction = new Vector2();
-        //Vector2 direction = gamepadState.ThumbSticks.Left;
         direction.Y *= -1; // invert the y-axis
 
         if (keyboard.IsKeyDown(Keys.A))
@@ -214,7 +196,6 @@ public static class Input
     {
         return previousMouse.LeftButton == ButtonState.Released
             && mouse.LeftButton == ButtonState.Pressed;
-        //previousKeyboard.IsKeyUp(key) && keyboard.IsKeyDown(key)
     }
 
     public static bool MousePressed()
@@ -224,6 +205,7 @@ public static class Input
 
     public static bool MouseReleased()
     {
-        return previousMouse.LeftButton == ButtonState.Released;
+        return previousMouse.LeftButton == ButtonState.Pressed
+            && mouse.LeftButton == ButtonState.Released;
     }
 }
