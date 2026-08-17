@@ -11,6 +11,8 @@ namespace Realm
         public int MinDamage { get; set; }
         public int MaxDamage { get; set; }
 
+        public override bool CanEquipByCurrentClass => Player.Instance.CanEquipAbilityItem(this);
+
         // Shared by Spell/Quiver — only one is ever equipped at a time
         // (whichever matches the player's class), so both render in the same
         // slot position: continuing the equipment row after Ring.

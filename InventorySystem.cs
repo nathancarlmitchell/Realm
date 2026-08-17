@@ -872,6 +872,13 @@ namespace Realm
 
                 spriteBatch.Draw(record.InventoryItem.image, new Vector2(posX, posY), Color.White);
 
+                // Flag equipment the current class can't actually equip —
+                // e.g. a Bow sitting in a Wizard's inventory.
+                if (record.InventoryItem is Equipment invEquipment && !invEquipment.CanEquipByCurrentClass)
+                {
+                    spriteBatch.Draw(Art.HealthBar, new Rectangle(posX, posY, 40, 40), Color.Red * 0.25f);
+                }
+
                 // Draw quantity if max stack is greater than 1.
                 string quantityText = string.Empty;
                 if (record.InventoryItem.MaximumStackableQuantity > 1)

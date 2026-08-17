@@ -21,6 +21,8 @@ namespace Realm
         public static Texture2D Enemy { get; private set; }
         public static Texture2D Enemy2 { get; private set; }
         public static Texture2D EnemySpriteGod { get; private set; }
+        public static Texture2D Limon { get; private set; }
+        public static Texture2D LimonProjectile { get; private set; }
         public static Texture2D Snake { get; private set; }
         public static Texture2D Wizard { get; private set; }
         public static Texture2D Archer { get; private set; }
@@ -110,6 +112,8 @@ namespace Realm
             Enemy = content.Load<Texture2D>("enemy");
             Enemy2 = content.Load<Texture2D>("enemy2");
             EnemySpriteGod = content.Load<Texture2D>("Enemies/sprite_god");
+            Limon = content.Load<Texture2D>("Enemies/Limon the Sprite Goddess");
+            LimonProjectile = content.Load<Texture2D>("Projectiles/limon1");
             Snake = content.Load<Texture2D>("snake");
 
             // Weapons.

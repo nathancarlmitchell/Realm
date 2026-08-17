@@ -19,6 +19,8 @@ namespace Realm
 
         public WeaponType Type { get; set; }
 
+        public override bool CanEquipByCurrentClass => Type == Player.Instance.WeaponType;
+
         public int DamageMin { get; set; }
         public int DamageMax { get; set; }
         public int FireRate { get; set; }

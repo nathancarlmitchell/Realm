@@ -17,6 +17,8 @@ namespace Realm
 
         public ArmorType Type { get; set; }
 
+        public override bool CanEquipByCurrentClass => Type == Player.Instance.ArmorType;
+
         // Directly to the right of the weapon slot (Weapon.cs uses the same x/y
         // origin, offset by its 40px border width).
         static int x = Game1.SidebarX + 20 + 40;

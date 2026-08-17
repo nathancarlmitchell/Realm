@@ -19,7 +19,27 @@ namespace Realm
             Realm,
             CharacterSelect,
             Bank,
+
+            // Dropped by SpriteGod on death (see Enemy.WasShot()) — leads
+            // into a self-contained boss-fight arena (BossRealmState).
+            BossRealm,
+
+            // The boss arena's own exit portal. No other portal currently
+            // routes to Nexus — every other Nexus-bound path goes straight
+            // through StateManager.Nexus() rather than a world portal.
+            Nexus,
         }
+
+        // Portals dropped dynamically into the world at runtime (as opposed
+        // to a state's own fixed portalList, e.g. NexusState's) — populated
+        // by whatever caused the drop (Enemy.WasShot() for SpriteGod's
+        // portal, BossRealmState's constructor for its exit portal) and
+        // iterated by RealmState's Update()/Draw(). Reset() is called from
+        // RealmState's constructor, so each fresh RealmState/BossRealmState
+        // entry starts with only the portals it's supposed to have.
+        public static List<Portal> DroppedPortals = [];
+
+        public static void Reset() => DroppedPortals = [];
 
         private AnimatedTexture image;
         private Vector2 position;
@@ -45,6 +65,8 @@ namespace Realm
                 Destination.Realm => "Realm",
                 Destination.CharacterSelect => "Character Select",
                 Destination.Bank => "Bank",
+                Destination.BossRealm => "Boss Fight",
+                Destination.Nexus => "Nexus",
                 _ => string.Empty,
             };
 
@@ -73,6 +95,14 @@ namespace Realm
 
                 case Destination.CharacterSelect:
                     StateManager.SelectClass();
+                    break;
+
+                case Destination.BossRealm:
+                    StateManager.EnterBossRealm();
+                    break;
+
+                case Destination.Nexus:
+                    StateManager.Nexus();
                     break;
             }
         }

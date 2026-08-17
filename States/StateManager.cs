@@ -11,6 +11,20 @@
             );
         }
 
+        // Entered via the portal SpriteGod drops on death (Enemy.WasShot()).
+        public static void EnterBossRealm()
+        {
+            Sound.Play(Sound.EnterRealm, 0.35f);
+
+            Game1.Instance.ChangeState(
+                new BossRealmState(
+                    Game1.Instance,
+                    Game1.Instance.GraphicsDevice,
+                    Game1.Instance.Content
+                )
+            );
+        }
+
         public static void Nexus()
         {
             EntityManager.Reset();

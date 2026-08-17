@@ -16,16 +16,40 @@ namespace Realm
         {
             get { return timeUntilStart <= 0; }
         }
-        public int PointValue { get; private set; }
+
+        // protected set: a subclass (e.g. Boss/LimonTheSpriteGoddess) sets
+        // these directly in its own constructor, same as Wizard/Archer/
+        // Knight already do with baseHealth/baseMana/etc.
+        public int PointValue { get; protected set; }
+
+        // Flat reduction applied to incoming damage in WasShot() below,
+        // floored at 0 (can't turn a hit into healing). Defaults to 0 for
+        // every enemy unless a factory/subclass sets it explicitly.
+        public int Defense { get; protected set; } = 0;
 
         private List<IEnumerator<int>> behaviours = new List<IEnumerator<int>>();
         private List<IEnumerator<int>> attackBehaviours = new List<IEnumerator<int>>();
 
-        private int health;
-        private int healthMax;
-        private SoundEffect deathSound;
-        private SoundEffect hitSound;
+        // protected: a subclass constructor sets these directly to
+        // establish its stats, same as every factory method below already
+        // does via object-initializer syntax from within Enemy itself.
+        protected int health;
+        protected int healthMax;
+
+        // Fraction of max health remaining, 0-1 — a convenience shorthand
+        // for phase-transition logic (e.g. LimonTheSpriteGoddess) so
+        // callers don't have to repeat the healthMax > 0 guard by hand.
+        protected float HealthFraction => healthMax > 0 ? (float)health / healthMax : 0f;
+
+        protected SoundEffect deathSound;
+        protected SoundEffect hitSound;
         public List<Guid> HitBy;
+
+        // Set only by CreateSpriteGod() below — routes WasShot()'s death
+        // branch to also drop a portal into the boss arena, on top of its
+        // normal loot roll (SpriteGod isn't isBoss, so it keeps going
+        // through the regular ItemSpawner.Spawn() path unchanged).
+        private bool isSpriteGod = false;
 
         // Paralyzes this enemy, blocking its movement (Update() below) for
         // durationFrames. Backed by Entity's general debuff system (refreshes
@@ -110,8 +134,13 @@ namespace Realm
         {
             if (health < healthMax)
             {
-                float x = Position.X - (this.image.Width / 4);
-                float y = Position.Y + (this.image.Height / 2);
+                // Position is scaled by drawScale (Entity.Draw() draws the
+                // sprite that much bigger around the same center) — without
+                // matching it here, a scaled-up enemy's actual on-screen
+                // edges extend past where this assumes, so the bar ends up
+                // underneath the sprite instead of below it.
+                float x = Position.X - (this.image.Width * drawScale / 4);
+                float y = Position.Y + (this.image.Height * drawScale / 2);
 
                 int barScale = 1;
                 int barHeight = 8;
@@ -169,9 +198,11 @@ namespace Realm
         public void WasShot(int damage)
         {
             Debug.WriteLine(damage);
-            health -= (int)damage;
 
-            EntityManager.Add(new DamageNumber(Position, damage, Color.Yellow));
+            int actualDamage = Math.Max(0, damage - Defense);
+            health -= actualDamage;
+
+            EntityManager.Add(new DamageNumber(Position, actualDamage, Color.Yellow));
 
             if (health <= 0)
             {
@@ -180,8 +211,20 @@ namespace Realm
                 Player.Instance.Experience += PointValue;
                 Player.Instance.ExperienceTotal += PointValue;
 
-                // Spawn loot.
-                ItemSpawner.Spawn(this.Position);
+                // Spawn loot — SpawnLoot() is virtual, so Boss subclasses
+                // (guaranteed good loot) override this; every other enemy
+                // uses the base implementation's normal random-chance table.
+                SpawnLoot();
+
+                // SpriteGod additionally drops a portal into the boss arena,
+                // on top of its normal loot above.
+                if (isSpriteGod)
+                {
+                    Portal.DroppedPortals.Add(
+                        new Portal(this.Position, Portal.Destination.BossRealm)
+                    );
+                    Sound.Play(Sound.LootAppears, 0.4f);
+                }
             }
             else
             {
@@ -189,12 +232,19 @@ namespace Realm
             }
         }
 
-        private void AddBehaviour(IEnumerable<int> behaviour)
+        // Default: the normal random-chance drop table every enemy uses.
+        // Boss overrides this for guaranteed good loot instead.
+        protected virtual void SpawnLoot()
+        {
+            ItemSpawner.Spawn(this.Position);
+        }
+
+        protected void AddBehaviour(IEnumerable<int> behaviour)
         {
             behaviours.Add(behaviour.GetEnumerator());
         }
 
-        private void AddAttackBehaviour(IEnumerable<int> behaviour)
+        protected void AddAttackBehaviour(IEnumerable<int> behaviour)
         {
             attackBehaviours.Add(behaviour.GetEnumerator());
         }
@@ -253,18 +303,16 @@ namespace Realm
 
         #region Movement Behaviors
 
-        IEnumerable<int> FollowPlayer(float acceleration = 0.5f)
+        protected IEnumerable<int> FollowPlayer(float acceleration = 0.5f)
         {
             while (true)
             {
                 Velocity += (Player.Instance.Position - Position).ScaleTo(acceleration);
-                if (Velocity != Vector2.Zero)
-                    Orientation = Velocity.ToAngle();
                 yield return 0;
             }
         }
 
-        IEnumerable<int> MoveSnake(float speed = 0.2f)
+        protected IEnumerable<int> MoveSnake(float speed = 0.2f)
         {
             float direction = rand.NextFloat(0, MathHelper.TwoPi);
             while (true)
@@ -299,7 +347,13 @@ namespace Realm
 
         #region Attack Behaviors
 
-        IEnumerable<int> Spray(int projectileSpeed = 3, int projectileAmmount = 5)
+        protected IEnumerable<int> Spray(
+            int projectileSpeed = 3,
+            int projectileAmount = 5,
+            int damage = 10,
+            Texture2D projectileImage = null,
+            Entity.CollisionShape collisionShape = Entity.CollisionShape.Circle
+        )
         {
             while (true)
             {
@@ -313,14 +367,20 @@ namespace Realm
                     float randomSpread = rand.NextFloat(-0.1f, 0.1f) + rand.NextFloat(-0.1f, 0.1f);
 
                     float bulletOffset = 0.05f;
-                    for (var i = 0; i < projectileAmmount; i++)
+                    for (var i = 0; i < projectileAmount; i++)
                     {
                         Vector2 vel = Extensions.FromPolar(
                             aimAngle + randomSpread + (i * bulletOffset),
                             projectileSpeed
                         );
 
-                        EntityManager.Add(new EnemyProjectile(Position, vel));
+                        EntityManager.Add(
+                            new EnemyProjectile(Position, vel, projectileImage)
+                            {
+                                Damage = damage,
+                                Shape = collisionShape,
+                            }
+                        );
                     }
                 }
                 if (projectileCooldownRemaining > 0)
@@ -434,6 +494,7 @@ namespace Realm
                 PointValue = 200,
                 deathSound = Sound.SpriteGodDeath,
                 hitSound = Sound.SpriteGodHit,
+                isSpriteGod = true,
             };
 
             enemy.AddBehaviour(enemy.MoveSnake());

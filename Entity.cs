@@ -26,6 +26,27 @@ namespace Realm
         public float Radius = 20; // used for circular collision detection
         public bool IsExpired; // true if the entity was destroyed and should be deleted.
 
+        // Which collision math EntityManager.IsColliding() uses for this
+        // entity — Circle (Radius-based, the default every entity already
+        // used) or Rectangle (bounding-box-based). Meant to be overridden
+        // per projectile instance (e.g. a wide beam-shaped projectile suits
+        // a rectangle hitbox better than a circle), but lives on Entity
+        // since IsColliding() compares two arbitrary entities.
+        public enum CollisionShape
+        {
+            Circle,
+            Rectangle,
+        }
+
+        public CollisionShape Shape = CollisionShape.Circle;
+
+        // Draw scale, separate from Radius (collision). Defaults to 1 (no
+        // visual change for anything that doesn't set it) — a subclass that
+        // wants to draw bigger than its native sprite size (e.g. a boss)
+        // should also scale Radius to match, so the hitbox stays consistent
+        // with what's actually drawn.
+        protected float drawScale = 1f;
+
         // General-purpose debuff system, usable by both Enemy and Player
         // (unlike Player's buff fields, which are Player-only). Adding a new
         // debuff type is just a new enum value plus a DebuffIcon() case
@@ -129,7 +150,7 @@ namespace Realm
 
         public virtual void Draw(SpriteBatch spriteBatch)
         {
-            spriteBatch.Draw(image, Position, null, color, Orientation, Size / 2f, 1f, 0, 0);
+            spriteBatch.Draw(image, Position, null, color, Orientation, Size / 2f, drawScale, 0, 0);
         }
     }
 }

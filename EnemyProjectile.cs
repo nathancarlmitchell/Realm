@@ -1,4 +1,5 @@
 ﻿using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
 
 namespace Realm
 {
@@ -6,13 +7,23 @@ namespace Realm
     {
         public int duration = 250;
 
-        public EnemyProjectile(Vector2 position, Vector2 velocity)
+        // Defaults to the flat damage every enemy projectile has always dealt
+        // to the player — set explicitly by whoever wants a harder-hitting
+        // shot (e.g. a boss) without changing any other enemy's behavior.
+        public int Damage = 10;
+
+        // image defaults to the shared enemy projectile sprite; passing one
+        // explicitly (e.g. a boss-specific projectile) has to happen here
+        // rather than via an object initializer, since Radius is derived
+        // from the image's own size and needs to be computed against
+        // whichever image actually ends up used.
+        public EnemyProjectile(Vector2 position, Vector2 velocity, Texture2D image = null)
         {
-            image = Art.EnemyProjectile;
+            this.image = image ?? Art.EnemyProjectile;
             Position = position;
             Velocity = velocity;
             Orientation = Velocity.ToAngle();
-            Radius = image.Width / 2f;
+            Radius = this.image.Width / 2f;
         }
 
         private int durationCooldown = 0;

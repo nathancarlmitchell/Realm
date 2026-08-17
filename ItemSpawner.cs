@@ -115,15 +115,20 @@ namespace Realm
             if (rand.Next(15) == 0)
             {
                 // Same "wrong class is possible" spirit as weapon/armor drops
-                // above — not filtered to the player's own class. Spell and
-                // Quiver are separate catalogs (not a single shared list like
-                // Weapons/Armors), so concatenate both next-tier results
-                // before picking at random.
+                // above — not filtered to the player's own class. Spell,
+                // Quiver, and Shield are separate catalogs (not a single
+                // shared list like Weapons/Armors), so concatenate all three
+                // next-tier results before picking at random.
                 List<AbilityItem> nextTierAbilityItems = Game1
                     .Instance.Spells.Where(x => x.Tier == Player.Instance.AbilityItem.Tier + 1)
                     .Cast<AbilityItem>()
                     .Concat(
                         Game1.Instance.Quivers.Where(x =>
+                            x.Tier == Player.Instance.AbilityItem.Tier + 1
+                        )
+                    )
+                    .Concat(
+                        Game1.Instance.Shields.Where(x =>
                             x.Tier == Player.Instance.AbilityItem.Tier + 1
                         )
                     )
@@ -194,6 +199,81 @@ namespace Realm
 
                 Sound.Play(Sound.LootAppears, 0.4f);
             }
+        }
+
+        // Boss drops — same next-tier-above-what's-equipped selection logic
+        // as Spawn() above for each category, but without the 1-in-15 rolls:
+        // every category that has a next tier available always contributes
+        // an item (still a graceful no-op if the player's already at max
+        // tier for that category), plus always one random stat potion.
+        // Single bag, in the same "premium" gold color Spawn() uses for
+        // ability-item drops.
+        public static void SpawnGuaranteedLoot(Vector2 pos)
+        {
+            List<Item> items = [];
+
+            List<Weapon> nextTierWeapons = Game1
+                .Instance.Weapons.Where(x => x.Tier == Player.Instance.Weapon.Tier + 1)
+                .ToList();
+            if (nextTierWeapons.Count > 0)
+                items.Add(nextTierWeapons[rand.Next(nextTierWeapons.Count)]);
+
+            List<Armor> nextTierArmors = Game1
+                .Instance.Armors.Where(x => x.Tier == Player.Instance.Armor.Tier + 1)
+                .ToList();
+            if (nextTierArmors.Count > 0)
+                items.Add(nextTierArmors[rand.Next(nextTierArmors.Count)]);
+
+            if (Game1.Instance.Rings.Exists(x => x.Tier == Player.Instance.Ring.Tier + 1))
+            {
+                Ring nextRing = Game1.Instance.Rings.FirstOrDefault(x =>
+                    x.Tier == Player.Instance.Ring.Tier + 1
+                );
+                items.Add(nextRing);
+            }
+
+            List<AbilityItem> nextTierAbilityItems = Game1
+                .Instance.Spells.Where(x => x.Tier == Player.Instance.AbilityItem.Tier + 1)
+                .Cast<AbilityItem>()
+                .Concat(
+                    Game1.Instance.Quivers.Where(x =>
+                        x.Tier == Player.Instance.AbilityItem.Tier + 1
+                    )
+                )
+                .Concat(
+                    Game1.Instance.Shields.Where(x =>
+                        x.Tier == Player.Instance.AbilityItem.Tier + 1
+                    )
+                )
+                .ToList();
+            if (nextTierAbilityItems.Count > 0)
+                items.Add(nextTierAbilityItems[rand.Next(nextTierAbilityItems.Count)]);
+
+            int next = rand.Next(8);
+            Potions potion = next switch
+            {
+                0 => Potions.Attack,
+                1 => Potions.Defense,
+                2 => Potions.Dexterity,
+                3 => Potions.Life,
+                4 => Potions.ManaMax,
+                5 => Potions.Speed,
+                6 => Potions.Vitality,
+                _ => Potions.Wisdom,
+            };
+            items.Add(new Potion(potion));
+
+            LootBag bag = new()
+            {
+                Position = pos,
+                Items = items,
+                image = Art.LootBagGold,
+            };
+
+            EntityManager.Add(bag);
+            LootBags.Add(bag);
+
+            Sound.Play(Sound.LootAppears, 0.4f);
         }
     }
 }

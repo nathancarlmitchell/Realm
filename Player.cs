@@ -504,8 +504,14 @@ namespace Realm
             Velocity = (int)((Speed / 75) * 5.6 + 2) * Input.GetMovementDirection();
             Position += Velocity;
 
-            // Update camera position.
-            Game1.Camera.Pos += Velocity;
+            // Update camera position. Syncs directly to the player's actual
+            // position rather than accumulating the same Velocity
+            // separately — the two are otherwise independent state, so if
+            // Camera.Pos's own boundary clamp (see Camera.cs) ever kicks in
+            // (e.g. near a bounded instance's edge), a permanent gap opens
+            // between camera and player that repeated += Velocity can never
+            // close again, even after moving back away from the edge.
+            Game1.Camera.Pos = Position;
 
             // Check for level up.
             if (Level < 20 && Experience >= ExperienceNextLevel)

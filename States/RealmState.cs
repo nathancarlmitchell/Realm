@@ -11,6 +11,15 @@ namespace Realm.States
     {
         Rectangle targetRectangle;
 
+        // Extension points for BossRealmState (a bounded arena instance
+        // instead of the open Realm world, and no regular EnemySpawner
+        // traffic) — pure constants, safe to read from this base
+        // constructor since C# virtual dispatch during construction already
+        // resolves to the most-derived override.
+        protected virtual bool SpawnsRegularEnemies => true;
+        protected virtual int InstanceWorldWidth => Game1.WorldWidth;
+        protected virtual int InstanceWorldHeight => Game1.WorldHeight;
+
         public static Guid HealthPotionGuid = Guid.NewGuid();
         public static Guid ManaPotionGuid = Guid.NewGuid();
         public static Guid AttackPotionGuid = Guid.NewGuid();
@@ -32,8 +41,8 @@ namespace Realm.States
             Game1.Camera = new Camera(
                 Game1.GameplayViewportWidth,
                 Game1.GameplayViewportHeight,
-                Game1.WorldWidth,
-                Game1.WorldHeight,
+                InstanceWorldWidth,
+                InstanceWorldHeight,
                 1f
             );
 
@@ -49,9 +58,10 @@ namespace Realm.States
             Util.SaveFameData();
 
             ItemSpawner.Reset();
+            Portal.Reset();
 
             // Define a drawing rectangle based on the number of tiles wide and high, using the texture dimensions.
-            targetRectangle = new Rectangle(0, 0, Game1.WorldWidth, Game1.WorldHeight);
+            targetRectangle = new Rectangle(0, 0, InstanceWorldWidth, InstanceWorldHeight);
         }
 
         public override void Draw(GameTime gameTime, SpriteBatch spriteBatch)
@@ -81,8 +91,20 @@ namespace Realm.States
                 Game1.Camera.GetTransformation()
             );
 
+            // Draw portals dropped in the world (e.g. by a defeated
+            // SpriteGod, or a boss arena's own exit portal).
+            foreach (Portal portal in Portal.DroppedPortals)
+            {
+                portal.Draw(spriteBatch, gameTime);
+            }
+
             // Draw entities (player, enemies, projectiles).
             EntityManager.Draw(spriteBatch);
+
+            if (Game1._Debug)
+            {
+                EntityManager.DrawHitboxes(spriteBatch);
+            }
 
             spriteBatch.End();
 
@@ -120,7 +142,14 @@ namespace Realm.States
         public override void Update(GameTime gameTime)
         {
             EntityManager.Update();
-            EnemySpawner.Update();
+
+            if (SpawnsRegularEnemies)
+                EnemySpawner.Update();
+
+            foreach (Portal portal in Portal.DroppedPortals.ToList())
+            {
+                portal.Update(gameTime);
+            }
 
             // Update high score.
             if (Player.Instance.ExperienceTotal > Player.Instance.HighScore)

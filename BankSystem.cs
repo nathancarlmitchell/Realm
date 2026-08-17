@@ -279,6 +279,13 @@ namespace Realm
 
                 spriteBatch.Draw(record.InventoryItem.image, new Vector2(posX, posY), Color.White);
 
+                // Flag equipment the current class can't actually equip —
+                // e.g. a Bow sitting in the shared bank while playing Wizard.
+                if (record.InventoryItem is Equipment bankEquipment && !bankEquipment.CanEquipByCurrentClass)
+                {
+                    spriteBatch.Draw(Art.HealthBar, new Rectangle(posX, posY, 40, 40), Color.Red * 0.25f);
+                }
+
                 string quantityText = string.Empty;
                 if (record.InventoryItem.MaximumStackableQuantity > 1)
                 {

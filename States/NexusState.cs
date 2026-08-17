@@ -41,11 +41,20 @@ namespace Realm.States
                 Player.Instance.Position.Y - 100
             );
 
+            // TEMP: direct shortcut into the boss arena for testing, so it
+            // doesn't have to be reached by finding and killing a SpriteGod
+            // every time. Remove once the boss fight has been tested.
+            var bossTestPortalPos = new Vector2(
+                Player.Instance.Position.X - 150,
+                Player.Instance.Position.Y - 100
+            );
+
             portalList =
             [
                 new Portal(),
                 new Portal(portalPos, Portal.Destination.CharacterSelect),
                 new Portal(bankPortalPos, Portal.Destination.Bank),
+                new Portal(bossTestPortalPos, Portal.Destination.BossRealm),
             ];
 
             // Define a drawing rectangle based on the number of tiles wide and high, using the texture dimensions.
@@ -75,6 +84,11 @@ namespace Realm.States
 
             // Draw player.
             EntityManager.Draw(spriteBatch);
+
+            if (Game1._Debug)
+            {
+                EntityManager.DrawHitboxes(spriteBatch);
+            }
 
             spriteBatch.End();
 

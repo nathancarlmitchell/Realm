@@ -17,6 +17,15 @@ namespace Realm
         // returns to once unequipped/dragged out).
         public bool IsEquipped => image != null;
 
+        // True if the player's current class can actually equip this item —
+        // used to visually flag wrong-class items sitting in the inventory/
+        // bank grids (InventorySystem.Draw()/BankSystem.Draw()). Ring has no
+        // class restriction, so the base implementation is always true;
+        // Weapon/Armor/AbilityItem each override with the exact same check
+        // their own LoadWeapon()/LoadArmor()/Player.CanEquipAbilityItem()
+        // already use to decide whether the item can actually be equipped.
+        public virtual bool CanEquipByCurrentClass => true;
+
         // Read live by Player.RecalculateStats() (summed across Weapon/Armor/
         // Ring) to compute derived stats — no accumulator to keep in sync,
         // this item's own fields are the source of truth while it's equipped.
