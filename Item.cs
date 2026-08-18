@@ -30,6 +30,7 @@ namespace Realm
     [JsonDerivedType(typeof(Ring), typeDiscriminator: "Ring")]
     [JsonDerivedType(typeof(Spell), typeDiscriminator: "Spell")]
     [JsonDerivedType(typeof(Quiver), typeDiscriminator: "Quiver")]
+    [JsonDerivedType(typeof(Shield), typeDiscriminator: "Shield")]
     public class Item : Entity
     {
         public Guid ID { get; set; }
@@ -63,23 +64,5 @@ namespace Realm
         }
 
         public override void Update() { }
-
-        public void DrawLoot(SpriteBatch spriteBatch, int x, int y)
-        {
-            if (Hover)
-            {
-                string text = Name;
-
-                int textX = (int)(Art.HudFont.MeasureString(text).X / 2);
-                int textY = (int)(Art.HudFont.MeasureString(text).Y / 2);
-
-                spriteBatch.DrawString(
-                    Art.HudFont,
-                    text,
-                    new Vector2(x - textX, y - image.Height - textY),
-                    Color.Red
-                );
-            }
-        }
     }
 }

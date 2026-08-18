@@ -41,7 +41,7 @@ namespace Realm.CharacterClasses
             Weapon.Type = Weapon.WeaponType.Wand;
 
             Armor = Armor.LoadArmor("Cloth Robe");
-            Ring = Ring.LoadRing("Plain Ring");
+            Ring = Ring.LoadRing("Ring of Minor Defense");
             AbilityItem = Spell.LoadSpell("Novice Spellbook");
 
             // HealthMax/ManaMax/Attack/Defense/etc. are already set by
@@ -114,6 +114,12 @@ namespace Realm.CharacterClasses
             base.UseAbility();
 
             if (!Weapon.IsEquipped)
+            {
+                Sound.Play(Sound.Error, 0.4f);
+                return;
+            }
+
+            if (!AbilityItem.IsEquipped)
             {
                 Sound.Play(Sound.Error, 0.4f);
                 return;

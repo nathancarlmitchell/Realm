@@ -7,9 +7,8 @@ namespace Realm
 {
     public class Ring : Equipment
     {
-        // Continues the equipment row: Weapon, then Armor 40px to the right,
-        // then Ring another 40px past that.
-        static int x = Game1.SidebarX + 20 + 80;
+        // Last in the equipment row: Weapon, AbilityItem, Armor, then Ring.
+        static int x = Game1.SidebarX + 20 + 120;
         static int y = 410;
 
         public Ring(Texture2D image)
@@ -59,29 +58,48 @@ namespace Realm
             return null;
         }
 
+        // Tier 0 ring — shown greyed out in an empty slot as a placeholder,
+        // same idea as Weapon.PlaceholderImage. No class restriction on
+        // Ring, so this doesn't need to filter by the player's class.
+        private static Texture2D PlaceholderImage =>
+            Game1.Instance.Rings.FirstOrDefault(r => r.Tier == 0)?.image;
+
         public void DrawEquipped(SpriteBatch spriteBatch)
         {
             spriteBatch.Draw(Art.Border, new Vector2(x, y), Color.White);
 
             if (!IsEquipped)
+            {
+                if (PlaceholderImage != null)
+                    spriteBatch.Draw(PlaceholderImage, new Vector2(x, y), Color.Gray * 0.5f);
                 return;
+            }
 
             spriteBatch.Draw(this.image, new Vector2(x, y), Color.White);
+        }
 
-            if (hover)
-            {
-                string text = TooltipText();
+        // Drawn in its own pass, after every equip slot's border/icon (see
+        // Overlay.DrawEquipment()) — otherwise a later-drawn slot's icon can
+        // paint over this one's tooltip wherever the two overlap, since
+        // SpriteBatch preserves draw-call order and the four slots aren't
+        // drawn in the same order they're laid out on screen. Same fix as
+        // LootBag's equivalent bug.
+        public void DrawTooltip(SpriteBatch spriteBatch)
+        {
+            if (!IsEquipped || !hover)
+                return;
 
-                int textY = (int)(Art.HudFont.MeasureString(text).Y / 2);
+            string text = TooltipText();
 
-                Util.DrawTooltip(
-                    spriteBatch,
-                    Art.HudFont,
-                    text,
-                    new Vector2(x, y - image.Height - textY),
-                    Color.Red
-                );
-            }
+            int textY = (int)(Art.HudFont.MeasureString(text).Y / 2);
+
+            Util.DrawTooltip(
+                spriteBatch,
+                Art.HudFont,
+                text,
+                new Vector2(x, y - image.Height - textY),
+                Color.Red
+            );
         }
     }
 }

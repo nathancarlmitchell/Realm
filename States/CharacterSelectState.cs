@@ -18,6 +18,26 @@ namespace Realm.States
             public Rectangle BorderRect;
             public bool Hover;
 
+            // Account-wide Fame required to unlock this class — 0 means
+            // always unlocked (Wizard). Gated off FameSystem.Fame directly
+            // rather than a separate persisted flag: Fame only ever
+            // increases (see FameSystem.cs), so "has this much Fame ever
+            // been earned" and "is this permanently unlocked" are the same
+            // question — no new save state needed. A locked class can also
+            // never have contributed Fame that unlocked something further
+            // down the chain except through itself once unlocked, since a
+            // class can't be played (and therefore can't earn Fame) before
+            // its own threshold is crossed.
+            public int RequiredFame;
+            public bool IsLocked => RequiredFame > 0 && FameSystem.Fame < RequiredFame;
+
+            // Highest star rating (0-5) this class has ever achieved —
+            // permanent, computed fresh each Update() from that class's
+            // saved HasReachedLevel20/HighScore (see ComputeStars()) rather
+            // than stored redundantly. Shown regardless of lock state, since
+            // it's a record of what's already been earned.
+            public int Stars;
+
             // Delete-with-confirmation, shown below the class label. Only one of
             // the "Delete" link or the Yes/No row is ever visible at a time.
             public bool HasSave;
@@ -30,6 +50,16 @@ namespace Realm.States
             public Rectangle ConfirmNoRect;
             public bool ConfirmNoHover;
         }
+
+        // First pass at class-unlock thresholds — Wizard starts unlocked,
+        // Archer needs some real Fame invested in Wizard, Knight needs
+        // (necessarily, per RequiredFame's own doc comment above) even more
+        // invested in Wizard and/or Archer. Round numbers chosen as a
+        // reasonable starting point, easy to retune later once there's real
+        // playtesting data on how fast Fame actually accumulates.
+        private const int ArcherFameRequirement = 1000;
+        private const int KnightFameRequirement = 3000;
+
 
         private const int PortraitSize = 80;
         private const int BorderPadding = 14;
@@ -62,6 +92,7 @@ namespace Realm.States
                         PortraitSize,
                         PortraitSize
                     ),
+                    RequiredFame = 0,
                 },
                 new Slot
                 {
@@ -73,6 +104,7 @@ namespace Realm.States
                         PortraitSize,
                         PortraitSize
                     ),
+                    RequiredFame = KnightFameRequirement,
                 },
                 new Slot
                 {
@@ -84,6 +116,7 @@ namespace Realm.States
                         PortraitSize,
                         PortraitSize
                     ),
+                    RequiredFame = ArcherFameRequirement,
                 },
             ];
 
@@ -111,10 +144,27 @@ namespace Realm.States
         {
             foreach (var slot in slots)
             {
-                slot.HasSave = HasDeletableProgress(Util.PeekPlayerData(slot.PlayerClass));
-                UpdateDeleteControls(slot);
-
                 slot.Hover = slot.BorderRect.Intersects(Input.MouseBounds);
+
+                // One read regardless of lock state — the star rating is a
+                // permanent record shown either way (see Slot.Stars), unlike
+                // HasSave/delete, which only matter for a playable slot.
+                PlayerData saved = Util.PeekPlayerData(slot.PlayerClass);
+                slot.Stars = Player.ComputeStars(saved?.HasReachedLevel20 ?? false, saved?.HighScore ?? 0);
+
+                if (slot.IsLocked)
+                {
+                    // No save/delete controls or selection for a locked
+                    // class — there's nothing to preview or delete for a
+                    // class that's never been playable yet, and clicking it
+                    // should read as "not yet", not silently do nothing.
+                    if (slot.Hover && Input.GetMouseClick())
+                        Sound.Play(Sound.Error, 0.4f);
+                    continue;
+                }
+
+                slot.HasSave = HasDeletableProgress(saved);
+                UpdateDeleteControls(slot);
 
                 if (slot.Hover && Input.GetMouseClick())
                 {
@@ -132,7 +182,8 @@ namespace Realm.States
         private void UpdateDeleteControls(Slot slot)
         {
             Vector2 labelSize = Art.HudFont.MeasureString(slot.PlayerClass.ToString());
-            int rowY = (int)(slot.BorderRect.Bottom + 8 + labelSize.Y + 4);
+            Vector2 starsSize = Art.HudFont.MeasureString(BuildStarsText(slot.Stars));
+            int rowY = (int)(slot.BorderRect.Bottom + 8 + labelSize.Y + 4 + starsSize.Y + 4);
 
             if (slot.ConfirmingDelete)
             {
@@ -203,6 +254,13 @@ namespace Realm.States
         private static bool HasDeletableProgress(PlayerData saved) =>
             saved != null && saved.HasBeenPlayed;
 
+        // Plain-ASCII rendering ("*" instead of a real star glyph) — the
+        // game's SpriteFonts only bake in the standard ASCII range (32-126,
+        // see Content/Fonts/*.spritefont), so drawing an actual ★ character
+        // would throw at runtime, not silently fall back.
+        private static string BuildStarsText(int stars) =>
+            "Stars: " + new string('*', stars) + new string('-', Player.MaxStars - stars);
+
         private static void DeleteCharacter(Slot slot)
         {
             Util.DeleteCharacterData(slot.PlayerClass);
@@ -259,19 +317,45 @@ namespace Realm.States
 
             foreach (var slot in slots)
             {
-                Color borderColor = slot.Hover ? Color.Gold : Color.White;
+                Color borderColor = slot.IsLocked ? Color.DarkGray : (slot.Hover ? Color.Gold : Color.White);
+                Color portraitColor = slot.IsLocked ? Color.DarkGray : Color.White;
 
                 spriteBatch.Draw(Art.Border, slot.BorderRect, borderColor);
-                spriteBatch.Draw(slot.Portrait, slot.PortraitRect, Color.White);
+                spriteBatch.Draw(slot.Portrait, slot.PortraitRect, portraitColor);
 
-                string label = slot.PlayerClass.ToString();
+                string label = slot.IsLocked
+                    ? slot.PlayerClass.ToString() + " (Locked)"
+                    : slot.PlayerClass.ToString();
                 Vector2 labelSize = Art.HudFont.MeasureString(label);
                 spriteBatch.DrawString(
                     Art.HudFont,
                     label,
                     new Vector2(slot.PortraitRect.Center.X - labelSize.X / 2, slot.BorderRect.Bottom + 8),
-                    Color.White
+                    slot.IsLocked ? Color.Gray : Color.White
                 );
+
+                // Always shown, locked or not — a permanent record of what's
+                // already been earned, not something tied to whether the
+                // class happens to be selectable right now.
+                string starsText = BuildStarsText(slot.Stars);
+                Vector2 starsSize = Art.HudFont.MeasureString(starsText);
+                DrawShadowedText(
+                    spriteBatch,
+                    starsText,
+                    new Vector2(
+                        slot.PortraitRect.Center.X - starsSize.X / 2,
+                        slot.BorderRect.Bottom + 8 + labelSize.Y + 4
+                    ),
+                    Color.Gold
+                );
+
+                if (slot.IsLocked)
+                {
+                    if (slot.Hover)
+                        DrawLockedPreview(spriteBatch, slot);
+
+                    continue;
+                }
 
                 if (slot.Hover)
                 {
@@ -354,6 +438,23 @@ namespace Realm.States
             DrawShadowedText(spriteBatch, statsText, statsPos, Color.Red);
             DrawShadowedText(spriteBatch, scoreText, scorePos, Color.Gold);
             DrawShadowedText(spriteBatch, highScoreText, highScorePos, Color.LightBlue);
+        }
+
+        // Shown instead of DrawPreview() while hovering a locked slot — how
+        // much more Fame is needed, rather than stats for a class that's
+        // never been playable yet.
+        private void DrawLockedPreview(SpriteBatch spriteBatch, Slot slot)
+        {
+            string text =
+                $"Requires {slot.RequiredFame} Fame\n(You have {FameSystem.Fame})";
+
+            Vector2 size = Art.HudFont.MeasureString(text);
+            Vector2 pos = new(
+                slot.PortraitRect.Center.X - size.X / 2,
+                slot.BorderRect.Top - PreviewGap - size.Y
+            );
+
+            DrawShadowedText(spriteBatch, text, pos, Color.OrangeRed);
         }
 
         private static void DrawShadowedText(

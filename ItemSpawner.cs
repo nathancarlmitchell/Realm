@@ -20,6 +20,19 @@ namespace Realm
 
         public static void Reset()
         {
+            // Each bag is also a plain Entity tracked by EntityManager (for
+            // its icon draw), separately from this list (for the
+            // interactive click-to-pickup logic in DrawLoot()). Clearing
+            // just this list leaves that Entity registration untouched, and
+            // not every state resets EntityManager on entry (RealmState —
+            // dungeons — doesn't; only NexusState/BossRealmState do) — so a
+            // bag could keep rendering its icon at its old position forever
+            // with nothing left able to interact with it. Expiring it here
+            // lets EntityManager's own cleanup drop it on its next Update()
+            // regardless of whether the destination state resets it too.
+            foreach (LootBag bag in LootBags)
+                bag.IsExpired = true;
+
             LootBags = [];
         }
 

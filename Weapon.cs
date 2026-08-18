@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Xml.Linq;
@@ -164,36 +165,70 @@ namespace Realm
             }
         }
 
+        // The current class's Tier 0 weapon — shown greyed out in an empty
+        // slot as a placeholder for what goes there, e.g. so a fresh player
+        // can tell the Weapon slot expects a Wand/Bow/Sword before ever
+        // having equipped one.
+        private static Texture2D PlaceholderImage =>
+            Game1
+                .Instance.Weapons.FirstOrDefault(w =>
+                    w.Type == Player.Instance.WeaponType && w.Tier == 0
+                )
+                ?.image;
+
         //This method needs to be replaced by drawing from the inventory.
         public void DrawEquipped(SpriteBatch spriteBatch)
         {
             spriteBatch.Draw(Art.Border, new Vector2(x, y), Color.White);
 
             if (!IsEquipped)
+            {
+                if (PlaceholderImage != null)
+                    spriteBatch.Draw(PlaceholderImage, new Vector2(x, y), Color.Gray * 0.5f);
                 return;
+            }
 
             spriteBatch.Draw(this.image, new Vector2(x, y), Color.White);
+        }
 
-            if (hover)
-            {
-                string text = TooltipText();
+        // Drawn in its own pass, after every equip slot's border/icon (see
+        // Overlay.DrawEquipment()) — otherwise a later-drawn slot's icon can
+        // paint over this one's tooltip wherever the two overlap, since
+        // SpriteBatch preserves draw-call order and the four slots aren't
+        // drawn in the same order they're laid out on screen. Same fix as
+        // LootBag's equivalent bug.
+        public void DrawTooltip(SpriteBatch spriteBatch)
+        {
+            if (!IsEquipped || !hover)
+                return;
 
-                int textY = (int)(Art.HudFont.MeasureString(text).Y / 2);
+            string text = TooltipText();
 
-                Util.DrawTooltip(
-                    spriteBatch,
-                    Art.HudFont,
-                    text,
-                    new Vector2(x, y - image.Height - textY),
-                    Color.Red
-                );
-            }
+            int textY = (int)(Art.HudFont.MeasureString(text).Y / 2);
+
+            Util.DrawTooltip(
+                spriteBatch,
+                Art.HudFont,
+                text,
+                new Vector2(x, y - image.Height - textY),
+                Color.Red
+            );
         }
 
         public override string TooltipText()
         {
             string description = Util.WrapText(Art.HudFont, Description, 350);
             return $"T{Tier} - {Name}{Environment.NewLine}{description}{Environment.NewLine}Damage: {DamageMin} - {DamageMax}";
+        }
+
+        public override List<(string Text, bool Better)> ComparisonLines(Equipment equipped)
+        {
+            var lines = HeaderLines();
+            var equippedWeapon = (Weapon)equipped;
+            float mine = (DamageMin + DamageMax) / 2f;
+            float theirs = (equippedWeapon.DamageMin + equippedWeapon.DamageMax) / 2f;
+            lines.Add(($"Damage: {DamageMin} - {DamageMax}", mine > theirs));
+            return lines;
         }
     }
 }

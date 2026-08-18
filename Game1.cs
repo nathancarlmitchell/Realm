@@ -166,6 +166,17 @@ namespace Realm
 
         public void ChangeState(State state)
         {
+            // Loot bags are ephemeral (never saved/loaded — see Util.cs) and
+            // meaningless outside the state they were dropped in, so they
+            // shouldn't survive any state change. Cleared here rather than
+            // per-state-constructor since every transition in the game
+            // (see StateManager.cs) funnels through this one method — a
+            // state that doesn't already clear ItemSpawner.LootBags itself
+            // (only RealmState's constructor currently does) would
+            // otherwise leave stale, uninteractable bags rendering forever
+            // via the next state's own DrawLoot() loop.
+            ItemSpawner.Reset();
+
             nextState = state;
         }
 

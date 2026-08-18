@@ -30,6 +30,17 @@ namespace Realm
         }
 
         static List<Enemy> enemies = new List<Enemy>();
+
+        // Whichever boss is currently alive in this dungeon instance, if
+        // any — used by the boss arena's HUD (BossRealmState.DrawBossHud())
+        // to show a name+health bar. null outside a boss fight, since
+        // BossRealmState is the only place a Boss ever gets added.
+        public static Boss ActiveBoss => enemies.OfType<Boss>().FirstOrDefault();
+
+        // Positions only, not the Enemy objects themselves — this is all
+        // Overlay's minimap needs, so it doesn't need broader access to the
+        // private enemies list.
+        public static IEnumerable<Vector2> EnemyPositions => enemies.Select(e => e.Position);
         static List<Projectile> bullets = new List<Projectile>();
         static List<EnemyProjectile> enemiesProjectiles = new List<EnemyProjectile>();
         static List<Item> potions = new List<Item>();

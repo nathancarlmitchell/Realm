@@ -44,17 +44,20 @@ namespace Realm.States
             menu = new Menu(butttons);
 
             // The character that just died resets to its base stats — its High Score
-            // is kept as a permanent record, but nothing else carries over (including
+            // (and permanent star-rating flag, HasReachedLevel20) are kept as a
+            // permanent record, but nothing else carries over (including
             // HasBeenPlayed), so a death leaves the save looking the same as an
             // explicit Delete: back to defaults, with Character Select correctly
             // hiding the Delete link again until this class is played some more.
             Player.Class diedClass = Player.PlayerClass;
             int highScore = Player.Instance.HighScore;
+            bool hasReachedLevel20 = Player.Instance.HasReachedLevel20;
 
             EntityManager.RemovePlayer();
 
             Util.ResetPlayer(diedClass);
             Player.Instance.HighScore = highScore;
+            Player.Instance.HasReachedLevel20 = hasReachedLevel20;
 
             EntityManager.Add(Player.Instance);
 

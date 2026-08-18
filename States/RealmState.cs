@@ -20,6 +20,13 @@ namespace Realm.States
         protected virtual int InstanceWorldWidth => Game1.WorldWidth;
         protected virtual int InstanceWorldHeight => Game1.WorldHeight;
 
+        // Boss-arena-specific HUD (name+health bar, appearance announcement)
+        // — empty here since the open Realm/regular dungeons never have a
+        // Boss; BossRealmState overrides it. Called from the same
+        // screen-space spriteBatch.Begin()/End() pair as the rest of the HUD
+        // below, so it can use plain screen coordinates like Overlay.cs does.
+        protected virtual void DrawBossHud(SpriteBatch spriteBatch) { }
+
         public static Guid HealthPotionGuid = Guid.NewGuid();
         public static Guid ManaPotionGuid = Guid.NewGuid();
         public static Guid AttackPotionGuid = Guid.NewGuid();
@@ -59,6 +66,11 @@ namespace Realm.States
 
             ItemSpawner.Reset();
             Portal.Reset();
+
+            // Leaving the Nexus — its fixed portal set no longer applies to
+            // the minimap until the player returns (NexusState's
+            // constructor re-sets this).
+            Portal.NexusPortals = null;
 
             // Define a drawing rectangle based on the number of tiles wide and high, using the texture dimensions.
             targetRectangle = new Rectangle(0, 0, InstanceWorldWidth, InstanceWorldHeight);
@@ -129,6 +141,8 @@ namespace Realm.States
             // Draw score.
             Overlay.DrawScore(spriteBatch);
 
+            DrawBossHud(spriteBatch);
+
             if (Game1._Debug)
             {
                 Overlay.DrawDebug(spriteBatch);
@@ -154,7 +168,33 @@ namespace Realm.States
             // Update high score.
             if (Player.Instance.ExperienceTotal > Player.Instance.HighScore)
             {
+                int starsBefore = Player.ComputeStars(
+                    Player.Instance.HasReachedLevel20,
+                    Player.Instance.HighScore
+                );
+
                 Player.Instance.HighScore = Player.Instance.ExperienceTotal;
+
+                int starsAfter = Player.ComputeStars(
+                    Player.Instance.HasReachedLevel20,
+                    Player.Instance.HighScore
+                );
+
+                // Persisted immediately when crossing a star threshold —
+                // same reasoning as Player.LevelUp()'s Star 1 save, so a
+                // newly-earned star doesn't depend on the player dying or
+                // otherwise hitting a save checkpoint first. Gated on
+                // starsAfter > starsBefore rather than saving on every
+                // HighScore increment — HighScore can climb every frame
+                // during active play, and only a threshold crossing is
+                // actually worth a disk write.
+                if (starsAfter > starsBefore)
+                {
+                    Util.SavePlayerData();
+                    Util.SaveInventoryData();
+                    Util.SaveBankData();
+                    Util.SaveFameData();
+                }
             }
         }
     }

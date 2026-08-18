@@ -102,6 +102,7 @@ namespace Realm
         {
             PlayerData existing = PeekPlayerData(playerClass);
             int highScore = existing?.HighScore ?? 0;
+            bool hasReachedLevel20 = existing?.HasReachedLevel20 ?? false;
 
             // Whatever Score this character had built up is about to be wiped
             // either way (file deleted outright, or reset back to defaults
@@ -117,18 +118,19 @@ namespace Realm
 
             string playerPath = PlayerDataLocation(playerClass);
 
-            if (highScore <= 0)
+            if (highScore <= 0 && !hasReachedLevel20)
             {
                 if (File.Exists(playerPath))
                     File.Delete(playerPath);
                 return;
             }
 
-            // Preserve the High Score by writing back a fresh default character
-            // instead of deleting the file outright. LoadOrCreatePlayer always
-            // reconstructs the class from scratch first (ResetPlayer) and then
-            // copies several fields (Level, Experience, etc.) straight from the
-            // save with no null-check, so this has to be a fully valid Level-1
+            // Preserve the High Score (and the permanent star-rating flag —
+            // see Player.HasReachedLevel20) by writing back a fresh default
+            // character instead of deleting the file outright. LoadOrCreatePlayer
+            // always reconstructs the class from scratch first (ResetPlayer) and
+            // then copies several fields (Level, Experience, etc.) straight from
+            // the save with no null-check, so this has to be a fully valid Level-1
             // snapshot, not a blank/zeroed one — BuildPlayerData against a
             // just-reset Player.Instance gives exactly that. The swap is safe
             // because nothing else runs on this thread between saving and
@@ -142,6 +144,7 @@ namespace Realm
             ResetPlayer(playerClass);
             PlayerData defaultData = BuildPlayerData();
             defaultData.HighScore = highScore;
+            defaultData.HasReachedLevel20 = hasReachedLevel20;
 
             Player.Instance = previousInstance;
             Player.PlayerClass = previousClass;
@@ -236,6 +239,7 @@ namespace Realm
                 Player.Instance.ExperienceTotal = saved.ExperienceTotal;
                 Player.Instance.HighScore = saved.HighScore;
                 Player.Instance.HasBeenPlayed = saved.HasBeenPlayed;
+                Player.Instance.HasReachedLevel20 = saved.HasReachedLevel20;
                 Player.Instance.Level = saved.Level;
 
                 Player.Instance.PotionAttackBonus = saved.PotionAttackBonus;
@@ -351,6 +355,7 @@ namespace Realm
                 ExperienceTotal = Player.Instance.ExperienceTotal,
                 HighScore = Player.Instance.HighScore,
                 HasBeenPlayed = Player.Instance.HasBeenPlayed,
+                HasReachedLevel20 = Player.Instance.HasReachedLevel20,
                 Level = Player.Instance.Level,
                 Weapon = Player.Instance.Weapon,
                 Armor = Player.Instance.Armor,
@@ -936,6 +941,24 @@ namespace Realm
             return x - ((int)font.MeasureString(text).X / 2);
         }
 
+        // Tooltips are always drawn extending rightward from their anchor
+        // (the hovered item/slot), so anything anchored near the right edge
+        // of the window — e.g. the sidebar's inventory/bank/equip slots —
+        // would otherwise run off-screen. Shifts the X left just enough to
+        // keep the whole panel on-screen, without moving it right of where
+        // it was actually anchored (a narrow tooltip stays put).
+        private static float ClampTooltipX(float x, float width)
+        {
+            const int edgeMargin = 4;
+            const int padding = 4;
+            float maxX = Game1.WindowWidth - width - padding - edgeMargin;
+            if (x > maxX)
+                x = maxX;
+            if (x < edgeMargin)
+                x = edgeMargin;
+            return x;
+        }
+
         // Draws text with a semi-transparent background panel sized to fit it,
         // so hover tooltips (equip slots, bank, inventory) stay readable
         // regardless of what's behind them in the game world/UI. Reuses
@@ -952,6 +975,7 @@ namespace Realm
         {
             const int padding = 4;
             Vector2 size = font.MeasureString(text);
+            position.X = ClampTooltipX(position.X, size.X);
 
             Rectangle background = new(
                 (int)(position.X - padding),
@@ -962,6 +986,50 @@ namespace Realm
 
             spriteBatch.Draw(Art.HealthBar, background, Color.WhiteSmoke * 0.75f);
             spriteBatch.DrawString(font, text, position, textColor);
+        }
+
+        // Same background-panel technique as the single-string overload
+        // above, but draws each line with its own color instead of one flat
+        // string/color — used for the inventory/bank hover tooltip so a
+        // stat line that beats the currently equipped item can be
+        // highlighted (see Equipment.ComparisonLines()) without recoloring
+        // the whole tooltip.
+        public static void DrawTooltip(
+            SpriteBatch spriteBatch,
+            SpriteFont font,
+            List<(string Text, bool Better)> lines,
+            Vector2 position,
+            Color textColor,
+            Color betterColor
+        )
+        {
+            const int padding = 4;
+
+            float width = 0f;
+            foreach (var line in lines)
+                width = Math.Max(width, font.MeasureString(line.Text).X);
+            float height = lines.Count * font.LineSpacing;
+            position.X = ClampTooltipX(position.X, width);
+
+            Rectangle background = new(
+                (int)(position.X - padding),
+                (int)(position.Y - padding),
+                (int)(width + (padding * 2)),
+                (int)(height + (padding * 2))
+            );
+
+            spriteBatch.Draw(Art.HealthBar, background, Color.WhiteSmoke * 0.75f);
+
+            for (int i = 0; i < lines.Count; i++)
+            {
+                Color color = lines[i].Better ? betterColor : textColor;
+                spriteBatch.DrawString(
+                    font,
+                    lines[i].Text,
+                    position + new Vector2(0, i * font.LineSpacing),
+                    color
+                );
+            }
         }
 
         public static string WrapText(SpriteFont spriteFont, string text, float maxLineWidth)

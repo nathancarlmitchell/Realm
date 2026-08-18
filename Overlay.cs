@@ -89,6 +89,7 @@ namespace Realm
             );
             spriteBatch.Draw(Art.HealthBar, panelRect, Color.Black * 0.5f);
 
+            DrawMinimap(spriteBatch);
             DrawStats(spriteBatch);
             DrawExperience(spriteBatch);
             DrawHealthSection(spriteBatch);
@@ -96,6 +97,71 @@ namespace Realm
             DrawAbilitySection(spriteBatch);
             DrawEquipment(spriteBatch);
             DrawInventory(spriteBatch);
+        }
+
+        // A small local-area map in the sidebar's top-right corner — player
+        // (always centered, white), portals (cyan, both the Nexus's fixed
+        // set and any dungeon's DroppedPortals), and enemies (red, includes
+        // a boss if one's alive). Shows a fixed-radius window around the
+        // player rather than the whole world/instance — the open Realm is
+        // 500,000px per side, so "whole world" would make every blip
+        // collapse onto a single pixel; a local window is what actually
+        // reads as useful, and works the same way for the much smaller boss
+        // arena too. Blips outside the radius clamp to the map's edge
+        // (independently per axis, not a true radial clamp — simpler math,
+        // still points roughly the right direction) rather than being
+        // culled, so a nearby-but-off-radius threat/portal still shows.
+        private const int MinimapSize = 130;
+        private const int MinimapPadding = 10;
+        private const float MinimapWorldRadius = 2000f;
+
+        private static void DrawMinimap(SpriteBatch spriteBatch)
+        {
+            int mapX = Game1.SidebarX + Game1.SidebarWidth - MinimapSize - MinimapPadding;
+            int mapY = MinimapPadding;
+
+            spriteBatch.Draw(
+                Art.HealthBar,
+                new Rectangle(mapX, mapY, MinimapSize, MinimapSize),
+                Color.Black * 0.6f
+            );
+
+            Vector2 mapCenter = new(mapX + MinimapSize / 2f, mapY + MinimapSize / 2f);
+            Vector2 playerPos = Player.Instance.Position;
+
+            void DrawBlip(Vector2 worldPos, Color color, int dotSize)
+            {
+                Vector2 offset = worldPos - playerPos;
+                float nx = MathHelper.Clamp(offset.X / MinimapWorldRadius, -1f, 1f);
+                float ny = MathHelper.Clamp(offset.Y / MinimapWorldRadius, -1f, 1f);
+                Vector2 dotPos =
+                    mapCenter + new Vector2(nx, ny) * (MinimapSize / 2f - dotSize / 2f);
+
+                spriteBatch.Draw(
+                    Art.HealthBar,
+                    new Rectangle(
+                        (int)(dotPos.X - dotSize / 2f),
+                        (int)(dotPos.Y - dotSize / 2f),
+                        dotSize,
+                        dotSize
+                    ),
+                    color
+                );
+            }
+
+            foreach (Portal portal in Portal.DroppedPortals)
+                DrawBlip(portal.Position, Color.Cyan, 5);
+
+            if (Portal.NexusPortals != null)
+                foreach (Portal portal in Portal.NexusPortals)
+                    DrawBlip(portal.Position, Color.Cyan, 5);
+
+            foreach (Vector2 enemyPos in EntityManager.EnemyPositions)
+                DrawBlip(enemyPos, Color.Red, 4);
+
+            // Player last, always dead center, so it's never hidden under a
+            // portal/enemy blip that happens to land on the same spot.
+            DrawBlip(playerPos, Color.White, 6);
         }
 
         // The six core stats. Level/Experience text used to live here too,
@@ -109,58 +175,109 @@ namespace Realm
 
             Color maxColor = Color.LimeGreen;
 
-            spriteBatch.DrawString(
-                Art.HudFont,
-                "Level: " + Player.Instance.Level,
-                new Vector2(x, y),
-                Color.Red
-            );
+            // "Level:" is the widest label of the seven, so it sets where
+            // every line's value starts — drawing the label and value as two
+            // separate strings (rather than one concatenated string) is what
+            // lets the values line up in a column regardless of each label's
+            // own width, instead of drifting based on how long that line's
+            // particular label happens to be.
+            float valueX = x + Art.HudFont.MeasureString("Level:").X + 4;
 
-            Color color = Player.Instance.Attack >= Player.Instance.MaxAttack ? maxColor : Color.Red;
-            spriteBatch.DrawString(
-                Art.HudFont,
-                "Attack: " + Player.Instance.Attack,
-                new Vector2(x, y + 20),
+            void DrawStatLine(string label, string value, int rowY, Color color)
+            {
+                spriteBatch.DrawString(Art.HudFont, label, new Vector2(x, rowY), color);
+                spriteBatch.DrawString(Art.HudFont, value, new Vector2(valueX, rowY), color);
+            }
+
+            DrawStatLine("Level:", Player.Instance.Level.ToString(), y, Color.Red);
+
+            Color color =
+                Player.Instance.PermanentAttack >= Player.Instance.MaxAttack ? maxColor : Color.Red;
+            DrawStatLine(
+                "ATT:",
+                Player.Instance.Attack
+                    + " ("
+                    + Player.Instance.PermanentAttack
+                    + " / "
+                    + Player.Instance.MaxAttack
+                    + ")",
+                y + 16,
                 color
             );
 
-            color = Player.Instance.Defense >= Player.Instance.MaxDefense ? maxColor : Color.Red;
-            spriteBatch.DrawString(
-                Art.HudFont,
-                "Defense: " + Player.Instance.Defense,
-                new Vector2(x, y + 36),
+            color =
+                Player.Instance.PermanentDefense >= Player.Instance.MaxDefense
+                    ? maxColor
+                    : Color.Red;
+            DrawStatLine(
+                "DEF:",
+                Player.Instance.Defense
+                    + " ("
+                    + Player.Instance.PermanentDefense
+                    + " / "
+                    + Player.Instance.MaxDefense
+                    + ")",
+                y + 32,
                 color
             );
 
-            color = Player.Instance.Speed >= Player.Instance.MaxSpeed ? maxColor : Color.Red;
-            spriteBatch.DrawString(
-                Art.HudFont,
-                "Speed: " + Player.Instance.Speed,
-                new Vector2(x, y + 52),
+            color =
+                Player.Instance.PermanentSpeed >= Player.Instance.MaxSpeed ? maxColor : Color.Red;
+            DrawStatLine(
+                "SPD:",
+                Player.Instance.Speed
+                    + " ("
+                    + Player.Instance.PermanentSpeed
+                    + " / "
+                    + Player.Instance.MaxSpeed
+                    + ")",
+                y + 48,
                 color
             );
 
-            color = Player.Instance.Dexterity >= Player.Instance.MaxDexterity ? maxColor : Color.Red;
-            spriteBatch.DrawString(
-                Art.HudFont,
-                "Dexterity: " + Player.Instance.Dexterity,
-                new Vector2(x, y + 68),
+            color =
+                Player.Instance.PermanentDexterity >= Player.Instance.MaxDexterity
+                    ? maxColor
+                    : Color.Red;
+            DrawStatLine(
+                "DEX:",
+                Player.Instance.Dexterity
+                    + " ("
+                    + Player.Instance.PermanentDexterity
+                    + " / "
+                    + Player.Instance.MaxDexterity
+                    + ")",
+                y + 64,
                 color
             );
 
-            color = Player.Instance.Vitality >= Player.Instance.MaxVitality ? maxColor : Color.Red;
-            spriteBatch.DrawString(
-                Art.HudFont,
-                "Vitality: " + Player.Instance.Vitality,
-                new Vector2(x, y + 84),
+            color =
+                Player.Instance.PermanentVitality >= Player.Instance.MaxVitality
+                    ? maxColor
+                    : Color.Red;
+            DrawStatLine(
+                "VIT:",
+                Player.Instance.Vitality
+                    + " ("
+                    + Player.Instance.PermanentVitality
+                    + " / "
+                    + Player.Instance.MaxVitality
+                    + ")",
+                y + 80,
                 color
             );
 
-            color = Player.Instance.Wisdom >= Player.Instance.MaxWisdom ? maxColor : Color.Red;
-            spriteBatch.DrawString(
-                Art.HudFont,
-                "Wisdom: " + Player.Instance.Wisdom,
-                new Vector2(x, y + 100),
+            color =
+                Player.Instance.PermanentWisdom >= Player.Instance.MaxWisdom ? maxColor : Color.Red;
+            DrawStatLine(
+                "WIS:",
+                Player.Instance.Wisdom
+                    + " ("
+                    + Player.Instance.PermanentWisdom
+                    + " / "
+                    + Player.Instance.MaxWisdom
+                    + ")",
+                y + 96,
                 color
             );
         }
@@ -172,11 +289,16 @@ namespace Realm
 
             string expString =
                 Player.Instance.Level < 20
-                    ? "Exp: " + Player.Instance.Experience + " / " + Player.Instance.ExperienceNextLevel
+                    ? "Exp: "
+                        + Player.Instance.Experience
+                        + " / "
+                        + Player.Instance.ExperienceNextLevel
                     : "Experience: " + Player.Instance.ExperienceTotal;
             spriteBatch.DrawString(Art.HudFont, expString, new Vector2(x, y), Color.White);
 
-            int normalisedExp = (Player.Instance.Experience * 100 / Player.Instance.ExperienceNextLevel * 100) / 100;
+            int normalisedExp =
+                (Player.Instance.Experience * 100 / Player.Instance.ExperienceNextLevel * 100)
+                / 100;
             Rectangle goldRect =
                 Player.Instance.Level < 20
                     ? new(0, 0, normalisedExp * SidebarBarScale, SidebarBarHeight)
@@ -184,8 +306,28 @@ namespace Realm
             Rectangle blackRect = new(0, 0, 100 * SidebarBarScale, SidebarBarHeight);
 
             Vector2 barPos = new(x, y + 20);
-            spriteBatch.Draw(Art.HealthBar, barPos, blackRect, Color.Black * 0.5f, 0f, Vector2.Zero, 1f, 0, 0);
-            spriteBatch.Draw(Art.HealthBar, barPos, goldRect, Color.Goldenrod, 0f, Vector2.Zero, 1f, 0, 0);
+            spriteBatch.Draw(
+                Art.HealthBar,
+                barPos,
+                blackRect,
+                Color.Black * 0.5f,
+                0f,
+                Vector2.Zero,
+                1f,
+                0,
+                0
+            );
+            spriteBatch.Draw(
+                Art.HealthBar,
+                barPos,
+                goldRect,
+                Color.Goldenrod,
+                0f,
+                Vector2.Zero,
+                1f,
+                0,
+                0
+            );
         }
 
         private static void DrawHealthSection(SpriteBatch spriteBatch)
@@ -193,7 +335,10 @@ namespace Realm
             int x = Game1.SidebarX + SidebarPadding;
             int y = 224;
 
-            Color color = Player.Instance.HealthMax >= Player.Instance.MaxHealth ? Color.LimeGreen : Color.White;
+            Color color =
+                Player.Instance.HealthMax >= Player.Instance.MaxHealth
+                    ? Color.LimeGreen
+                    : Color.White;
             spriteBatch.DrawString(
                 Art.HudFont,
                 "HP: " + Player.Instance.Health + " / " + Player.Instance.HealthMax,
@@ -201,13 +346,34 @@ namespace Realm
                 color
             );
 
-            int normalisedHealth = (Player.Instance.Health * 100 / Player.Instance.HealthMax * 100) / 100;
+            int normalisedHealth =
+                (Player.Instance.Health * 100 / Player.Instance.HealthMax * 100) / 100;
             Rectangle greenRect = new(0, 0, normalisedHealth * SidebarBarScale, SidebarBarHeight);
             Rectangle redRect = new(0, 0, 100 * SidebarBarScale, SidebarBarHeight);
 
             Vector2 barPos = new(x, y + 20);
-            spriteBatch.Draw(Art.HealthBar, barPos, redRect, Color.DarkRed * 0.5f, 0f, Vector2.Zero, 1f, 0, 0);
-            spriteBatch.Draw(Art.HealthBar, barPos, greenRect, Color.DarkGreen, 0f, Vector2.Zero, 1f, 0, 0);
+            spriteBatch.Draw(
+                Art.HealthBar,
+                barPos,
+                redRect,
+                Color.DarkRed * 0.5f,
+                0f,
+                Vector2.Zero,
+                1f,
+                0,
+                0
+            );
+            spriteBatch.Draw(
+                Art.HealthBar,
+                barPos,
+                greenRect,
+                Color.DarkGreen,
+                0f,
+                Vector2.Zero,
+                1f,
+                0,
+                0
+            );
         }
 
         private static void DrawManaSection(SpriteBatch spriteBatch)
@@ -215,7 +381,8 @@ namespace Realm
             int x = Game1.SidebarX + SidebarPadding;
             int y = 288;
 
-            Color color = Player.Instance.ManaMax >= Player.Instance.MaxMana ? Color.LimeGreen : Color.White;
+            Color color =
+                Player.Instance.ManaMax >= Player.Instance.MaxMana ? Color.LimeGreen : Color.White;
             spriteBatch.DrawString(
                 Art.HudFont,
                 "Mana: " + Player.Instance.Mana + " / " + Player.Instance.ManaMax,
@@ -228,8 +395,28 @@ namespace Realm
             Rectangle blackRect = new(0, 0, 100 * SidebarBarScale, SidebarBarHeight);
 
             Vector2 barPos = new(x, y + 20);
-            spriteBatch.Draw(Art.HealthBar, barPos, blackRect, Color.Black * 0.5f, 0f, Vector2.Zero, 1f, 0, 0);
-            spriteBatch.Draw(Art.HealthBar, barPos, blueRect, Color.DarkBlue, 0f, Vector2.Zero, 1f, 0, 0);
+            spriteBatch.Draw(
+                Art.HealthBar,
+                barPos,
+                blackRect,
+                Color.Black * 0.5f,
+                0f,
+                Vector2.Zero,
+                1f,
+                0,
+                0
+            );
+            spriteBatch.Draw(
+                Art.HealthBar,
+                barPos,
+                blueRect,
+                Color.DarkBlue,
+                0f,
+                Vector2.Zero,
+                1f,
+                0,
+                0
+            );
         }
 
         // Grouped right after Mana since it's mana-cost based — resolved via
@@ -242,9 +429,32 @@ namespace Realm
             int y = 352;
             int abilityBarHeight = SidebarBarHeight / 2;
 
+            // No ability item equipped means there's nothing to ready up for
+            // (UseAbility() itself now errors out rather than doing anything
+            // — see the AbilityItem.IsEquipped guard added to each class) —
+            // show a flat grey bar with no readiness text instead of a
+            // ready/charging state that doesn't actually apply.
+            if (!Player.Instance.AbilityItem.IsEquipped)
+            {
+                Rectangle emptyRect = new(0, 0, 100 * SidebarBarScale, abilityBarHeight);
+                spriteBatch.Draw(
+                    Art.HealthBar,
+                    new Vector2(x, y + 20),
+                    emptyRect,
+                    Color.Gray * 0.5f,
+                    0f,
+                    Vector2.Zero,
+                    1f,
+                    0,
+                    0
+                );
+                return;
+            }
+
             Color maxColor = Color.LimeGreen;
             Color defaultColor = Color.White;
-            Color color = Player.Instance.Mana >= Player.Instance.AbilityCost ? maxColor : defaultColor;
+            Color color =
+                Player.Instance.Mana >= Player.Instance.AbilityCost ? maxColor : defaultColor;
             string abilityString =
                 Player.Instance.Mana >= Player.Instance.AbilityCost
                     ? "Ability: Ready (Cost: " + Player.Instance.AbilityCost + ")"
@@ -261,8 +471,28 @@ namespace Realm
             Rectangle blackRect = new(0, 0, 100 * SidebarBarScale, abilityBarHeight);
 
             Vector2 barPos = new(x, y + 20);
-            spriteBatch.Draw(Art.HealthBar, barPos, blackRect, Color.Black * 0.5f, 0f, Vector2.Zero, 1f, 0, 0);
-            spriteBatch.Draw(Art.HealthBar, barPos, cyanRect, Color.DarkCyan, 0f, Vector2.Zero, 1f, 0, 0);
+            spriteBatch.Draw(
+                Art.HealthBar,
+                barPos,
+                blackRect,
+                Color.Black * 0.5f,
+                0f,
+                Vector2.Zero,
+                1f,
+                0,
+                0
+            );
+            spriteBatch.Draw(
+                Art.HealthBar,
+                barPos,
+                cyanRect,
+                Color.DarkCyan,
+                0f,
+                Vector2.Zero,
+                1f,
+                0,
+                0
+            );
         }
 
         private static void DrawEquipment(SpriteBatch spriteBatch)
@@ -278,6 +508,19 @@ namespace Realm
 
             // Draw ring.
             Player.Instance.Ring.DrawEquipped(spriteBatch);
+
+            // Tooltips drawn in a separate pass, after every slot's
+            // border/icon above, so a tooltip is never at risk of a later
+            // slot's icon painting over it — worth keeping even now that
+            // this draw order matches the slots' actual left-to-right screen
+            // order (Weapon, AbilityItem, Armor, Ring), since a future
+            // reorder of either one could silently reintroduce that bug. At
+            // most one of these actually draws anything, since only one slot
+            // can be hovered at a time.
+            Player.Instance.Weapon.DrawTooltip(spriteBatch);
+            Player.Instance.AbilityItem.DrawTooltip(spriteBatch);
+            Player.Instance.Armor.DrawTooltip(spriteBatch);
+            Player.Instance.Ring.DrawTooltip(spriteBatch);
         }
 
         private static void DrawInventory(SpriteBatch spriteBatch)

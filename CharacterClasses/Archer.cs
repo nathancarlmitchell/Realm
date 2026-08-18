@@ -40,7 +40,7 @@ namespace Realm.CharacterClasses
             Weapon.Type = Weapon.WeaponType.Bow;
 
             Armor = Armor.LoadArmor("Leather Vest");
-            Ring = Ring.LoadRing("Plain Ring");
+            Ring = Ring.LoadRing("Ring of Minor Defense");
             AbilityItem = Quiver.LoadQuiver("Worn Quiver");
 
             // HealthMax/ManaMax/Attack/Defense/etc. are already set by
@@ -113,6 +113,12 @@ namespace Realm.CharacterClasses
             base.UseAbility();
 
             if (!Weapon.IsEquipped)
+            {
+                Sound.Play(Sound.Error, 0.4f);
+                return;
+            }
+
+            if (!AbilityItem.IsEquipped)
             {
                 Sound.Play(Sound.Error, 0.4f);
                 return;

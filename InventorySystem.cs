@@ -249,37 +249,37 @@ namespace Realm
                     return true;
 
                 case "Attack Potion":
-                    if (Player.Instance.Attack >= Player.Instance.MaxAttack)
+                    if (Player.Instance.PermanentAttack >= Player.Instance.MaxAttack)
                         return false;
                     Potion.Use(Potions.Attack);
                     return true;
 
                 case "Defense Potion":
-                    if (Player.Instance.Defense >= Player.Instance.MaxDefense)
+                    if (Player.Instance.PermanentDefense >= Player.Instance.MaxDefense)
                         return false;
                     Potion.Use(Potions.Defense);
                     return true;
 
                 case "Speed Potion":
-                    if (Player.Instance.Speed >= Player.Instance.MaxSpeed)
+                    if (Player.Instance.PermanentSpeed >= Player.Instance.MaxSpeed)
                         return false;
                     Potion.Use(Potions.Speed);
                     return true;
 
                 case "Dexterity Potion":
-                    if (Player.Instance.Dexterity >= Player.Instance.MaxDexterity)
+                    if (Player.Instance.PermanentDexterity >= Player.Instance.MaxDexterity)
                         return false;
                     Potion.Use(Potions.Dexterity);
                     return true;
 
                 case "Vitality Potion":
-                    if (Player.Instance.Vitality >= Player.Instance.MaxVitality)
+                    if (Player.Instance.PermanentVitality >= Player.Instance.MaxVitality)
                         return false;
                     Potion.Use(Potions.Vitality);
                     return true;
 
                 case "Wisdom Potion":
-                    if (Player.Instance.Wisdom >= Player.Instance.MaxWisdom)
+                    if (Player.Instance.PermanentWisdom >= Player.Instance.MaxWisdom)
                         return false;
                     Potion.Use(Potions.Wisdom);
                     return true;
@@ -531,17 +531,27 @@ namespace Realm
                     {
                         if (BankSystem.IsOpen && BankSystem.Bounds.Intersects(Input.MouseBounds))
                         {
-                            if (!BankSystem.HasEmptySlot)
+                            int targetSlot = BankSystem.SlotIndexAt(Input.MousePosition);
+                            InventoryRecord occupant =
+                                targetSlot != -1 ? BankSystem.Records[targetSlot] : null;
+
+                            if (occupant != null)
+                            {
+                                // Dragged onto an occupied bank slot — swap
+                                // instead of just depositing, same as an
+                                // in-panel drag onto an occupied slot.
+                                BankSystem.Records[targetSlot] = draggedRecord;
+                                InventoryRecords[inventorySlot] = occupant;
+                                Sound.Play(Sound.InventoryMoveItem, 0.5f);
+                            }
+                            else if (!BankSystem.HasEmptySlot)
                             {
                                 Sound.Play(Sound.Error, 0.4f);
                             }
                             else
                             {
                                 RemoveRecord(draggedRecord);
-                                BankSystem.AddRecordAt(
-                                    BankSystem.SlotIndexAt(Input.MousePosition),
-                                    draggedRecord
-                                );
+                                BankSystem.AddRecordAt(targetSlot, draggedRecord);
                                 Sound.Play(Sound.InventoryMoveItem, 0.5f);
                             }
                         }
@@ -793,9 +803,10 @@ namespace Realm
                 return true;
             }
 
-            // Swap AbilityItem — only a Spell or Quiver can be equipped this
-            // way; which factory to call depends on the dragged item's
-            // concrete type (both are valid drag sources onto this one slot).
+            // Swap AbilityItem — only a Spell, Quiver, or Shield can be
+            // equipped this way; which factory to call depends on the
+            // dragged item's concrete type (all three are valid drag
+            // sources onto this one slot).
             if (
                 draggedRecord.InventoryItem is AbilityItem
                 && Input.MouseBounds.Intersects(Player.Instance.AbilityItem.SlotBounds)
@@ -806,6 +817,7 @@ namespace Realm
                 {
                     Spell s => Spell.LoadSpell(s.Name),
                     Quiver q => Quiver.LoadQuiver(q.Name),
+                    Shield sh => Shield.LoadShield(sh.Name),
                     _ => null,
                 };
 
@@ -903,22 +915,50 @@ namespace Realm
                 // Mouse over inventory item. Full Tier/name/description/bonuses
                 // for equipment, same as hovering the equip slot or a bank item —
                 // plain items (e.g. potions) just show their name, since they
-                // have no Tier/bonuses to show.
+                // have no Tier/bonuses to show. Equipment additionally gets each
+                // bonus line compared against whatever's currently equipped in
+                // that slot, highlighting the ones this item would improve.
                 if (bounds.Intersects(Input.MouseBounds))
                 {
-                    string text = record.InventoryItem is Equipment equipment
-                        ? equipment.TooltipText()
-                        : record.InventoryItem.Name;
+                    if (record.InventoryItem is Equipment equipment)
+                    {
+                        Equipment equippedCounterpart = equipment switch
+                        {
+                            Weapon => Player.Instance.Weapon,
+                            Armor => Player.Instance.Armor,
+                            Ring => Player.Instance.Ring,
+                            AbilityItem => Player.Instance.AbilityItem,
+                            _ => null,
+                        };
 
-                    int textY = (int)(Art.HudFont.MeasureString(text).Y / 2);
+                        List<(string Text, bool Better)> lines = equippedCounterpart != null
+                            ? equipment.ComparisonLines(equippedCounterpart)
+                            : new List<(string Text, bool Better)> { (equipment.TooltipText(), false) };
 
-                    Util.DrawTooltip(
-                        spriteBatch,
-                        Art.HudFont,
-                        text,
-                        new Vector2(posX, posY - (record.InventoryItem.image.Height * 2) - textY),
-                        Color.Red
-                    );
+                        int textY = (int)(lines.Count * Art.HudFont.LineSpacing / 2);
+
+                        Util.DrawTooltip(
+                            spriteBatch,
+                            Art.HudFont,
+                            lines,
+                            new Vector2(posX, posY - (record.InventoryItem.image.Height * 2) - textY),
+                            Color.Red,
+                            Color.DarkGreen
+                        );
+                    }
+                    else
+                    {
+                        string text = record.InventoryItem.Name;
+                        int textY = (int)(Art.HudFont.MeasureString(text).Y / 2);
+
+                        Util.DrawTooltip(
+                            spriteBatch,
+                            Art.HudFont,
+                            text,
+                            new Vector2(posX, posY - (record.InventoryItem.image.Height * 2) - textY),
+                            Color.Red
+                        );
+                    }
                 }
             }
         }

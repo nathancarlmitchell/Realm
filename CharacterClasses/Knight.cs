@@ -34,7 +34,7 @@ namespace Realm.CharacterClasses
             MaxMana = 300;
             MaxAttack = 50;
             MaxDefense = 40;
-            MaxSpeed = 40;
+            MaxSpeed = 50;
             MaxDexterity = 50;
             MaxVitality = 75;
             MaxWisdom = 50;
@@ -43,7 +43,7 @@ namespace Realm.CharacterClasses
             Weapon.Type = Weapon.WeaponType.Sword;
 
             Armor = Armor.LoadArmor("Iron Plate");
-            Ring = Ring.LoadRing("Plain Ring");
+            Ring = Ring.LoadRing("Ring of Minor Defense");
             AbilityItem = Shield.LoadShield("Wooden Shield");
 
             // HealthMax/ManaMax/Attack/Defense/etc. are already set by
@@ -122,6 +122,12 @@ namespace Realm.CharacterClasses
             base.UseAbility();
 
             if (!Weapon.IsEquipped)
+            {
+                Sound.Play(Sound.Error, 0.4f);
+                return;
+            }
+
+            if (!AbilityItem.IsEquipped)
             {
                 Sound.Play(Sound.Error, 0.4f);
                 return;

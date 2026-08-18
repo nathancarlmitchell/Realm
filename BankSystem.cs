@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 
@@ -188,17 +189,32 @@ namespace Realm
                     {
                         if (Player.Instance.Inventory.Bounds.Intersects(Input.MouseBounds))
                         {
-                            if (!Player.Instance.Inventory.HasEmptySlot)
+                            int targetSlot = Player.Instance.Inventory.SlotIndexAt(
+                                Input.MousePosition
+                            );
+                            InventorySystem.InventoryRecord occupant =
+                                targetSlot != -1
+                                    ? Player.Instance.Inventory.InventoryRecords[targetSlot]
+                                    : null;
+
+                            if (occupant != null)
+                            {
+                                // Dragged onto an occupied inventory slot —
+                                // swap instead of just depositing, same as an
+                                // in-panel drag onto an occupied slot.
+                                Player.Instance.Inventory.InventoryRecords[targetSlot] =
+                                    draggedRecord;
+                                Records[bankSlot] = occupant;
+                                Sound.Play(Sound.InventoryMoveItem, 0.5f);
+                            }
+                            else if (!Player.Instance.Inventory.HasEmptySlot)
                             {
                                 Sound.Play(Sound.Error, 0.4f);
                             }
                             else
                             {
                                 RemoveRecord(draggedRecord);
-                                Player.Instance.Inventory.AddRecordAt(
-                                    Player.Instance.Inventory.SlotIndexAt(Input.MousePosition),
-                                    draggedRecord
-                                );
+                                Player.Instance.Inventory.AddRecordAt(targetSlot, draggedRecord);
                                 Sound.Play(Sound.InventoryMoveItem, 0.5f);
                             }
                         }
@@ -312,19 +328,47 @@ namespace Realm
                     // as hovering the equip slot itself — plain items (e.g.
                     // potions) just show their name, matching the old
                     // behavior since they have no Tier/bonuses to show.
-                    string text = record.InventoryItem is Equipment equipment
-                        ? equipment.TooltipText()
-                        : record.InventoryItem.Name;
+                    // Equipment additionally gets each bonus line compared
+                    // against whatever's currently equipped in that slot.
+                    if (record.InventoryItem is Equipment equipment)
+                    {
+                        Equipment equippedCounterpart = equipment switch
+                        {
+                            Weapon => Player.Instance.Weapon,
+                            Armor => Player.Instance.Armor,
+                            Ring => Player.Instance.Ring,
+                            AbilityItem => Player.Instance.AbilityItem,
+                            _ => null,
+                        };
 
-                    int textY = (int)(Art.HudFont.MeasureString(text).Y / 2);
+                        List<(string Text, bool Better)> lines = equippedCounterpart != null
+                            ? equipment.ComparisonLines(equippedCounterpart)
+                            : new List<(string Text, bool Better)> { (equipment.TooltipText(), false) };
 
-                    Util.DrawTooltip(
-                        spriteBatch,
-                        Art.HudFont,
-                        text,
-                        new Vector2(posX, posY - (record.InventoryItem.image.Height * 2) - textY),
-                        Color.Red
-                    );
+                        int textY = (int)(lines.Count * Art.HudFont.LineSpacing / 2);
+
+                        Util.DrawTooltip(
+                            spriteBatch,
+                            Art.HudFont,
+                            lines,
+                            new Vector2(posX, posY - (record.InventoryItem.image.Height * 2) - textY),
+                            Color.Red,
+                            Color.DarkGreen
+                        );
+                    }
+                    else
+                    {
+                        string text = record.InventoryItem.Name;
+                        int textY = (int)(Art.HudFont.MeasureString(text).Y / 2);
+
+                        Util.DrawTooltip(
+                            spriteBatch,
+                            Art.HudFont,
+                            text,
+                            new Vector2(posX, posY - (record.InventoryItem.image.Height * 2) - textY),
+                            Color.Red
+                        );
+                    }
                 }
             }
         }

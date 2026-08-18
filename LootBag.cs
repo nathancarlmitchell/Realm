@@ -58,6 +58,10 @@ namespace Realm
             // so a true result here means this bag lost that comparison.
             if (isOpen && ItemSpawner.NearestOpenBag() == this && !BankSystem.IsOpen)
             {
+                int hoveredIndex = -1;
+                int hoveredX = 0,
+                    hoveredY = 0;
+
                 for (int i = 0; i < Items.Count; i++)
                 {
                     // Centered over the play area, not the wider window
@@ -140,7 +144,73 @@ namespace Realm
                     }
 
                     Items[i].Draw(spriteBatch);
-                    Items[i].DrawLoot(spriteBatch, x, y);
+
+                    if (Items[i].Hover)
+                    {
+                        hoveredIndex = i;
+                        hoveredX = x;
+                        hoveredY = y;
+                    }
+                }
+
+                // Full Tier/name/description/bonuses for equipment — same as
+                // the inventory/bank hover tooltip, including which stat
+                // lines would beat what's currently equipped — plain items
+                // (e.g. potions) just show their name. Drawn in its own pass
+                // after every item's border/icon above, rather than inline
+                // during that loop — a tooltip is often wider/taller than
+                // the 64px item spacing, so drawing it mid-loop meant a later
+                // item's border/icon (drawn afterward, same call order
+                // SpriteBatch preserves) could paint right over it wherever
+                // the two overlapped on screen.
+                if (hoveredIndex >= 0)
+                {
+                    Item hovered = Items[hoveredIndex];
+
+                    if (hovered is Equipment equipment)
+                    {
+                        Equipment equippedCounterpart = equipment switch
+                        {
+                            Weapon => Player.Instance.Weapon,
+                            Armor => Player.Instance.Armor,
+                            Ring => Player.Instance.Ring,
+                            AbilityItem => Player.Instance.AbilityItem,
+                            _ => null,
+                        };
+
+                        List<(string Text, bool Better)> lines = equippedCounterpart != null
+                            ? equipment.ComparisonLines(equippedCounterpart)
+                            : new List<(string Text, bool Better)> { (equipment.TooltipText(), false) };
+
+                        float width = 0f;
+                        foreach (var line in lines)
+                            width = Math.Max(width, Art.HudFont.MeasureString(line.Text).X);
+                        int textX = (int)(width / 2);
+                        int textY = (int)(lines.Count * Art.HudFont.LineSpacing / 2);
+
+                        Util.DrawTooltip(
+                            spriteBatch,
+                            Art.HudFont,
+                            lines,
+                            new Vector2(hoveredX - textX, hoveredY - hovered.image.Height - textY),
+                            Color.Red,
+                            Color.DarkGreen
+                        );
+                    }
+                    else
+                    {
+                        string text = hovered.Name;
+                        int textX = (int)(Art.HudFont.MeasureString(text).X / 2);
+                        int textY = (int)(Art.HudFont.MeasureString(text).Y / 2);
+
+                        Util.DrawTooltip(
+                            spriteBatch,
+                            Art.HudFont,
+                            text,
+                            new Vector2(hoveredX - textX, hoveredY - hovered.image.Height - textY),
+                            Color.Red
+                        );
+                    }
                 }
             }
         }

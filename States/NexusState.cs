@@ -57,6 +57,10 @@ namespace Realm.States
                 new Portal(bossTestPortalPos, Portal.Destination.BossRealm),
             ];
 
+            // So Overlay's minimap can show these regardless of which state
+            // is active — see Portal.NexusPortals's own doc comment.
+            Portal.NexusPortals = portalList;
+
             // Define a drawing rectangle based on the number of tiles wide and high, using the texture dimensions.
             targetRectangle = new Rectangle(0, 0, Game1.WorldWidth, Game1.WorldHeight);
         }

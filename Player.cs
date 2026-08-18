@@ -117,6 +117,47 @@ namespace Realm
         // later SavePlayerData() call doesn't regress it back to false.
         public bool HasBeenPlayed;
 
+        // Set once this class first reaches the level cap (20) and never
+        // cleared again — same permanent-through-death/delete treatment as
+        // HighScore (see DeleteCharacterData/GameOverState), since this is
+        // the Star 1 unlock condition for the Character Select star rating
+        // (see ComputeStars() below). Level itself resets to 1 on
+        // death/delete, so this needs its own persisted flag rather than
+        // checking Level directly.
+        public bool HasReachedLevel20;
+
+        // Star 1 is HasReachedLevel20; each star beyond that needs HighScore
+        // (permanent best-ever run Score, also survives death/delete) to
+        // clear an exponentially rising bar. Public/static — shared by
+        // CharacterSelectState (display) and RealmState (detecting a
+        // threshold crossing to persist immediately, see UpdateHighScore()
+        // below) rather than living only in the UI. Takes the two raw
+        // inputs rather than a Player object so it works the same whether
+        // the source is the live instance or a peeked save for a class
+        // that isn't currently loaded.
+        private const int Star2ScoreRequirement = 20000;
+        private const int StarScoreMultiplier = 2;
+        public const int MaxStars = 5;
+
+        public static int ComputeStars(bool hasReachedLevel20, int highScore)
+        {
+            if (!hasReachedLevel20)
+                return 0;
+
+            int stars = 1;
+            int requirement = Star2ScoreRequirement;
+            for (int star = 2; star <= MaxStars; star++)
+            {
+                if (highScore < requirement)
+                    break;
+
+                stars = star;
+                requirement *= StarScoreMultiplier;
+            }
+
+            return stars;
+        }
+
         public int Level;
 
         public Weapon Weapon;
@@ -175,6 +216,20 @@ namespace Realm
 
             Experience = 0;
             ExperienceNextLevel = 50 + ((Level * 2) * 50);
+
+            // Persisted the instant Star 1 is actually earned, rather than
+            // waiting for whatever save checkpoint happens to come next
+            // (death, leaving to the Nexus, entering another dungeon...) —
+            // otherwise closing the game right after hitting 20 without
+            // triggering one of those first would silently lose the star.
+            if (Level >= 20 && !HasReachedLevel20)
+            {
+                HasReachedLevel20 = true;
+                Util.SavePlayerData();
+                Util.SaveInventoryData();
+                Util.SaveBankData();
+                Util.SaveFameData();
+            }
 
             Sound.Play(Sound.LevelUp, 0.4f);
         }
@@ -285,6 +340,26 @@ namespace Realm
             + AbilityItem.VitalityBonus;
         protected int EquipmentWisdomBonus =>
             Weapon.WisdomBonus + Armor.WisdomBonus + Ring.WisdomBonus + AbilityItem.WisdomBonus;
+
+        // Each stat minus whatever equipment/temporary bonuses are currently
+        // folded into it — i.e. the level+potion value alone, matching what
+        // HealthMax/ManaMax already only count (see PotionHealthMaxBonus
+        // above). "Permanent" since that's exactly what distinguishes these
+        // two excluded sources from the level/potion value: equipment can be
+        // unequipped and a temporary bonus expires on its own, but level-ups
+        // and potions never go away. Used by Overlay.DrawStats() to decide
+        // whether to highlight a stat as "maxed": gear or a timed buff
+        // pushing the displayed number above MaxAttack etc. shouldn't count
+        // as actually being maxed. (Can't call these "BaseX" — Vitality
+        // already has a same-named field for its level-1 starting value.)
+        public int PermanentAttack => Attack - EquipmentAttackBonus - TemporaryAttackBonus;
+        public int PermanentDefense => Defense - EquipmentDefenseBonus - TemporaryDefenseBonus;
+        public float PermanentSpeed => Speed - EquipmentSpeedBonus - TemporarySpeedBonus;
+        public int PermanentDexterity =>
+            Dexterity - EquipmentDexterityBonus - TemporaryDexterityBonus;
+        public int PermanentVitality =>
+            Vitality - EquipmentVitalityBonus - TemporaryVitalityBonus;
+        public int PermanentWisdom => Wisdom - EquipmentWisdomBonus - TemporaryWisdomBonus;
 
         // Recomputes every derived stat from this class's base-at-current-level
         // formula, plus permanent potion bonuses, plus whatever's currently

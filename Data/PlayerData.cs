@@ -31,6 +31,11 @@ public class PlayerData
     // just wiped" apart from "played, but happens to have zero score" (the
     // latter should still offer Delete; the former shouldn't).
     public bool HasBeenPlayed { get; set; }
+
+    // Permanent once true — see Player.HasReachedLevel20's own doc comment.
+    // Unlike HasBeenPlayed, this DOES survive a delete, same treatment as
+    // HighScore.
+    public bool HasReachedLevel20 { get; set; }
     public int Level { get; set; }
     public Weapon Weapon { get; set; }
     public Armor Armor { get; set; }

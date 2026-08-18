@@ -81,8 +81,8 @@ namespace Realm.Bosses
                 Spray(
                     projectileSpeed: 6,
                     projectileAmount: 8,
-                    damage: 50
-                //projectileImage: Art.LimonProjectile,
+                    damage: 50,
+                    projectileImage: Art.LimonProjectile
                 //collisionShape: Entity.CollisionShape.Rectangle
                 )
             );
@@ -197,6 +197,7 @@ namespace Realm.Bosses
         {
             var projectile = new EnemyProjectile(Position + relativeStart, Vector2.Zero)
             {
+                image = Art.LimonProjectile,
                 duration = travelFrames,
                 Damage = damage,
                 Orientation = (relativeEnd - relativeStart).ToAngle(),

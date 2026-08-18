@@ -41,8 +41,18 @@ namespace Realm
 
         public static void Reset() => DroppedPortals = [];
 
+        // The current state's own fixed portal set — currently only
+        // NexusState has one (Realm/CharacterSelect/Bank/BossRealm test
+        // shortcut); null everywhere else. Kept separate from
+        // DroppedPortals (which resets on every dungeon entry) since these
+        // aren't "dropped" by anything, they're just always there for as
+        // long as the Nexus is. Read by Overlay's minimap so it can show
+        // portal blips regardless of which state is currently active.
+        public static List<Portal> NexusPortals;
+
         private AnimatedTexture image;
         private Vector2 position;
+        public Vector2 Position => position;
         private Rectangle bounds
         {
             get { return new Rectangle((int)position.X + 64, (int)position.Y + 64, 32, 32); }

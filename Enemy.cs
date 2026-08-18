@@ -130,7 +130,10 @@ namespace Realm
             }
         }
 
-        public void DrawHealthBars(SpriteBatch spriteBatch)
+        // virtual: Boss overrides this to a no-op, since a boss's health is
+        // shown by the dedicated top-of-screen bar (BossRealmState.
+        // DrawBossHud()) instead — drawing both would be redundant.
+        public virtual void DrawHealthBars(SpriteBatch spriteBatch)
         {
             if (health < healthMax)
             {
