@@ -23,16 +23,24 @@ namespace Realm.States
             var classButton = new Button() { Text = "Character Select" };
             classButton.Click += ClassButton_Click;
 
+            var settingsButton = new Button() { Text = "Settings" };
+            settingsButton.Click += SettingsButton_Click;
+
             var quitGameButton = new Button() { Text = "Quit" };
             quitGameButton.Click += QuitGameButton_Click;
 
-            buttons = [newGameButton, classButton, quitGameButton];
+            buttons = [newGameButton, classButton, settingsButton, quitGameButton];
             menu = new Menu(buttons);
         }
 
         private void QuitGameButton_Click(object sender, EventArgs e)
         {
             StateManager.ExitGame();
+        }
+
+        private void SettingsButton_Click(object sender, EventArgs e)
+        {
+            StateManager.OpenSettings(this);
         }
 
         private void NewGameButton_Click(object sender, EventArgs e)

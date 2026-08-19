@@ -135,5 +135,22 @@
         {
             Game1.Instance.Exit();
         }
+
+        // Opens the key-bindings screen from wherever the player currently
+        // is — Main Menu or mid-game — and remembers that exact state
+        // object (not a fixed destination like every other method here) so
+        // Settings' own Back button can return to it directly via
+        // ChangeState() rather than re-navigating/reconstructing it.
+        public static void OpenSettings(State returnState)
+        {
+            Game1.Instance.ChangeState(
+                new SettingsState(
+                    Game1.Instance,
+                    Game1.Instance.GraphicsDevice,
+                    Game1.Instance.Content,
+                    returnState
+                )
+            );
+        }
     }
 }

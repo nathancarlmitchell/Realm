@@ -40,6 +40,13 @@ namespace Realm
             "FameData.json"
         );
 
+        // Not per-class — key bindings are a player preference, same
+        // reasoning as bankDataLocation/fameDataLocation above.
+        private static string keyBindingsDataLocation = Path.Combine(
+            AppContext.BaseDirectory,
+            "KeyBindingsData.json"
+        );
+
         private static string weaponDataLocation = Path.Combine(
             AppContext.BaseDirectory,
             "WeaponData.json"
@@ -153,6 +160,54 @@ namespace Realm
             File.WriteAllText(playerPath, json);
         }
 
+        // Full account wipe — every class's PlayerData/InventoryData, the
+        // shared BankData, and account-wide FameData. Deliberately does NOT
+        // preserve anything (unlike DeleteCharacterData, which keeps a
+        // class's HighScore/HasReachedLevel20 on purpose) — the caller is
+        // expected to have gotten explicit, doubly-confirmed user intent
+        // first, since this is irreversible and there's no separate backup.
+        public static void EraseAllAccountData()
+        {
+            foreach (
+                Player.Class playerClass in new[]
+                {
+                    Player.Class.Wizard,
+                    Player.Class.Archer,
+                    Player.Class.Knight,
+                }
+            )
+            {
+                string playerPath = PlayerDataLocation(playerClass);
+                if (File.Exists(playerPath))
+                    File.Delete(playerPath);
+
+                string inventoryPath = InventoryDataLocation(playerClass);
+                if (File.Exists(inventoryPath))
+                    File.Delete(inventoryPath);
+            }
+
+            if (File.Exists(bankDataLocation))
+                File.Delete(bankDataLocation);
+
+            if (File.Exists(fameDataLocation))
+                File.Delete(fameDataLocation);
+
+            // Clear in-memory state too — Records is a fixed-size array
+            // (readonly reference, mutable contents), and class unlocks/
+            // Fame-gated UI read FameSystem.Fame live rather than from a
+            // separate "unlocked" flag, so zeroing it here is what actually
+            // re-locks Archer/Knight immediately. Without clearing both, a
+            // later autosave (e.g. entering the Nexus) would silently
+            // resurrect the just-deleted data from stale memory.
+            Array.Clear(BankSystem.Records, 0, BankSystem.Records.Length);
+            FameSystem.Fame = 0;
+
+            Player.Class currentClass = Player.PlayerClass;
+            EntityManager.RemovePlayer();
+            ResetPlayer(currentClass);
+            EntityManager.Add(Player.Instance);
+        }
+
         // There's no single save file to read a "last played class" from anymore now
         // that saves are per-class, so infer it from whichever class's save file was
         // written most recently. Falls back to Wizard if neither exists yet.
@@ -234,8 +289,6 @@ namespace Realm
                 Player.Instance.ID = saved.ID;
                 Player.Instance.Name = saved.Name;
                 Player.Instance.Description = saved.Description;
-                Player.Instance.Experience = saved.Experience;
-                Player.Instance.ExperienceNextLevel = saved.ExperienceNextLevel;
                 Player.Instance.ExperienceTotal = saved.ExperienceTotal;
                 Player.Instance.HighScore = saved.HighScore;
                 Player.Instance.HasBeenPlayed = saved.HasBeenPlayed;
@@ -350,8 +403,6 @@ namespace Realm
                 Wisdom = Player.Instance.Wisdom,
                 Speed = Player.Instance.Speed,
                 Dexterity = Player.Instance.Dexterity,
-                Experience = Player.Instance.Experience,
-                ExperienceNextLevel = Player.Instance.ExperienceNextLevel,
                 ExperienceTotal = Player.Instance.ExperienceTotal,
                 HighScore = Player.Instance.HighScore,
                 HasBeenPlayed = Player.Instance.HasBeenPlayed,
@@ -933,6 +984,28 @@ namespace Realm
             catch (System.IO.FileNotFoundException)
             {
                 Debug.WriteLine(fameDataLocation + ": file not found.");
+            }
+        }
+
+        public static void SaveKeyBindingsData()
+        {
+            string json = JsonSerializer.Serialize(KeyBindings.ToData());
+            File.WriteAllText(keyBindingsDataLocation, json);
+            Debug.WriteLine("KeyBindingsData Saved.");
+        }
+
+        public static void LoadKeyBindingsData()
+        {
+            try
+            {
+                using StreamReader r = new(keyBindingsDataLocation);
+                string json = r.ReadToEnd();
+                KeyBindingsData data = JsonSerializer.Deserialize<KeyBindingsData>(json);
+                KeyBindings.FromData(data);
+            }
+            catch (System.IO.FileNotFoundException)
+            {
+                Debug.WriteLine(keyBindingsDataLocation + ": file not found.");
             }
         }
 

@@ -41,7 +41,7 @@ public static class Input
         // Universal input.
         //
         // Toggle Mute
-        if (WasKeyPressed(Keys.M))
+        if (WasBindingPressed(KeyBindings.Get(KeyBindings.Action.ToggleMute)))
         {
             Sound.ToggleMute();
         }
@@ -64,11 +64,27 @@ public static class Input
             Game1._Debug = !Game1._Debug;
         }
 
+        // Toggle auto-fire — basic attack keeps firing on cooldown without
+        // needing the mouse button held. Session-only (Player.AutoFireEnabled
+        // isn't persisted), so this always resets to off on a fresh launch.
+        if (WasBindingPressed(KeyBindings.Get(KeyBindings.Action.ToggleAutoFire)))
+        {
+            Player.Instance.AutoFireEnabled = !Player.Instance.AutoFireEnabled;
+        }
+
         // Return to main menu. Only from the hub (NexusState) — not from the
         // active dungeon (RealmState).
         if (WasKeyPressed(Keys.Escape) && currentState is NexusState)
         {
             StateManager.MainMenu();
+        }
+
+        // Open Settings — works from anywhere except Settings itself (no
+        // point re-opening on top of itself). Fixed key, not remappable,
+        // same as every other menu/system key.
+        if (WasKeyPressed(Keys.O) && currentState is not SettingsState)
+        {
+            StateManager.OpenSettings(currentState);
         }
 
         // State specific input.
@@ -85,7 +101,7 @@ public static class Input
         // without needing to be in an active RealmState.
         if (
             (currentState is RealmState || currentState is NexusState)
-            && WasKeyPressed(Keys.Space)
+            && WasBindingPressed(KeyBindings.Get(KeyBindings.Action.UseAbility))
         )
         {
             Player.Instance.UseAbility();
@@ -94,13 +110,13 @@ public static class Input
         if (currentState is RealmState)
         {
             // Use health potion.
-            if (WasKeyPressed(Keys.Q))
+            if (WasBindingPressed(KeyBindings.Get(KeyBindings.Action.UseHealthPotion)))
             {
                 Player.Instance.Inventory.UsePotion("Health Potion");
             }
 
             // Use mana potion.
-            if (WasKeyPressed(Keys.F))
+            if (WasBindingPressed(KeyBindings.Get(KeyBindings.Action.UseManaPotion)))
             {
                 Player.Instance.Inventory.UsePotion("Mana Potion");
             }
@@ -122,7 +138,7 @@ public static class Input
             }
 
             // Return to Nexus.
-            if (WasKeyPressed(Keys.E))
+            if (WasBindingPressed(KeyBindings.Get(KeyBindings.Action.ReturnToNexus)))
             {
                 StateManager.Nexus();
             }
@@ -146,18 +162,77 @@ public static class Input
         return previousKeyboard.IsKeyUp(key) && keyboard.IsKeyDown(key);
     }
 
+    // Whichever key was newly pressed down this frame (not held over from
+    // last frame), or null if none — used by SettingsState's "press any key
+    // to rebind" flow, which needs to detect an arbitrary key rather than
+    // check one specific Keys value like WasKeyPressed does.
+    public static Keys? GetAnyNewKeyPress()
+    {
+        foreach (Keys key in keyboard.GetPressedKeys())
+        {
+            if (previousKeyboard.IsKeyUp(key))
+                return key;
+        }
+        return null;
+    }
+
+    private static ButtonState MouseButtonState(MouseState state, MouseButton button) =>
+        button switch
+        {
+            MouseButton.Right => state.RightButton,
+            MouseButton.Middle => state.MiddleButton,
+            _ => state.LeftButton,
+        };
+
+    public static bool WasMouseButtonPressed(MouseButton button) =>
+        MouseButtonState(previousMouse, button) == ButtonState.Released
+        && MouseButtonState(mouse, button) == ButtonState.Pressed;
+
+    public static bool IsMouseButtonDown(MouseButton button) =>
+        MouseButtonState(mouse, button) == ButtonState.Pressed;
+
+    public static bool WasBindingPressed(InputBinding binding) =>
+        binding.Kind == InputBinding.InputKind.Keyboard
+            ? WasKeyPressed(binding.Key)
+            : WasMouseButtonPressed(binding.Button);
+
+    public static bool IsBindingDown(InputBinding binding) =>
+        binding.Kind == InputBinding.InputKind.Keyboard
+            ? keyboard.IsKeyDown(binding.Key)
+            : IsMouseButtonDown(binding.Button);
+
+    // Whichever key or mouse button was newly pressed this frame, or null if
+    // none — the same "listen for the next input" role GetAnyNewKeyPress()
+    // plays for SettingsState, but also covering mouse buttons so an action
+    // can be rebound onto one. Left is deliberately excluded: it already has
+    // a fixed, unavoidable meaning (basic attack fire, every UI click) that
+    // binding another action onto it would collide with.
+    public static InputBinding? GetAnyNewInputBinding()
+    {
+        Keys? key = GetAnyNewKeyPress();
+        if (key.HasValue)
+            return InputBinding.FromKey(key.Value);
+
+        if (WasMouseButtonPressed(MouseButton.Right))
+            return InputBinding.FromMouseButton(MouseButton.Right);
+        if (WasMouseButtonPressed(MouseButton.Middle))
+            return InputBinding.FromMouseButton(MouseButton.Middle);
+
+        return null;
+    }
+
     public static Vector2 GetMovementDirection()
     {
         Vector2 direction = new Vector2();
         direction.Y *= -1; // invert the y-axis
 
-        if (keyboard.IsKeyDown(Keys.A))
+        if (IsBindingDown(KeyBindings.Get(KeyBindings.Action.MoveLeft)))
             direction.X -= 1;
-        if (keyboard.IsKeyDown(Keys.D))
+        if (IsBindingDown(KeyBindings.Get(KeyBindings.Action.MoveRight)))
             direction.X += 1;
-        if (keyboard.IsKeyDown(Keys.W))
+        if (IsBindingDown(KeyBindings.Get(KeyBindings.Action.MoveUp)))
             direction.Y -= 1;
-        if (keyboard.IsKeyDown(Keys.S))
+        if (IsBindingDown(KeyBindings.Get(KeyBindings.Action.MoveDown)))
             direction.Y += 1;
 
         // Clamp the length of the vector to a maximum of 1.

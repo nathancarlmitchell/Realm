@@ -27,7 +27,7 @@ namespace Realm
         // table every other enemy uses (Enemy.SpawnLoot()).
         protected override void SpawnLoot()
         {
-            ItemSpawner.SpawnGuaranteedLoot(this.Position);
+            ItemSpawner.SpawnGuaranteedLoot(this.Position, PointValue);
         }
 
         // No-op: a boss's health is shown by the dedicated top-of-screen bar

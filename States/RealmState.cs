@@ -67,6 +67,13 @@ namespace Realm.States
             ItemSpawner.Reset();
             Portal.Reset();
 
+            // Distance-based enemy spawn density (EnemySpawner.Update())
+            // measures from wherever the player entered this Realm instance
+            // — only meaningful for a regular dungeon that actually runs
+            // EnemySpawner, not the boss arena.
+            if (SpawnsRegularEnemies)
+                EnemySpawner.SetEntryPosition(Player.Instance.Position);
+
             // Leaving the Nexus — its fixed portal set no longer applies to
             // the minimap until the player returns (NexusState's
             // constructor re-sets this).

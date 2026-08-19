@@ -69,6 +69,14 @@ namespace Realm
             ApplyDebuff(DebuffType.Stunned, durationFrames);
         }
 
+        // Permanent tint applied to this enemy's sprite, multiplied into
+        // the same fade-in alpha every enemy already gets on spawn (see
+        // Update() below) — lets a factory reuse an existing texture as a
+        // visually distinct variant (a color-swapped "tougher cousin") with
+        // its own stats/behaviors, without needing new art. White (the
+        // default) means no change from today's plain sprite.
+        protected Color tint = Color.White;
+
         public Enemy(Texture2D image, Vector2 position)
         {
             this.image = image;
@@ -104,7 +112,7 @@ namespace Realm
             else
             {
                 timeUntilStart--;
-                color = Microsoft.Xna.Framework.Color.White * (1 - timeUntilStart / 60f);
+                color = tint * (1 - timeUntilStart / 60f);
             }
 
             // Paralyzed enemies keep "thinking" (behaviours above still run
@@ -211,7 +219,6 @@ namespace Realm
             {
                 Sound.Play(deathSound, 0.4f);
                 IsExpired = true;
-                Player.Instance.Experience += PointValue;
                 Player.Instance.ExperienceTotal += PointValue;
 
                 // Spawn loot — SpawnLoot() is virtual, so Boss subclasses
@@ -236,10 +243,13 @@ namespace Realm
         }
 
         // Default: the normal random-chance drop table every enemy uses.
-        // Boss overrides this for guaranteed good loot instead.
+        // Boss overrides this for guaranteed good loot instead. PointValue
+        // already ranks enemies by toughness (higher = more score for
+        // killing it), so it doubles as the difficulty signal ItemSpawner
+        // scales drop chance/tier off — no separate difficulty field needed.
         protected virtual void SpawnLoot()
         {
-            ItemSpawner.Spawn(this.Position);
+            ItemSpawner.Spawn(this.Position, PointValue);
         }
 
         protected void AddBehaviour(IEnumerable<int> behaviour)
@@ -456,6 +466,29 @@ namespace Realm
             return enemy;
         }
 
+        // Mid-level — a tougher, faster-closing cousin of Wanderer. Reuses
+        // Wanderer's sprite tinted orange-red (no new art), a step up from
+        // both Wanderer and Seeker in health/PointValue, and a movement +
+        // attack combo ("rush the player, then burst") not used by any
+        // existing enemy: FollowPlayer (as fast as Seeker's own chase) paired
+        // with Bomb (previously only ever paired with MoveRandomly/MoveSnake).
+        public static Enemy CreateBrute(Vector2 position)
+        {
+            var enemy = new Enemy(Art.Enemy, position)
+            {
+                health = 300,
+                healthMax = 300,
+                PointValue = 120,
+                tint = Color.OrangeRed,
+            };
+
+            enemy.AddBehaviour(enemy.FollowPlayer(0.35f));
+            enemy.AddAttackBehaviour(enemy.Bomb(4));
+            enemy.AddBehaviour(enemy.RegenHealth());
+
+            return enemy;
+        }
+
         public static Enemy CreateSeeker(Vector2 position)
         {
             var enemy = new Enemy(Art.Enemy2, position)
@@ -484,6 +517,55 @@ namespace Realm
 
             enemy.AddBehaviour(enemy.MoveSnake());
             enemy.AddAttackBehaviour(enemy.Shoot(2));
+
+            return enemy;
+        }
+
+        // Low-level — a tougher snake-family sibling, using real art
+        // (Art.BigSnake) rather than a tint. Same weaving MoveSnake()
+        // movement as the base Snake so it reads as the same family, with
+        // more health and a faster Shoot to feel like a real step up rather
+        // than a reskin. Grouped with Snake in EnemySpawner.BasicEnemyPool
+        // at the same Level 1 requirement, so it can appear in the same
+        // waves as Snake from the very start.
+        public static Enemy CreateBigSnake(Vector2 position)
+        {
+            var enemy = new Enemy(Art.BigSnake, position)
+            {
+                health = 500,
+                healthMax = 500,
+                PointValue = 250,
+                Defense = 10,
+                deathSound = Sound.SnakesDeath,
+                hitSound = Sound.SnakesHit,
+            };
+
+            enemy.AddBehaviour(enemy.MoveSnake());
+            enemy.AddAttackBehaviour(enemy.Shoot(3));
+
+            return enemy;
+        }
+
+        // Low-level — a slightly sturdier alternative to Snake for variety
+        // early on. Reuses Snake's sprite tinted light green (no new art),
+        // sitting between Snake and Seeker in both health and PointValue. A
+        // movement + attack combo not used by any existing enemy:
+        // MoveRandomly (previously only Wanderer's) paired with Spray
+        // (previously only Seeker's/bosses') — a slow-wandering blob that
+        // sprays when the player gets close, instead of Snake's tight
+        // weaving dash-and-shoot.
+        public static Enemy CreateSlime(Vector2 position)
+        {
+            var enemy = new Enemy(Art.Snake, position)
+            {
+                health = 20,
+                healthMax = 20,
+                PointValue = 4,
+                tint = Color.LightGreen,
+            };
+
+            enemy.AddBehaviour(enemy.MoveRandomly());
+            enemy.AddAttackBehaviour(enemy.Spray(2, 3, damage: 8));
 
             return enemy;
         }

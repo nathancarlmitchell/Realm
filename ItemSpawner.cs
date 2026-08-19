@@ -70,21 +70,81 @@ namespace Realm
         // currently in pickup range.
         public static float NearestOpenBagDistanceSquared() => FindNearestOpenBag().distSq;
 
-        public static void Spawn(Vector2 pos)
+        // Difficulty buckets, keyed off PointValue — already ranks enemies
+        // by toughness (higher = more score for killing it), so it doubles
+        // as the loot-difficulty signal instead of a separate field.
+        // Boundaries picked to sit between the game's actual PointValues
+        // (Snake 2, Seeker 7, Wanderer 15, SpriteGod 200, Limon 2000) so
+        // each existing enemy type lands cleanly in one bucket.
+        //
+        //   < 10   : Snake, Seeker    — common trash
+        //   < 100  : Wanderer         — today's original baseline
+        //   < 1000 : SpriteGod        — a real threat
+        //   1000+  : bosses           — always via SpawnGuaranteedLoot below
+        //
+        // DropChanceDenominator: lower = more frequent (rand.Next(N) == 0).
+        // MaxTierJump: how many tiers above the player's currently equipped
+        // tier a drop can reach — rolled per category via RollTierOffset,
+        // not a flat bump, so a tough kill doesn't guarantee the maximum
+        // every time.
+        private static int DropChanceDenominator(int pointValue) =>
+            pointValue switch
+            {
+                < 10 => 20,
+                < 100 => 15,
+                _ => 8,
+            };
+
+        private static int MaxTierJump(int pointValue) =>
+            pointValue switch
+            {
+                < 100 => 1,
+                < 1000 => 2,
+                _ => 3,
+            };
+
+        private static int RollTierOffset(int maxTierJump) => rand.Next(1, maxTierJump + 1);
+
+        // Snake/Seeker-tier trash. These always drop from a fixed low
+        // absolute tier range instead of scaling off the player's own
+        // gear — a Snake shouldn't hand a heavily-geared player a
+        // relatively-scaled-up item just because their own tier is high;
+        // it should always drop the same weak loot it always does.
+        private const int WeakEnemyMinTier = 0;
+        private const int WeakEnemyMaxTier = 2;
+
+        private static bool IsWeakEnemy(int pointValue) => pointValue < 10;
+
+        // The tier a drop should target for the given category: a fixed low
+        // absolute roll for weak enemies (see above), or the player's
+        // current tier plus a random jump (see MaxTierJump) for everything
+        // else — the only two tier-selection shapes anything in this file
+        // needs, so every category's drop routes through this instead of
+        // repeating the branch.
+        private static int ResolveDropTier(int pointValue, int playerTier, int maxTierJump) =>
+            IsWeakEnemy(pointValue)
+                ? rand.Next(WeakEnemyMinTier, WeakEnemyMaxTier + 1)
+                : playerTier + RollTierOffset(maxTierJump);
+
+        public static void Spawn(Vector2 pos, int pointValue = 0)
         {
             List<Item> items = [];
             Texture2D bagTexture = Art.LootBag;
 
+            int dropChance = DropChanceDenominator(pointValue);
+            int maxTierJump = MaxTierJump(pointValue);
+
             // Drop weapon.
-            if (rand.Next(15) == 0)
+            if (rand.Next(dropChance) == 0)
             {
-                // Drop the next highest tier — picked at random among every
-                // catalog entry at that tier (both WeaponTypes), not just the
-                // first match. WeaponData.json lists every Wand before any
-                // Bow, so FirstOrDefault would always resolve to a Wand
-                // regardless of the player's actual class.
+                // Picked at random among every catalog entry at the resolved
+                // tier (both WeaponTypes), not just the first match.
+                // WeaponData.json lists every Wand before any Bow, so
+                // FirstOrDefault would always resolve to a Wand regardless
+                // of the player's actual class.
+                int tier = ResolveDropTier(pointValue, Player.Instance.Weapon.Tier, maxTierJump);
                 List<Weapon> nextTierWeapons = Game1
-                    .Instance.Weapons.Where(x => x.Tier == Player.Instance.Weapon.Tier + 1)
+                    .Instance.Weapons.Where(x => x.Tier == tier)
                     .ToList();
 
                 if (nextTierWeapons.Count > 0)
@@ -95,12 +155,13 @@ namespace Realm
             }
 
             // Drop armor.
-            if (rand.Next(15) == 0)
+            if (rand.Next(dropChance) == 0)
             {
                 // Same reasoning as the weapon drop above — ArmorData.json
                 // lists every Robe before any Leather piece.
+                int tier = ResolveDropTier(pointValue, Player.Instance.Armor.Tier, maxTierJump);
                 List<Armor> nextTierArmors = Game1
-                    .Instance.Armors.Where(x => x.Tier == Player.Instance.Armor.Tier + 1)
+                    .Instance.Armors.Where(x => x.Tier == tier)
                     .ToList();
 
                 if (nextTierArmors.Count > 0)
@@ -111,40 +172,31 @@ namespace Realm
             }
 
             // Drop ring.
-            if (rand.Next(15) == 0)
+            if (rand.Next(dropChance) == 0)
             {
-                // Drop the next highest tier.
-                if (Game1.Instance.Rings.Exists(x => (x.Tier == Player.Instance.Ring.Tier + 1)))
+                int tier = ResolveDropTier(pointValue, Player.Instance.Ring.Tier, maxTierJump);
+                if (Game1.Instance.Rings.Exists(x => x.Tier == tier))
                 {
                     bagTexture = Art.LootBagWhite;
-                    Ring nextRing = Game1.Instance.Rings.FirstOrDefault(x =>
-                        (x.Tier == Player.Instance.Ring.Tier + 1)
-                    );
+                    Ring nextRing = Game1.Instance.Rings.FirstOrDefault(x => x.Tier == tier);
                     items.Add(nextRing);
                 }
             }
 
             // Drop ability item.
-            if (rand.Next(15) == 0)
+            if (rand.Next(dropChance) == 0)
             {
                 // Same "wrong class is possible" spirit as weapon/armor drops
                 // above — not filtered to the player's own class. Spell,
                 // Quiver, and Shield are separate catalogs (not a single
                 // shared list like Weapons/Armors), so concatenate all three
                 // next-tier results before picking at random.
+                int tier = ResolveDropTier(pointValue, Player.Instance.AbilityItem.Tier, maxTierJump);
                 List<AbilityItem> nextTierAbilityItems = Game1
-                    .Instance.Spells.Where(x => x.Tier == Player.Instance.AbilityItem.Tier + 1)
+                    .Instance.Spells.Where(x => x.Tier == tier)
                     .Cast<AbilityItem>()
-                    .Concat(
-                        Game1.Instance.Quivers.Where(x =>
-                            x.Tier == Player.Instance.AbilityItem.Tier + 1
-                        )
-                    )
-                    .Concat(
-                        Game1.Instance.Shields.Where(x =>
-                            x.Tier == Player.Instance.AbilityItem.Tier + 1
-                        )
-                    )
+                    .Concat(Game1.Instance.Quivers.Where(x => x.Tier == tier))
+                    .Concat(Game1.Instance.Shields.Where(x => x.Tier == tier))
                     .ToList();
 
                 if (nextTierAbilityItems.Count > 0)
@@ -214,51 +266,78 @@ namespace Realm
             }
         }
 
-        // Boss drops — same next-tier-above-what's-equipped selection logic
-        // as Spawn() above for each category, but without the 1-in-15 rolls:
-        // every category that has a next tier available always contributes
-        // an item (still a graceful no-op if the player's already at max
+        // Steps down from the rolled offset to 1 until a tier with actual
+        // catalog entries is found, instead of a single-offset roll that
+        // could land past the catalog's top tier and come back empty —
+        // keeps SpawnGuaranteedLoot's "every category always contributes
+        // when any reachable tier exists" promise even though the offset
+        // itself is now randomized instead of always exactly +1.
+        private static List<T> ItemsAtBestAvailableTier<T>(
+            IEnumerable<T> catalog,
+            Func<T, int> tierOf,
+            int baseTier,
+            int rolledOffset
+        )
+        {
+            for (int offset = rolledOffset; offset >= 1; offset--)
+            {
+                List<T> found = catalog.Where(x => tierOf(x) == baseTier + offset).ToList();
+                if (found.Count > 0)
+                    return found;
+            }
+            return [];
+        }
+
+        // Boss drops — same tier-selection logic as Spawn() above for each
+        // category, but without the drop-chance rolls: every category that
+        // has any reachable tier available always contributes an item (a
+        // graceful no-op only if the player is already at the catalog's max
         // tier for that category), plus always one random stat potion.
         // Single bag, in the same "premium" gold color Spawn() uses for
         // ability-item drops.
-        public static void SpawnGuaranteedLoot(Vector2 pos)
+        public static void SpawnGuaranteedLoot(Vector2 pos, int pointValue = 0)
         {
             List<Item> items = [];
+            int maxTierJump = MaxTierJump(pointValue);
 
-            List<Weapon> nextTierWeapons = Game1
-                .Instance.Weapons.Where(x => x.Tier == Player.Instance.Weapon.Tier + 1)
-                .ToList();
+            List<Weapon> nextTierWeapons = ItemsAtBestAvailableTier(
+                Game1.Instance.Weapons,
+                x => x.Tier,
+                Player.Instance.Weapon.Tier,
+                RollTierOffset(maxTierJump)
+            );
             if (nextTierWeapons.Count > 0)
                 items.Add(nextTierWeapons[rand.Next(nextTierWeapons.Count)]);
 
-            List<Armor> nextTierArmors = Game1
-                .Instance.Armors.Where(x => x.Tier == Player.Instance.Armor.Tier + 1)
-                .ToList();
+            List<Armor> nextTierArmors = ItemsAtBestAvailableTier(
+                Game1.Instance.Armors,
+                x => x.Tier,
+                Player.Instance.Armor.Tier,
+                RollTierOffset(maxTierJump)
+            );
             if (nextTierArmors.Count > 0)
                 items.Add(nextTierArmors[rand.Next(nextTierArmors.Count)]);
 
-            if (Game1.Instance.Rings.Exists(x => x.Tier == Player.Instance.Ring.Tier + 1))
-            {
-                Ring nextRing = Game1.Instance.Rings.FirstOrDefault(x =>
-                    x.Tier == Player.Instance.Ring.Tier + 1
-                );
-                items.Add(nextRing);
-            }
+            List<Ring> nextTierRings = ItemsAtBestAvailableTier(
+                Game1.Instance.Rings,
+                x => x.Tier,
+                Player.Instance.Ring.Tier,
+                RollTierOffset(maxTierJump)
+            );
+            if (nextTierRings.Count > 0)
+                items.Add(nextTierRings[rand.Next(nextTierRings.Count)]);
 
-            List<AbilityItem> nextTierAbilityItems = Game1
-                .Instance.Spells.Where(x => x.Tier == Player.Instance.AbilityItem.Tier + 1)
-                .Cast<AbilityItem>()
-                .Concat(
-                    Game1.Instance.Quivers.Where(x =>
-                        x.Tier == Player.Instance.AbilityItem.Tier + 1
-                    )
-                )
-                .Concat(
-                    Game1.Instance.Shields.Where(x =>
-                        x.Tier == Player.Instance.AbilityItem.Tier + 1
-                    )
-                )
+            List<AbilityItem> allAbilityItems = Game1
+                .Instance.Spells.Cast<AbilityItem>()
+                .Concat(Game1.Instance.Quivers)
+                .Concat(Game1.Instance.Shields)
                 .ToList();
+            List<AbilityItem> nextTierAbilityItems = ItemsAtBestAvailableTier(
+                allAbilityItems,
+                x => x.Tier,
+                Player.Instance.AbilityItem.Tier,
+                RollTierOffset(maxTierJump)
+            );
             if (nextTierAbilityItems.Count > 0)
                 items.Add(nextTierAbilityItems[rand.Next(nextTierAbilityItems.Count)]);
 

@@ -20,8 +20,10 @@ public class PlayerData
     public int Wisdom { get; set; }
     public float Speed { get; set; }
     public int Dexterity { get; set; }
-    public int Experience { get; set; }
-    public int ExperienceNextLevel { get; set; }
+    // Not Experience/ExperienceNextLevel — both fully derive from Level +
+    // ExperienceTotal (see Player.ExperienceNextLevel/
+    // CumulativeExperienceForLevel), so there's nothing left to persist for
+    // them.
     public int ExperienceTotal { get; set; }
     public int HighScore { get; set; }
 

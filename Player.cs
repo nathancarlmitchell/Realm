@@ -108,14 +108,54 @@ namespace Realm
         private int temporaryHealthMaxBonusFrames;
         private int temporaryManaMaxBonusFrames;
 
-        public int Experience;
-        public int ExperienceNextLevel;
+        // ExperienceTotal is the only XP value actually stored — the sole
+        // "how much has this character ever earned" running total,
+        // incremented directly on each kill (Enemy.cs) and never reset by a
+        // level-up. Level (also stored) plus this cumulative total are
+        // enough to derive everything else: how much XP is required per
+        // level is a fixed formula (ExperienceRequiredForLevel), so both
+        // "progress within the current level" and "cumulative XP needed for
+        // the next level" (below) are computed on demand instead of tracked
+        // as their own separately-reset/assigned fields — nothing to fall
+        // out of sync with ExperienceTotal, and nothing lost to a level-up
+        // discarding whatever "overflow" XP was left in the old counter.
         public int ExperienceTotal;
         public int HighScore;
+
+        // The special-cased 50 for Level 1 (rather than the general
+        // formula's 150) matches this game's original tuning — going from
+        // Level 1 to 2 has always been cheaper than every level after it.
+        private static int ExperienceRequiredForLevel(int level) =>
+            level == 1 ? 50 : 50 + (level * 2 * 50);
+
+        // Cumulative ExperienceTotal needed to REACH a given level (0 for
+        // Level 1, the starting point). Sums each level's own requirement
+        // rather than a closed-form formula — Level is capped at 20, so
+        // this is at most 19 additions, cheap enough to just recompute
+        // wherever it's needed instead of caching it.
+        public static int CumulativeExperienceForLevel(int level)
+        {
+            int total = 0;
+            for (int l = 1; l < level; l++)
+                total += ExperienceRequiredForLevel(l);
+            return total;
+        }
+
+        // Cumulative ExperienceTotal that unlocks the next level — the
+        // natural "out of" value for a total-XP-based progress bar, since
+        // it's on the same cumulative scale as ExperienceTotal itself
+        // (unlike the old per-level ExperienceNextLevel, which resets every
+        // level and was never comparable to a running total).
+        public int ExperienceNextLevel => CumulativeExperienceForLevel(Level + 1);
 
         // See PlayerData.HasBeenPlayed — mirrors it on the live instance so a
         // later SavePlayerData() call doesn't regress it back to false.
         public bool HasBeenPlayed;
+
+        // Session-only — not persisted (deliberately absent from PlayerData/
+        // Util.BuildPlayerData()/LoadOrCreatePlayer()), so it always resets
+        // to off on a fresh launch. Toggled by the C key (Input.cs).
+        public bool AutoFireEnabled;
 
         // Set once this class first reaches the level cap (20) and never
         // cleared again — same permanent-through-death/delete treatment as
@@ -189,8 +229,6 @@ namespace Realm
 
             instance = this;
 
-            Experience = 0;
-            ExperienceNextLevel = 50;
             ExperienceTotal = 0;
 
             Level = 1;
@@ -213,9 +251,6 @@ namespace Realm
         {
             Health = HealthMax;
             Mana = ManaMax;
-
-            Experience = 0;
-            ExperienceNextLevel = 50 + ((Level * 2) * 50);
 
             // Persisted the instant Star 1 is actually earned, rather than
             // waiting for whatever save checkpoint happens to come next
@@ -589,7 +624,7 @@ namespace Realm
             Game1.Camera.Pos = Position;
 
             // Check for level up.
-            if (Level < 20 && Experience >= ExperienceNextLevel)
+            if (Level < 20 && ExperienceTotal >= ExperienceNextLevel)
             {
                 LevelUp();
             }
@@ -616,7 +651,7 @@ namespace Realm
             // This may be moved to new Weapon class.
             projectileCooldown += ((Dexterity * 100) / 150 * 100) / 100;
             if (
-                Input.mouse.LeftButton == ButtonState.Pressed
+                (Input.mouse.LeftButton == ButtonState.Pressed || AutoFireEnabled)
                 && projectileCooldown >= projectileCooldownCount
             )
             {

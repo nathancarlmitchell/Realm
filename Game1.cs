@@ -158,6 +158,7 @@ namespace Realm
 
             Util.LoadBankData();
             Util.LoadFameData();
+            Util.LoadKeyBindingsData();
 
             Util.LoadOrCreatePlayer(Util.DetermineLastPlayedClass());
 

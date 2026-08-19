@@ -280,6 +280,19 @@ namespace Realm
                 y + 96,
                 color
             );
+
+            // Sits in the gap between the stat block (ends at y+96) and
+            // DrawExperience (starts at y=160) — only drawn when on, so it
+            // never collides with either when off.
+            if (Player.Instance.AutoFireEnabled)
+            {
+                spriteBatch.DrawString(
+                    Art.HudFont,
+                    "Auto-Fire: ON",
+                    new Vector2(x, y + 116),
+                    Color.Cyan
+                );
+            }
         }
 
         private static void DrawExperience(SpriteBatch spriteBatch)
@@ -290,15 +303,29 @@ namespace Realm
             string expString =
                 Player.Instance.Level < 20
                     ? "Exp: "
-                        + Player.Instance.Experience
+                        + Player.Instance.ExperienceTotal
                         + " / "
                         + Player.Instance.ExperienceNextLevel
                     : "Experience: " + Player.Instance.ExperienceTotal;
             spriteBatch.DrawString(Art.HudFont, expString, new Vector2(x, y), Color.White);
 
-            int normalisedExp =
-                (Player.Instance.Experience * 100 / Player.Instance.ExperienceNextLevel * 100)
-                / 100;
+            // The bar fills 0-100% within just the current level (empty
+            // right at the start of a level, full right before the next
+            // one) — unlike expString above, which shows the cumulative
+            // total and never resets. XpIntoLevel/xpNeededForLevel are
+            // ExperienceTotal/ExperienceNextLevel with the current level's
+            // own starting threshold subtracted from both, so the ratio
+            // reads as "progress since I hit this level" instead of
+            // "progress since I hit Level 1". Clamped to 100 — a single
+            // large XP gain can briefly put ExperienceTotal past the
+            // current ExperienceNextLevel for the one frame before
+            // Update()'s own level-up check catches up, which would
+            // otherwise draw the fill past the bar's own background for
+            // that frame.
+            int levelStartXp = Player.CumulativeExperienceForLevel(Player.Instance.Level);
+            int xpIntoLevel = Player.Instance.ExperienceTotal - levelStartXp;
+            int xpNeededForLevel = Player.Instance.ExperienceNextLevel - levelStartXp;
+            int normalisedExp = Math.Min(100, (xpIntoLevel * 100 / xpNeededForLevel * 100) / 100);
             Rectangle goldRect =
                 Player.Instance.Level < 20
                     ? new(0, 0, normalisedExp * SidebarBarScale, SidebarBarHeight)

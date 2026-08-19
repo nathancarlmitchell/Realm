@@ -73,6 +73,24 @@ namespace Realm.States
         private readonly Button backButton;
         private readonly Menu menu;
 
+        // Full account wipe — deliberately kept off the shared Menu (which
+        // centers every button it holds vertically around screen-center in a
+        // stack; a second entry there would collide with the class
+        // portraits, which already occupy that space) and given its own
+        // fixed, low-traffic corner instead, positioned/updated/drawn
+        // independently of backButton/menu.
+        private enum EraseStage
+        {
+            None,
+            Warning,
+            FinalConfirm,
+        }
+
+        private EraseStage eraseStage = EraseStage.None;
+        private readonly Button eraseAllButton;
+        private readonly Button eraseCancelButton;
+        private readonly Button eraseConfirmButton;
+
         public CharacterSelectState(Game1 game, GraphicsDevice graphicsDevice, ContentManager content)
             : base()
         {
@@ -133,6 +151,52 @@ namespace Realm.States
             backButton = new Button() { Text = "Back" };
             backButton.Click += BackButton_Click;
             menu = new Menu([backButton]);
+
+            eraseAllButton = new Button() { Text = "Erase All Data", PenColor = Color.DarkRed };
+            eraseAllButton.Click += (sender, e) =>
+            {
+                eraseStage = EraseStage.Warning;
+                PositionEraseButtons();
+            };
+            eraseAllButton.Position = new Vector2(
+                20,
+                Game1.ScreenHeight - eraseAllButton.Rectangle.Height - 20
+            );
+
+            eraseCancelButton = new Button() { Text = "Cancel" };
+            eraseCancelButton.Click += (sender, e) => eraseStage = EraseStage.None;
+
+            eraseConfirmButton = new Button() { Text = "Continue", PenColor = Color.Red };
+            eraseConfirmButton.Click += EraseConfirmButton_Click;
+
+            PositionEraseButtons();
+        }
+
+        // Warning screen: Cancel left, Continue right. FinalConfirm screen:
+        // reversed — Yes, Erase Everything left, Cancel right. Deliberately
+        // not the same layout both screens, per the user's request: a
+        // reflexive "click the same spot twice" no longer lands on the
+        // destructive button both times.
+        private void PositionEraseButtons()
+        {
+            int y = CenterHeight + 40;
+
+            if (eraseStage == EraseStage.FinalConfirm)
+            {
+                eraseConfirmButton.Position = new Vector2(
+                    CenterWidth - eraseConfirmButton.Rectangle.Width - 10,
+                    y
+                );
+                eraseCancelButton.Position = new Vector2(CenterWidth + 10, y);
+            }
+            else
+            {
+                eraseCancelButton.Position = new Vector2(
+                    CenterWidth - eraseCancelButton.Rectangle.Width - 10,
+                    y
+                );
+                eraseConfirmButton.Position = new Vector2(CenterWidth + 10, y);
+            }
         }
 
         private void BackButton_Click(object sender, EventArgs e)
@@ -140,8 +204,48 @@ namespace Realm.States
             StateManager.MainMenu();
         }
 
+        // First click (Warning) advances to a second, more explicit
+        // confirmation instead of acting immediately — the user asked for
+        // two full confirmations before anything actually gets erased,
+        // given how destructive and irreversible this is compared to the
+        // single-step per-character delete above.
+        private void EraseConfirmButton_Click(object sender, EventArgs e)
+        {
+            if (eraseStage == EraseStage.Warning)
+            {
+                eraseStage = EraseStage.FinalConfirm;
+                eraseConfirmButton.Text = "Yes, Erase Everything";
+                PositionEraseButtons();
+            }
+            else if (eraseStage == EraseStage.FinalConfirm)
+            {
+                Util.EraseAllAccountData();
+
+                eraseStage = EraseStage.None;
+                eraseConfirmButton.Text = "Continue";
+                PositionEraseButtons();
+
+                foreach (var slot in slots)
+                {
+                    slot.HasSave = false;
+                    slot.ConfirmingDelete = false;
+                    slot.Stars = 0;
+                }
+            }
+        }
+
         public override void Update(GameTime gameTime)
         {
+            // The erase-all warning modal blocks everything underneath it
+            // while open — no hovering/selecting/deleting a class slot, and
+            // the button that opened it shouldn't itself still be clickable.
+            if (eraseStage != EraseStage.None)
+            {
+                eraseCancelButton.Update(gameTime);
+                eraseConfirmButton.Update(gameTime);
+                return;
+            }
+
             foreach (var slot in slots)
             {
                 slot.Hover = slot.BorderRect.Intersects(Input.MouseBounds);
@@ -173,6 +277,7 @@ namespace Realm.States
             }
 
             backButton.Update(gameTime);
+            eraseAllButton.Update(gameTime);
         }
 
         // Lays out and hit-tests the "Delete" link (or, while confirming, the
@@ -390,8 +495,52 @@ namespace Realm.States
             }
 
             menu.Draw(gameTime, spriteBatch);
+            eraseAllButton.Draw(gameTime, spriteBatch);
+
+            if (eraseStage != EraseStage.None)
+                DrawEraseWarning(gameTime, spriteBatch);
 
             spriteBatch.End();
+        }
+
+        // Full-screen dim plus a centered box — deliberately more visually
+        // severe than the inline "Delete save? Yes/No" row used per-character
+        // above, matching how much more destructive (every class, Fame, and
+        // every star at once, with nothing preserved) this action is.
+        private void DrawEraseWarning(GameTime gameTime, SpriteBatch spriteBatch)
+        {
+            spriteBatch.Draw(
+                Art.HealthBar,
+                new Rectangle(0, 0, Game1.ScreenWidth, Game1.ScreenHeight),
+                Color.Black * 0.75f
+            );
+
+            const int boxWidth = 420;
+            const int boxHeight = 150;
+            Rectangle box = new(
+                CenterWidth - boxWidth / 2,
+                CenterHeight - boxHeight / 2,
+                boxWidth,
+                boxHeight
+            );
+            spriteBatch.Draw(Art.HealthBar, box, Color.Black * 0.9f);
+            spriteBatch.Draw(Art.Border, box, Color.DarkRed);
+
+            string message =
+                eraseStage == EraseStage.Warning
+                    ? "This will permanently erase EVERY character,\nunlock, Fame total, high score, and star.\nThis cannot be undone."
+                    : "Are you absolutely sure?\nThis is your last chance to back out.";
+
+            Vector2 messageSize = Art.HudFont.MeasureString(message);
+            DrawShadowedText(
+                spriteBatch,
+                message,
+                new Vector2(CenterWidth - messageSize.X / 2, box.Top + 16),
+                Color.OrangeRed
+            );
+
+            eraseCancelButton.Draw(gameTime, spriteBatch);
+            eraseConfirmButton.Draw(gameTime, spriteBatch);
         }
 
         private void DrawPreview(SpriteBatch spriteBatch, Slot slot)
