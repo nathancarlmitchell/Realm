@@ -362,7 +362,13 @@ namespace Realm
         // highest-tier item for every equipment slot, replacing whatever
         // was equipped before — each is a fresh instance built from the
         // matching catalog entry's data fields, same as Weapon.LoadWeapon()/
-        // Armor.LoadArmor()/etc. already do.
+        // Armor.LoadArmor()/etc. already do. Health/Mana are topped off last
+        // (same as LevelUp()'s own Health = HealthMax/Mana = ManaMax), after
+        // gear is equipped rather than right after RecalculateStats() —
+        // equipping can itself raise HealthMax/ManaMax further (e.g. a
+        // higher-tier armor's MaxHealthBonus), and topping off first would
+        // leave Health/Mana stuck below the true final max once that gear
+        // lands.
         public void DebugMaxLevelAndEquipTopGear()
         {
             Level = 20;
@@ -372,6 +378,9 @@ namespace Realm
             EquipHighestTierArmor();
             EquipHighestTierRing();
             EquipHighestTierAbilityItem();
+
+            Health = HealthMax;
+            Mana = ManaMax;
         }
 
         private void EquipHighestTierWeapon()

@@ -107,20 +107,14 @@ public static class Input
             Player.Instance.UseAbility();
         }
 
-        if (currentState is RealmState)
+        // Testing/dev keys. Usable in the Nexus as well as the dungeon (same
+        // reasoning as UseAbility above) so leveling can be tried out
+        // without needing to already be in an active RealmState —
+        // EnemySpawner (the thing the Level-20 cap below is actually
+        // protecting against) never runs in the Nexus anyway, so there's no
+        // extra risk in allowing it here too.
+        if (currentState is RealmState || currentState is NexusState)
         {
-            // Use health potion.
-            if (WasBindingPressed(KeyBindings.Get(KeyBindings.Action.UseHealthPotion)))
-            {
-                Player.Instance.Inventory.UsePotion("Health Potion");
-            }
-
-            // Use mana potion.
-            if (WasBindingPressed(KeyBindings.Get(KeyBindings.Action.UseManaPotion)))
-            {
-                Player.Instance.Inventory.UsePotion("Mana Potion");
-            }
-
             // Level up. Capped like normal leveling — past 20, EnemySpawner's
             // spawn-chance formula (1500 - Level * 50) goes negative and crashes.
             if (WasKeyPressed(Keys.Add) && Player.Instance.Level < 20)
@@ -138,11 +132,27 @@ public static class Input
             }
 
             // Testing only, not real gameplay: max Level (with a real stat
-            // recalculation) and equip the current class's highest-tier
-            // gear for every slot, replacing whatever was equipped.
+            // recalculation), top off Health/Mana to their new maxes, and
+            // equip the current class's highest-tier gear for every slot,
+            // replacing whatever was equipped.
             if (WasKeyPressed(Keys.F4))
             {
                 Player.Instance.DebugMaxLevelAndEquipTopGear();
+            }
+        }
+
+        if (currentState is RealmState)
+        {
+            // Use health potion.
+            if (WasBindingPressed(KeyBindings.Get(KeyBindings.Action.UseHealthPotion)))
+            {
+                Player.Instance.Inventory.UsePotion("Health Potion");
+            }
+
+            // Use mana potion.
+            if (WasBindingPressed(KeyBindings.Get(KeyBindings.Action.UseManaPotion)))
+            {
+                Player.Instance.Inventory.UsePotion("Mana Potion");
             }
 
             // Return to Nexus.
