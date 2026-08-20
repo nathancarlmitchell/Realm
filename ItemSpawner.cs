@@ -126,11 +126,6 @@ namespace Realm
                 ? rand.Next(WeakEnemyMinTier, WeakEnemyMaxTier + 1)
                 : playerTier + RollTierOffset(maxTierJump);
 
-        // Not currently called from anywhere — regular enemies stopped
-        // dropping loot entirely (Enemy.SpawnLoot()'s base is now a no-op;
-        // only Boss.SpawnLoot() drops, via SpawnGuaranteedLoot() below).
-        // Left in place rather than deleted: it's the flagged foundation
-        // for a future "per-enemy drop pool" system (see docs/BACKLOG.md).
         public static void Spawn(Vector2 pos, int pointValue = 0)
         {
             List<Item> items = [];

@@ -2061,3 +2061,18 @@ date/time for those individually; don't treat their grouping as meaning they all
      every regular enemy type (Snake, Slime, Brute, BigSnake, Seeker, Wanderer, SpriteGod) and
      confirmed `ItemSpawner.LootBags` stayed at 0, then killed a `LimonTheSpriteGoddess` and
      confirmed a bag was added.
+104. **Follow-up correction to entry 103**: the user clarified "only bosses drop loot" was a
+     misreading — they meant only boss *pets* shouldn't drop loot, not regular enemies broadly.
+     `Enemy.SpawnLoot()`'s base is back to calling `ItemSpawner.Spawn()` (regular enemies drop loot
+     again, same as before entry 103), and a new `protected bool DropsLoot = true;` field gates the
+     `SpawnLoot()` call in `WasShot()` — true for every enemy by default, set `false` only on
+     `SthenoPet`'s constructor for now (the one actual "boss pet" in the game). `SthenoSwarm` (a
+     different kind of add, not called a "pet") was left at the default and still drops normally,
+     matching the user's literal wording rather than guessing it should extend further.
+     `ItemSpawner.Spawn()`'s "not currently called" comment from entry 103 was removed since it's
+     live again. [BACKLOG.md](BACKLOG.md)'s per-enemy-drop-pool entry updated to describe
+     `DropsLoot` as a first minimal stepping stone toward that fuller system, not the system itself.
+     Verified via a scripted repro: killed 200 Snakes and confirmed `ItemSpawner.LootBags` > 0
+     (chance-based, so a large sample rather than expecting every kill to drop); killed 200
+     `SthenoPet`s and confirmed exactly 0 (an absolute guarantee via `DropsLoot`, not just low
+     odds); killed a boss and confirmed guaranteed loot still fires.

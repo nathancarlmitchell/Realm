@@ -235,7 +235,11 @@ namespace Realm
                 // Spawn loot — SpawnLoot() is virtual, so Boss subclasses
                 // (guaranteed good loot) override this; every other enemy
                 // uses the base implementation's normal random-chance table.
-                SpawnLoot();
+                // Gated on DropsLoot so a specific enemy (e.g. a boss's
+                // non-loot-dropping pet/add) can opt out entirely, without
+                // affecting anything else.
+                if (DropsLoot)
+                    SpawnLoot();
 
                 // Some enemies additionally drop a portal into a boss arena,
                 // on top of their normal loot above.
@@ -251,15 +255,24 @@ namespace Realm
             }
         }
 
-        // Default: regular enemies drop nothing — only a Boss (see
-        // Boss.SpawnLoot()'s override, guaranteed good loot) does. Was
-        // previously ItemSpawner.Spawn() (the random-chance drop table)
-        // for every enemy; per the user's explicit request, only bosses
-        // drop loot now. ItemSpawner.Spawn() itself is left in place, not
-        // deleted — it's the flagged foundation for a future "per-enemy
-        // drop pool" system (see docs/BACKLOG.md), not currently called
-        // from anywhere.
-        protected virtual void SpawnLoot() { }
+        // Default: the normal random-chance drop table every enemy uses.
+        // Boss overrides this for guaranteed good loot instead. PointValue
+        // already ranks enemies by toughness (higher = more score for
+        // killing it), so it doubles as the difficulty signal ItemSpawner
+        // scales drop chance/tier off — no separate difficulty field needed.
+        // Whether this even gets called at all is gated by DropsLoot below,
+        // not by anything in here.
+        protected virtual void SpawnLoot()
+        {
+            ItemSpawner.Spawn(this.Position, PointValue);
+        }
+
+        // Whether this enemy drops anything on death at all (SpawnLoot()
+        // above only runs when true — see WasShot()). True for every enemy
+        // by default; a specific enemy (e.g. a boss's pet/add, meant to be
+        // a disposable obstacle rather than a source of loot) sets this
+        // false in its own constructor.
+        protected bool DropsLoot = true;
 
         protected void AddBehaviour(IEnumerable<int> behaviour)
         {

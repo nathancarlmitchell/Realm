@@ -28,14 +28,11 @@ namespace Realm.Bosses
             this.owner = owner;
             orbitAngle = spawnAngle;
 
-            health = 40;
-            healthMax = 40;
-
-            // Deliberately near-zero, not a normal small-enemy value — pets
-            // respawn immediately and uncapped for the whole fight, so a
-            // normal PointValue would let a player farm free XP/loot by
-            // camping the room killing pets in a loop.
-            PointValue = 1;
+            health = 1000;
+            healthMax = 1000;
+            Defense = 7;
+            PointValue = 0;
+            DropsLoot = false;
 
             AddBehaviour(Orbit());
             AddAttackBehaviour(TrailOrbs());
