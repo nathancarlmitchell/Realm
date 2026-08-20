@@ -11,8 +11,10 @@
             );
         }
 
-        // Entered via the portal SpriteGod drops on death (Enemy.WasShot()).
-        public static void EnterBossRealm()
+        // Entered via any BossDestination portal (e.g. the one SpriteGod
+        // drops on death — see Enemy.WasShot()) — bossDestination says
+        // which boss the resulting arena should spawn.
+        public static void EnterBossRealm(Portal.Destination.BossDestination bossDestination)
         {
             Sound.Play(Sound.EnterRealm, 0.35f);
 
@@ -20,7 +22,8 @@
                 new BossRealmState(
                     Game1.Instance,
                     Game1.Instance.GraphicsDevice,
-                    Game1.Instance.Content
+                    Game1.Instance.Content,
+                    bossDestination
                 )
             );
         }

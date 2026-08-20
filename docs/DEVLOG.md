@@ -1933,3 +1933,38 @@ date/time for those individually; don't treat their grouping as meaning they all
     so these dev-process logs (including the documented data-loss incident in
     [BUGFIXES.md](BUGFIXES.md) entry 42) become publicly visible — confirmed as fine, nothing
     sensitive in them.
+
+## 2026-08-20
+
+99. **`Portal.Destination` reworked from a fixed enum into a small class hierarchy**, picked off
+    the backlog specifically to unblock adding a second boss soon — the old enum's `BossRealm`
+    value routed unconditionally to a hardcoded `LimonTheSpriteGoddess`, with no way for a portal
+    to say *which* boss it leads to. [Portal.cs](Portal.cs)'s `Destination` is now an
+    `abstract class` nested exactly where the enum used to live, with `Realm`/`CharacterSelect`/
+    `Bank`/`Nexus` as private singleton subclasses and a new public `BossDestination` subclass that
+    carries a `Func<Vector2, Boss>` factory plus a display name — same "shared base + concrete
+    variant" shape already proven by `Boss`/`LimonTheSpriteGoddess` and `CharacterClasses`. The two
+    switch statements (`DisplayName`, `EnterPortal()`) collapsed to one-line delegation
+    (`dest.DisplayName`, `dest.Enter()`); every existing `Portal.Destination.X` reference
+    (`Enemy.cs`'s SpriteGod portal drop, `NexusState.cs`'s `// TEMP` test portal, `Portal.cs`'s own
+    `dest == Destination.Bank` proximity check) kept compiling unchanged, since each static field
+    kept its old name and no `Equals`/`==` override was added anywhere in the hierarchy — plain
+    reference equality against the same singletons, same as an enum comparison. `StateManager.
+    EnterBossRealm()` and `BossRealmState`'s constructor both gained a
+    `Portal.Destination.BossDestination` parameter, replacing the hardcoded `new
+    LimonTheSpriteGoddess(...)` call with `bossDestination.CreateBoss(...)` — adding a second boss
+    later is one new `static readonly BossDestination` field plus a drop site for it, no
+    `Portal.cs` switch involved. One accessibility wrinkle: `Boss` (`Boss.cs`) is internal, so
+    `BossDestination`'s boss-carrying members (`BossName`, `CreateBoss`, its constructor) had to be
+    `internal` too — `Func<Vector2, Boss>`'s effective accessibility is capped by its internal type
+    argument — while `BossDestination` itself stays `public` so it's still nameable as a parameter
+    type from `StateManager`/`BossRealmState`. Verified via a scripted repro (following CLAUDE.md's
+    save-backup-first rule, since constructing a real `BossRealmState` saves unconditionally):
+    constructed `BossRealmState` through the new parameterized path,
+    confirmed `EntityManager.ActiveBoss` was a real `LimonTheSpriteGoddess` with the right `Name`;
+    constructed one throwaway `Portal` per destination and confirmed all 5 `DisplayName` strings
+    were byte-identical to the old switch's output; confirmed the Bank destination's reference
+    equality still held. Real save files were re-saved by the test as expected (fresh item GUIDs,
+    reset UI bounds — cosmetic, no lost items/stats) and restored from the pre-test backup
+    afterward, diff-verified byte-identical. Clean build and a plain boot-check (no temp code)
+    both passed.

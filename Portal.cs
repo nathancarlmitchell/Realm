@@ -7,27 +7,92 @@ using System.Threading.Tasks;
 using System.Timers;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using Realm.Bosses;
 using Realm.States;
 
 namespace Realm
 {
     public class Portal
     {
-        public enum Destination
+        // Was a fixed enum until a second boss made that shape too rigid —
+        // BossRealm needs to carry *which* boss to spawn, not just route to
+        // a hardcoded one. Now each destination is its own small subclass
+        // instance (same "shared base + concrete variant" shape as
+        // Boss/LimonTheSpriteGoddess), so adding a second boss's own
+        // destination later is one new static field, not a switch edit.
+        public abstract class Destination
         {
-            None,
-            Realm,
-            CharacterSelect,
-            Bank,
+            public abstract string DisplayName { get; }
+            public abstract void Enter();
+
+            public static readonly Destination Realm = new RealmDestination();
+            public static readonly Destination CharacterSelect =
+                new CharacterSelectDestination();
+            public static readonly Destination Bank = new BankDestination();
 
             // Dropped by SpriteGod on death (see Enemy.WasShot()) — leads
             // into a self-contained boss-fight arena (BossRealmState).
-            BossRealm,
+            public static readonly Destination BossRealm = new BossDestination(
+                "Limon the Sprite Goddess",
+                position => new LimonTheSpriteGoddess(position)
+            );
 
             // The boss arena's own exit portal. No other portal currently
             // routes to Nexus — every other Nexus-bound path goes straight
             // through StateManager.Nexus() rather than a world portal.
-            Nexus,
+            public static readonly Destination Nexus = new NexusDestination();
+
+            private sealed class RealmDestination : Destination
+            {
+                public override string DisplayName => "Realm";
+                public override void Enter() => StateManager.EnterPortal();
+            }
+
+            private sealed class CharacterSelectDestination : Destination
+            {
+                public override string DisplayName => "Character Select";
+                public override void Enter() => StateManager.SelectClass();
+            }
+
+            private sealed class BankDestination : Destination
+            {
+                public override string DisplayName => "Bank";
+
+                // Never actually reached — Update() below special-cases the
+                // Bank destination via proximity (open/close the panel) and
+                // returns before the teleport-trigger EnterPortal() call
+                // that would invoke this. Implemented as a real no-op
+                // rather than a throw so it can't crash if that ever
+                // changes.
+                public override void Enter() { }
+            }
+
+            private sealed class NexusDestination : Destination
+            {
+                public override string DisplayName => "Nexus";
+                public override void Enter() => StateManager.Nexus();
+            }
+
+            // Carries which boss to spawn, so BossRealmState no longer
+            // hardcodes one. BossName/CreateBoss are internal rather than
+            // public since Boss itself is internal (Boss.cs) — this stays
+            // public so it's still nameable as a parameter type from
+            // StateManager/BossRealmState (same assembly, so the internal
+            // members are still callable from there).
+            public sealed class BossDestination : Destination
+            {
+                internal string BossName { get; }
+                internal Func<Vector2, Boss> CreateBoss { get; }
+
+                internal BossDestination(string bossName, Func<Vector2, Boss> createBoss)
+                {
+                    BossName = bossName;
+                    CreateBoss = createBoss;
+                }
+
+                public override string DisplayName => "Boss Fight";
+                public override void Enter() => StateManager.EnterBossRealm(this);
+            }
         }
 
         // Portals dropped dynamically into the world at runtime (as opposed
@@ -69,16 +134,7 @@ namespace Realm
         // single step away doesn't flicker the panel shut.
         private const float BankInteractionRadius = 120f;
 
-        public string DisplayName =>
-            dest switch
-            {
-                Destination.Realm => "Realm",
-                Destination.CharacterSelect => "Character Select",
-                Destination.Bank => "Bank",
-                Destination.BossRealm => "Boss Fight",
-                Destination.Nexus => "Nexus",
-                _ => string.Empty,
-            };
+        public string DisplayName => dest.DisplayName;
 
         public Portal()
         {
@@ -95,27 +151,7 @@ namespace Realm
             this.dest = dest;
         }
 
-        public void EnterPortal()
-        {
-            switch (dest)
-            {
-                case Destination.Realm:
-                    StateManager.EnterPortal();
-                    break;
-
-                case Destination.CharacterSelect:
-                    StateManager.SelectClass();
-                    break;
-
-                case Destination.BossRealm:
-                    StateManager.EnterBossRealm();
-                    break;
-
-                case Destination.Nexus:
-                    StateManager.Nexus();
-                    break;
-            }
-        }
+        public void EnterPortal() => dest.Enter();
 
         public void Update(GameTime gameTime)
         {

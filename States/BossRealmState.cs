@@ -2,12 +2,13 @@ using System;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
-using Realm.Bosses;
 
 namespace Realm.States
 {
-    // A self-contained boss-fight arena, entered via the portal SpriteGod
-    // drops on death (Enemy.WasShot()). Extends RealmState (rather than
+    // A self-contained boss-fight arena, entered via any BossDestination
+    // portal (e.g. the one SpriteGod drops on death — Enemy.WasShot()) —
+    // which boss it spawns is decided by the BossDestination passed into
+    // the constructor, not hardcoded here. Extends RealmState (rather than
     // being a sibling State) specifically so Input.cs's existing
     // `currentState is RealmState` checks — which gate potions, the ability
     // key, and debug level keys — recognize this as a real dungeon and keep
@@ -29,7 +30,12 @@ namespace Realm.States
         private const int announcementFadeFrames = 60;
         private string bossAnnouncementName;
 
-        public BossRealmState(Game1 game, GraphicsDevice graphicsDevice, ContentManager content)
+        public BossRealmState(
+            Game1 game,
+            GraphicsDevice graphicsDevice,
+            ContentManager content,
+            Portal.Destination.BossDestination bossDestination
+        )
             : base(game, graphicsDevice, content)
         {
             // base's constructor doesn't reset entities (EnterPortal ->
@@ -48,7 +54,7 @@ namespace Realm.States
             // position; re-sync now that they've been moved.
             Game1.Camera.Pos = Player.Instance.Position;
 
-            var boss = new LimonTheSpriteGoddess(center + new Vector2(0, -600));
+            var boss = bossDestination.CreateBoss(center + new Vector2(0, -600));
             EntityManager.Add(boss);
 
             bossAnnouncementName = boss.Name;

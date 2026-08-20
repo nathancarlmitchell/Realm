@@ -74,14 +74,6 @@ prioritized or scheduled — the user asked to keep these noted for later rather
   with damage/cost modified by the equipped `AbilityItem`. Open-ended — could mean multiple
   abilities per class, an ability hotbar, or more distinct ability behaviors per class rather than
   each being a single damage-number roll.
-- **Update `Portal.Destination` from an enum to an instance-based model.** [Portal.cs](Portal.cs)
-  currently uses a fixed `Destination` enum (`Realm`, `CharacterSelect`) with a switch in
-  `EnterPortal()` and a parallel switch in the new `DisplayName` property — fine for a small,
-  known set of named game states, but it can't represent "go to room #7" once **multiple
-  rooms/floors** (above) exists, since that would need a case added per room. Deferred until that
-  feature is actually being designed, so the right shape (an ID + display name? a small class
-  loaded from a JSON catalog like `ArmorData`/`SpellData`?) can be picked with real requirements
-  instead of guessed now.
 - **Color-coded tier indicator on item icons** — an outline or overlay tinted by `Equipment.Tier`,
   so tier is visible at a glance without hovering. Would touch the same icon draw sites as the
   wrong-class-equipment overlay (see
