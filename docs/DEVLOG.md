@@ -2081,3 +2081,8 @@ date/time for those individually; don't treat their grouping as meaning they all
      `Art.SthenoPetProjectile` (same import/processor params as every other entry) and swapped in
      for the placeholder `Art.GreenMagic` reuse `SthenoPet.TrailOrbs()` had been using. No other
      behavior change — same damage (0), same `SlowsOnHit`, same duration.
+106. **Real art for the Stheno Swarm's own shots**, user-supplied
+     (`Content/Projectiles/Stheno Swarm.png`), wired into `Content.mgcb`/`Art.cs` as
+     `Art.SthenoSwarmProjectile` and swapped in for the placeholder `Art.SwordSlash` reuse in both
+     `SthenoSwarm.ChargeFire()` and `ChaseFire()` — one dedicated look for both firing states,
+     matching the Stheno Pet projectile's own single-asset treatment. No behavior change.

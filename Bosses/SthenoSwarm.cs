@@ -112,7 +112,7 @@ namespace Realm.Bosses
                             new EnemyProjectile(
                                 Position,
                                 chargeDirection * ChargeShotSpeed,
-                                Art.SwordSlash
+                                Art.SthenoSwarmProjectile
                             )
                             {
                                 Damage = ChargeDamage,
@@ -144,7 +144,7 @@ namespace Realm.Bosses
                                 new EnemyProjectile(
                                     Position,
                                     aim.ScaleTo(ChaseShotSpeed),
-                                    Art.SwordSlash
+                                    Art.SthenoSwarmProjectile
                                 )
                                 {
                                     Damage = ChaseDamage,
