@@ -45,11 +45,19 @@ namespace Realm
         protected SoundEffect hitSound;
         public List<Guid> HitBy;
 
-        // Set only by CreateSpriteGod() below — routes WasShot()'s death
-        // branch to also drop a portal into the boss arena, on top of its
-        // normal loot roll (SpriteGod isn't isBoss, so it keeps going
-        // through the regular ItemSpawner.Spawn() path unchanged).
-        private bool isSpriteGod = false;
+        // Which boss arena's portal (if any) this enemy drops on death, on
+        // top of its normal loot roll — null for every enemy except the
+        // specific ones a factory below wires up (CreateSpriteGod(),
+        // CreateBigSnake()). One field instead of a bool per boss, since a
+        // second real instance of "enemy X drops boss Y's portal" showed up
+        // (mirrors this session's Portal.Destination enum->class cleanup).
+        protected Portal.Destination portalDropOnDeath;
+
+        // Invulnerable enemies take zero damage from WasShot() below — a
+        // true no-op, not just reduced damage. Used by boss phase-transition
+        // windows (e.g. Stheno between phases); false (damageable) for every
+        // enemy unless a subclass explicitly sets it.
+        protected bool Invulnerable;
 
         // Paralyzes this enemy, blocking its movement (Update() below) for
         // durationFrames. Backed by Entity's general debuff system (refreshes
@@ -208,6 +216,9 @@ namespace Realm
 
         public void WasShot(int damage)
         {
+            if (Invulnerable)
+                return;
+
             Debug.WriteLine(damage);
 
             int actualDamage = Math.Max(0, damage - Defense);
@@ -226,13 +237,11 @@ namespace Realm
                 // uses the base implementation's normal random-chance table.
                 SpawnLoot();
 
-                // SpriteGod additionally drops a portal into the boss arena,
-                // on top of its normal loot above.
-                if (isSpriteGod)
+                // Some enemies additionally drop a portal into a boss arena,
+                // on top of their normal loot above.
+                if (portalDropOnDeath != null)
                 {
-                    Portal.DroppedPortals.Add(
-                        new Portal(this.Position, Portal.Destination.BossRealm)
-                    );
+                    Portal.DroppedPortals.Add(new Portal(this.Position, portalDropOnDeath));
                     Sound.Play(Sound.LootAppears, 0.4f);
                 }
             }
@@ -538,6 +547,7 @@ namespace Realm
                 Defense = 10,
                 deathSound = Sound.SnakesDeath,
                 hitSound = Sound.SnakesHit,
+                portalDropOnDeath = Portal.Destination.SthenoBossRealm,
             };
 
             enemy.AddBehaviour(enemy.MoveSnake());
@@ -579,7 +589,7 @@ namespace Realm
                 PointValue = 200,
                 deathSound = Sound.SpriteGodDeath,
                 hitSound = Sound.SpriteGodHit,
-                isSpriteGod = true,
+                portalDropOnDeath = Portal.Destination.BossRealm,
             };
 
             enemy.AddBehaviour(enemy.MoveSnake());

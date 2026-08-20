@@ -37,6 +37,13 @@ namespace Realm
                 position => new LimonTheSpriteGoddess(position)
             );
 
+            // Dropped by BigSnake on death (see Enemy.CreateBigSnake()) —
+            // same shape as BossRealm above, just carrying the second boss.
+            public static readonly Destination SthenoBossRealm = new BossDestination(
+                "Stheno the Snake Queen",
+                position => new SthenoTheSnakeQueen(position)
+            );
+
             // The boss arena's own exit portal. No other portal currently
             // routes to Nexus — every other Nexus-bound path goes straight
             // through StateManager.Nexus() rather than a world portal.

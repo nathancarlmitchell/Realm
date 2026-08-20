@@ -1960,11 +1960,64 @@ date/time for those individually; don't treat their grouping as meaning they all
     argument — while `BossDestination` itself stays `public` so it's still nameable as a parameter
     type from `StateManager`/`BossRealmState`. Verified via a scripted repro (following CLAUDE.md's
     save-backup-first rule, since constructing a real `BossRealmState` saves unconditionally):
-    constructed `BossRealmState` through the new parameterized path,
-    confirmed `EntityManager.ActiveBoss` was a real `LimonTheSpriteGoddess` with the right `Name`;
+    constructed `BossRealmState` through the new parameterized path, confirmed
+    `EntityManager.ActiveBoss` was a real `LimonTheSpriteGoddess` with the right `Name`;
     constructed one throwaway `Portal` per destination and confirmed all 5 `DisplayName` strings
     were byte-identical to the old switch's output; confirmed the Bank destination's reference
     equality still held. Real save files were re-saved by the test as expected (fresh item GUIDs,
     reset UI bounds — cosmetic, no lost items/stats) and restored from the pre-test backup
     afterward, diff-verified byte-identical. Clean build and a plain boot-check (no temp code)
     both passed.
+
+100. **Second boss: Stheno the Snake Queen** (9,000 HP, 19 DEF, 3,000 EXP), reached via a portal
+     BigSnake now drops on death (mirroring SpriteGod → Limon) plus a matching `// TEMP` Nexus test
+     portal. Stationary, unlike Limon — cycles through 3 mutually-exclusive, *time-based* phases
+     (Blades, Bursts, Spiral; ~15s each) rather than Limon's health-threshold, additive escalation,
+     briefly `Invulnerable` during every transition while summoning 3 "Stheno Swarm" adds. New
+     `Bosses/SthenoTheSnakeQueen.cs`/`SthenoPet.cs`/`SthenoSwarm.cs`. Phase 1 fires 4 rotating
+     directions of paired blades (one always aimed at the player) plus scattered AoE grenades;
+     Phase 2 fires alternating diamond/square grenade bursts (reusing
+     `LimonTheSpriteGoddess.SpawnSquareWall()`'s corner-offset technique for static placement
+     instead of a sweep, gaps left deliberately open to dodge through); Phase 3 fires a
+     6-direction rotating spiral of purple orbs plus grenades aimed at the player. All 5 of her own
+     attack coroutines gate on `currentPhase == X && !Invulnerable && PlayerInCenter` — "if her
+     target backs out of the center of the room, she stops firing" — with the cooldown timer itself
+     frozen while gated shut, so re-entering center never unloads a banked volley; her adds aren't
+     gated this way. `SthenoPet` orbits her (position re-derived each frame, same technique as
+     Limon's sweeping-shot tracking) trailing stationary green orbs that apply a brand-new `Slow`
+     debuff; `SthenoTheSnakeQueen.MaintainPets()` tops the live count back up to 6 every frame,
+     covering both "spawn several on entry" and "respawn immediately on death" with one mechanism.
+     Deliberately set `PointValue = 1` on pets (not a normal small-enemy value) since they respawn
+     immediately and uncapped for the whole fight — a normal value would've turned the room into a
+     free XP/loot farm. `SthenoSwarm` charges the player in a straight line (direction captured once
+     at spawn, never re-aimed) firing forward, then — if a chasing slot is free — switches to
+     chasing with aimed shots; enforces "only 3 chasing Swarms at once" via a new
+     `EntityManager.CountWhere<T>(predicate)` helper (generalizes the `OfType<T>()` idiom
+     `ActiveBoss` already used internally), with a swarm that finishes charging while the cap is
+     full just fizzling instead of queuing. New `Slow` debuff: `Entity.DebuffType` gained a case,
+     `EnemyProjectile` gained `SlowsOnHit` (third parallel bool, mirroring `Projectile`'s existing
+     `ParalyzesOnHit`/`StunsOnHit` rather than generalizing — matches that established precedent
+     exactly), `Player` gained a `Slow()` convenience method and a movement-speed multiplier hook.
+     `Enemy.isSpriteGod` (a one-off bool) generalized into `protected Portal.Destination
+     portalDropOnDeath` now that a second real instance of "enemy X drops boss Y's portal" exists —
+     same "replace repeated bool special-casing once a second instance shows up" cleanup already
+     applied to `isBoss`/`Portal.Destination` earlier this session. `Boss.cs` gained a `Description`
+     property (not rendered anywhere yet, same status as `BossDestination.BossName`) to carry the
+     user-supplied lore text. Art for Stheno's portrait/Pet/Swarm sprites and the new `slowed.png`
+     debuff icon were all user-supplied and already on disk, just needed `Content.mgcb`/`Art.cs`
+     wiring (discovered mid-implementation that the file's `.mgcb` directives use `/` not `\` —
+     wrote 4 new blocks with backslashes first by mis-copying a tool's display rendering, breaking
+     `dotnet build` with an opaque "Too many arguments" MGCB parser error; fixed by switching to
+     forward slashes, matching the other 193 existing entries). Verified via a scripted repro
+     (real-save backup taken first, per CLAUDE.md): stats/Description, `WasShot()` true no-op while
+     `Invulnerable`, phase cycling with `Invulnerable` toggling correctly across two full
+     transitions, pet count reaching and holding target (including after manually expiring some to
+     confirm same-tick respawn), swarm cap enforcement (3 chasing, a 4th self-expiring), BigSnake's
+     new portal drop referencing the right destination, and the full
+     `Portal.Destination.SthenoBossRealm`/`BossRealmState` path spawning a real
+     `SthenoTheSnakeQueen`. Real save files were re-saved by the full-path test as expected and
+     restored from backup afterward, diff-verified byte-identical. Clean build and a plain
+     boot-check both passed. Tunable numbers throughout (phase/cooldown durations, grenade
+     radii/damage, orbit speed, spiral rotation rate, center-check radius) are first-pass estimates,
+     not final — flagged to the user that spiral "feel," grenade dodge-gap spacing, and pack timing
+     all need an actual playtest pass to confirm.

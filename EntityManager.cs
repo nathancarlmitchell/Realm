@@ -37,6 +37,14 @@ namespace Realm
         // BossRealmState is the only place a Boss ever gets added.
         public static Boss ActiveBoss => enemies.OfType<Boss>().FirstOrDefault();
 
+        // General-purpose typed-and-filtered count, e.g. "how many
+        // SthenoPets are alive" (predicate: _ => true) or "how many
+        // SthenoSwarms are currently chasing" (predicate: s => s.IsChasing)
+        // — same OfType<T>() idiom ActiveBoss above already uses internally,
+        // just exposed generically since enemies itself isn't public.
+        public static int CountWhere<T>(Func<T, bool> predicate)
+            where T : Enemy => enemies.OfType<T>().Count(predicate);
+
         // Positions only, not the Enemy objects themselves — this is all
         // Overlay's minimap needs, so it doesn't need broader access to the
         // private enemies list.
@@ -306,6 +314,10 @@ namespace Realm
                 if (IsColliding(Player.Instance, enemiesProjectiles[i]))
                 {
                     Player.Instance.Hit(enemiesProjectiles[i].Damage);
+                    if (enemiesProjectiles[i].SlowsOnHit)
+                    {
+                        Player.Instance.Slow();
+                    }
                     enemiesProjectiles[i].IsExpired = true;
                 }
             }

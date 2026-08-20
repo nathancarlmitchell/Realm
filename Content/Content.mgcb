@@ -925,6 +925,42 @@
 /processorParam:TextureFormat=Color
 /build:Enemies/Limon the Sprite Goddess.png
 
+#begin Enemies/Stheno the Snake Queen.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:Enemies/Stheno the Snake Queen.png
+
+#begin Enemies/Stheno Pet.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:Enemies/Stheno Pet.png
+
+#begin Enemies/Stheno Swarm.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:Enemies/Stheno Swarm.png
+
 #begin Projectiles/limon1.png
 /importer:TextureImporter
 /processor:TextureProcessor
@@ -1154,6 +1190,18 @@
 /processorParam:MakeSquare=False
 /processorParam:TextureFormat=Color
 /build:StatusEffects/paralyzed.png
+
+#begin StatusEffects/slowed.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:StatusEffects/slowed.png
 
 #begin StatusEffects/stunned.png
 /importer:TextureImporter

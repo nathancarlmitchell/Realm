@@ -39,22 +39,25 @@ prioritized or scheduled — the user asked to keep these noted for later rather
   enemy (`MoveSnake`+`Spray` is still open too, though `MoveSnake`+`Shoot` at a different speed is
   now covered by BigSnake). Real new art (rather than another tinted reskin) is also still an
   option whenever the user wants to supply some.
-- **Boss follow-ups, remaining two of four** (the top-of-screen name+health bar and a fading
-  appearance announcement are done — see
-  [DEVLOG.md](DEVLOG.md) entry 75): real hit/death sounds
-  for Limon (still reusing `Sound.SpriteGod*` as placeholders — needs the user to supply actual
-  audio files) and revisiting the current hand-tuned balance numbers after actually playing the
-  fight (needs the user's own feel for the fight, not something to guess at). A future second boss
-  should be its own `XyzBoss : Boss` subclass (see entry 53) — only move something into the shared
-  `Boss` base if it turns out genuinely common to multiple bosses, not guessed now with only Limon
-  built.
-- **Remove the test-only boss portal in the Nexus.** `States/NexusState.cs`'s `portalList` has a
-  4th portal (`Portal.Destination.BossRealm`, positioned at `Player.Instance.Position + (-150,
-  -100)`, marked with a `// TEMP` comment right above it) added purely so the boss arena could be
-  reached directly for testing, without needing to find and kill a SpriteGod first. The user said
-  this should come out "at some point" — remove that one portal list entry (and its
-  `bossTestPortalPos` variable) once the boss fight itself is done being tested; the real access
-  path (SpriteGod → dropped portal) stays as-is.
+- **Boss follow-ups, both bosses now need a real playtest pass.** Limon: real hit/death sounds
+  (still reusing `Sound.SpriteGod*` as placeholders) and revisiting hand-tuned balance numbers
+  after actually playing the fight. Stheno (see [DEVLOG.md](DEVLOG.md) entry 100): also reusing
+  placeholder audio (`Sound.Snakes*`); every numeric constant in `Bosses/SthenoTheSnakeQueen.cs`/
+  `SthenoPet.cs`/`SthenoSwarm.cs` (phase/cooldown durations, grenade radii/damage, orbit/spiral
+  speed, center-check radius) is a first-pass estimate needing an actual playtest to confirm the
+  spiral reads as a spiral, the grenade dodge-gaps are actually walkable, pet orbit speed reads as
+  "rapidly circling," and swarm charge speed/distance reads as "a straight line." The second-boss
+  extension pattern predicted in this item (its own `XyzBoss : Boss` subclass, nothing moved into
+  the shared `Boss` base beyond what turned out genuinely common — just `Name`/`Description`/
+  `SpawnLoot()`/`DrawHealthBars()`) held up as designed.
+- **Remove the test-only boss portals in the Nexus.** `States/NexusState.cs`'s `portalList` has two
+  `// TEMP`-commented shortcut portals: `Portal.Destination.BossRealm` at `Player.Instance.Position
+  + (-150, -100)` and `Portal.Destination.SthenoBossRealm` at `+ (-150, +100)`, added purely so
+  each boss arena could be reached directly for testing without needing to find and kill a
+  SpriteGod/BigSnake first. The user said the first one should come out "at some point" — remove
+  both portal list entries (and their `bossTestPortalPos`/`sthenoTestPortalPos` variables) once
+  both boss fights are done being tested; the real access paths (SpriteGod/BigSnake → dropped
+  portal) stay as-is.
 - **Multiple rooms/floors** instead of one open world area — locked doors needing a key drop, a
   portal to the next floor.
 - **What Fame should unlock — remaining pieces.** Class unlocks (see

@@ -23,6 +23,13 @@ namespace Realm
         public static Texture2D EnemySpriteGod { get; private set; }
         public static Texture2D Limon { get; private set; }
         public static Texture2D LimonProjectile { get; private set; }
+        public static Texture2D Stheno { get; private set; }
+        public static Texture2D SthenoPet { get; private set; }
+        public static Texture2D SthenoSwarm { get; private set; }
+        public static Texture2D SwordSlash { get; private set; }
+        public static Texture2D RedFire { get; private set; }
+        public static Texture2D PurpleMagic { get; private set; }
+        public static Texture2D GreenMagic { get; private set; }
         public static Texture2D Snake { get; private set; }
         public static Texture2D BigSnake { get; private set; }
         public static Texture2D Wizard { get; private set; }
@@ -65,6 +72,7 @@ namespace Realm
         // Status effects (debuff indicator icons — see Entity.DrawDebuffIndicators).
         public static Texture2D Paralyzed { get; private set; }
         public static Texture2D Stunned { get; private set; }
+        public static Texture2D Slowed { get; private set; }
 
         public static void Load(ContentManager content)
         {
@@ -115,6 +123,13 @@ namespace Realm
             EnemySpriteGod = content.Load<Texture2D>("Enemies/sprite_god");
             Limon = content.Load<Texture2D>("Enemies/Limon the Sprite Goddess");
             LimonProjectile = content.Load<Texture2D>("Projectiles/limon1");
+            Stheno = content.Load<Texture2D>("Enemies/Stheno the Snake Queen");
+            SthenoPet = content.Load<Texture2D>("Enemies/Stheno Pet");
+            SthenoSwarm = content.Load<Texture2D>("Enemies/Stheno Swarm");
+            SwordSlash = content.Load<Texture2D>("Projectiles/sword_slash");
+            RedFire = content.Load<Texture2D>("Projectiles/red_fire");
+            PurpleMagic = content.Load<Texture2D>("Projectiles/purple_magic");
+            GreenMagic = content.Load<Texture2D>("Projectiles/green_magic");
             Snake = content.Load<Texture2D>("snake");
             BigSnake = content.Load<Texture2D>("Enemies/big_snake");
 
@@ -134,6 +149,7 @@ namespace Realm
             // Status effects.
             Paralyzed = content.Load<Texture2D>("StatusEffects/paralyzed");
             Stunned = content.Load<Texture2D>("StatusEffects/stunned");
+            Slowed = content.Load<Texture2D>("StatusEffects/slowed");
 
             // Fonts.
             HudFont = content.Load<SpriteFont>("Fonts/HudFont");

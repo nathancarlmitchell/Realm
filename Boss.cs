@@ -13,6 +13,12 @@ namespace Realm
         // Display identity — set by each concrete boss's constructor.
         public string Name { get; protected set; }
 
+        // Flavor/lore text — set by each concrete boss's constructor. Not
+        // rendered anywhere yet (no boss lore UI exists today), stored for
+        // whenever one is built, same status as Portal.Destination.
+        // BossDestination's own BossName field.
+        public string Description { get; protected set; }
+
         // Public read-only views onto Enemy's protected health fields —
         // Enemy hides these to keep them encapsulated from everything else,
         // but the boss arena's HUD (BossRealmState.DrawBossHud()) needs them

@@ -12,6 +12,12 @@ namespace Realm
         // shot (e.g. a boss) without changing any other enemy's behavior.
         public int Damage = 10;
 
+        // Whether this projectile slows the player on hit (Player.Slow(),
+        // using that method's default duration) — the enemy-thrown mirror of
+        // Projectile's ParalyzesOnHit/StunsOnHit. False for everything except
+        // whatever explicitly opts in — e.g. a Stheno Pet's trailing orb.
+        public bool SlowsOnHit = false;
+
         // image defaults to the shared enemy projectile sprite; passing one
         // explicitly (e.g. a boss-specific projectile) has to happen here
         // rather than via an object initializer, since Radius is derived

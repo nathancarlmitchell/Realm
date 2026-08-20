@@ -317,6 +317,14 @@ namespace Realm
             }
         }
 
+        // Slows this player, halving movement speed (Update() above) for
+        // durationFrames. Backed by Entity's general debuff system, same
+        // shape as Enemy.Paralyze()/Stun(). Default is 3 seconds at 60fps.
+        public void Slow(int durationFrames = 180)
+        {
+            ApplyDebuff(DebuffType.Slow, durationFrames);
+        }
+
         public void EquipWeapon(Weapon newWeapon)
         {
             Weapon = newWeapon;
@@ -610,8 +618,12 @@ namespace Realm
 
         public override void Update()
         {
-            // Update position.
-            Velocity = (int)((Speed / 75) * 5.6 + 2) * Input.GetMovementDirection();
+            // Update position. slowMultiplier halves speed while Slowed
+            // (Entity's general debuff system) is active — e.g. a Stheno
+            // Pet's trailing orb.
+            float slowMultiplier = HasDebuff(DebuffType.Slow) ? 0.5f : 1f;
+            Velocity =
+                (int)((Speed / 75) * 5.6 + 2) * slowMultiplier * Input.GetMovementDirection();
             Position += Velocity;
 
             // Update camera position. Syncs directly to the player's actual
