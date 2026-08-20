@@ -25,6 +25,7 @@ namespace Realm
         public static Texture2D LimonProjectile { get; private set; }
         public static Texture2D Stheno { get; private set; }
         public static Texture2D SthenoPet { get; private set; }
+        public static Texture2D SthenoPetProjectile { get; private set; }
         public static Texture2D SthenoSwarm { get; private set; }
         public static Texture2D SwordSlash { get; private set; }
         public static Texture2D RedFire { get; private set; }
@@ -125,6 +126,7 @@ namespace Realm
             LimonProjectile = content.Load<Texture2D>("Projectiles/limon1");
             Stheno = content.Load<Texture2D>("Enemies/Stheno the Snake Queen");
             SthenoPet = content.Load<Texture2D>("Enemies/Stheno Pet");
+            SthenoPetProjectile = content.Load<Texture2D>("Projectiles/Stheno Pet");
             SthenoSwarm = content.Load<Texture2D>("Enemies/Stheno Swarm");
             SwordSlash = content.Load<Texture2D>("Projectiles/sword_slash");
             RedFire = content.Load<Texture2D>("Projectiles/red_fire");

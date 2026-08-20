@@ -55,6 +55,7 @@ namespace Realm.Bosses
             healthMax = 400;
             Defense = 4;
             PointValue = 0;
+            DropsLoot = false;
 
             Vector2 toPlayer = Player.Instance.Position - position;
             chargeDirection = toPlayer.LengthSquared() > 0 ? toPlayer.ScaleTo(1f) : Vector2.UnitX;

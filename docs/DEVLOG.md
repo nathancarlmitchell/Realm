@@ -2076,3 +2076,8 @@ date/time for those individually; don't treat their grouping as meaning they all
      (chance-based, so a large sample rather than expecting every kill to drop); killed 200
      `SthenoPet`s and confirmed exactly 0 (an absolute guarantee via `DropsLoot`, not just low
      odds); killed a boss and confirmed guaranteed loot still fires.
+105. **Real art for the Stheno Pet's trailing slow-orb projectile**, user-supplied
+     (`Content/Projectiles/Stheno Pet.png`), wired into `Content.mgcb`/`Art.cs` as
+     `Art.SthenoPetProjectile` (same import/processor params as every other entry) and swapped in
+     for the placeholder `Art.GreenMagic` reuse `SthenoPet.TrailOrbs()` had been using. No other
+     behavior change — same damage (0), same `SlowsOnHit`, same duration.

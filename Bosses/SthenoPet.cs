@@ -64,9 +64,9 @@ namespace Realm.Bosses
                 {
                     trailCooldownRemaining = TrailCooldown;
                     EntityManager.Add(
-                        new EnemyProjectile(Position, Vector2.Zero, Art.GreenMagic)
+                        new EnemyProjectile(Position, Vector2.Zero, Art.SthenoPetProjectile)
                         {
-                            Damage = 0,
+                            Damage = 65,
                             SlowsOnHit = true,
                             duration = TrailDuration,
                         }

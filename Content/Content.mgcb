@@ -1455,6 +1455,18 @@
 /processorParam:TextureFormat=Color
 /build:Projectiles/green_magic.png
 
+#begin Projectiles/Stheno Pet.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:Projectiles/Stheno Pet.png
+
 #begin Projectiles/pink_bolt.png
 /importer:TextureImporter
 /processor:TextureProcessor
