@@ -2360,3 +2360,26 @@ date/time for those individually; don't treat their grouping as meaning they all
      both wrapped back off frame 6 as before; advanced Sprite World the same 8 ticks and confirmed it
      landed on frame 6, then advanced it 20 more ticks and confirmed it stayed on frame 6 rather than
      ever wrapping back to 0. Clean build and a plain boot-check both passed.
+122. **Bosses now blink red a few times when entering an enraged phase**, starting with Limon (the
+     only boss that currently has a real "enraged" concept — Stheno's 3-phase cycle is continuous
+     variety, not a health-triggered escalation, so it wasn't wired in there). Built as shared
+     infrastructure on `Enemy.cs` (not Boss-specific) so any future boss's own phase-transition point
+     can call it too, per the request covering "bosses in general." New `protected void
+     FlashRed(int blinkCount = 3, int periodFrames = 8)` sets a tick counter
+     (`blinkCount * 2 * periodFrames`); `Update()` ticks it down each frame and derives `blinkOn` from
+     which half of the current `periodFrames`-sized block it's in. `Draw()` swaps `color` to
+     `Color.Red` for exactly one `base.Draw()` call when `blinkOn`, then restores the original value
+     immediately afterward — a temporary swap rather than overwriting `color` outright, since that
+     field already carries the spawn fade-in alpha (`Update()`'s `timeUntilStart` branch) and
+     permanently clobbering it would break that separately. `LimonTheSpriteGoddess.PhaseWatcher()`
+     calls `FlashRed()` once, at the same moment it already sets `enraged = true` and adds the
+     phase-2 attack/movement behaviours. Verified via a scripted repro (backed up real save files
+     first per `CLAUDE.md`, since the test constructs a throwaway `NexusState` to initialize
+     `Game1.Camera` — a documented prerequisite for calling `Enemy.Update()` directly — which saves in
+     its own constructor; restored and diff-verified unchanged afterward): dropped a real `Limon`
+     instance's health to exactly the 50% threshold and confirmed one `Update()` call set the blink
+     counter to exactly 48 (3 blinks × 2 × 8); stepped 50 more frames and recorded the on/off pattern
+     (`00000000 11111111` × 3, then off) — three full cycles as specified, ending back off; called
+     `Draw()` on every one of those frames and confirmed `color` matched its pre-blink value
+     immediately after every single call, proving the swap-and-restore never leaks a permanent red
+     tint. Clean build and a plain boot-check both passed.

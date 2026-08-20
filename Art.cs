@@ -115,10 +115,11 @@ namespace Realm
             // and hold on the final open frame instead of replaying
             // "closed" forever.
             SpriteWorldPortal = new AnimatedTexture(Vector2.Zero, 0f, 1.5f, 0.5f);
-            SpriteWorldPortal.Load(content, "Sprite World Portal", 7, 8, 5, loop: false);
+            SpriteWorldPortal.Load(content, "Sprite World Portal", 7, 16, 5, loop: false);
 
             SnakePitPortal = new AnimatedTexture(Vector2.Zero, 0f, 1.5f, 0.5f);
             SnakePitPortal.Load(content, "Snake Pit Portal", 7, 8, 5);
+
             HealthPotion = content.Load<Texture2D>("health_potion");
             ManaPotion = content.Load<Texture2D>("mana_potion");
 

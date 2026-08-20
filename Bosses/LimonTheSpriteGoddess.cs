@@ -82,8 +82,8 @@ namespace Realm.Bosses
                     projectileSpeed: 6,
                     projectileAmount: 8,
                     damage: 50,
-                    projectileImage: Art.LimonProjectile
-                //collisionShape: Entity.CollisionShape.Rectangle
+                    projectileImage: Art.LimonProjectile,
+                    collisionShape: Entity.CollisionShape.Rectangle
                 )
             );
             AddAttackBehaviour(SquareWall());
@@ -282,7 +282,9 @@ namespace Realm.Bosses
         // of whatever Phase 1 attack is already running) and a second
         // movement behaviour (stacks additively with the Phase 1 one
         // already running, rather than replacing it, for a simple "faster"
-        // effect). One-shot per fight via the local `enraged` flag.
+        // effect), plus a brief red blink-flash (Enemy.FlashRed()) so the
+        // transition actually reads as a moment, not just a stat change.
+        // One-shot per fight via the local `enraged` flag.
         private IEnumerable<int> PhaseWatcher()
         {
             bool enraged = false;
@@ -291,6 +293,7 @@ namespace Realm.Bosses
                 if (!enraged && HealthFraction <= 0.5f)
                 {
                     enraged = true;
+                    FlashRed();
                     AddAttackBehaviour(BossBurst());
                     AddBehaviour(FollowPlayer(0.15f));
                 }

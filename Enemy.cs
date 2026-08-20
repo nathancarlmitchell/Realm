@@ -85,6 +85,27 @@ namespace Realm
         // default) means no change from today's plain sprite.
         protected Color tint = Color.White;
 
+        // Brief red blink-flash cue, meant for a boss announcing a phase
+        // transition (e.g. entering an "enraged" phase — see
+        // LimonTheSpriteGoddess.PhaseWatcher()) — call FlashRed() once at
+        // the moment the transition happens. Ticked in Update(), applied in
+        // Draw() below as a one-frame color swap rather than mutating
+        // `color` itself, since that field also carries the spawn fade-in
+        // alpha (see the constructor/Update() below) and permanently
+        // overwriting it would clobber that.
+        private int blinkTicksRemaining;
+        private int blinkPeriodFrames;
+        private bool blinkOn;
+
+        // blinkCount full on/off cycles, each half lasting periodFrames —
+        // e.g. the defaults (3, 8) blink on/off 3 times over 48 frames
+        // (0.8s at 60fps).
+        protected void FlashRed(int blinkCount = 3, int periodFrames = 8)
+        {
+            blinkTicksRemaining = blinkCount * 2 * periodFrames;
+            blinkPeriodFrames = periodFrames;
+        }
+
         public Enemy(Texture2D image, Vector2 position)
         {
             this.image = image;
@@ -101,6 +122,16 @@ namespace Realm
         public override void Update()
         {
             UpdateDebuffs();
+
+            if (blinkTicksRemaining > 0)
+            {
+                blinkTicksRemaining--;
+                blinkOn = (blinkTicksRemaining / blinkPeriodFrames) % 2 == 0;
+            }
+            else
+            {
+                blinkOn = false;
+            }
 
             if (timeUntilStart <= 0)
             {
@@ -204,7 +235,23 @@ namespace Realm
         public override void Draw(SpriteBatch spriteBatch)
         {
             DrawHealthBars(spriteBatch);
-            base.Draw(spriteBatch);
+
+            if (blinkOn)
+            {
+                // One-frame color swap rather than overwriting `color`
+                // itself — `color` also carries the spawn fade-in alpha
+                // (see Update() above), so mutating it here would clobber
+                // that instead of just layering a flash on top of it.
+                Color original = color;
+                color = Color.Red;
+                base.Draw(spriteBatch);
+                color = original;
+            }
+            else
+            {
+                base.Draw(spriteBatch);
+            }
+
             DrawDebuffIndicators(spriteBatch);
         }
 
