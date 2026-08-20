@@ -2328,3 +2328,21 @@ date/time for those individually; don't treat their grouping as meaning they all
      returns `true` from `Player.Instance.Bounds.Intersects(portal.Bounds)` (both sides finally
      centered the same way); confirmed a portal 500px away still correctly returns `false` (no
      over-correction into always-true). Clean build and a plain boot-check both passed.
+120. **F3 debug overlay now outlines loot bag pickup range too.** `LootBag : Entity`, so it does have
+     a `Shape`/`Radius`, but its real pickup check (`LootBag.Update()`) never goes through
+     `EntityManager.IsColliding()` at all — it hand-rolls `Player.Instance.Bounds.Intersects(this.Bounds)`
+     directly, bypassing `Shape` entirely. Reusing the generic `Shape`-based `DrawHitbox()` dispatch
+     here would draw a circle that has nothing to do with the actual check, so this reuses entry
+     116/118's rectangle-outline path (`DrawHitboxRectangle()`, `Bounds`) instead, in magenta to stay
+     distinct from every other debug color already in use. Read directly off the static
+     `ItemSpawner.LootBags` rather than needing a caller-supplied parameter like the portals list —
+     unlike `Portal.DroppedPortals`/`NexusPortals` (which differ per state, entry 116's reason for
+     requiring an explicit param), `ItemSpawner.LootBags` is a single list already correctly scoped to
+     whichever state is current (`Game1.ChangeState()` clears it via `ItemSpawner.Reset()` on every
+     transition), so there's no equivalent stale-list risk to guard against. Verified via a scripted
+     repro (temp code in `Game1.StartGame()`; `LootBag`s are ephemeral/never persisted, so no save-file
+     risk): confirmed a bag's `Bounds` is centered on its `Position` (entry 119's fix applies here
+     too, same base class); rendered a real bag plus its new debug outline together to an offscreen
+     `RenderTarget2D` and visually inspected the PNG — the lesson from entry 118 (numbers matching
+     isn't enough, actually look at the pixels) — confirming the magenta box lands squarely on the
+     bag sprite. Clean build and a plain boot-check both passed.

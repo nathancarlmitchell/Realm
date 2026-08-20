@@ -119,8 +119,7 @@ namespace Realm
         // Rectangle (e.g. Limon's Spray shots, Stheno's blades) — so the
         // debug view always matches whichever check IsColliding() actually
         // runs, not just the circle case. Covers player, enemies, and both
-        // projectile lists (player-fired bullets and enemy projectiles);
-        // loot bags/potions are still left out, per the original request.
+        // projectile lists (player-fired bullets and enemy projectiles).
         // Portals aren't Entity subclasses (no Shape/Radius/Width/Height),
         // so their teleport-trigger rectangle is drawn separately here via
         // an optional list — each caller passes whichever portal list is
@@ -155,6 +154,24 @@ namespace Realm
             {
                 foreach (var portal in portals)
                     DrawHitboxRectangle(spriteBatch, portal.Bounds, Color.Cyan);
+            }
+
+            // LootBag is an Entity (so it does have a Shape/Radius), but its
+            // real pickup check (LootBag.Update()) never goes through
+            // IsColliding() — it hand-rolls a Bounds.Intersects() check
+            // directly, bypassing Shape entirely. Drawing the generic
+            // Shape-based DrawHitbox() here would show a circle that has
+            // nothing to do with the actual test, so this uses the same
+            // rectangle outline as Portal's Bounds above instead. Read
+            // directly off ItemSpawner.LootBags (unlike the portals param)
+            // since that single static list is already correctly scoped to
+            // whichever state is current — Game1.ChangeState() clears it via
+            // ItemSpawner.Reset() on every transition, so there's no
+            // stale-list risk to guard against the way DroppedPortals has.
+            foreach (var bag in ItemSpawner.LootBags)
+            {
+                if (!bag.IsExpired)
+                    DrawHitboxRectangle(spriteBatch, bag.Bounds, Color.Magenta);
             }
         }
 
