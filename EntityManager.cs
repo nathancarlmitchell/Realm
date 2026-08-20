@@ -208,6 +208,16 @@ namespace Realm
             if (a.Shape == Entity.CollisionShape.Rectangle || b.Shape == Entity.CollisionShape.Rectangle)
                 return RectangleBounds(a).Intersects(RectangleBounds(b));
 
+            // A zero-(or negative-)radius circle has no physical footprint,
+            // so it can never collide with anything — regardless of the
+            // OTHER side's own radius. Without this, "a.Radius + b.Radius"
+            // still comes out positive whenever b has any size at all, so a
+            // deliberately inert circle (e.g. GrenadeProjectile before it
+            // arms) would still register a hit if it happened to spawn
+            // exactly on top of something.
+            if (a.Radius <= 0 || b.Radius <= 0)
+                return false;
+
             float radius = a.Radius + b.Radius;
             return Vector2.DistanceSquared(a.Position, b.Position) < radius * radius;
         }

@@ -132,19 +132,16 @@ namespace Realm.Bosses
             }
         }
 
-        // Shared by every phase's grenade attack — a stationary, larger-
-        // than-normal-radius hazard alive for its whole duration. No fuse/
-        // telegraph exists in this engine, so "AoE damage" comes from the
-        // bigger radius, not a delayed detonation.
+        // Shared by every phase's grenade attack — a telegraphed AoE hazard
+        // (GrenadeProjectile): shows the real explosion radius as a grey
+        // circle for GrenadeFuseFrames before the hitbox actually arms and
+        // turns red, giving the player a brief window to step out.
+        private const int GrenadeFuseFrames = 25; // ~0.4s at 60fps
+
         private void SpawnGrenade(Vector2 position, int damage, float radius, int duration = 90)
         {
             EntityManager.Add(
-                new EnemyProjectile(position, Vector2.Zero, Art.RedFire)
-                {
-                    Damage = damage,
-                    Radius = radius,
-                    duration = duration,
-                }
+                new GrenadeProjectile(position, radius, damage, GrenadeFuseFrames, duration)
             );
         }
 

@@ -2086,3 +2086,33 @@ date/time for those individually; don't treat their grouping as meaning they all
      `Art.SthenoSwarmProjectile` and swapped in for the placeholder `Art.SwordSlash` reuse in both
      `SthenoSwarm.ChargeFire()` and `ChaseFire()` — one dedicated look for both firing states,
      matching the Stheno Pet projectile's own single-asset treatment. No behavior change.
+107. **Stheno's grenades reworked into a real telegraphed AoE**, replacing the fixed-size
+     `Art.RedFire` sprite (which never matched the actual damage radius) with a new
+     `GrenadeProjectile` (`GrenadeProjectile.cs`, project root, extends `EnemyProjectile`): spawns
+     as a low-opacity grey circle sized to the real explosion radius but with no live hitbox
+     (`Radius = 0`), then after `fuseFrames` (25, ~0.4s) "arms" — `Radius` jumps to the real value
+     and the circle turns red — giving the player a brief window to see exactly where it'll hurt
+     and step out before it does. The circle itself is a new procedurally-generated
+     `Art.Circle` (64x64, hard-edged, opaque-inside/transparent-outside), generated once at startup
+     the same way `Art.HealthBar` already is (a runtime `Texture2D` rather than loaded art) since a
+     solid-color square can't be scaled into a circle — tinted grey/red and scaled to the exact
+     world-space radius at draw time. `SthenoTheSnakeQueen.SpawnGrenade()` (shared by all three
+     grenade attacks — rapid throw, diamond/square bursts, aimed bombs) now constructs a
+     `GrenadeProjectile` instead of a plain `EnemyProjectile`.
+
+     Caught a real collision-system bug while verifying: `EntityManager.IsColliding()`'s
+     circle check uses `a.Radius + b.Radius` as the combined hit radius — a "Radius = 0" grenade is
+     only truly inert if the *other* side (the player) also has zero radius, which it never does.
+     A grenade spawned exactly on the player (the aimed-bomb attack does exactly this) would still
+     register as touching them during the telegraph, dealing a hidden 0-damage hit and immediately
+     expiring itself before it ever got to arm. Fixed generically in `IsColliding()` itself (not
+     special-cased to grenades): either side having `Radius <= 0` now means no collision is
+     possible at all, regardless of the other side's size — the semantically correct rule for a
+     circular entity with no physical footprint, confirmed via grep that nothing else in the
+     codebase relied on the old zero-radius-still-collides behavior. Verified via a scripted repro:
+     `Art.Circle` generates correctly (64x64, opaque center, transparent corner); a grenade spawned
+     directly on the player takes zero damage and doesn't self-consume for the full telegraph
+     window; it arms (`Radius`/color flip) and deals its hit exactly once after the fuse; a grenade
+     nobody stands in still expires via its normal duration timer. Real save files backed up first
+     per `CLAUDE.md` (the test mutates `Player.Instance.Health` directly) and restored/diff-verified
+     afterward. Clean build and a plain boot-check both passed.

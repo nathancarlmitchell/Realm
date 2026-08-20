@@ -47,6 +47,15 @@ namespace Realm
         public static Texture2D Mute { get; private set; }
         public static Texture2D Unmute { get; private set; }
 
+        // A filled white circle, generated at runtime rather than loaded
+        // from disk — same reasoning as HealthBar above (a 1x1 pixel
+        // stretched into rectangles/lines), except a solid-color square
+        // can't be scaled into a circle, so this needs real per-pixel data.
+        // Used for telegraphed-AoE indicators (see GrenadeProjectile) where
+        // the drawn shape needs to actually match a circular hitbox radius,
+        // tinted/scaled per use rather than baked into fixed art.
+        public static Texture2D Circle { get; private set; }
+
         public static SpriteFont HudFont { get; private set; }
         public static SpriteFont TitleFont { get; private set; }
 
@@ -105,6 +114,8 @@ namespace Realm
             HealthBar = new Texture2D(Game1.Instance.GraphicsDevice, 1, 1);
             HealthBar.SetData(new[] { Color.White });
 
+            Circle = GenerateCircleTexture(Game1.Instance.GraphicsDevice, 64);
+
             // Player.
             Wizard = content.Load<Texture2D>("Classes/wizard");
             Projectile = content.Load<Texture2D>("projectile");
@@ -158,6 +169,30 @@ namespace Realm
             // Fonts.
             HudFont = content.Load<SpriteFont>("Fonts/HudFont");
             TitleFont = content.Load<SpriteFont>("Fonts/TitleFont");
+        }
+
+        // Hard-edged filled circle, diameter x diameter, opaque white
+        // inside the radius and fully transparent outside it — drawn once
+        // at startup rather than per-frame, then tinted/scaled at draw time
+        // by whoever uses it (see Circle above).
+        private static Texture2D GenerateCircleTexture(GraphicsDevice device, int diameter)
+        {
+            var texture = new Texture2D(device, diameter, diameter);
+            var data = new Color[diameter * diameter];
+            float radius = diameter / 2f;
+            Vector2 center = new(radius, radius);
+
+            for (int y = 0; y < diameter; y++)
+            {
+                for (int x = 0; x < diameter; x++)
+                {
+                    float distance = Vector2.Distance(new Vector2(x + 0.5f, y + 0.5f), center);
+                    data[y * diameter + x] = distance <= radius ? Color.White : Color.Transparent;
+                }
+            }
+
+            texture.SetData(data);
+            return texture;
         }
     }
 }
