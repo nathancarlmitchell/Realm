@@ -25,6 +25,15 @@ namespace Realm
             public abstract string DisplayName { get; }
             public abstract void Enter();
 
+            // Which animation a portal to this destination draws itself
+            // with. Resolved lazily (only called once a Portal is actually
+            // constructed, well after Art.Load() has run) rather than
+            // eagerly at these static fields' own init time, since that
+            // happens before content is loaded. Defaults to the plain
+            // swirl every non-dungeon destination (Realm/Bank/Nexus/etc.)
+            // still uses.
+            internal virtual AnimatedTexture PortalArt() => Art.Portal;
+
             public static readonly Destination Realm = new RealmDestination();
             public static readonly Destination CharacterSelect =
                 new CharacterSelectDestination();
@@ -32,16 +41,24 @@ namespace Realm
 
             // Dropped by SpriteGod on death (see Enemy.WasShot()) — leads
             // into a self-contained boss-fight arena (BossRealmState).
+            // DungeonName is the room's own identity, distinct from
+            // BossName (the boss fought inside it) — first step toward the
+            // eventual per-boss unique-dungeon backlog item; today it just
+            // labels the portal and picks its animation.
             public static readonly Destination BossRealm = new BossDestination(
                 "Limon the Sprite Goddess",
-                position => new LimonTheSpriteGoddess(position)
+                "Sprite World",
+                position => new LimonTheSpriteGoddess(position),
+                () => Art.SpriteWorldPortal
             );
 
             // Dropped by BigSnake on death (see Enemy.CreateBigSnake()) —
             // same shape as BossRealm above, just carrying the second boss.
             public static readonly Destination SthenoBossRealm = new BossDestination(
                 "Stheno the Snake Queen",
-                position => new SthenoTheSnakeQueen(position)
+                "Snake Pit",
+                position => new SthenoTheSnakeQueen(position),
+                () => Art.SnakePitPortal
             );
 
             // The boss arena's own exit portal. No other portal currently
@@ -89,16 +106,26 @@ namespace Realm
             public sealed class BossDestination : Destination
             {
                 internal string BossName { get; }
+                internal string DungeonName { get; }
                 internal Func<Vector2, Boss> CreateBoss { get; }
+                private readonly Func<AnimatedTexture> getPortalArt;
 
-                internal BossDestination(string bossName, Func<Vector2, Boss> createBoss)
+                internal BossDestination(
+                    string bossName,
+                    string dungeonName,
+                    Func<Vector2, Boss> createBoss,
+                    Func<AnimatedTexture> getPortalArt
+                )
                 {
                     BossName = bossName;
+                    DungeonName = dungeonName;
                     CreateBoss = createBoss;
+                    this.getPortalArt = getPortalArt;
                 }
 
-                public override string DisplayName => "Boss Fight";
+                public override string DisplayName => DungeonName;
                 public override void Enter() => StateManager.EnterBossRealm(this);
+                internal override AnimatedTexture PortalArt() => getPortalArt();
             }
         }
 
@@ -131,11 +158,6 @@ namespace Realm
         }
         public Destination dest;
 
-        // Art.Portal renders each 64px source frame at 1.5x scale (Art.cs),
-        // and draws from Origin Vector2.Zero, so this is the on-screen
-        // footprint used to center the label beneath it.
-        private const int RenderedSize = 96;
-
         // How close the player needs to stay to a Bank portal for BankSystem to
         // stay open — wider than the tight teleport-trigger `bounds` above so a
         // single step away doesn't flicker the panel shut.
@@ -143,19 +165,27 @@ namespace Realm
 
         public string DisplayName => dest.DisplayName;
 
+        // On-screen footprint (source frame size at this portal's own draw
+        // scale) — used to center the label beneath it. Computed per-image
+        // rather than a shared constant since dungeon portals (see
+        // Destination.PortalArt) use a smaller source frame than the
+        // generic 64px swirl.
+        private float RenderedWidth => image.FrameWidth * image.Scale;
+        private float RenderedHeight => image.FrameHeight * image.Scale;
+
         public Portal()
         {
-            image = Art.Portal;
+            dest = Destination.Realm;
+            image = dest.PortalArt();
             position.X = Player.Instance.Position.X + 100;
             position.Y = Player.Instance.Position.Y + 100;
-            dest = Destination.Realm;
         }
 
         public Portal(Vector2 position, Destination dest)
         {
-            image = Art.Portal;
-            this.position = position;
             this.dest = dest;
+            image = dest.PortalArt();
+            this.position = position;
         }
 
         public void EnterPortal() => dest.Enter();
@@ -170,7 +200,7 @@ namespace Realm
             // teleport-trigger `bounds` the other destinations use below.
             if (dest == Destination.Bank)
             {
-                Vector2 center = position + new Vector2(RenderedSize / 2f, RenderedSize / 2f);
+                Vector2 center = position + new Vector2(RenderedWidth / 2f, RenderedHeight / 2f);
                 float distSq = Vector2.DistanceSquared(Player.Instance.Position, center);
 
                 // Shared so BankSystem's panel can anchor itself above the
@@ -206,8 +236,8 @@ namespace Realm
             {
                 Vector2 size = Art.HudFont.MeasureString(label);
                 Vector2 labelPos = new(
-                    position.X + (RenderedSize / 2) - (size.X / 2),
-                    position.Y + RenderedSize + 4
+                    position.X + (RenderedWidth / 2) - (size.X / 2),
+                    position.Y + RenderedHeight + 4
                 );
 
                 spriteBatch.DrawString(

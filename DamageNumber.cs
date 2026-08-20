@@ -10,7 +10,7 @@ namespace Realm
 
         private const int LifespanTicks = 40;
         private static readonly Vector2 FloatVelocity = new(0, -0.6f);
-        private const float Scale = 1.3f;
+        private const float Scale = 1.0f;
 
         // Same offset/alpha as the title screen's own text backing (see
         // Overlay.DrawTitle()/GameOverState.Draw()) — a black copy drawn

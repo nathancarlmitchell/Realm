@@ -2207,3 +2207,39 @@ date/time for those individually; don't treat their grouping as meaning they all
      compiled the new asset (`DamageFont.xnb` confirmed present in `bin/Debug/net8.0-windows/
      Content/Fonts/`, not skipped), and a plain boot-check (minimized, `IsIconic()`-confirmed)
      showed the process starting and staying alive with no temp code involved.
+115. **Boss portals now show their dungeon's name and their own themed art**, first step toward the
+     still-open "unique dungeon per boss" backlog idea. `Destination.BossDestination` gained a
+     `DungeonName` field, separate from `BossName` (the boss fought inside, e.g. "Limon the Sprite
+     Goddess") — `DungeonName` is the room's own identity ("Sprite World" for Limon's realm, "Snake
+     Pit" for Stheno's), and `DisplayName` (what `Portal.Draw()`'s label actually shows) now returns
+     it instead of the old hardcoded generic `"Boss Fight"` string. User-supplied art (`Content/
+     Sprite World Portal.png`, `Content/Snake Pit Portal.png`, both 260×104, a 7-frame animation laid
+     out 5-wide/2-row rather than one long strip) wired into `Content.mgcb`/`Art.cs` as
+     `Art.SpriteWorldPortal`/`Art.SnakePitPortal`. `AnimatedTexture` (previously single-row-strip
+     only — `DrawFrame()` always read `Y=0` and used the full texture height as one frame) gained an
+     optional `columns` param to `Load()`; when given, `DrawFrame()` derives `rows` from
+     `frameCount`/`columns` and slices both X *and* Y from the frame index, while every existing
+     single-row caller (`Art.Portal`, `Portal.png`) is unaffected since omitting `columns` defaults it
+     to `frameCount`, reproducing the exact old one-row math. New `Destination.PortalArt()` (`internal
+     virtual`, defaults to `Art.Portal`, overridden on `BossDestination` to return a lazily-invoked
+     `Func<AnimatedTexture>` set per-instance) is what `Portal`'s constructor now calls instead of
+     hardcoding `Art.Portal` — resolved lazily (only invoked once a real `Portal` is constructed, long
+     after `Art.Load()` has run) specifically because eagerly evaluating an `Art.*` field inside a
+     `static readonly Destination` field initializer would capture `null` (those run before content
+     loads). `Portal`'s old fixed `RenderedSize = 96` constant (assumed every portal used the same 64px
+     source frame) was replaced with per-instance `RenderedWidth`/`RenderedHeight` properties reading
+     a new `AnimatedTexture.FrameWidth`/`FrameHeight` pair, so the label still centers correctly under
+     the new sheets' smaller 52px frames instead of assuming the generic swirl's size. Only the two
+     boss-realm destinations changed behavior — every other portal (Realm/CharacterSelect/Bank/Nexus,
+     and the boss arena's own exit portal) still resolves to the plain swirling `Art.Portal`, unchanged.
+     Verified via a scripted repro (temp code in `Game1.StartGame()`, no `Player.Instance` mutation so
+     no save-file risk): confirmed `BossRealm`/`SthenoBossRealm`'s `DisplayName` read "Sprite World"/
+     "Snake Pit" exactly; confirmed (via reflection into the internal `PortalArt()` method) `BossRealm`
+     resolves to the exact `Art.SpriteWorldPortal` reference, `SthenoBossRealm` to `Art.SnakePitPortal`,
+     and both `Realm`/`Bank` still resolve to the exact `Art.Portal` reference; confirmed
+     `FrameWidth`/`FrameHeight` read 52×52 for both new sheets vs. 64×64 for the generic one; hand-
+     verified the source-rectangle math for all 7 real frames against the sheet's actual 5×2 layout;
+     and constructed real `Portal` instances with each new destination and called `Draw()` through a
+     real `SpriteBatch.Begin()/End()` pair with no exception for both new textures. Clean build
+     confirmed both new `.xnb` assets actually compiled (not skipped), and a plain boot-check (no temp
+     code) passed.

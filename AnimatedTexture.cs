@@ -13,6 +13,13 @@ namespace Realm
         // Number of frames in the animation.
         private int frameCount;
 
+        // Frames per row in the spritesheet — lets a sheet wrap onto
+        // multiple rows (e.g. a 7-frame animation laid out 5-wide, 2 rows)
+        // instead of requiring one long horizontal strip. Defaults to
+        // frameCount in Load() below, which reproduces the old single-row
+        // behavior exactly for every existing caller.
+        private int columns;
+
         // The animation spritesheet.
         private Texture2D myTexture;
 
@@ -46,9 +53,16 @@ namespace Realm
             this.Opacity = 1f;
         }
 
-        public void Load(ContentManager content, string asset, int frameCount, int framesPerSec)
+        public void Load(
+            ContentManager content,
+            string asset,
+            int frameCount,
+            int framesPerSec,
+            int columns = 0
+        )
         {
             this.frameCount = frameCount;
+            this.columns = columns > 0 ? columns : frameCount;
             myTexture = content.Load<Texture2D>(asset);
             timePerFrame = (float)1 / framesPerSec;
             frame = 0;
@@ -77,12 +91,14 @@ namespace Realm
 
         public void DrawFrame(SpriteBatch batch, int frame, Vector2 screenPos)
         {
-            int FrameWidth = myTexture.Width / frameCount;
+            int rows = (frameCount + columns - 1) / columns;
+            int FrameWidth = myTexture.Width / columns;
+            int FrameHeight = myTexture.Height / rows;
             Rectangle sourcerect = new Rectangle(
-                FrameWidth * frame,
-                0,
+                FrameWidth * (frame % columns),
+                FrameHeight * (frame / columns),
                 FrameWidth,
-                myTexture.Height
+                FrameHeight
             );
             batch.Draw(
                 myTexture,
@@ -101,6 +117,12 @@ namespace Realm
         {
             get { return isPaused; }
         }
+
+        // Native (unscaled) size of a single frame — lets callers that draw
+        // this texture at its own Scale (e.g. Portal's label centering)
+        // work correctly regardless of the sheet's frame/column layout.
+        public int FrameWidth => myTexture.Width / columns;
+        public int FrameHeight => myTexture.Height / ((frameCount + columns - 1) / columns);
 
         public void Reset()
         {

@@ -41,6 +41,15 @@ namespace Realm
         public static Texture2D ArcherProjectile { get; private set; }
         public static Texture2D ShieldProjectile { get; private set; }
         public static AnimatedTexture Portal { get; private set; }
+
+        // Dungeon-specific portal animations — same 7-frame, 8fps loop as
+        // the generic Portal above, just laid out 5-wide/2-row instead of
+        // one long strip (see AnimatedTexture's columns param). Only used
+        // for portals leading into a specific boss's dungeon (see
+        // Portal.Destination.BossDestination); every other portal keeps
+        // the plain swirl above.
+        public static AnimatedTexture SpriteWorldPortal { get; private set; }
+        public static AnimatedTexture SnakePitPortal { get; private set; }
         public static Texture2D Inventory { get; private set; }
         public static Texture2D HealthPotion { get; private set; }
         public static Texture2D ManaPotion { get; private set; }
@@ -99,6 +108,12 @@ namespace Realm
             Tile = content.Load<Texture2D>("tile");
             Portal = new AnimatedTexture(Vector2.Zero, 0f, 1.5f, 0.5f);
             Portal.Load(content, "portal", 7, 8);
+
+            SpriteWorldPortal = new AnimatedTexture(Vector2.Zero, 0f, 1.5f, 0.5f);
+            SpriteWorldPortal.Load(content, "Sprite World Portal", 7, 8, 5);
+
+            SnakePitPortal = new AnimatedTexture(Vector2.Zero, 0f, 1.5f, 0.5f);
+            SnakePitPortal.Load(content, "Snake Pit Portal", 7, 8, 5);
             HealthPotion = content.Load<Texture2D>("health_potion");
             ManaPotion = content.Load<Texture2D>("mana_potion");
 
