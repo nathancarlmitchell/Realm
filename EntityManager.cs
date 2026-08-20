@@ -114,13 +114,13 @@ namespace Realm
         // Debug-only (F3, Game1._Debug). Draws an outline matching each
         // entity's actual collision shape — a circle for the (still
         // default) Circle case, accurate to Radius the same way it always
-        // was, or a rectangle matching RectangleBounds() below for anything
-        // that opted into Entity.CollisionShape.Rectangle (e.g. Limon's
-        // Spray shots) — so the debug view always matches whichever check
-        // IsColliding() actually runs, not just the circle case. Covers
-        // player, enemies, and both projectile lists (player-fired bullets
-        // and enemy projectiles); loot bags/potions are still left out, per
-        // the original request.
+        // was, or the true rotated rectangle (DrawHitboxRotatedRectangle()
+        // below) for anything that opted into Entity.CollisionShape.
+        // Rectangle (e.g. Limon's Spray shots, Stheno's blades) — so the
+        // debug view always matches whichever check IsColliding() actually
+        // runs, not just the circle case. Covers player, enemies, and both
+        // projectile lists (player-fired bullets and enemy projectiles);
+        // loot bags/potions are still left out, per the original request.
         public static void DrawHitboxes(SpriteBatch spriteBatch)
         {
             foreach (var enemy in enemies)
@@ -148,7 +148,7 @@ namespace Realm
         private static void DrawHitbox(SpriteBatch spriteBatch, Entity entity, Color color)
         {
             if (entity.Shape == Entity.CollisionShape.Rectangle)
-                DrawHitboxRectangle(spriteBatch, RectangleBounds(entity), color);
+                DrawHitboxRotatedRectangle(spriteBatch, entity, color);
             else
                 DrawHitboxCircle(spriteBatch, entity.Position, entity.Radius, color);
         }
@@ -165,17 +165,28 @@ namespace Realm
             }
         }
 
-        private static void DrawHitboxRectangle(SpriteBatch spriteBatch, Rectangle bounds, Color color)
+        // Draws the entity's actual rotated hitbox (its 4 true corners,
+        // rotated by Orientation around Position) rather than an
+        // axis-aligned box — matches what IsRectangleCircleColliding()
+        // below actually checks against, unlike the old AABB-based outline
+        // which was visibly looser than the sprite at diagonal angles.
+        private static void DrawHitboxRotatedRectangle(SpriteBatch spriteBatch, Entity entity, Color color)
         {
-            Vector2 topLeft = new(bounds.Left, bounds.Top);
-            Vector2 topRight = new(bounds.Right, bounds.Top);
-            Vector2 bottomRight = new(bounds.Right, bounds.Bottom);
-            Vector2 bottomLeft = new(bounds.Left, bounds.Bottom);
+            float halfWidth = entity.Width / 2f;
+            float halfHeight = entity.Height / 2f;
 
-            DrawHitboxLine(spriteBatch, topLeft, topRight, color);
-            DrawHitboxLine(spriteBatch, topRight, bottomRight, color);
-            DrawHitboxLine(spriteBatch, bottomRight, bottomLeft, color);
-            DrawHitboxLine(spriteBatch, bottomLeft, topLeft, color);
+            Vector2 right = Extensions.FromPolar(entity.Orientation, halfWidth);
+            Vector2 up = Extensions.FromPolar(entity.Orientation + MathHelper.PiOver2, halfHeight);
+
+            Vector2 corner1 = entity.Position + right + up;
+            Vector2 corner2 = entity.Position - right + up;
+            Vector2 corner3 = entity.Position - right - up;
+            Vector2 corner4 = entity.Position + right - up;
+
+            DrawHitboxLine(spriteBatch, corner1, corner2, color);
+            DrawHitboxLine(spriteBatch, corner2, corner3, color);
+            DrawHitboxLine(spriteBatch, corner3, corner4, color);
+            DrawHitboxLine(spriteBatch, corner4, corner1, color);
         }
 
         private static void DrawHitboxLine(SpriteBatch spriteBatch, Vector2 start, Vector2 end, Color color)
@@ -201,12 +212,26 @@ namespace Realm
             if (a.IsExpired || b.IsExpired)
                 return false;
 
-            // Rectangle collision wins if either side opts into it (e.g. a
-            // wide beam-shaped projectile) — circle-vs-circle (the original,
-            // still the default for everything that doesn't set Shape) only
-            // applies when both sides are Circle.
-            if (a.Shape == Entity.CollisionShape.Rectangle || b.Shape == Entity.CollisionShape.Rectangle)
+            bool aRect = a.Shape == Entity.CollisionShape.Rectangle;
+            bool bRect = b.Shape == Entity.CollisionShape.Rectangle;
+
+            // Both sides opting into Rectangle is a case nothing in the
+            // codebase currently exercises (every real Rectangle entity is
+            // a projectile, which only ever collides against the player, a
+            // Circle) — kept as a same-as-before AABB approximation rather
+            // than building full rotated-rectangle-vs-rotated-rectangle
+            // (SAT) for a pairing with zero live callers.
+            if (aRect && bRect)
                 return RectangleBounds(a).Intersects(RectangleBounds(b));
+
+            // The real case: exactly one side is a rotated rectangle (e.g.
+            // a thin blade or beam sprite) and the other is a circle (the
+            // player). Uses the true rotated hitbox, not an axis-aligned
+            // approximation — see IsRectangleCircleColliding() below.
+            if (aRect)
+                return IsRectangleCircleColliding(a, b);
+            if (bRect)
+                return IsRectangleCircleColliding(b, a);
 
             // A zero-(or negative-)radius circle has no physical footprint,
             // so it can never collide with anything — regardless of the
@@ -222,23 +247,53 @@ namespace Realm
             return Vector2.DistanceSquared(a.Position, b.Position) < radius * radius;
         }
 
-        // A box centered on Position, sized to the entity's actual sprite —
-        // and, critically, adjusted for Orientation. Entity.Draw() rotates
-        // the sprite by Orientation (e.g. EnemyProjectile sets it from
-        // Velocity.ToAngle(), so a projectile visually rotates to face its
-        // travel direction); a box built from raw Width/Height without
-        // accounting for that would stay axis-aligned to the *image*, not
-        // to what's actually on screen — for a non-square sprite like
-        // limon1.png (40x10), a shot traveling near-vertically renders
-        // ~10 wide x 40 tall but a naive box would still be computed as
-        // 40 wide x 10 tall, backwards from what's drawn. Uses the standard
-        // closed-form AABB-of-a-rotated-rectangle formula (half-extent
-        // along each world axis = sum of both local half-extents projected
-        // onto that axis) rather than manually rotating and re-bounding all
-        // 4 corners, since it's algebraically equivalent and simpler.
-        // Orientation 0 reduces to the original unrotated box exactly (cos
-        // 1, sin 0), so nothing changes for axis-aligned sprites/whatever
-        // doesn't rotate.
+        // True oriented-rectangle-vs-circle test — the rectangle's actual
+        // rotated silhouette, not an axis-aligned box that balloons larger
+        // than the sprite at diagonal angles (see RectangleBounds() below).
+        // Transforms the circle's center into the rectangle's own local
+        // (unrotated) space by undoing its Orientation, then finds the
+        // closest point on the axis-aligned box in that local space and
+        // checks the distance to it — the standard closest-point method for
+        // circle-vs-OBB collision.
+        private static bool IsRectangleCircleColliding(Entity rect, Entity circle)
+        {
+            if (circle.Radius <= 0)
+                return false;
+
+            float halfWidth = rect.Width / 2f;
+            float halfHeight = rect.Height / 2f;
+
+            Vector2 delta = circle.Position - rect.Position;
+            float cos = (float)Math.Cos(rect.Orientation);
+            float sin = (float)Math.Sin(rect.Orientation);
+
+            // Undoes the rectangle's rotation (rotates delta by
+            // -Orientation) so the box can be treated as axis-aligned.
+            Vector2 local = new(delta.X * cos + delta.Y * sin, -delta.X * sin + delta.Y * cos);
+
+            Vector2 closest = new(
+                MathHelper.Clamp(local.X, -halfWidth, halfWidth),
+                MathHelper.Clamp(local.Y, -halfHeight, halfHeight)
+            );
+
+            return Vector2.DistanceSquared(local, closest) < circle.Radius * circle.Radius;
+        }
+
+        // An axis-aligned box that encloses the entity's rotated sprite —
+        // NOT the entity's true rotated silhouette (that's
+        // IsRectangleCircleColliding() above, used for the actual
+        // rectangle-vs-player collision check and the F3 debug outline).
+        // This AABB is only still used as a same-as-before approximation
+        // for the rare (currently unreached) case of two Rectangle-shaped
+        // entities colliding with each other, since building full
+        // rotated-rectangle-vs-rotated-rectangle (SAT) has no live caller
+        // to justify it yet. At a diagonal Orientation this box is visibly
+        // larger than the sprite — half-extent along each world axis is
+        // the sum of both local half-extents projected onto that axis
+        // (the standard closed-form AABB-of-a-rotated-rectangle formula,
+        // algebraically equivalent to rotating and re-bounding all 4
+        // corners but simpler). Orientation 0 reduces to the original
+        // unrotated box exactly (cos 1, sin 0).
         //
         // Not the same as Entity.Bounds (which anchors Position at the
         // rectangle's top-left corner, not its center, and also doesn't

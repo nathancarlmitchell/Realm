@@ -136,9 +136,9 @@ namespace Realm.Bosses
         // (GrenadeProjectile): shows the real explosion radius as a grey
         // circle for GrenadeFuseFrames before the hitbox actually arms and
         // turns red, giving the player a brief window to step out.
-        private const int GrenadeFuseFrames = 25; // ~0.4s at 60fps
+        private const int GrenadeFuseFrames = 100; // ~0.4s at 60fps
 
-        private void SpawnGrenade(Vector2 position, int damage, float radius, int duration = 90)
+        private void SpawnGrenade(Vector2 position, int damage, float radius, int duration = 125)
         {
             EntityManager.Add(
                 new GrenadeProjectile(position, radius, damage, GrenadeFuseFrames, duration)
@@ -151,7 +151,7 @@ namespace Realm.Bosses
         private const int BladeCooldown = 20;
         private const float BladePairSpread = 0.06f; // rad, half-separation within a pair
         private const float BladeSpeed = 5f;
-        private const int BladeDamage = 20;
+        private const int BladeDamage = 90;
         private const int BladeDuration = 90;
 
         private IEnumerable<int> FireBladePairs()
@@ -187,10 +187,15 @@ namespace Realm.Bosses
         private void FireBlade(float angle)
         {
             EntityManager.Add(
-                new EnemyProjectile(Position, Extensions.FromPolar(angle, BladeSpeed), Art.SwordSlash)
+                new EnemyProjectile(
+                    Position,
+                    Extensions.FromPolar(angle, BladeSpeed),
+                    Art.SwordSlash
+                )
                 {
                     Damage = BladeDamage,
                     duration = BladeDuration,
+                    Shape = CollisionShape.Rectangle,
                 }
             );
         }
@@ -269,12 +274,14 @@ namespace Realm.Bosses
                 float r = BurstRadius * (float)Math.Sqrt(2);
                 for (int i = 0; i < 4; i++)
                     corners[i] =
-                        Position + Extensions.FromPolar(MathHelper.PiOver4 + i * MathHelper.PiOver2, r);
+                        Position
+                        + Extensions.FromPolar(MathHelper.PiOver4 + i * MathHelper.PiOver2, r);
             }
             else
             {
                 for (int i = 0; i < 4; i++)
-                    corners[i] = Position + Extensions.FromPolar(i * MathHelper.PiOver2, BurstRadius);
+                    corners[i] =
+                        Position + Extensions.FromPolar(i * MathHelper.PiOver2, BurstRadius);
             }
 
             for (int side = 0; side < 4; side++)

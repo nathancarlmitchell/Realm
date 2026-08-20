@@ -2116,3 +2116,27 @@ date/time for those individually; don't treat their grouping as meaning they all
      nobody stands in still expires via its normal duration timer. Real save files backed up first
      per `CLAUDE.md` (the test mutates `Player.Instance.Health` directly) and restored/diff-verified
      afterward. Clean build and a plain boot-check both passed.
+108. **`EntityManager`'s `CollisionShape.Rectangle` hitbox now actually rotates with the sprite**,
+     per the user's report that it didn't visually align (e.g. Stheno's blade projectiles).
+     `RectangleBounds()` — the only thing the old check used — was always an axis-aligned bounding
+     box that *encloses* the rotated sprite, not the sprite's true rotated silhouette; at a diagonal
+     `Orientation` that box balloons visibly larger than what's actually drawn (its area grows up to
+     ~41% for a square sprite, more for an elongated one like a blade). It also collapsed BOTH sides
+     into boxes whenever either one opted into `Rectangle` — even the player, despite being a
+     circle. New `EntityManager.IsRectangleCircleColliding()` does the real thing instead: transforms
+     the circle's center into the rectangle's own local (unrotated) space by undoing its
+     `Orientation`, finds the closest point on the axis-aligned box in that local space, and checks
+     distance to it — the standard closest-point method for circle-vs-oriented-rectangle collision.
+     `IsColliding()` now branches to it whenever exactly one side is `Rectangle` (every real case
+     today — a projectile against the player); the old AABB-vs-AABB check is kept only as a
+     same-as-before fallback for two `Rectangle` sides colliding with each other, a pairing nothing
+     in the codebase currently exercises (not worth building full rotated-rectangle-vs-rotated-
+     rectangle/SAT for zero live callers). The F3 debug hitbox outline
+     (`DrawHitboxRotatedRectangle()`, replacing the old axis-aligned `DrawHitboxRectangle()`) now
+     draws the sprite's actual 4 rotated corners too, so the debug view matches what really gets
+     checked instead of the old looser box. Verified via a scripted repro: a 100x20 rect rotated 45°
+     correctly rejects a circle sitting inside the old AABB but outside the true rotated silhouette
+     (~46.57 units past the short edge), correctly accepts one 30 units along the true long axis, an
+     unrotated sanity pair behaves as expected, and the same geometry produces matching results
+     through the real `EntityManager.Update()`/`HandleCollisions()` pipeline with a live `Player`
+     and `EnemyProjectile` (not just the isolated math). Clean build and a plain boot-check passed.
