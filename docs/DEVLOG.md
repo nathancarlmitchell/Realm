@@ -2263,3 +2263,19 @@ date/time for those individually; don't treat their grouping as meaning they all
      used (`position + (64, 64)`, 32×32); called `EntityManager.DrawHitboxes()` both with a real
      portal list and with the param omitted, through a real `SpriteBatch.Begin()/End()` pair, with no
      exception either way. Clean build and a plain boot-check both passed.
+117. **Fixed portal teleport-trigger bounds not scaling with the new dungeon-specific art**, caught by
+     the user via the F3 outline added in entry 116. `bounds`'s old formula (`position + (64, 64)`,
+     32×32) was a magic-number offset tuned entirely around the generic swirl's 96px rendered size
+     (64 = 96 × 2/3, 32 = 96 × 1/3) — it never accounted for a portal drawing at a different size, so
+     entry 115's smaller dungeon sheets (78px rendered, not 96px) put the actual trigger zone mostly
+     or entirely outside the visible sprite, invisible until the new debug outline made it obvious.
+     Rewrote `bounds` to compute the same 2/3-offset, 1/3-size box as a fraction of each portal's own
+     `RenderedWidth`/`RenderedHeight` (already available from entry 115's label-centering fix) instead
+     of the fixed 64/32 constants — this reproduces the exact old numbers for the generic portal (96 ×
+     2/3 = 64, 96 × 1/3 = 32, so no regression there) while correctly landing inside the smaller
+     dungeon portals' own footprint (78 × 2/3 = 52, 78 × 1/3 = 26). Verified via a scripted repro (temp
+     code in `Game1.StartGame()`, no `Player.Instance` mutation): confirmed the generic portal's
+     `Bounds` is still exactly `(264, 364, 32, 32)` for a portal at `(200, 300)` (byte-for-byte
+     unchanged from before this fix); confirmed both `Sprite World`/`Snake Pit` portals' `Bounds` now
+     sit fully contained within their 78×78 visible sprite, which they did not before. Clean build and
+     a plain boot-check both passed.

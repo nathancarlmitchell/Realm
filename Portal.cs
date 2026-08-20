@@ -152,9 +152,30 @@ namespace Realm
         private AnimatedTexture image;
         private Vector2 position;
         public Vector2 Position => position;
+
+        // Fraction of the portal's own rendered footprint the teleport
+        // trigger occupies — a 1/3-sized box sitting in the bottom-right
+        // corner (2/3 offset). Originally a hardcoded 64px offset / 32px
+        // size, tuned by feel against the generic portal's 96px rendered
+        // size (64 = 96 * 2/3, 32 = 96 * 1/3); expressed as a fraction of
+        // RenderedWidth/RenderedHeight instead so it keeps the exact same
+        // feel on that portal while also landing correctly on the smaller
+        // dungeon-specific sheets (78px rendered) instead of poking out
+        // past their visible sprite like the old fixed 64px offset did.
+        private const float BoundsOffsetFraction = 2f / 3f;
+        private const float BoundsSizeFraction = 1f / 3f;
+
         private Rectangle bounds
         {
-            get { return new Rectangle((int)position.X + 64, (int)position.Y + 64, 32, 32); }
+            get
+            {
+                return new Rectangle(
+                    (int)(position.X + RenderedWidth * BoundsOffsetFraction),
+                    (int)(position.Y + RenderedHeight * BoundsOffsetFraction),
+                    (int)(RenderedWidth * BoundsSizeFraction),
+                    (int)(RenderedHeight * BoundsSizeFraction)
+                );
+            }
         }
 
         // Public read-only view of the same rectangle, for the F3 debug
@@ -172,10 +193,10 @@ namespace Realm
         public string DisplayName => dest.DisplayName;
 
         // On-screen footprint (source frame size at this portal's own draw
-        // scale) — used to center the label beneath it. Computed per-image
-        // rather than a shared constant since dungeon portals (see
-        // Destination.PortalArt) use a smaller source frame than the
-        // generic 64px swirl.
+        // scale) — used to center the label beneath it, and to derive
+        // `bounds` above. Computed per-image rather than a shared constant
+        // since dungeon portals (see Destination.PortalArt) use a smaller
+        // source frame than the generic 64px swirl.
         private float RenderedWidth => image.FrameWidth * image.Scale;
         private float RenderedHeight => image.FrameHeight * image.Scale;
 
