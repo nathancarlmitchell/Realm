@@ -349,6 +349,55 @@ namespace Realm
             }
         }
 
+        // Same weaving randomness as MoveSnake above, but leashed to a
+        // radius around wherever the enemy spawned. updateChance is a
+        // per-frame probability (0-1) of picking a new direction, rolled
+        // independently each frame, unlike MoveSnake's fixed 10-frame
+        // cadence — the 0.1f default averages out to roughly the same turn
+        // frequency.
+        //
+        // The boundary check predicts against Velocity (this enemy's real,
+        // already-accumulating momentum — see Update() below, which decays
+        // it by 0.8x/frame rather than resetting it) plus this frame's new
+        // step, not just the new step alone — checking the step alone would
+        // let several frames of sustained outward movement build up enough
+        // carried momentum to blow well past wanderDistance before a
+        // same-frame direction change could catch up. Once that predicted
+        // position would cross the boundary, Velocity is zeroed (killing
+        // the outward momentum outright) and direction points straight back
+        // at origin, so the leash actually holds instead of just slowing
+        // the drift.
+        protected IEnumerable<int> MoveTethered(
+            float wanderDistance = 300f,
+            float speed = 0.2f,
+            float updateChance = 0.1f
+        )
+        {
+            Vector2 origin = Position;
+            float direction = rand.NextFloat(0, MathHelper.TwoPi);
+            while (true)
+            {
+                if (rand.NextDouble() < updateChance)
+                {
+                    direction += rand.NextFloat(-MathHelper.PiOver2, MathHelper.PiOver2);
+                    direction = MathHelper.WrapAngle(direction);
+                }
+
+                Vector2 candidateVelocity = Velocity + Extensions.FromPolar(direction, speed);
+                if (
+                    Vector2.DistanceSquared(Position + candidateVelocity, origin)
+                    > wanderDistance * wanderDistance
+                )
+                {
+                    direction = (origin - Position).ToAngle();
+                    Velocity = Vector2.Zero;
+                }
+
+                Velocity += Extensions.FromPolar(direction, speed);
+                yield return 0;
+            }
+        }
+
         IEnumerable<int> MoveRandomly()
         {
             float direction = rand.NextFloat(0, MathHelper.TwoPi);
