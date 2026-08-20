@@ -304,7 +304,12 @@ namespace Realm
             }
 
             EntityManager.Add(
-                new DamageNumber(Position, damageModified, Microsoft.Xna.Framework.Color.Red)
+                new DamageNumber(
+                    Position,
+                    damageModified,
+                    Microsoft.Xna.Framework.Color.Red,
+                    hasBlackBacking: true
+                )
             );
 
             Health = Health - damageModified;

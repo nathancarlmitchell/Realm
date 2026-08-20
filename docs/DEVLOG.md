@@ -2185,3 +2185,12 @@ date/time for those individually; don't treat their grouping as meaning they all
      zero further health loss, confirms `HasHitPlayer` latched, and finally expires via its own
      duration timer rather than the collision check. Real save files restored/diff-verified
      afterward. Clean build and a plain boot-check both passed.
+113. **Black backing added to the player's own "damage taken" numbers**, matching the same
+     offset/alpha the title screen's text already uses (`Overlay.DrawTitle()`/
+     `GameOverState.Draw()`'s `(-4, 4)` offset, `Color.Black * 0.5f`). New optional
+     `DamageNumber(..., bool hasBlackBacking = false)` parameter, drawing a black copy behind the
+     real text when true, fading in step with the number's own alpha via a new `currentAlpha` field
+     (so the backing never outlives the fading colored text as a stray black artifact). Scoped only
+     to `Player.Hit()`'s call site — enemy hit numbers (`Enemy.WasShot()`) are untouched, matching
+     the user's request specifically about the player's own damage number. Purely visual, no
+     gameplay/state change; verified via a clean build and a plain boot-check.
