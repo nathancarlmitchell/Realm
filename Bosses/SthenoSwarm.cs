@@ -51,9 +51,10 @@ namespace Realm.Bosses
         public SthenoSwarm(Vector2 position)
             : base(Art.SthenoSwarm, position)
         {
-            health = 80;
-            healthMax = 80;
-            PointValue = 20;
+            health = 400;
+            healthMax = 400;
+            Defense = 4;
+            PointValue = 0;
 
             Vector2 toPlayer = Player.Instance.Position - position;
             chargeDirection = toPlayer.LengthSquared() > 0 ? toPlayer.ScaleTo(1f) : Vector2.UnitX;
@@ -139,7 +140,11 @@ namespace Realm.Bosses
                         {
                             chaseFireCooldownRemaining = ChaseFireCooldown;
                             EntityManager.Add(
-                                new EnemyProjectile(Position, aim.ScaleTo(ChaseShotSpeed), Art.SwordSlash)
+                                new EnemyProjectile(
+                                    Position,
+                                    aim.ScaleTo(ChaseShotSpeed),
+                                    Art.SwordSlash
+                                )
                                 {
                                     Damage = ChaseDamage,
                                 }

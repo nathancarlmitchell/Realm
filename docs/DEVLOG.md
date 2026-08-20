@@ -2021,3 +2021,43 @@ date/time for those individually; don't treat their grouping as meaning they all
      radii/damage, orbit speed, spiral rotation rate, center-check radius) are first-pass estimates,
      not final — flagged to the user that spiral "feel," grenade dodge-gap spacing, and pack timing
      all need an actual playtest pass to confirm.
+
+101. **New enemy movement type, `Enemy.MoveTethered()`** — same weaving randomness as `MoveSnake()`,
+     but leashed to a radius around wherever the enemy spawned (`wanderDistance`), with optional
+     `speed` and a per-frame `updateChance` (probability of picking a new direction each frame,
+     unlike `MoveSnake()`'s fixed 10-frame cadence) — all three requested explicitly by the user.
+     Caught a real bug during verification: the first version only checked the incoming step
+     against the boundary, not the enemy's already-accumulating `Velocity` (this engine's movement
+     carries momentum, decaying 0.8x/frame rather than resetting) — several frames of sustained
+     outward drift could build up enough carried momentum to blow past the leash by 20+ units
+     before a same-frame redirect caught up. Fixed by predicting against the full candidate
+     velocity and zeroing it outright on a violation, re-verified under aggressive test parameters
+     (speed 4f, updateChance 1f) holding the boundary to floating-point precision. Not wired to any
+     enemy factory yet — available for the next one that wants bounded wandering.
+102. **F4 debug/testing key**, evolving across a few quick follow-up requests in the same
+     conversation: maxes `Player.Level` to 20 with a real `RecalculateStats()` call (so
+     Attack/Defense/etc. actually reflect it, not just the raw field), equips the current class's
+     highest-tier item for every slot (Weapon/Armor/Ring/AbilityItem — fresh instances built from
+     the matching catalog entry's data fields, same shape as `Weapon.LoadWeapon()`/
+     `Armor.LoadArmor()`/etc., via the existing `EquipWeapon()`/`EquipArmor()`/`EquipRing()`/
+     `EquipAbilityItem()` methods rather than landing in the inventory), and tops off Health/Mana to
+     their new maxes last — after gear is equipped, not right after `RecalculateStats()`, since
+     equipping can itself raise `HealthMax`/`ManaMax` further (e.g. a higher-tier armor's
+     `MaxHealthBonus`) and topping off first would leave Health/Mana stuck below the true final max.
+     Also moved the existing level up/down (`+`/`-`) debug keys, plus F4 itself, out of the
+     `RealmState`-only input block into the same `(RealmState || NexusState)` gate `UseAbility`
+     already uses, so leveling can be tried out without needing to already be in a dungeon —
+     health/mana potions stay `RealmState`-only. Verified via scripted repros at each step
+     (including one run against the user's actual real save, which turned out to already be at
+     Level 20 with Tier 14 gear from real play — confirmed via ID-swap checks that the method still
+     genuinely replaced the equipped items rather than relying on a stat-delta that had nothing
+     left to change).
+103. **Only bosses drop loot now**, per the user's explicit request. `Enemy.SpawnLoot()`'s base
+     implementation (previously `ItemSpawner.Spawn()`, the random-chance drop table every regular
+     enemy routed through) is now a no-op; `Boss.SpawnLoot()`'s guaranteed-loot override is
+     unchanged. `ItemSpawner.Spawn()` itself is left in the file, not deleted, since it's now the
+     flagged starting point for a real per-enemy drop-pool system — see
+     [BACKLOG.md](BACKLOG.md)'s new entry. Verified via a scripted repro: killed one instance of
+     every regular enemy type (Snake, Slime, Brute, BigSnake, Seeker, Wanderer, SpriteGod) and
+     confirmed `ItemSpawner.LootBags` stayed at 0, then killed a `LimonTheSpriteGoddess` and
+     confirmed a bag was added.

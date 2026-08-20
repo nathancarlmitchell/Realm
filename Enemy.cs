@@ -251,15 +251,15 @@ namespace Realm
             }
         }
 
-        // Default: the normal random-chance drop table every enemy uses.
-        // Boss overrides this for guaranteed good loot instead. PointValue
-        // already ranks enemies by toughness (higher = more score for
-        // killing it), so it doubles as the difficulty signal ItemSpawner
-        // scales drop chance/tier off — no separate difficulty field needed.
-        protected virtual void SpawnLoot()
-        {
-            ItemSpawner.Spawn(this.Position, PointValue);
-        }
+        // Default: regular enemies drop nothing — only a Boss (see
+        // Boss.SpawnLoot()'s override, guaranteed good loot) does. Was
+        // previously ItemSpawner.Spawn() (the random-chance drop table)
+        // for every enemy; per the user's explicit request, only bosses
+        // drop loot now. ItemSpawner.Spawn() itself is left in place, not
+        // deleted — it's the flagged foundation for a future "per-enemy
+        // drop pool" system (see docs/BACKLOG.md), not currently called
+        // from anywhere.
+        protected virtual void SpawnLoot() { }
 
         protected void AddBehaviour(IEnumerable<int> behaviour)
         {

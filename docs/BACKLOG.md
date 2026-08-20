@@ -17,6 +17,19 @@ prioritized or scheduled — the user asked to keep these noted for later rather
   mana-gate as the HUD cooldown bar for now (see "recently completed" below) rather than add this,
   but flagged a real duration-based cooldown (independent of mana, on top of it) as a future
   addition — needs a duration decision (e.g. 1-2s) when picked up.
+- **Per-enemy drop pools — a real system for controlling what each enemy can drop.** Only bosses
+  drop loot today (`Boss.SpawnLoot()`'s guaranteed-loot override via
+  `ItemSpawner.SpawnGuaranteedLoot()`); regular enemies drop nothing —
+  `Enemy.SpawnLoot()`'s base is now a no-op, per the user's explicit request. The old random-chance
+  table every regular enemy used to route through, `ItemSpawner.Spawn()` (tier/chance scaled off
+  `PointValue` — see `DropChanceDenominator()`/`MaxTierJump()`/`ResolveDropTier()` in
+  `ItemSpawner.cs`), is left in the file, not deleted, specifically as a starting point for this —
+  it has no live caller right now. The user's own framing: build each enemy a real drop *pool*
+  (a list of tiers and/or specific potions/items it can drop, with its own odds) rather than one
+  shared formula every enemy scales off — e.g. a Snake's pool might be low-tier gear only, while a
+  BigSnake's mini-boss pack could lean toward potions. No shape decided yet (a data-driven table
+  per enemy type? a field on each `CreateX()` factory?) — needs picking up as its own design pass,
+  not guessed now.
 - **Animate the player character.** Blocked on art: no walk-cycle sprite sheets exist yet (just
   static "player"/"archer" textures). The engine-side piece isn't new work — `AnimatedTexture.cs`
   already implements horizontal-strip sprite-sheet animation and is used for the portal
