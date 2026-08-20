@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Drawing;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -351,6 +352,160 @@ namespace Realm
             AbilityItem = newAbilityItem;
             RecalculateStats();
             ClampVitals();
+        }
+
+        // Debug/testing only (F4 in Input.cs) — not real gameplay. Sets
+        // Level straight to the cap without touching stats: RecalculateStats()
+        // is never called here, so Attack/Defense/etc. are left exactly as
+        // they were (every class's RecalculateStats() derives them from
+        // Level, but only when it actually runs — see CharacterClasses/
+        // Wizard.cs etc.). Also drops the current class's highest-tier item
+        // for every equipment slot straight into the inventory, unequipped —
+        // each is a fresh instance built from the matching catalog entry's
+        // data fields, same as Weapon.LoadWeapon()/Armor.LoadArmor()/etc. do,
+        // just without the trailing Equip call those make.
+        public void DebugMaxLevelAndGiveTopGear()
+        {
+            Level = 20;
+
+            GiveHighestTierWeapon();
+            GiveHighestTierArmor();
+            GiveHighestTierRing();
+            GiveHighestTierAbilityItem();
+        }
+
+        private void GiveHighestTierWeapon()
+        {
+            Weapon best = Game1
+                .Instance.Weapons.Where(w => w.Type == WeaponType)
+                .OrderByDescending(w => w.Tier)
+                .FirstOrDefault();
+            if (best == null)
+                return;
+
+            Texture2D weaponTexture = Game1.Instance.Content.Load<Texture2D>(best.ImageName);
+            Texture2D projectileTexture = Game1.Instance.Content.Load<Texture2D>(
+                best.ProjectileImageName
+            );
+            Weapon copy = new(weaponTexture, projectileTexture)
+            {
+                Type = best.Type,
+                Name = best.Name,
+                Description = best.Description,
+                Tier = best.Tier,
+                DamageMin = best.DamageMin,
+                DamageMax = best.DamageMax,
+                ProjectileMagnitude = best.ProjectileMagnitude,
+                ProjectileDuration = best.ProjectileDuration,
+                ImageName = best.ImageName,
+                ProjectileImageName = best.ProjectileImageName,
+            };
+
+            Inventory.AddItem(copy, 1);
+        }
+
+        private void GiveHighestTierArmor()
+        {
+            Armor best = Game1
+                .Instance.Armors.Where(a => a.Type == ArmorType)
+                .OrderByDescending(a => a.Tier)
+                .FirstOrDefault();
+            if (best == null)
+                return;
+
+            Texture2D armorTexture = Game1.Instance.Content.Load<Texture2D>(best.ImageName);
+            Armor copy = new(armorTexture)
+            {
+                Name = best.Name,
+                Description = best.Description,
+                Type = best.Type,
+                Tier = best.Tier,
+                MaxHealthBonus = best.MaxHealthBonus,
+                MaxManaBonus = best.MaxManaBonus,
+                AttackBonus = best.AttackBonus,
+                DefenseBonus = best.DefenseBonus,
+                SpeedBonus = best.SpeedBonus,
+                DexterityBonus = best.DexterityBonus,
+                VitalityBonus = best.VitalityBonus,
+                WisdomBonus = best.WisdomBonus,
+                ImageName = best.ImageName,
+            };
+
+            Inventory.AddItem(copy, 1);
+        }
+
+        private void GiveHighestTierRing()
+        {
+            // No class restriction on Ring, same as Ring.LoadRing().
+            Ring best = Game1.Instance.Rings.OrderByDescending(r => r.Tier).FirstOrDefault();
+            if (best == null)
+                return;
+
+            Texture2D ringTexture = Game1.Instance.Content.Load<Texture2D>(best.ImageName);
+            Ring copy = new(ringTexture)
+            {
+                Name = best.Name,
+                Description = best.Description,
+                Tier = best.Tier,
+                MaxHealthBonus = best.MaxHealthBonus,
+                MaxManaBonus = best.MaxManaBonus,
+                AttackBonus = best.AttackBonus,
+                DefenseBonus = best.DefenseBonus,
+                SpeedBonus = best.SpeedBonus,
+                DexterityBonus = best.DexterityBonus,
+                VitalityBonus = best.VitalityBonus,
+                WisdomBonus = best.WisdomBonus,
+                ImageName = best.ImageName,
+            };
+
+            Inventory.AddItem(copy, 1);
+        }
+
+        // Spell/Quiver/Shield share an identical field set (only their
+        // runtime type differs, which is what CanEquipAbilityItem() actually
+        // gates on) — picked from all three catalogs combined via the same
+        // CanEquipAbilityItem() filter AbilityItem.PlaceholderImage already
+        // uses, rather than three near-duplicate class-specific methods.
+        private void GiveHighestTierAbilityItem()
+        {
+            AbilityItem best = Game1
+                .Instance.Spells.Cast<AbilityItem>()
+                .Concat(Game1.Instance.Quivers)
+                .Concat(Game1.Instance.Shields)
+                .Where(item => CanEquipAbilityItem(item))
+                .OrderByDescending(item => item.Tier)
+                .FirstOrDefault();
+            if (best == null)
+                return;
+
+            Texture2D texture = Game1.Instance.Content.Load<Texture2D>(best.ImageName);
+            AbilityItem copy = best switch
+            {
+                Spell => new Spell(texture),
+                Quiver => new Quiver(texture),
+                Shield => new Shield(texture),
+                _ => null,
+            };
+            if (copy == null)
+                return;
+
+            copy.Name = best.Name;
+            copy.Description = best.Description;
+            copy.Tier = best.Tier;
+            copy.MaxHealthBonus = best.MaxHealthBonus;
+            copy.MaxManaBonus = best.MaxManaBonus;
+            copy.AttackBonus = best.AttackBonus;
+            copy.DefenseBonus = best.DefenseBonus;
+            copy.SpeedBonus = best.SpeedBonus;
+            copy.DexterityBonus = best.DexterityBonus;
+            copy.VitalityBonus = best.VitalityBonus;
+            copy.WisdomBonus = best.WisdomBonus;
+            copy.ManaCost = best.ManaCost;
+            copy.MinDamage = best.MinDamage;
+            copy.MaxDamage = best.MaxDamage;
+            copy.ImageName = best.ImageName;
+
+            Inventory.AddItem(copy, 1);
         }
 
         // Sum of whichever equipped item(s) carry this bonus — always read

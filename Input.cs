@@ -137,6 +137,14 @@ public static class Input
                 Player.Instance.LevelUp();
             }
 
+            // Testing only, not real gameplay: max Level (stats untouched)
+            // and drop the current class's highest-tier gear into the
+            // inventory for every slot.
+            if (WasKeyPressed(Keys.F4))
+            {
+                Player.Instance.DebugMaxLevelAndGiveTopGear();
+            }
+
             // Return to Nexus.
             if (WasBindingPressed(KeyBindings.Get(KeyBindings.Action.ReturnToNexus)))
             {
