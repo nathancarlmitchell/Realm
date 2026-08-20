@@ -150,6 +150,10 @@ namespace Realm.States
 
             DrawBossHud(spriteBatch);
 
+            // Draw the portal-entry confirmation prompt, if the player is
+            // currently standing in one — no-op otherwise.
+            Portal.DrawConfirmationPrompt(gameTime, spriteBatch);
+
             if (Game1._Debug)
             {
                 Overlay.DrawDebug(spriteBatch);

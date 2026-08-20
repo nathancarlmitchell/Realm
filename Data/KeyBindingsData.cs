@@ -17,4 +17,5 @@ public class KeyBindingsData
     public string ReturnToNexus { get; set; }
     public string ToggleAutoFire { get; set; }
     public string ToggleMute { get; set; }
+    public string ConfirmPortalEntry { get; set; }
 }

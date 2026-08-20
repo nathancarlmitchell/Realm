@@ -178,6 +178,14 @@ namespace Realm
             // via the next state's own DrawLoot() loop.
             ItemSpawner.Reset();
 
+            // Same reasoning as ItemSpawner.Reset() above — a portal
+            // awaiting confirmation belongs to the state being left, and
+            // every transition funnels through here regardless of how it
+            // was triggered (walking through a portal, Escape, a key bind,
+            // dying), so this is the one place that reliably catches all of
+            // them instead of relying on each path to remember to clear it.
+            Portal.ClearPendingConfirmation();
+
             nextState = state;
         }
 

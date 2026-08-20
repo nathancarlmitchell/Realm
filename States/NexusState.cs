@@ -123,6 +123,10 @@ namespace Realm.States
             // Draw bank (only visible while open).
             BankSystem.Draw(spriteBatch);
 
+            // Draw the portal-entry confirmation prompt, if the player is
+            // currently standing in one — no-op otherwise.
+            Portal.DrawConfirmationPrompt(gameTime, spriteBatch);
+
             // Drag ghosts draw last, after both panels' own contents, so
             // dragging between the two never gets covered up by whichever
             // panel happens to draw later.

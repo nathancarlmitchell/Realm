@@ -8,6 +8,7 @@ using System.Timers;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Realm.Bosses;
+using Realm.Controls;
 using Realm.States;
 
 namespace Realm
@@ -140,6 +141,17 @@ namespace Realm
 
         public static void Reset() => DroppedPortals = [];
 
+        // Called from Game1.ChangeState() — every state transition funnels
+        // through there, not just RealmState's own constructor (which only
+        // resets DroppedPortals above). Without this, leaving mid-prompt via
+        // any path that doesn't go through this portal's own confirm flow
+        // (Escape to MainMenu, the ReturnToNexus key bind, dying) would
+        // leave `pendingConfirmation` pointing at a Portal instance that
+        // belonged to the now-discarded state — DrawConfirmationPrompt()
+        // would keep rendering a phantom prompt anchored to a stale world
+        // position from a completely different screen.
+        public static void ClearPendingConfirmation() => pendingConfirmation = null;
+
         // The current state's own fixed portal set — currently only
         // NexusState has one (Realm/CharacterSelect/Bank/BossRealm test
         // shortcut); null everywhere else. Kept separate from
@@ -148,6 +160,40 @@ namespace Realm
         // long as the Nexus is. Read by Overlay's minimap so it can show
         // portal blips regardless of which state is currently active.
         public static List<Portal> NexusPortals;
+
+        // Whichever portal the player is currently standing in, awaiting a
+        // confirm click/keypress before actually teleporting — null when
+        // not standing in any. Static rather than per-instance since only
+        // one portal can realistically be touched at once (every portal's
+        // trigger box is tiny relative to how far apart they're placed),
+        // matching BankSystem's own single-shared-panel pattern rather than
+        // giving every Portal instance its own redundant Button. Set/cleared
+        // in Update() below, read by the static DrawConfirmationPrompt().
+        private static Portal pendingConfirmation;
+
+        // Lazily constructed (not a field initializer) — Button's own
+        // constructor reads Art.ButtonTexture/Art.HudFont immediately, and
+        // this being `static` on Portal means it could otherwise run before
+        // Art.Load() has populated those, capturing null permanently (same
+        // hazard Destination.PortalArt() above works around).
+        private static Button confirmButton;
+
+        private static Button ConfirmButton
+        {
+            get
+            {
+                if (confirmButton == null)
+                {
+                    confirmButton = new Button { Text = "Enter" };
+                    confirmButton.Click += (s, e) =>
+                    {
+                        pendingConfirmation?.EnterPortal();
+                        pendingConfirmation = null;
+                    };
+                }
+                return confirmButton;
+            }
+        }
 
         private AnimatedTexture image;
         private Vector2 position;
@@ -258,10 +304,62 @@ namespace Realm
                 return;
             }
 
+            // Standing in the trigger no longer teleports instantly — it
+            // arms this portal as the pending confirmation (see
+            // DrawConfirmationPrompt()), entered only via a click on the
+            // HUD button or the ConfirmPortalEntry key bind. Stepping back
+            // out cancels it, same as walking away from any other
+            // proximity prompt in the game.
             if (Player.Instance.Bounds.Intersects(bounds))
             {
-                EnterPortal();
+                pendingConfirmation = this;
+
+                if (Input.WasBindingPressed(KeyBindings.Get(KeyBindings.Action.ConfirmPortalEntry)))
+                {
+                    pendingConfirmation = null;
+                    EnterPortal();
+                }
             }
+            else if (pendingConfirmation == this)
+            {
+                pendingConfirmation = null;
+            }
+        }
+
+        // Called once per frame from each state's untransformed
+        // (screen-space) draw pass — Portal.Draw() below runs inside the
+        // camera-transformed batch (world space), which can't also host a
+        // raw-screen-space Controls.Button correctly; this mirrors how
+        // BankSystem's panel anchors itself above its own portal via the
+        // same world->screen transform, in that same untransformed pass.
+        // A no-op whenever nothing is currently pending.
+        public static void DrawConfirmationPrompt(GameTime gameTime, SpriteBatch spriteBatch)
+        {
+            if (pendingConfirmation == null)
+                return;
+
+            Vector2 worldAnchor =
+                pendingConfirmation.position
+                + new Vector2(pendingConfirmation.RenderedWidth / 2f, 0);
+            Vector2 screenPos = Vector2.Transform(worldAnchor, Game1.Camera.GetTransformation());
+
+            const int gapAbovePortal = 16;
+            Button button = ConfirmButton;
+            button.Position = new Vector2(
+                screenPos.X - (button.Rectangle.Width / 2f),
+                screenPos.Y - gapAbovePortal - button.Rectangle.Height
+            );
+            button.Update(gameTime);
+            button.Draw(gameTime, spriteBatch);
+
+            string hint = $"or press [{KeyBindings.Get(KeyBindings.Action.ConfirmPortalEntry)}]";
+            Vector2 hintSize = Art.HudFont.MeasureString(hint);
+            Vector2 hintPos = new(
+                screenPos.X - (hintSize.X / 2f),
+                button.Position.Y - hintSize.Y - 4
+            );
+            spriteBatch.DrawString(Art.HudFont, hint, hintPos + Vector2.One, Color.Black * 0.6f);
+            spriteBatch.DrawString(Art.HudFont, hint, hintPos, Color.White);
         }
 
         public void Draw(SpriteBatch spriteBatch, GameTime gameTime)

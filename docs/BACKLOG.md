@@ -127,14 +127,6 @@ prioritized or scheduled — the user asked to keep these noted for later rather
   free teleporting could trivialize or break the fight). Also needs a decision on whether it's a
   free instant teleport or has some cost/limit (cooldown, mana, distance cap) so it doesn't just
   replace normal movement outright.
-- **Confirmation option when entering portals.** Today [Portal.cs](Portal.cs)'s `Update()` triggers
-  `EnterPortal()` the instant `Player.Instance.Bounds.Intersects(bounds)` — walking through a portal
-  (or getting knocked/kited into one) commits immediately with no prompt, for every destination
-  (`Realm`, `CharacterSelect`, `BossRealm`, `Nexus` — the Bank portal is a separate proximity-based
-  panel, not a teleport trigger, and wouldn't need this). Needs deciding: a confirmation for every
-  portal, or just the more consequential ones (leaving an active Realm run mid-fight vs. the Nexus's
-  own low-stakes portals); and whether it's a toggleable setting (ties into the same "no settings/
-  config system exists yet" gap as key remapping and auto-fire, above) or just always-on.
 - **Improve the portal image and visuals.** Today [Portal.cs](Portal.cs) just plays `Art.Portal`, a
   plain 7-frame `AnimatedTexture` sprite sheet, with no other visual treatment — same look for
   every portal regardless of destination. Open-ended (new/reworked art, a per-destination color

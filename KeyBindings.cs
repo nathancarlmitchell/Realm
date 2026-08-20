@@ -22,6 +22,7 @@ namespace Realm
             ReturnToNexus,
             ToggleAutoFire,
             ToggleMute,
+            ConfirmPortalEntry,
         }
 
         // The order the Settings screen lists them in.
@@ -37,6 +38,7 @@ namespace Realm
             Action.ReturnToNexus,
             Action.ToggleAutoFire,
             Action.ToggleMute,
+            Action.ConfirmPortalEntry,
         ];
 
         public static string DisplayName(Action action) =>
@@ -52,6 +54,7 @@ namespace Realm
                 Action.ReturnToNexus => "Return to Nexus",
                 Action.ToggleAutoFire => "Toggle Auto-Fire",
                 Action.ToggleMute => "Toggle Mute",
+                Action.ConfirmPortalEntry => "Confirm Portal Entry",
                 _ => action.ToString(),
             };
 
@@ -68,6 +71,7 @@ namespace Realm
                 [Action.ReturnToNexus] = InputBinding.FromKey(Keys.E),
                 [Action.ToggleAutoFire] = InputBinding.FromKey(Keys.C),
                 [Action.ToggleMute] = InputBinding.FromKey(Keys.M),
+                [Action.ConfirmPortalEntry] = InputBinding.FromKey(Keys.R),
             };
 
         private static Dictionary<Action, InputBinding> bindings = new(Defaults);
@@ -104,6 +108,7 @@ namespace Realm
                 ReturnToNexus = bindings[Action.ReturnToNexus].Serialize(),
                 ToggleAutoFire = bindings[Action.ToggleAutoFire].Serialize(),
                 ToggleMute = bindings[Action.ToggleMute].Serialize(),
+                ConfirmPortalEntry = bindings[Action.ConfirmPortalEntry].Serialize(),
             };
 
         public static void FromData(Data.KeyBindingsData data)
@@ -121,6 +126,19 @@ namespace Realm
             bindings[Action.ReturnToNexus] = InputBinding.Deserialize(data.ReturnToNexus);
             bindings[Action.ToggleAutoFire] = InputBinding.Deserialize(data.ToggleAutoFire);
             bindings[Action.ToggleMute] = InputBinding.Deserialize(data.ToggleMute);
+
+            // Guarded rather than an unconditional overwrite like every
+            // field above — this action didn't exist when older save files
+            // were written, so `data.ConfirmPortalEntry` deserializes as
+            // null on those, and an unconditional assign would stomp the
+            // Defaults-seeded binding (already set above, before FromData()
+            // runs) with Deserialize(null)'s "missing data" fallback
+            // (Keys.None) — silently unbinding the key half of this feature
+            // for every existing save until the player happened to open
+            // Settings and rebind it by hand. Only overwrite when the save
+            // actually has a real value for it.
+            if (!string.IsNullOrEmpty(data.ConfirmPortalEntry))
+                bindings[Action.ConfirmPortalEntry] = InputBinding.Deserialize(data.ConfirmPortalEntry);
         }
     }
 }

@@ -71,6 +71,7 @@ namespace Realm.Bosses
 
             AddBehaviour(PhaseTimer());
             AddBehaviour(MaintainPets());
+            AddBehaviour(MoveTethered(wanderDistance: 100, speed: 0.1f, updateChance: 0.1f));
             AddAttackBehaviour(FireBladePairs());
             AddAttackBehaviour(RapidGrenades());
             AddAttackBehaviour(GrenadeBursts());
@@ -90,6 +91,7 @@ namespace Realm.Bosses
                 for (int i = 0; i < PhaseDurationFrames; i++)
                     yield return 0;
 
+                FlashRed();
                 Invulnerable = true;
                 SpawnSwarms(SwarmsPerPhaseChange);
 

@@ -2383,3 +2383,57 @@ date/time for those individually; don't treat their grouping as meaning they all
      `Draw()` on every one of those frames and confirmed `color` matched its pre-blink value
      immediately after every single call, proving the swap-and-restore never leaks a permanent red
      tint. Clean build and a plain boot-check both passed.
+123. **Portals now require a confirmation before teleporting** — walking in arms a prompt rather than
+     teleporting instantly, entered via either a clickable HUD button or a new remappable key bind
+     (`KeyBindings.Action.ConfirmPortalEntry`, defaults to `R`, added the same way as every other
+     action — enum value, `AllActions`, `DisplayName`, `Defaults`, `ToData()`/`FromData()`,
+     `Data/KeyBindingsData.cs` field — so it appears on the Settings screen for free, that screen
+     already building its rows generically off `AllActions`). Applies uniformly to every portal that
+     actually teleports (Realm/CharacterSelect/BossRealm/SthenoBossRealm/Nexus); the Bank portal is
+     unaffected since `Update()`'s Bank branch already returns before reaching the teleport-trigger
+     check this touches. `Portal.Update()`'s `Player.Instance.Bounds.Intersects(bounds)` branch no
+     longer calls `EnterPortal()` directly — standing in the trigger sets a new static
+     `pendingConfirmation` to `this` instead (cleared if the player steps back out), and only the
+     confirm key bind (checked right there in `Update()`) or a click on the HUD button (routed through
+     a `Click` event) actually calls `EnterPortal()`. New static `Portal.DrawConfirmationPrompt()`
+     draws the button (`Realm.Controls.Button`, the same class every menu screen already uses) plus a
+     "or press [X]" text hint anchored above whichever portal is pending, converting its world position
+     to screen space via `Vector2.Transform(pos, Game1.Camera.GetTransformation())` — the same technique
+     `BankSystem.Anchor` already uses to track its own portal on screen. This has to be a *separate*
+     draw call from `Portal.Draw()` itself: `Portal.Draw()` runs inside the camera-transformed
+     world-space `SpriteBatch` block, which can't also host a raw-screen-space `Button` correctly, so
+     each state's untransformed HUD pass (`NexusState`/`RealmState.Draw()`, right where
+     `Overlay.DrawSidebar`/`BankSystem.Draw` already live) calls the new method instead. The `Button`
+     itself is constructed lazily (a property, not a field initializer) since eagerly reading
+     `Art.ButtonTexture`/`Art.HudFont` at Portal's static-init time would run before `Art.Load()` —
+     same hazard `Destination.PortalArt()` (entry 115) already works around. One dangling-reference bug
+     caught before it shipped: leaving a portal's confirm prompt via any path other than its own confirm
+     flow (Escape to menu, the always-available `ReturnToNexus` key bind, dying) would leave
+     `pendingConfirmation` pointing at a `Portal` instance belonging to the now-discarded state, so
+     `DrawConfirmationPrompt()` would keep rendering a phantom prompt anchored to a stale world position
+     on a completely different screen — fixed by adding `Portal.ClearPendingConfirmation()`, called from
+     `Game1.ChangeState()` (every state transition funnels through there, not just `RealmState`'s own
+     constructor) rather than trusting each individual exit path to remember. A second real bug caught
+     by the scripted repro itself, not by inspection: `Util.LoadKeyBindingsData()` reads the player's
+     real on-disk save, which predates this action entirely, so `KeyBindingsData.ConfirmPortalEntry`
+     deserializes as `null` on every existing save — `KeyBindings.FromData()`'s original unconditional
+     `bindings[action] = InputBinding.Deserialize(data.action)` pattern (correct for the other 9
+     fields, all of which are guaranteed present) would silently overwrite the Defaults-seeded `R`
+     binding with `Deserialize`'s "missing data" fallback (`Keys.None`), unbinding the key half of this
+     feature for every existing save until the player happened to open Settings and rebind it by hand.
+     Fixed with a guard specific to this one field: only overwrite when `data.ConfirmPortalEntry` is
+     actually non-empty, leaving the Defaults value in place otherwise. Verified via a scripted repro
+     (temp code in `Game1.StartGame()`; backed up real save files first per `CLAUDE.md`, since the test
+     constructs a throwaway `NexusState` for `Game1.Camera` init, which saves in its own constructor —
+     restored and diff-verified afterward, `PlayerData_Wizard.json` came back byte-different as expected
+     from that real save and was restored from backup): confirmed the default binding reads `R` (not
+     `None`) even after a real `Util.LoadKeyBindingsData()` call against the actual old save file;
+     simulated keyboard state via reflection into `Input`'s private `keyboard`/`previousKeyboard` fields
+     (real hardware polling can't be driven from a test, same documented `CLAUDE.md` limitation as
+     `Controls.Button`) to confirm standing on a portal with no key press arms `pendingConfirmation` to
+     that exact portal without queuing a state transition; confirmed stepping back off cancels it;
+     confirmed a simulated press of the bound key both clears `pendingConfirmation` and queues a real
+     state transition; confirmed `DrawConfirmationPrompt()` renders through a real `SpriteBatch`
+     `Begin()`/`End()` pair with no exception while a confirmation is pending; and confirmed
+     `Game1.ChangeState()` clears a re-armed `pendingConfirmation` regardless of which portal set it.
+     Clean build and a plain boot-check both passed.
