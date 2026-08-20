@@ -2346,3 +2346,17 @@ date/time for those individually; don't treat their grouping as meaning they all
      `RenderTarget2D` and visually inspected the PNG — the lesson from entry 118 (numbers matching
      isn't enough, actually look at the pixels) — confirming the magenta box lands squarely on the
      bag sprite. Clean build and a plain boot-check both passed.
+121. **`AnimatedTexture` can now play a one-shot (non-looping) animation**, and Sprite World's portal
+     uses it. Previously `UpdateFrame()` always wrapped (`frame %= frameCount`), so every animation —
+     including Sprite World's "closed → forming → fully open" sheet — replayed forever, snapping back
+     to its small closed-icon frame right after finishing the open sequence. New `Load(...)` param
+     `bool loop = true` (defaults preserve every existing caller's behavior byte-for-byte); when
+     `false`, `UpdateFrame()` clamps at `frameCount - 1` once reached instead of wrapping, and an early
+     return skips the elapsed-time accumulation entirely once already holding there. `Art.cs` passes
+     `loop: false` only for `SpriteWorldPortal` — the generic swirl and Snake Pit (both genuine idle
+     loops) are untouched and still wrap normally. Verified via a scripted repro (reflection into the
+     private `frame` field, no `Player.Instance` involvement so no save-file risk): advanced the
+     generic portal and Snake Pit 8 ticks each (enough to cross all 7 frames at 8fps) and confirmed
+     both wrapped back off frame 6 as before; advanced Sprite World the same 8 ticks and confirmed it
+     landed on frame 6, then advanced it 20 more ticks and confirmed it stayed on frame 6 rather than
+     ever wrapping back to 0. Clean build and a plain boot-check both passed.

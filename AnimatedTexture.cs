@@ -35,6 +35,13 @@ namespace Realm
         // Is the animation currently running?
         private bool isPaused;
 
+        // Whether the animation wraps back to frame 0 after the last frame
+        // (the original, still-default behavior) or holds on the last
+        // frame forever instead — e.g. an "opening" animation that should
+        // play once and stay open, rather than replaying "closed" on a
+        // loop.
+        private bool loop;
+
         // The current rotation, scale and draw depth for the animation.
         public float Rotation,
             Scale,
@@ -58,11 +65,13 @@ namespace Realm
             string asset,
             int frameCount,
             int framesPerSec,
-            int columns = 0
+            int columns = 0,
+            bool loop = true
         )
         {
             this.frameCount = frameCount;
             this.columns = columns > 0 ? columns : frameCount;
+            this.loop = loop;
             myTexture = content.Load<Texture2D>(asset);
             timePerFrame = (float)1 / framesPerSec;
             frame = 0;
@@ -74,12 +83,24 @@ namespace Realm
         {
             if (isPaused)
                 return;
+
+            // Already holding on the last frame — nothing left to advance.
+            if (!loop && frame >= frameCount - 1)
+                return;
+
             totalElapsed += elapsed;
             if (totalElapsed > timePerFrame)
             {
                 frame++;
-                // Keep the Frame between 0 and the total frames, minus one.
-                frame %= frameCount;
+                if (loop)
+                {
+                    // Keep the Frame between 0 and the total frames, minus one.
+                    frame %= frameCount;
+                }
+                else if (frame >= frameCount - 1)
+                {
+                    frame = frameCount - 1;
+                }
                 totalElapsed -= timePerFrame;
             }
         }

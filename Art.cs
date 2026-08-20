@@ -109,8 +109,13 @@ namespace Realm
             Portal = new AnimatedTexture(Vector2.Zero, 0f, 1.5f, 0.5f);
             Portal.Load(content, "portal", 7, 8);
 
+            // Non-looping: this sheet is a one-shot "opening" animation
+            // (closed -> forming -> fully open), not a continuous idle
+            // loop like the generic swirl — it should play through once
+            // and hold on the final open frame instead of replaying
+            // "closed" forever.
             SpriteWorldPortal = new AnimatedTexture(Vector2.Zero, 0f, 1.5f, 0.5f);
-            SpriteWorldPortal.Load(content, "Sprite World Portal", 7, 8, 5);
+            SpriteWorldPortal.Load(content, "Sprite World Portal", 7, 8, 5, loop: false);
 
             SnakePitPortal = new AnimatedTexture(Vector2.Zero, 0f, 1.5f, 0.5f);
             SnakePitPortal.Load(content, "Snake Pit Portal", 7, 8, 5);
