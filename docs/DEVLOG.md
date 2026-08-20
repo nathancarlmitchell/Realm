@@ -2145,3 +2145,13 @@ date/time for those individually; don't treat their grouping as meaning they all
      for the placeholder `Art.SwordSlash` reuse in `FireBlade()`. Same day this asset also lines up
      with entry 108's rotated-rectangle fix — the blade's `Shape = CollisionShape.Rectangle` hitbox
      now both looks right and actually matches its rotation. No behavior change beyond the sprite.
+110. **`GrenadeProjectile`'s telegraph is now 3 ramping opacity stages instead of one flat grey**,
+     per the user's exact spec: 0.15/0.25/0.35 opacity, each stage lasting `fuseFrames / 3`
+     (`CurrentTelegraphOpacity()`, checked each `Draw()` call against `elapsed`) — the last stage
+     covers any remainder frames from the integer division before arming (turning red with a live
+     hitbox) exactly as before. Purely visual; `Update()`'s arming logic and the collision fix from
+     entry 108 are untouched. Verified via a scripted repro (reflection into the private `elapsed`
+     field and `CurrentTelegraphOpacity()` method, no real save-file risk since nothing here touches
+     `Player.Instance`): with `fuseFrames = 99` (a clean 33-frame-per-stage split), all 3 stage
+     boundaries (`elapsed` 0, 32, 33, 65, 66, 98) returned the expected opacity. Clean build and a
+     plain boot-check both passed.

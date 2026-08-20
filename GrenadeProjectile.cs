@@ -3,14 +3,15 @@ using Microsoft.Xna.Framework.Graphics;
 
 namespace Realm
 {
-    // A stationary telegraphed-AoE hazard: spawns as a low-opacity grey
-    // circle with no live hitbox (Radius 0, so nothing can collide with it
-    // yet), then after fuseFrames "arms" — Radius jumps to the real
-    // explosion radius and the circle turns red — giving the player a
-    // brief window to see exactly where it'll hurt and step out before it
-    // does. Drawn as a scaled Art.Circle instead of a sprite image so the
-    // visual always matches the actual hitbox size, unlike a fixed-size
-    // projectile sprite standing in for a much larger AoE.
+    // A stationary telegraphed-AoE hazard: spawns as a grey circle with no
+    // live hitbox (Radius 0, so nothing can collide with it yet), ramping
+    // through 3 opacity stages as the fuse burns down, then "arms" —
+    // Radius jumps to the real explosion radius and the circle turns red —
+    // giving the player a brief window to see exactly where it'll hurt and
+    // step out before it does. Drawn as a scaled Art.Circle instead of a
+    // sprite image so the visual always matches the actual hitbox size,
+    // unlike a fixed-size projectile sprite standing in for a much larger
+    // AoE.
     class GrenadeProjectile : EnemyProjectile
     {
         private readonly float armedRadius;
@@ -18,7 +19,13 @@ namespace Realm
         private int elapsed = 0;
         private bool armed = false;
 
-        private static readonly Color TelegraphColor = Color.Gray * 0.35f;
+        // 3 equal telegraph stages (each fuseFrames/3 long), opacity
+        // ramping up as the fuse gets closer to arming — a rougher "how
+        // much longer" cue than a smooth fade, but cheap and readable at a
+        // glance.
+        private const float TelegraphOpacityStage1 = 0.15f;
+        private const float TelegraphOpacityStage2 = 0.25f;
+        private const float TelegraphOpacityStage3 = 0.35f;
         private static readonly Color ArmedColor = Color.Red * 0.55f;
 
         public GrenadeProjectile(
@@ -57,7 +64,7 @@ namespace Realm
 
         public override void Draw(SpriteBatch spriteBatch)
         {
-            Color drawColor = armed ? ArmedColor : TelegraphColor;
+            Color drawColor = armed ? ArmedColor : Color.Gray * CurrentTelegraphOpacity();
             float scale = (armedRadius * 2f) / Art.Circle.Width;
 
             spriteBatch.Draw(
@@ -71,6 +78,21 @@ namespace Realm
                 SpriteEffects.None,
                 0f
             );
+        }
+
+        // Which of the 3 equal-length telegraph stages (fuseFrames/3 each)
+        // elapsed currently falls in. Only called pre-arming, so the last
+        // stage covers everything up to fuseFrames (including any leftover
+        // frames from the integer division).
+        private float CurrentTelegraphOpacity()
+        {
+            int stageLength = fuseFrames / 3;
+
+            if (elapsed < stageLength)
+                return TelegraphOpacityStage1;
+            if (elapsed < stageLength * 2)
+                return TelegraphOpacityStage2;
+            return TelegraphOpacityStage3;
         }
     }
 }
