@@ -98,7 +98,7 @@ namespace Realm.States
 
             if (Game1._Debug)
             {
-                EntityManager.DrawHitboxes(spriteBatch);
+                EntityManager.DrawHitboxes(spriteBatch, portalList);
             }
 
             spriteBatch.End();

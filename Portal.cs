@@ -156,6 +156,12 @@ namespace Realm
         {
             get { return new Rectangle((int)position.X + 64, (int)position.Y + 64, 32, 32); }
         }
+
+        // Public read-only view of the same rectangle, for the F3 debug
+        // hitbox overlay (EntityManager.DrawHitboxes()) — the teleport
+        // trigger area, not the sprite's on-screen footprint.
+        public Rectangle Bounds => bounds;
+
         public Destination dest;
 
         // How close the player needs to stay to a Bank portal for BankSystem to

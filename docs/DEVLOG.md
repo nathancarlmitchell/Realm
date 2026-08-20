@@ -2243,3 +2243,23 @@ date/time for those individually; don't treat their grouping as meaning they all
      real `SpriteBatch.Begin()/End()` pair with no exception for both new textures. Clean build
      confirmed both new `.xnb` assets actually compiled (not skipped), and a plain boot-check (no temp
      code) passed.
+116. **F3 debug overlay now outlines portals too.** Portal isn't an `Entity` subclass (no `Shape`/
+     `Radius`/`Width`/`Height`), so it was never covered by `EntityManager.DrawHitboxes()`'s existing
+     per-entity dispatch — added a new optional `IEnumerable<Portal> portals` param instead, drawn
+     via a new axis-aligned `DrawHitboxRectangle()` helper (Portal's teleport-trigger rectangle is
+     never rotated, so it doesn't need `DrawHitboxRotatedRectangle()`'s orientation math), in cyan to
+     stay visually distinct from the existing red/lime/yellow/orange entity outlines. New public
+     `Portal.Bounds` exposes the previously-private `bounds` rectangle (the actual teleport-trigger
+     area used by `Update()`'s `Player.Instance.Bounds.Intersects(bounds)` check — not the sprite's
+     visual footprint) read-only for this purpose. Each state passes whichever portal list is
+     actually valid for it right now — `NexusState.Draw()` passes its own fixed `portalList`,
+     `RealmState.Draw()` (inherited as-is by `BossRealmState`, which only overrides `DrawBossHud()`)
+     passes `Portal.DroppedPortals` — rather than `DrawHitboxes()` reaching for a shared static
+     itself, so a stale list left over from a previous state (e.g. `DroppedPortals` isn't cleared on
+     returning to the Nexus) never draws a stray outline with no matching sprite on screen; the
+     `portals` param defaults to `null` so every other existing caller/behavior is unaffected.
+     Verified via a scripted repro (temp code in `Game1.StartGame()`, no `Player.Instance` mutation):
+     confirmed a portal's `Bounds` matches the exact rectangle `Update()`'s own trigger check already
+     used (`position + (64, 64)`, 32×32); called `EntityManager.DrawHitboxes()` both with a real
+     portal list and with the param omitted, through a real `SpriteBatch.Begin()/End()` pair, with no
+     exception either way. Clean build and a plain boot-check both passed.

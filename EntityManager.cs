@@ -121,7 +121,14 @@ namespace Realm
         // runs, not just the circle case. Covers player, enemies, and both
         // projectile lists (player-fired bullets and enemy projectiles);
         // loot bags/potions are still left out, per the original request.
-        public static void DrawHitboxes(SpriteBatch spriteBatch)
+        // Portals aren't Entity subclasses (no Shape/Radius/Width/Height),
+        // so their teleport-trigger rectangle is drawn separately here via
+        // an optional list — each caller passes whichever portal list is
+        // actually valid for its own state (NexusState's fixed portalList,
+        // RealmState's Portal.DroppedPortals) rather than this reaching for
+        // a shared static, so a leftover list from a previous state never
+        // draws stray outlines.
+        public static void DrawHitboxes(SpriteBatch spriteBatch, IEnumerable<Portal> portals = null)
         {
             foreach (var enemy in enemies)
             {
@@ -143,6 +150,12 @@ namespace Realm
                 if (!enemyProjectile.IsExpired)
                     DrawHitbox(spriteBatch, enemyProjectile, Color.Orange);
             }
+
+            if (portals != null)
+            {
+                foreach (var portal in portals)
+                    DrawHitboxRectangle(spriteBatch, portal.Bounds, Color.Cyan);
+            }
         }
 
         private static void DrawHitbox(SpriteBatch spriteBatch, Entity entity, Color color)
@@ -163,6 +176,23 @@ namespace Realm
                 DrawHitboxLine(spriteBatch, prev, next, color);
                 prev = next;
             }
+        }
+
+        // Axis-aligned outline for a plain Rectangle — used for Portal's
+        // teleport-trigger bounds (see DrawHitboxes' portals param above),
+        // which is never rotated, so this doesn't need
+        // DrawHitboxRotatedRectangle's orientation math.
+        private static void DrawHitboxRectangle(SpriteBatch spriteBatch, Rectangle rect, Color color)
+        {
+            Vector2 topLeft = new(rect.Left, rect.Top);
+            Vector2 topRight = new(rect.Right, rect.Top);
+            Vector2 bottomRight = new(rect.Right, rect.Bottom);
+            Vector2 bottomLeft = new(rect.Left, rect.Bottom);
+
+            DrawHitboxLine(spriteBatch, topLeft, topRight, color);
+            DrawHitboxLine(spriteBatch, topRight, bottomRight, color);
+            DrawHitboxLine(spriteBatch, bottomRight, bottomLeft, color);
+            DrawHitboxLine(spriteBatch, bottomLeft, topLeft, color);
         }
 
         // Draws the entity's actual rotated hitbox (its 4 true corners,
