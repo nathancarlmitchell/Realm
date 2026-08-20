@@ -2485,3 +2485,32 @@ date/time for those individually; don't treat their grouping as meaning they all
      and that it played through its own 0→6 progression independently while the first portal stayed
      held at 6 throughout, unaffected; confirmed `Draw()` still renders correctly through a real
      `SpriteBatch` pass with the cloned texture. Clean build and a plain boot-check both passed.
+126. **Fixed portals visually spawning offset down-and-right of the position they're constructed at**,
+     per the user noticing this on enemy-dropped portals specifically (e.g. `Portal.DroppedPortals.Add(
+     new Portal(this.Position, portalDropOnDeath))` in `Enemy.WasShot()`). Root cause: `Portal`'s
+     `position` field was drawn/bounds-checked as a top-left corner (`image.DrawFrame(spriteBatch,
+     position)`, no origin offset), but every caller was already passing another entity's own
+     `Position` — which means CENTER everywhere else in the engine (`Entity.Draw()` renders with
+     `Origin = Size/2f`, exactly like the `Entity.Bounds` bug fixed in entry 119) — so a portal
+     constructed at a dying enemy's exact center visually rendered starting AT that point and extending
+     only right/down from it, never actually centered there. Added a new private `TopLeft` property
+     (`position - (RenderedWidth/2, RenderedHeight/2)`) that converts the now-consistently-CENTER
+     `position` into whatever the actual top-left-anchored draw/bounds math needs; `Draw()`'s
+     `image.DrawFrame()` call and the trigger `bounds` rectangle both switched from `position` to
+     `TopLeft`, and the label positioning simplified accordingly (`position.X - size.X/2` centers under
+     the sprite directly, no longer needing to add half the width first). The Bank branch's local
+     `center` variable was actually redundant this whole time once `position` itself started meaning
+     center — removed the `+ (RenderedWidth/2, RenderedHeight/2)` offset there too, now just using
+     `position` directly for both the proximity check and `BankSystem.PortalPosition`. No caller (
+     `Enemy.cs`, `BossRealmState.cs`'s exit portal, every fixed `NexusState.cs` portal) needed to
+     change at all — they were already passing "where I want this to visually appear," exactly what
+     `position` now correctly means; only `Portal.cs`'s own internal interpretation of that value was
+     wrong. This also incidentally fixes `Overlay.cs`'s minimap blips (`DrawBlip(portal.Position, ...)`)
+     to plot each portal's true center instead of its old top-left corner. Verified via a scripted
+     repro (temp code in `Game1.StartGame()`, no `Player.Instance` mutation so no save-file risk):
+     confirmed a portal constructed at `(500, 500)` computes `TopLeft` as exactly `(461, 461)` — `(500,
+     500)` minus half of Sprite World's 78×78 rendered footprint, i.e. `(39, 39)`; then, per the lesson
+     from entry 118 (verify by looking at the actual pixels), rendered a portal plus a small marker at
+     the exact position it was constructed with to an offscreen `RenderTarget2D` and visually confirmed
+     the marker sits in the middle of the portal sprite rather than at its top-left corner. Clean build
+     and a plain boot-check both passed.

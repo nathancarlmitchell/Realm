@@ -203,8 +203,23 @@ namespace Realm
         }
 
         private AnimatedTexture image;
+
+        // The portal's visual CENTER — matches how every other Entity in
+        // the engine already treats Position (Player/Enemy/LootBag all draw
+        // centered on it, via Origin = Size/2f in Entity.Draw()). Portal
+        // isn't an Entity, and its own draw call (image.DrawFrame() below)
+        // draws from a top-left corner with no origin offset, so a caller
+        // passing e.g. a dying enemy's own Position (its center) used to
+        // make the portal render with its top-left corner AT the enemy's
+        // center instead — visibly offset down-and-right by roughly half
+        // the portal's own rendered size. TopLeft below converts this
+        // center back into whatever the actual draw/bounds math needs, so
+        // every caller can just pass "where I want this to appear" the same
+        // way they already do for every other entity in the game.
         private Vector2 position;
         public Vector2 Position => position;
+
+        private Vector2 TopLeft => position - new Vector2(RenderedWidth / 2f, RenderedHeight / 2f);
 
         // Fraction of the portal's own rendered footprint the teleport
         // trigger occupies — a 1/3-sized box centered in the middle third
@@ -234,9 +249,10 @@ namespace Realm
         {
             get
             {
+                Vector2 topLeft = TopLeft;
                 return new Rectangle(
-                    (int)(position.X + RenderedWidth * BoundsOffsetFraction),
-                    (int)(position.Y + RenderedHeight * BoundsOffsetFraction),
+                    (int)(topLeft.X + RenderedWidth * BoundsOffsetFraction),
+                    (int)(topLeft.Y + RenderedHeight * BoundsOffsetFraction),
                     (int)(RenderedWidth * BoundsSizeFraction),
                     (int)(RenderedHeight * BoundsSizeFraction)
                 );
@@ -292,13 +308,14 @@ namespace Realm
             // teleport-trigger `bounds` the other destinations use below.
             if (dest == Destination.Bank)
             {
-                Vector2 center = position + new Vector2(RenderedWidth / 2f, RenderedHeight / 2f);
-                float distSq = Vector2.DistanceSquared(Player.Instance.Position, center);
+                // position is already the portal's visual center (see
+                // TopLeft's doc comment above) — no offset needed here.
+                float distSq = Vector2.DistanceSquared(Player.Instance.Position, position);
 
                 // Shared so BankSystem's panel can anchor itself above the
                 // portal on screen, tracking it as the camera follows the
                 // player, rather than sitting at a fixed screen position.
-                BankSystem.PortalPosition = center;
+                BankSystem.PortalPosition = position;
 
                 // A loot bag at least as close as the bank wins focus — matches
                 // ItemSpawner.NearestOpenBag()'s "closest wins" rule between
@@ -373,17 +390,20 @@ namespace Realm
 
         public void Draw(SpriteBatch spriteBatch, GameTime gameTime)
         {
-            // Draw the portal.
-            image.DrawFrame(spriteBatch, position);
+            // Draw the portal — image.DrawFrame() draws from a top-left
+            // corner with no origin offset, so this needs TopLeft rather
+            // than position (the portal's center) directly.
+            image.DrawFrame(spriteBatch, TopLeft);
 
-            // Draw the label.
+            // Draw the label, centered under the sprite and just below its
+            // bottom edge (position.Y + half the rendered height).
             string label = DisplayName;
             if (!string.IsNullOrEmpty(label))
             {
                 Vector2 size = Art.HudFont.MeasureString(label);
                 Vector2 labelPos = new(
-                    position.X + (RenderedWidth / 2) - (size.X / 2),
-                    position.Y + RenderedHeight + 4
+                    position.X - (size.X / 2),
+                    position.Y + (RenderedHeight / 2) + 4
                 );
 
                 spriteBatch.DrawString(
