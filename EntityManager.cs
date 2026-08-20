@@ -325,11 +325,9 @@ namespace Realm
         // corners but simpler). Orientation 0 reduces to the original
         // unrotated box exactly (cos 1, sin 0).
         //
-        // Not the same as Entity.Bounds (which anchors Position at the
-        // rectangle's top-left corner, not its center, and also doesn't
-        // account for rotation) — collision needs the box centered the
-        // same way the circular Radius check already treats Position, so
-        // it's computed directly here instead of reusing Entity.Bounds.
+        // Not the same as Entity.Bounds (which is centered on Position the
+        // same way this is, but doesn't account for rotation) — this one
+        // exists specifically for the rotated-AABB math above.
         private static Rectangle RectangleBounds(Entity entity)
         {
             float halfWidth = entity.Width / 2f;

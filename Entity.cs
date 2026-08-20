@@ -136,9 +136,27 @@ namespace Realm
                 _ => null,
             };
 
+        // Centered on Position, matching how Position is used everywhere
+        // else (Draw() below renders with Origin = Size/2, and circular
+        // collision treats Position as the center too) — was previously
+        // anchored at Position as the rectangle's top-left corner instead,
+        // which silently offset every consumer (LootBag pickup,
+        // ItemSpawner's nearest-bag check, Portal's teleport trigger) by
+        // half the entity's own width/height from where it visually sits.
+        // EntityManager's own internal RectangleBounds() helper already
+        // documented this exact discrepancy and built a separately
+        // correctly-centered box rather than reusing this property.
         public Rectangle Bounds
         {
-            get { return new Rectangle((int)Position.X, (int)Position.Y, Width, Height); }
+            get
+            {
+                return new Rectangle(
+                    (int)(Position.X - Width / 2f),
+                    (int)(Position.Y - Height / 2f),
+                    Width,
+                    Height
+                );
+            }
         }
 
         public Vector2 Size

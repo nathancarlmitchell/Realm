@@ -2301,3 +2301,30 @@ date/time for those individually; don't treat their grouping as meaning they all
      first time this feature was actually checked by looking at rendered pixels rather than only
      comparing numbers, which is what let entry 117's corner-anchoring bug slip through. Clean build
      and a plain boot-check both passed.
+119. **Fixed `Entity.Bounds` itself — the real remaining source of portal collision feeling "slightly
+     off"** even after entry 118's centering fix, per the user reporting the outline now matched the
+     sprite but actual entry still didn't line up. Entry 118 only fixed the *portal's* side of
+     `Player.Instance.Bounds.Intersects(bounds)`; `Player.Instance.Bounds` — the other side — was
+     still silently broken. `Entity.Bounds` anchored `Position` at the rectangle's top-left corner
+     (`new Rectangle((int)Position.X, (int)Position.Y, Width, Height)`), but `Position` means "center"
+     everywhere else in the engine: `Entity.Draw()` renders with `Origin = Size / 2f`, and circular
+     (`Radius`-based) collision treats `Position` as the center point too. `EntityManager.cs`'s own
+     internal `RectangleBounds()` helper had already noticed and documented this exact discrepancy in
+     a comment (built its own separately-centered box specifically to avoid reusing `Entity.Bounds`)
+     — but `Player.Instance.Bounds` was still used directly, uncorrected, by `Portal.cs`'s teleport
+     check and, incidentally, two other real collision checks that share the same class hierarchy:
+     `LootBag.cs`'s pickup check and `ItemSpawner.cs`'s nearest-bag distance (`LootBag : Entity`, so
+     both sides of `Player.Instance.Bounds.Intersects(bag.Bounds)` were equally affected). Changed
+     `Entity.Bounds` to center on `Position` (`Position - Size/2`, matching `Draw()`/circular
+     collision/`RectangleBounds()`'s existing convention) — a root-cause fix rather than special-
+     casing Portal.cs, since the same bug would have kept silently affecting loot pickup too. Updated
+     `RectangleBounds()`'s stale doc comment (previously described `Entity.Bounds` as wrongly-anchored
+     — no longer true) to instead note the one remaining real difference: `Entity.Bounds` still
+     doesn't account for rotation, which is the actual reason `RectangleBounds()` still exists as a
+     separate helper. Verified via a scripted repro (temp code in `Game1.StartGame()`, read-only
+     against the real `Player.Instance` — no mutation, no save-file risk): confirmed
+     `Player.Instance.Bounds` is now exactly `Position - Size/2`; confirmed a portal positioned so its
+     own rendered footprint is exactly centered on the player's current `Position` now correctly
+     returns `true` from `Player.Instance.Bounds.Intersects(portal.Bounds)` (both sides finally
+     centered the same way); confirmed a portal 500px away still correctly returns `false` (no
+     over-correction into always-true). Clean build and a plain boot-check both passed.
