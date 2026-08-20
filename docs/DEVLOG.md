@@ -2166,3 +2166,22 @@ date/time for those individually; don't treat their grouping as meaning they all
      arming frame, confirmed the cycle wraps back to stage 1 after a full 30-frame cycle, and
      confirmed `Radius` stayed at the armed value throughout. Clean build and a plain boot-check
      both passed.
+112. **`GrenadeProjectile` no longer expires the instant it first touches the player** — it lingers
+     for its full `duration` as a real persistent AoE hazard, per the user's explicit request, while
+     only ever damaging the player once. Two new generic `EnemyProjectile` fields make this
+     possible: `ExpiresOnHit` (default `true`, mirroring the player's own `Projectile.ExpiresOnHit`
+     — every other enemy projectile keeps today's exact behavior) and `HasHitPlayer` (latches `true`
+     the first time it actually damages the player). `EntityManager.HandleCollisions()`'s
+     enemy-projectile-vs-player block now skips any projectile with `HasHitPlayer` already set,
+     marks it after a real hit regardless of `ExpiresOnHit`, and only sets `IsExpired` when
+     `ExpiresOnHit` is true — so a non-expiring projectile can never be checked-and-hit twice, and
+     everything that already expired on the original single hit keeps doing exactly that (marking
+     `HasHitPlayer` and expiring happen in the same frame for them, same as before this existed).
+     `GrenadeProjectile`'s constructor sets `ExpiresOnHit = false`; it now only ever goes away via
+     its `duration` timeout (or leaving world bounds), never from the collision loop. Verified via a
+     scripted repro (real save files backed up first per `CLAUDE.md`, since the test mutates
+     `Player.Instance.Health`): an armed grenade sitting exactly on the player damages them once on
+     the first overlapping frame, stays alive and un-expired through 50 more overlapping frames with
+     zero further health loss, confirms `HasHitPlayer` latched, and finally expires via its own
+     duration timer rather than the collision check. Real save files restored/diff-verified
+     afterward. Clean build and a plain boot-check both passed.

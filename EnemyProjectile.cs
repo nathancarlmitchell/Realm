@@ -18,6 +18,22 @@ namespace Realm
         // whatever explicitly opts in — e.g. a Stheno Pet's trailing orb.
         public bool SlowsOnHit = false;
 
+        // Whether a hit against the player consumes this projectile — true
+        // (the original, still-default behavior) for everything except
+        // whatever explicitly opts out, e.g. GrenadeProjectile, which stays
+        // alive (and its hitbox live) for its whole duration regardless of
+        // how many times the player is inside it. Mirrors the player's own
+        // Projectile.ExpiresOnHit.
+        public bool ExpiresOnHit = true;
+
+        // Set true the first time this projectile actually damages the
+        // player (see EntityManager.HandleCollisions()) — prevents a
+        // non-expiring projectile (ExpiresOnHit = false) from dealing
+        // damage again on every subsequent frame the player still overlaps
+        // it. Irrelevant for anything that still expires on hit, since
+        // IsExpired already stops it from colliding again by then.
+        public bool HasHitPlayer = false;
+
         // image defaults to the shared enemy projectile sprite; passing one
         // explicitly (e.g. a boss-specific projectile) has to happen here
         // rather than via an object initializer, since Radius is derived

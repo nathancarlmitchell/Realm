@@ -32,9 +32,9 @@ namespace Realm
         // as the grenade stays alive — a pulsing "this is live" cue. Purely
         // visual: the hitbox (Radius) is identical across all 3 stages,
         // already set once in Update() when arming happens.
-        private const float ArmedOpacityStage1 = 0.55f;
-        private const float ArmedOpacityStage2 = 0.65f;
-        private const float ArmedOpacityStage3 = 0.75f;
+        private const float ArmedOpacityStage1 = 0.95f;
+        private const float ArmedOpacityStage2 = 0.85f;
+        private const float ArmedOpacityStage3 = 0.35f;
         private const int ArmedCycleStageLength = 10; // frames/stage, ~0.17s at 60fps
 
         public GrenadeProjectile(
@@ -56,6 +56,13 @@ namespace Realm
             // the telegraph shows the real danger zone from frame one; only
             // the actual collision radius starts at zero.
             Radius = 0f;
+
+            // Stays alive (hitbox and all) for its whole duration instead
+            // of vanishing the instant it first touches the player — a
+            // lingering AoE hazard, not a one-shot bullet. EnemyProjectile's
+            // new HasHitPlayer tracking (see EntityManager.HandleCollisions())
+            // still caps it to damaging the player exactly once.
+            ExpiresOnHit = false;
         }
 
         public override void Update()

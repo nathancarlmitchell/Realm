@@ -376,14 +376,25 @@ namespace Realm
             // handle collisions between enemy projectiles and player
             for (int i = 0; i < enemiesProjectiles.Count; i++)
             {
-                if (IsColliding(Player.Instance, enemiesProjectiles[i]))
+                if (
+                    !enemiesProjectiles[i].HasHitPlayer
+                    && IsColliding(Player.Instance, enemiesProjectiles[i])
+                )
                 {
                     Player.Instance.Hit(enemiesProjectiles[i].Damage);
                     if (enemiesProjectiles[i].SlowsOnHit)
                     {
                         Player.Instance.Slow();
                     }
-                    enemiesProjectiles[i].IsExpired = true;
+                    // Marked regardless of ExpiresOnHit below, so a
+                    // non-expiring projectile (e.g. GrenadeProjectile) can
+                    // only ever damage the player once, not every frame
+                    // they keep overlapping it.
+                    enemiesProjectiles[i].HasHitPlayer = true;
+                    if (enemiesProjectiles[i].ExpiresOnHit)
+                    {
+                        enemiesProjectiles[i].IsExpired = true;
+                    }
                 }
             }
 
