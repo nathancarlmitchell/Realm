@@ -2155,3 +2155,14 @@ date/time for those individually; don't treat their grouping as meaning they all
      `Player.Instance`): with `fuseFrames = 99` (a clean 33-frame-per-stage split), all 3 stage
      boundaries (`elapsed` 0, 32, 33, 65, 66, 98) returned the expected opacity. Clean build and a
      plain boot-check both passed.
+111. **`GrenadeProjectile`'s armed (red) state also cycles through 3 opacity stages now** — 0.55 /
+     0.65 / 0.75, each `ArmedCycleStageLength` (10 frames, ~0.17s) long — but *repeating*
+     (`CurrentArmedOpacity()` wraps via `% 3`) for as long as the grenade stays armed, unlike the
+     telegraph's one-shot ramp, giving the live hazard a pulsing "this is dangerous now" cue. Purely
+     visual, per the user's explicit framing — `Radius` (the hitbox) is set once in `Update()` when
+     arming happens and is never touched by either opacity method, identical across all 3 stages.
+     Verified via a scripted repro (reflection into `elapsed`/`armed`/`CurrentArmedOpacity()`, no
+     real save-file risk): with `fuseFrames = 30`, confirmed the 3 stage boundaries relative to the
+     arming frame, confirmed the cycle wraps back to stage 1 after a full 30-frame cycle, and
+     confirmed `Radius` stayed at the armed value throughout. Clean build and a plain boot-check
+     both passed.

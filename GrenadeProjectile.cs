@@ -24,9 +24,18 @@ namespace Realm
         // much longer" cue than a smooth fade, but cheap and readable at a
         // glance.
         private const float TelegraphOpacityStage1 = 0.15f;
-        private const float TelegraphOpacityStage2 = 0.25f;
-        private const float TelegraphOpacityStage3 = 0.35f;
-        private static readonly Color ArmedColor = Color.Red * 0.55f;
+        private const float TelegraphOpacityStage2 = 0.35f;
+        private const float TelegraphOpacityStage3 = 0.55f;
+
+        // Once armed, opacity keeps cycling through these 3 stages
+        // (repeating, unlike the one-shot telegraph ramp above) for as long
+        // as the grenade stays alive — a pulsing "this is live" cue. Purely
+        // visual: the hitbox (Radius) is identical across all 3 stages,
+        // already set once in Update() when arming happens.
+        private const float ArmedOpacityStage1 = 0.55f;
+        private const float ArmedOpacityStage2 = 0.65f;
+        private const float ArmedOpacityStage3 = 0.75f;
+        private const int ArmedCycleStageLength = 10; // frames/stage, ~0.17s at 60fps
 
         public GrenadeProjectile(
             Vector2 position,
@@ -64,7 +73,9 @@ namespace Realm
 
         public override void Draw(SpriteBatch spriteBatch)
         {
-            Color drawColor = armed ? ArmedColor : Color.Gray * CurrentTelegraphOpacity();
+            Color drawColor = armed
+                ? Color.Red * CurrentArmedOpacity()
+                : Color.Gray * CurrentTelegraphOpacity();
             float scale = (armedRadius * 2f) / Art.Circle.Width;
 
             spriteBatch.Draw(
@@ -93,6 +104,23 @@ namespace Realm
             if (elapsed < stageLength * 2)
                 return TelegraphOpacityStage2;
             return TelegraphOpacityStage3;
+        }
+
+        // Which of the 3 armed-cycle stages elapsed currently falls in,
+        // repeating every 3 * ArmedCycleStageLength frames for as long as
+        // the grenade stays armed. "elapsed - fuseFrames" is frames since
+        // arming (0 on the exact frame it arms), only ever called while
+        // armed is true.
+        private float CurrentArmedOpacity()
+        {
+            int cycleStage = ((elapsed - fuseFrames) / ArmedCycleStageLength) % 3;
+
+            return cycleStage switch
+            {
+                0 => ArmedOpacityStage1,
+                1 => ArmedOpacityStage2,
+                _ => ArmedOpacityStage3,
+            };
         }
     }
 }
