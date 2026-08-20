@@ -355,26 +355,26 @@ namespace Realm
         }
 
         // Debug/testing only (F4 in Input.cs) — not real gameplay. Sets
-        // Level straight to the cap without touching stats: RecalculateStats()
-        // is never called here, so Attack/Defense/etc. are left exactly as
-        // they were (every class's RecalculateStats() derives them from
-        // Level, but only when it actually runs — see CharacterClasses/
-        // Wizard.cs etc.). Also drops the current class's highest-tier item
-        // for every equipment slot straight into the inventory, unequipped —
-        // each is a fresh instance built from the matching catalog entry's
-        // data fields, same as Weapon.LoadWeapon()/Armor.LoadArmor()/etc. do,
-        // just without the trailing Equip call those make.
-        public void DebugMaxLevelAndGiveTopGear()
+        // Level straight to the cap and calls RecalculateStats() so
+        // Attack/Defense/etc. actually reflect it (every class's
+        // RecalculateStats() derives them from Level — see
+        // CharacterClasses/Wizard.cs etc.). Also equips the current class's
+        // highest-tier item for every equipment slot, replacing whatever
+        // was equipped before — each is a fresh instance built from the
+        // matching catalog entry's data fields, same as Weapon.LoadWeapon()/
+        // Armor.LoadArmor()/etc. already do.
+        public void DebugMaxLevelAndEquipTopGear()
         {
             Level = 20;
+            RecalculateStats();
 
-            GiveHighestTierWeapon();
-            GiveHighestTierArmor();
-            GiveHighestTierRing();
-            GiveHighestTierAbilityItem();
+            EquipHighestTierWeapon();
+            EquipHighestTierArmor();
+            EquipHighestTierRing();
+            EquipHighestTierAbilityItem();
         }
 
-        private void GiveHighestTierWeapon()
+        private void EquipHighestTierWeapon()
         {
             Weapon best = Game1
                 .Instance.Weapons.Where(w => w.Type == WeaponType)
@@ -401,10 +401,10 @@ namespace Realm
                 ProjectileImageName = best.ProjectileImageName,
             };
 
-            Inventory.AddItem(copy, 1);
+            EquipWeapon(copy);
         }
 
-        private void GiveHighestTierArmor()
+        private void EquipHighestTierArmor()
         {
             Armor best = Game1
                 .Instance.Armors.Where(a => a.Type == ArmorType)
@@ -431,10 +431,10 @@ namespace Realm
                 ImageName = best.ImageName,
             };
 
-            Inventory.AddItem(copy, 1);
+            EquipArmor(copy);
         }
 
-        private void GiveHighestTierRing()
+        private void EquipHighestTierRing()
         {
             // No class restriction on Ring, same as Ring.LoadRing().
             Ring best = Game1.Instance.Rings.OrderByDescending(r => r.Tier).FirstOrDefault();
@@ -458,7 +458,7 @@ namespace Realm
                 ImageName = best.ImageName,
             };
 
-            Inventory.AddItem(copy, 1);
+            EquipRing(copy);
         }
 
         // Spell/Quiver/Shield share an identical field set (only their
@@ -466,7 +466,7 @@ namespace Realm
         // gates on) — picked from all three catalogs combined via the same
         // CanEquipAbilityItem() filter AbilityItem.PlaceholderImage already
         // uses, rather than three near-duplicate class-specific methods.
-        private void GiveHighestTierAbilityItem()
+        private void EquipHighestTierAbilityItem()
         {
             AbilityItem best = Game1
                 .Instance.Spells.Cast<AbilityItem>()
@@ -505,7 +505,7 @@ namespace Realm
             copy.MaxDamage = best.MaxDamage;
             copy.ImageName = best.ImageName;
 
-            Inventory.AddItem(copy, 1);
+            EquipAbilityItem(copy);
         }
 
         // Sum of whichever equipped item(s) carry this bonus — always read

@@ -137,12 +137,12 @@ public static class Input
                 Player.Instance.LevelUp();
             }
 
-            // Testing only, not real gameplay: max Level (stats untouched)
-            // and drop the current class's highest-tier gear into the
-            // inventory for every slot.
+            // Testing only, not real gameplay: max Level (with a real stat
+            // recalculation) and equip the current class's highest-tier
+            // gear for every slot, replacing whatever was equipped.
             if (WasKeyPressed(Keys.F4))
             {
-                Player.Instance.DebugMaxLevelAndGiveTopGear();
+                Player.Instance.DebugMaxLevelAndEquipTopGear();
             }
 
             // Return to Nexus.
