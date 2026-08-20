@@ -2140,3 +2140,8 @@ date/time for those individually; don't treat their grouping as meaning they all
      unrotated sanity pair behaves as expected, and the same geometry produces matching results
      through the real `EntityManager.Update()`/`HandleCollisions()` pipeline with a live `Player`
      and `EnemyProjectile` (not just the isolated math). Clean build and a plain boot-check passed.
+109. **Real art for Stheno's blade projectile**, user-supplied (`Content/Projectiles/Stheno
+     Blade.png`), wired into `Content.mgcb`/`Art.cs` as `Art.SthenoBladeProjectile` and swapped in
+     for the placeholder `Art.SwordSlash` reuse in `FireBlade()`. Same day this asset also lines up
+     with entry 108's rotated-rectangle fix — the blade's `Shape = CollisionShape.Rectangle` hitbox
+     now both looks right and actually matches its rotation. No behavior change beyond the sprite.

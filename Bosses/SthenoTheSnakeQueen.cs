@@ -190,7 +190,7 @@ namespace Realm.Bosses
                 new EnemyProjectile(
                     Position,
                     Extensions.FromPolar(angle, BladeSpeed),
-                    Art.SwordSlash
+                    Art.SthenoBladeProjectile
                 )
                 {
                     Damage = BladeDamage,
@@ -355,6 +355,7 @@ namespace Realm.Bosses
                                 {
                                     Damage = SpiralDamage,
                                     duration = SpiralDuration,
+                                    Shape = CollisionShape.Rectangle,
                                 }
                             );
                         }
