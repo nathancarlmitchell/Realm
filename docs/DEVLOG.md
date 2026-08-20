@@ -1915,3 +1915,21 @@ date/time for those individually; don't treat their grouping as meaning they all
     `SpriteBatch.Begin()/End()` pass for each class with no exception, confirming the new
     `spriteBatch.Draw()` call for the placeholder actually executes, not just compiles.
     *(11:30 EDT)*
+
+## 2026-08-19
+
+98. **Project memory notes moved into the git repo**, picked off the backlog's "sync the memory
+    notes across devices" tooling item. The three running logs (this file, [BACKLOG.md](BACKLOG.md),
+    [BUGFIXES.md](BUGFIXES.md)) and the two hard behavioral rules (save-file-backup-before-testing,
+    launch-minimized-for-boot-checks) previously lived only under this machine's local Claude Code
+    memory folder — not portable to another machine automatically. Chose option (1) from the
+    backlog's two discussed options: mirrored all three logs into `docs/` at the repo root (frontmatter
+    stripped, internal `[[wiki-links]]` rewritten to plain relative markdown links between the three
+    files), and inlined the two behavioral rules plus the established testing workflow into a new
+    root `CLAUDE.md` — auto-loaded every session in this project, so it now travels with `git clone`/
+    `pull` on any machine instead of staying local to one. The old local memory files were deleted
+    once the repo copies were confirmed pushed, replaced with a single small reference memory
+    pointing at the new repo locations. Flagged to the user before pushing that the repo is public,
+    so these dev-process logs (including the documented data-loss incident in
+    [BUGFIXES.md](BUGFIXES.md) entry 42) become publicly visible — confirmed as fine, nothing
+    sensitive in them.

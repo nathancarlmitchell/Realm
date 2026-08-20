@@ -138,18 +138,6 @@ prioritized or scheduled — the user asked to keep these noted for later rather
   to build it against (the portal glow and on-hit/on-death particles above are the two candidates
   raised so far) rather than building generic infrastructure with nothing using it yet.
 
-## Tooling / workflow ideas (not gameplay features)
-
-- **Sync the memory notes (this backlog + [BUGFIXES.md](BUGFIXES.md)) across
-  devices.** They currently live under `C:\Users\Nathan\.claude\projects\...\memory\` on this
-  machine only — not portable to another computer automatically. Discussed two options: (1) move
-  the canonical copies into the Realm git repo itself (e.g. `docs/`) and reference them from a
-  `CLAUDE.md` at the repo root, so any machine that clones the repo gets them and they're
-  auto-loaded as context — rides along with git, but becomes part of tracked project history; or
-  (2) sync the whole `~/.claude` folder via a cloud drive or dotfiles repo — keeps everything
-  working as-is but is all-or-nothing across every project's memory, not just Realm's. No decision
-  made yet.
-
 ## Completed
 
 Moved to a dedicated log so it isn't duplicated here — see
