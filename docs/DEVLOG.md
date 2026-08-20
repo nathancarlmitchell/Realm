@@ -2279,3 +2279,25 @@ date/time for those individually; don't treat their grouping as meaning they all
      unchanged from before this fix); confirmed both `Sprite World`/`Snake Pit` portals' `Bounds` now
      sit fully contained within their 78×78 visible sprite, which they did not before. Clean build and
      a plain boot-check both passed.
+118. **Fixed the actual visual misalignment behind entry 117's fix**, per the user reporting the F3
+     outline still looked wrong after it. Entry 117 only fixed the trigger box's *size* scaling to
+     each portal's own rendered footprint — it kept the box anchored to that footprint's bottom-right
+     *corner* (a 2/3 offset), inherited unexamined from the original hardcoded 64px/96px numbers. That
+     placement was never actually visually verified before: rendering each portal + its F3 outline to
+     an offscreen `RenderTarget2D` and inspecting the resulting PNG directly (rather than only
+     comparing numbers) showed the box sitting entirely beside the visible sprite, not on it — every
+     portal's art (swirl, arch, diamond) is roughly circular/pointed and doesn't fill the corners of
+     its own bounding square, so a corner-anchored box was always going to miss it regardless of size.
+     Changed `BoundsOffsetFraction` from `2/3` to `1/3` (same `1/3`-size box, now centered in the
+     middle third of the footprint instead of tucked in a corner) — confirmed via re-rendered PNGs
+     that the box now sits squarely on the swirl, the Snake Pit arch's dark mouth, and both extremes of
+     Sprite World's animation (frame 0's small closed icon and frame 6's fully-formed diamond). Noted
+     in a code comment as a known remaining limitation: the box is still a single fixed rectangle, not
+     re-derived per animation frame, so alignment during Sprite World's smaller in-between frames is
+     approximate rather than exact — not worth a per-frame hitbox for a debug outline plus a walk-up
+     teleport trigger. Verified via a scripted repro (temp code in `Game1.StartGame()`, no
+     `Player.Instance` mutation): rendered all three portals plus a forced Sprite World frame-6 render
+     to standalone PNGs via an offscreen `RenderTarget2D` and visually inspected each — this is the
+     first time this feature was actually checked by looking at rendered pixels rather than only
+     comparing numbers, which is what let entry 117's corner-anchoring bug slip through. Clean build
+     and a plain boot-check both passed.

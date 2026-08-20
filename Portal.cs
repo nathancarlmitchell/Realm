@@ -154,15 +154,27 @@ namespace Realm
         public Vector2 Position => position;
 
         // Fraction of the portal's own rendered footprint the teleport
-        // trigger occupies — a 1/3-sized box sitting in the bottom-right
-        // corner (2/3 offset). Originally a hardcoded 64px offset / 32px
-        // size, tuned by feel against the generic portal's 96px rendered
-        // size (64 = 96 * 2/3, 32 = 96 * 1/3); expressed as a fraction of
-        // RenderedWidth/RenderedHeight instead so it keeps the exact same
-        // feel on that portal while also landing correctly on the smaller
-        // dungeon-specific sheets (78px rendered) instead of poking out
-        // past their visible sprite like the old fixed 64px offset did.
-        private const float BoundsOffsetFraction = 2f / 3f;
+        // trigger occupies — a 1/3-sized box centered in the middle third
+        // of the frame. Was previously anchored to the frame's
+        // bottom-right corner (2/3 offset) instead of centered — harmless
+        // for the original generic swirl's math (still landed inside its
+        // 96px bounding square) but visually wrong once actually rendered
+        // and checked against the F3 outline (entry 116/117): every
+        // portal's art is a roughly circular/arch/diamond shape that
+        // doesn't fill the corners of its own bounding square, so a
+        // corner-anchored box sat next to the visible sprite instead of on
+        // it, confirmed by rendering each portal + its outline to an
+        // offscreen RenderTarget2D and inspecting the PNG directly.
+        // Centering instead of corner-anchoring (offset 1/3 instead of
+        // 2/3, same 1/3 size) puts the trigger over the sprite's actual
+        // visual mass for every current portal. Note this is still a
+        // single fixed box, not re-derived per animation frame — Sprite
+        // World's opening-animation frames vary a lot in visible content
+        // size (frame 0 is a small closed icon, later frames fill most of
+        // the cell), so alignment during the tiny early frames is still
+        // only approximate; a per-frame hitbox isn't worth the complexity
+        // for a debug-only visual plus a walk-up teleport trigger.
+        private const float BoundsOffsetFraction = 1f / 3f;
         private const float BoundsSizeFraction = 1f / 3f;
 
         private Rectangle bounds
