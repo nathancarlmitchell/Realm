@@ -2437,3 +2437,24 @@ date/time for those individually; don't treat their grouping as meaning they all
      `Begin()`/`End()` pair with no exception while a confirmation is pending; and confirmed
      `Game1.ChangeState()` clears a re-armed `pendingConfirmation` regardless of which portal set it.
      Clean build and a plain boot-check both passed.
+124. **Moved the portal confirmation prompt (entry 123) from a floating world-space widget above the
+     portal into a fixed sidebar section below the inventory grid, and added the dungeon name as a
+     heading above the button.** `Portal.DrawConfirmationPrompt()` no longer converts the pending
+     portal's world position to screen space via the camera transform — it now anchors at
+     `Game1.SidebarX + 20` horizontally and `Player.Instance.Inventory.Bounds.Bottom + 20` vertically
+     (the live inventory bounds rather than a hardcoded Y, so this stays correctly positioned if that
+     grid's own layout ever changes), stacking three lines top to bottom: the dungeon name
+     (`pendingConfirmation.DisplayName` — "Sprite World", "Snake Pit", etc.), the "Enter" button, then
+     the "or press [X]" key-bind hint. Stayed in `Portal.cs` rather than moving into `Overlay.cs`
+     since it still owns the `Button`/click-wiring itself — `Overlay.cs` doesn't need to know anything
+     about portals, it just decides where in the draw order to invoke it (both states now call it
+     immediately after `Overlay.DrawSidebar()`, matching the new "below inventory" placement). Verified
+     via a scripted repro (temp code in `Game1.StartGame()`; backed up real save files first per
+     `CLAUDE.md` since the test constructs a throwaway `NexusState` for `Game1.Camera` init, which
+     saves in its own constructor — restored and diff-verified unchanged afterward this time, unlike
+     entry 123's incidental Wizard save diff): reflectively armed `pendingConfirmation` with a real
+     `BossRealm` portal and rendered `DrawConfirmationPrompt()` alone to an offscreen `RenderTarget2D`
+     sized to the sidebar's width, then visually inspected the resulting PNG — confirming "Sprite
+     World" / "Enter" / "or press [R]" render as three cleanly stacked, left-aligned lines that fit
+     within the sidebar's width with no overflow, per the lesson from entry 118 (verify by looking at
+     the actual pixels, not just the coordinate math). Clean build and a plain boot-check both passed.

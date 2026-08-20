@@ -120,12 +120,13 @@ namespace Realm.States
             // equipment, inventory, in that order).
             Overlay.DrawSidebar(spriteBatch);
 
+            // Draw the portal-entry confirmation prompt (sidebar, below the
+            // inventory grid), if the player is currently standing in one —
+            // no-op otherwise.
+            Portal.DrawConfirmationPrompt(gameTime, spriteBatch);
+
             // Draw bank (only visible while open).
             BankSystem.Draw(spriteBatch);
-
-            // Draw the portal-entry confirmation prompt, if the player is
-            // currently standing in one — no-op otherwise.
-            Portal.DrawConfirmationPrompt(gameTime, spriteBatch);
 
             // Drag ghosts draw last, after both panels' own contents, so
             // dragging between the two never gets covered up by whichever

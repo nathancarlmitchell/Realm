@@ -143,16 +143,18 @@ namespace Realm.States
             // Draw the HUD sidebar (stats, XP, health, mana, ability,
             // equipment, inventory, in that order).
             Overlay.DrawSidebar(spriteBatch);
+
+            // Draw the portal-entry confirmation prompt (sidebar, below the
+            // inventory grid), if the player is currently standing in one —
+            // no-op otherwise.
+            Portal.DrawConfirmationPrompt(gameTime, spriteBatch);
+
             Player.Instance.Inventory.DrawDragGhost(spriteBatch);
 
             // Draw score.
             Overlay.DrawScore(spriteBatch);
 
             DrawBossHud(spriteBatch);
-
-            // Draw the portal-entry confirmation prompt, if the player is
-            // currently standing in one — no-op otherwise.
-            Portal.DrawConfirmationPrompt(gameTime, spriteBatch);
 
             if (Game1._Debug)
             {

@@ -327,37 +327,39 @@ namespace Realm
         }
 
         // Called once per frame from each state's untransformed
-        // (screen-space) draw pass — Portal.Draw() below runs inside the
-        // camera-transformed batch (world space), which can't also host a
-        // raw-screen-space Controls.Button correctly; this mirrors how
-        // BankSystem's panel anchors itself above its own portal via the
-        // same world->screen transform, in that same untransformed pass.
-        // A no-op whenever nothing is currently pending.
+        // (screen-space) draw pass, right after Overlay.DrawSidebar() — a
+        // fixed sidebar spot below the inventory grid rather than floating
+        // above the portal in world space (the original placement), per
+        // the user's request. A no-op whenever nothing is currently
+        // pending. Sits in Portal.cs rather than Overlay.cs since it still
+        // owns the Button/click-wiring itself (see ConfirmButton above);
+        // Overlay.cs just decides where in the draw order to invoke it,
+        // same as every other section there delegating to its own system
+        // (e.g. Player.Instance.Weapon.DrawEquipped()).
+        private const int SidebarSectionPadding = 20;
+
         public static void DrawConfirmationPrompt(GameTime gameTime, SpriteBatch spriteBatch)
         {
             if (pendingConfirmation == null)
                 return;
 
-            Vector2 worldAnchor =
-                pendingConfirmation.position
-                + new Vector2(pendingConfirmation.RenderedWidth / 2f, 0);
-            Vector2 screenPos = Vector2.Transform(worldAnchor, Game1.Camera.GetTransformation());
+            int x = Game1.SidebarX + SidebarSectionPadding;
+            // Player.Instance.Inventory.Bounds.Bottom rather than a
+            // hardcoded Y, so this stays correctly positioned if the
+            // inventory grid's own layout ever changes.
+            int y = Player.Instance.Inventory.Bounds.Bottom + 20;
 
-            const int gapAbovePortal = 16;
+            string dungeonName = pendingConfirmation.DisplayName;
+            spriteBatch.DrawString(Art.HudFont, dungeonName, new Vector2(x, y), Color.White);
+            int labelHeight = (int)Art.HudFont.MeasureString(dungeonName).Y;
+
             Button button = ConfirmButton;
-            button.Position = new Vector2(
-                screenPos.X - (button.Rectangle.Width / 2f),
-                screenPos.Y - gapAbovePortal - button.Rectangle.Height
-            );
+            button.Position = new Vector2(x, y + labelHeight + 6);
             button.Update(gameTime);
             button.Draw(gameTime, spriteBatch);
 
             string hint = $"or press [{KeyBindings.Get(KeyBindings.Action.ConfirmPortalEntry)}]";
-            Vector2 hintSize = Art.HudFont.MeasureString(hint);
-            Vector2 hintPos = new(
-                screenPos.X - (hintSize.X / 2f),
-                button.Position.Y - hintSize.Y - 4
-            );
+            Vector2 hintPos = new(x, button.Position.Y + button.Rectangle.Height + 6);
             spriteBatch.DrawString(Art.HudFont, hint, hintPos + Vector2.One, Color.Black * 0.6f);
             spriteBatch.DrawString(Art.HudFont, hint, hintPos, Color.White);
         }
