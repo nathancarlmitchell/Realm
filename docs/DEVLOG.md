@@ -2458,3 +2458,30 @@ date/time for those individually; don't treat their grouping as meaning they all
      World" / "Enter" / "or press [R]" render as three cleanly stacked, left-aligned lines that fit
      within the sidebar's width with no overflow, per the lesson from entry 118 (verify by looking at
      the actual pixels, not just the coordinate math). Clean build and a plain boot-check both passed.
+125. **Portal animations are now instance-specific**, per the user noticing that a new portal dropped
+     after an earlier one's animation already finished wouldn't play its own animation — it'd just
+     show the already-finished state immediately. Root cause: `Destination.PortalArt()` (entries 115/
+     118) handed out the literal shared `Art.Portal`/`Art.SpriteWorldPortal`/`Art.SnakePitPortal`
+     `AnimatedTexture` instance itself, so every `Portal` of the same destination shared one global
+     frame/elapsed clock — harmless for a looping animation (they just all stay in sync forever), but
+     for Sprite World's non-looping one-shot (entry 121), the *first* portal to reach its held last
+     frame permanently put every other portal sharing that same object in the finished state too, since
+     they were all reading `frame` off the exact same object. New `AnimatedTexture.Clone()` creates a
+     fresh instance sharing the original's already-loaded `Texture2D` (no reload, no extra content-pipe
+     work) and layout/timing config (frameCount, columns, timePerFrame, loop, Rotation/Scale/Depth/
+     Opacity/Origin), but with its own frame/elapsed/paused state reset to a clean start. Both
+     `Destination.PortalArt()` implementations (the base swirl default and `BossDestination`'s override)
+     now call `.Clone()` on the art before returning it, so every single `Portal` constructed — not just
+     ones using the non-looping sheet — gets a genuinely independent animation instance; applied
+     uniformly rather than special-cased to just the non-looping case, since even looping portals
+     spawned at different times animating in forced lockstep was itself a minor side effect of the same
+     shared-instance root cause. Verified via a scripted repro (temp code in `Game1.StartGame()`, no
+     `Player.Instance` mutation so no save-file risk): confirmed a constructed portal's `image` is no
+     longer reference-equal to `Art.SpriteWorldPortal`, and that two different portals of the same
+     destination don't share an `image` with each other either, while both still share the exact same
+     underlying `Texture2D` (confirming `Clone()` didn't trigger a reload); drove one portal's clone all
+     the way to its held last frame (6), then constructed a brand new portal of the same destination
+     *after* that and confirmed its clone started fresh at frame 0 (not stuck at 6) — the actual bug —
+     and that it played through its own 0→6 progression independently while the first portal stayed
+     held at 6 throughout, unaffected; confirmed `Draw()` still renders correctly through a real
+     `SpriteBatch` pass with the cloned texture. Clean build and a plain boot-check both passed.

@@ -27,13 +27,20 @@ namespace Realm
             public abstract void Enter();
 
             // Which animation a portal to this destination draws itself
-            // with. Resolved lazily (only called once a Portal is actually
+            // with — a fresh AnimatedTexture.Clone() each call, not the
+            // shared Art.* instance directly, so every Portal gets its own
+            // independent frame/elapsed clock (see AnimatedTexture.Clone()'s
+            // own doc comment for why: a non-looping animation especially
+            // needs this, since sharing one clock means a second portal
+            // dropped after the first one already finished playing would
+            // start out already-finished too, never actually animating).
+            // Resolved lazily (only called once a Portal is actually
             // constructed, well after Art.Load() has run) rather than
             // eagerly at these static fields' own init time, since that
             // happens before content is loaded. Defaults to the plain
             // swirl every non-dungeon destination (Realm/Bank/Nexus/etc.)
             // still uses.
-            internal virtual AnimatedTexture PortalArt() => Art.Portal;
+            internal virtual AnimatedTexture PortalArt() => Art.Portal.Clone();
 
             public static readonly Destination Realm = new RealmDestination();
             public static readonly Destination CharacterSelect =
@@ -126,7 +133,7 @@ namespace Realm
 
                 public override string DisplayName => DungeonName;
                 public override void Enter() => StateManager.EnterBossRealm(this);
-                internal override AnimatedTexture PortalArt() => getPortalArt();
+                internal override AnimatedTexture PortalArt() => getPortalArt().Clone();
             }
         }
 

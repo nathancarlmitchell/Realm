@@ -145,6 +145,34 @@ namespace Realm
         public int FrameWidth => myTexture.Width / columns;
         public int FrameHeight => myTexture.Height / ((frameCount + columns - 1) / columns);
 
+        // A fresh AnimatedTexture sharing this one's already-loaded texture
+        // and layout/timing config, but starting its own independent
+        // frame/elapsed clock at frame 0 — lets multiple owners (e.g.
+        // several Portal instances, see Portal.Destination.PortalArt())
+        // each play through their own animation on their own schedule
+        // instead of all sharing one global clock. Without this, a
+        // non-looping animation (see `loop` above) that already finished
+        // playing on one instance would make every *other* owner of the
+        // same shared AnimatedTexture start out already-finished too — a
+        // second portal dropped after the first one's "opening" animation
+        // had already finished would just show the final open frame
+        // immediately, never actually playing its own opening animation.
+        // No content reload — myTexture is the same Texture2D reference,
+        // only the frame/elapsed/paused state is fresh.
+        public AnimatedTexture Clone()
+        {
+            var clone = new AnimatedTexture(Origin, Rotation, Scale, Depth) { Opacity = Opacity };
+            clone.myTexture = myTexture;
+            clone.frameCount = frameCount;
+            clone.columns = columns;
+            clone.timePerFrame = timePerFrame;
+            clone.loop = loop;
+            clone.frame = 0;
+            clone.totalElapsed = 0f;
+            clone.isPaused = false;
+            return clone;
+        }
+
         public void Reset()
         {
             frame = 0;
