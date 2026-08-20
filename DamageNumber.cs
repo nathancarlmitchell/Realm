@@ -56,7 +56,7 @@ namespace Realm
             if (hasBlackBacking)
             {
                 spriteBatch.DrawString(
-                    Art.HudFont,
+                    Art.DamageFont,
                     text,
                     Position + BackingOffset,
                     Color.Black * (BackingAlpha * currentAlpha),
@@ -69,7 +69,7 @@ namespace Realm
             }
 
             spriteBatch.DrawString(
-                Art.HudFont,
+                Art.DamageFont,
                 text,
                 Position,
                 color,

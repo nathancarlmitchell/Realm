@@ -1016,6 +1016,13 @@
 /processorParam:TextureFormat=Compressed
 /build:Fonts/HudFont.spritefont
 
+#begin Fonts/DamageFont.spritefont
+/importer:FontDescriptionImporter
+/processor:FontDescriptionProcessor
+/processorParam:PremultiplyAlpha=True
+/processorParam:TextureFormat=Compressed
+/build:Fonts/DamageFont.spritefont
+
 #begin Fonts/TitleFont.spritefont
 /importer:FontDescriptionImporter
 /processor:FontDescriptionProcessor

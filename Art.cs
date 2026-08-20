@@ -60,6 +60,12 @@ namespace Realm
         public static SpriteFont HudFont { get; private set; }
         public static SpriteFont TitleFont { get; private set; }
 
+        // Bold, slightly larger than HudFont — used for floating combat
+        // damage numbers (DamageNumber.cs), which need to read clearly at
+        // a glance over busy backgrounds; HudFont's regular weight stayed
+        // hard to read even after bumping its draw scale up.
+        public static SpriteFont DamageFont { get; private set; }
+
         // Weapons.
         public static Texture2D Wand { get; private set; }
 
@@ -171,6 +177,7 @@ namespace Realm
             // Fonts.
             HudFont = content.Load<SpriteFont>("Fonts/HudFont");
             TitleFont = content.Load<SpriteFont>("Fonts/TitleFont");
+            DamageFont = content.Load<SpriteFont>("Fonts/DamageFont");
         }
 
         // Hard-edged filled circle, diameter x diameter, opaque white

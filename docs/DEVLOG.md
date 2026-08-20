@@ -2194,3 +2194,16 @@ date/time for those individually; don't treat their grouping as meaning they all
      to `Player.Hit()`'s call site — enemy hit numbers (`Enemy.WasShot()`) are untouched, matching
      the user's request specifically about the player's own damage number. Purely visual, no
      gameplay/state change; verified via a clean build and a plain boot-check.
+114. **Dedicated `Art.DamageFont` for floating combat damage numbers**, replacing `Art.HudFont`
+     (`DamageNumber.cs`'s two `DrawString` calls — the real number and its entry-113 black backing).
+     Per the user's follow-up that the numbers were "still a bit hard to read" even after the
+     earlier `Scale = 1.3f` bump (an ordinary-weight font stays low-contrast no matter how large it's
+     drawn) — the fix is weight, not just size. New `Content/Fonts/DamageFont.spritefont`, copied
+     from `HudFont.spritefont`'s exact XML shape with `<Size>` 12→16 and `<Style>` Regular→Bold; a
+     matching `#begin`/`#build` block added to `Content.mgcb` right after `HudFont`'s own (same
+     `FontDescriptionImporter`/`FontDescriptionProcessor` params); `Art.cs` gained the
+     `DamageFont` field and its `content.Load<SpriteFont>("Fonts/DamageFont")` line, loaded
+     alongside `HudFont`/`TitleFont`. Purely visual, no gameplay/state change. Verified: clean build
+     compiled the new asset (`DamageFont.xnb` confirmed present in `bin/Debug/net8.0-windows/
+     Content/Fonts/`, not skipped), and a plain boot-check (minimized, `IsIconic()`-confirmed)
+     showed the process starting and staying alive with no temp code involved.
