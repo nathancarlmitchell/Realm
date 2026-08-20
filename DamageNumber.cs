@@ -10,6 +10,7 @@ namespace Realm
 
         private const int LifespanTicks = 40;
         private static readonly Vector2 FloatVelocity = new(0, -0.6f);
+        private const float Scale = 1.3f;
 
         private readonly string text;
         private readonly Color baseColor;
@@ -39,7 +40,17 @@ namespace Realm
 
         public override void Draw(SpriteBatch spriteBatch)
         {
-            spriteBatch.DrawString(Art.HudFont, text, Position, color);
+            spriteBatch.DrawString(
+                Art.HudFont,
+                text,
+                Position,
+                color,
+                0f,
+                Vector2.Zero,
+                Scale,
+                SpriteEffects.None,
+                0f
+            );
         }
     }
 }
