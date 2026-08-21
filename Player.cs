@@ -475,6 +475,8 @@ namespace Realm
                 ProjectileDuration = best.ProjectileDuration,
                 ImageName = best.ImageName,
                 ProjectileImageName = best.ProjectileImageName,
+                Amplitude = best.Amplitude,
+                Frequency = best.Frequency,
             };
 
             EquipWeapon(copy);

@@ -601,3 +601,31 @@ happened at once.
     color; after the fix it read back visibly blended with the tooltip's translucent background tint
     (`(216,216,216)` vs. the icon's raw `(255,255,255)`), confirming the Weapon tooltip now draws on
     top of the AbilityItem slot instead of being erased by it. *(14:20 EDT)*
+45. **F4's debug max-level-and-equip-top-gear equipped the correct top-tier Staff, but its shots flew
+    in a straight line instead of weaving** — reported by the user right after the Staff weapon
+    (entry 153 in [DEVLOG.md](DEVLOG.md)) shipped. `Player.cs`'s `EquipHighestTierWeapon()` (the
+    method behind F4) builds its own fresh `Weapon copy` via an object initializer, separate from
+    (and not kept in sync with) `Weapon.LoadWeapon()`'s own copy in the normal equip path — and that
+    initializer was never updated when `Amplitude`/`Frequency` were added for Staff, so the F4 copy
+    silently defaulted both to `0`. `Weapon.Shoot()`'s Staff branch passes `this.Amplitude`/
+    `this.Frequency` straight into `SineWaveProjectile`'s perpendicular-offset formula
+    (`amplitude * sin(...)`), so a `0` amplitude collapses the sine wave to nothing — the shots still
+    fired, just dead straight, matching "equips the correct weapon but seems to break the projectile
+    arc path." Fixed by adding `Amplitude = best.Amplitude, Frequency = best.Frequency,` to
+    `EquipHighestTierWeapon()`'s object initializer, matching `LoadWeapon()`'s copy exactly. Verified
+    via a scripted repro (throwaway `Wizard` instance, so `Player.Instance` briefly points at it but
+    nothing persists — no persistence method is reachable from `EquipWeapon()`/`RecalculateStats()`):
+    called `DebugMaxLevelAndEquipTopGear()`, confirmed the equipped weapon read `Amplitude=16,
+    Frequency=2` (not `0`), called `Weapon.Shoot()`, and advanced both spawned `SineWaveProjectile`s
+    5 ticks — their Y positions diverged by ~17.8 units (a real weave) versus what would have been a
+    ~0 delta before the fix. Real save files were confirmed byte-identical before and after. Clean
+    build and a plain boot-check both passed.
+
+    Separately, while investigating this bug, `PlayerData_Wizard.json` on disk was found to no longer
+    match the backup taken before this session's Staff-feature testing — the live Wizard's Level 3 /
+    Fire Wand save had become a fresh Level 1 / Gnarled Staff save, with `InventoryData_Wizard.json`
+    left untouched. The mechanism wasn't pinned down (plausibly `Weapon.LoadWeapon()`'s silent
+    type-mismatch return during a real load of the old Wand-equipped save, though the code path read
+    afterward doesn't fully explain a Level reset on its own). Flagged to the user directly rather
+    than guessing or restoring unilaterally, both save states were preserved as backups, and the user
+    confirmed the current Level 1 state should stand as-is — no data was altered as a result.
