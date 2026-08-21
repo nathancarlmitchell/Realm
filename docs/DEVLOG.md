@@ -2532,3 +2532,17 @@ date/time for those individually; don't treat their grouping as meaning they all
      — rendered the portal next to a marker at its exact construction position and visually confirmed
      it's centered rather than offset. Clean build (new `.xnb` confirmed compiled, not skipped) and a
      plain boot-check both passed.
+128. **All four portal animations drawn at native size (`Scale` 1.5 → 1.0)**, per the user's explicit
+     request after asking whether a scale setting was in effect. `Art.cs`'s four `AnimatedTexture`
+     constructions (`Portal`/`SpriteWorldPortal`/`SnakePitPortal`/`NexusPortal`) all shared the same
+     `Scale = 1.5f` third constructor argument; changed uniformly to `1.0f`. No other code changes
+     needed — `Portal`'s trigger bounds, label position, and confirmation-prompt sizing all already
+     derive from `RenderedWidth`/`RenderedHeight` (`image.FrameWidth * image.Scale`, entry 115/118),
+     so every dependent measurement recomputes correctly at the smaller size automatically. Rendered
+     sizes now match each sheet's native source frame exactly: generic swirl 64×64 (was 96×96), Sprite
+     World/Snake Pit 52×52 (was 78×78), Nexus 56×56 (was 84×84). Verified via a scripted repro (no
+     `Player.Instance` mutation, no save-file risk): confirmed all four `Art.*` instances read
+     `Scale == 1` and their native `FrameWidth`/`FrameHeight`; confirmed a portal's `Bounds` rectangle
+     recomputed proportionally at the new smaller size with no manual adjustment; rendered a portal
+     next to a marker at its construction point and visually confirmed it still renders centered and
+     correctly labeled at the new 1:1 scale. Clean build and a plain boot-check both passed.

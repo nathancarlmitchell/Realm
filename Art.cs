@@ -116,7 +116,7 @@ namespace Realm
             // World.
             Background = content.Load<Texture2D>("background");
             Tile = content.Load<Texture2D>("tile");
-            Portal = new AnimatedTexture(Vector2.Zero, 0f, 1.5f, 0.5f);
+            Portal = new AnimatedTexture(Vector2.Zero, 0f, 1.0f, 0.5f);
             Portal.Load(content, "portal", 7, 8);
 
             // Non-looping: this sheet is a one-shot "opening" animation
@@ -124,13 +124,13 @@ namespace Realm
             // loop like the generic swirl — it should play through once
             // and hold on the final open frame instead of replaying
             // "closed" forever.
-            SpriteWorldPortal = new AnimatedTexture(Vector2.Zero, 0f, 1.5f, 0.5f);
+            SpriteWorldPortal = new AnimatedTexture(Vector2.Zero, 0f, 1.0f, 0.5f);
             SpriteWorldPortal.Load(content, "Sprite World Portal", 7, 16, 5, loop: false);
 
-            SnakePitPortal = new AnimatedTexture(Vector2.Zero, 0f, 1.5f, 0.5f);
+            SnakePitPortal = new AnimatedTexture(Vector2.Zero, 0f, 1.0f, 0.5f);
             SnakePitPortal.Load(content, "Snake Pit Portal", 7, 8, 5);
 
-            NexusPortal = new AnimatedTexture(Vector2.Zero, 0f, 1.5f, 0.5f);
+            NexusPortal = new AnimatedTexture(Vector2.Zero, 0f, 1.0f, 0.5f);
             NexusPortal.Load(content, "Portal to Nexus", 1, 1);
 
             HealthPotion = content.Load<Texture2D>("health_potion");
