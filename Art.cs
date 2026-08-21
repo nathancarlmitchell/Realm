@@ -60,6 +60,11 @@ namespace Realm
         // never has anywhere to advance to.
         public static AnimatedTexture NexusPortal { get; private set; }
 
+        // The Bank portal (see Portal.Destination.BankDestination) — same
+        // single-static-frame treatment as NexusPortal above, a chest icon
+        // rather than a swirl/doorway.
+        public static AnimatedTexture BankPortal { get; private set; }
+
         public static Texture2D Inventory { get; private set; }
         public static Texture2D HealthPotion { get; private set; }
         public static Texture2D ManaPotion { get; private set; }
@@ -132,6 +137,9 @@ namespace Realm
 
             NexusPortal = new AnimatedTexture(Vector2.Zero, 0f, 1.0f, 0.5f);
             NexusPortal.Load(content, "Portal to Nexus", 1, 1);
+
+            BankPortal = new AnimatedTexture(Vector2.Zero, 0f, 1.0f, 0.5f);
+            BankPortal.Load(content, "Vault Chest", 1, 1);
 
             HealthPotion = content.Load<Texture2D>("health_potion");
             ManaPotion = content.Load<Texture2D>("mana_potion");

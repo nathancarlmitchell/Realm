@@ -81,10 +81,16 @@ namespace Realm
         private const int PanelWidth = 40 * ColumnsPerRow;
         private const int PanelHeight = 40 * (MAXIMUM_SLOTS_IN_BANK / ColumnsPerRow);
 
-        // Portal.RenderedSize (96px) / 2 — half the bank portal's on-screen
-        // footprint, so the panel clears the sprite itself rather than
-        // overlapping it.
-        private const int PortalOnScreenHalfHeight = 48;
+        // Half the bank portal's actual on-screen footprint, so the panel
+        // clears the sprite itself rather than overlapping it. Read
+        // directly off Art.BankPortal rather than a hardcoded constant —
+        // the old constant (48, i.e. a 96px footprint) referenced a
+        // `Portal.RenderedSize` field that no longer exists (removed once
+        // every portal's rendered size became per-instance/per-art, see
+        // Portal.cs's RenderedWidth/RenderedHeight) and had already gone
+        // stale once before the Vault Chest swap even happened.
+        private static float PortalOnScreenHalfHeight =>
+            Art.BankPortal.FrameHeight * Art.BankPortal.Scale / 2f;
         private const int GapAbovePortal = 24;
 
         // Recomputed every frame from the portal's world position (via the

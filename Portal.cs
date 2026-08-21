@@ -97,6 +97,7 @@ namespace Realm
                 // rather than a throw so it can't crash if that ever
                 // changes.
                 public override void Enter() { }
+                internal override AnimatedTexture PortalArt() => Art.BankPortal.Clone();
             }
 
             private sealed class NexusDestination : Destination

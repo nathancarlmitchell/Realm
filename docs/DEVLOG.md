@@ -2546,3 +2546,26 @@ date/time for those individually; don't treat their grouping as meaning they all
      recomputed proportionally at the new smaller size with no manual adjustment; rendered a portal
      next to a marker at its construction point and visually confirmed it still renders centered and
      correctly labeled at the new 1:1 scale. Clean build and a plain boot-check both passed.
+129. **Real art for the Bank portal (`Portal.Destination.Bank`)** — a 40×40 chest icon, user-supplied
+     (`Content/Vault Chest.png`), replacing the generic swirl it had been using by default (it never
+     had an overridden `PortalArt()` before this — see entry 115/127, which gave every other
+     destination its own art). Same single-static-frame treatment as entry 127's Nexus portal: loaded
+     as a 1-frame `AnimatedTexture` (`Art.BankPortal`), `Destination.BankDestination` now overrides
+     `PortalArt()` to return `Art.BankPortal.Clone()`. Caught and fixed a real, independently-stale bug
+     while touching this: `BankSystem.cs`'s panel-anchor math still had a hardcoded `const int
+     PortalOnScreenHalfHeight = 48`, whose own comment named a `Portal.RenderedSize` field that no
+     longer exists at all (removed when portal sizing became per-instance/per-art — entry 118) — it had
+     already gone stale once (entry 128's scale change alone made the real footprint 64px, not the
+     96px this constant assumed) before today's chest swap made it *twice* wrong (real footprint now
+     40px). Replaced with a computed property reading the bank portal's actual current art directly
+     (`Art.BankPortal.FrameHeight * Art.BankPortal.Scale / 2f`), so it can never drift out of sync with
+     whatever art the Bank destination happens to use again. Verified via a scripted repro (real save
+     files backed up first per `CLAUDE.md`, since the test constructs a throwaway `NexusState` for
+     `Game1.Camera` init — restored and diff-verified unchanged afterward): confirmed a `Bank`-
+     destination `Portal` gets its own distinct `AnimatedTexture` sharing `Art.BankPortal`'s underlying
+     texture; confirmed `FrameWidth`/`FrameHeight` read exactly 40×40 and `DisplayName` reads "Bank";
+     confirmed `BankSystem`'s (reflected, private) `PortalOnScreenHalfHeight` now reads 20 instead of
+     the stale 48; exercised the real `BankSystem.Bounds` proximity/anchor path end to end with no
+     exception; and — per the entry 118 lesson — rendered the portal next to a marker at its exact
+     construction position and visually confirmed it's centered. Clean build (new `.xnb` confirmed
+     compiled) and a plain boot-check both passed.
