@@ -110,14 +110,6 @@ prioritized or scheduled — the user asked to keep these noted for later rather
   `MouseState.ScrollWheelValue` anywhere in the codebase yet. "Mouse is over that area" naturally
   splits into two hit-tests: over the minimap's screen rect (`Overlay.cs`'s existing `mapX`/`mapY`/
   `MinimapSize` bounds) vs. over the rest of the gameplay viewport for the main camera.
-- **Extend the new settings system beyond key bindings.** [KeyBindings.cs](KeyBindings.cs)/
-  [Data/KeyBindingsData.cs](Data/KeyBindingsData.cs)/`States/SettingsState.cs` (see
-  [DEVLOG.md](DEVLOG.md)'s latest entry) are the first
-  settings built, deliberately scoped to just key bindings per the user's own choice when this was
-  built. `Player.AutoFireEnabled` (session-only today, resets every launch) was the concrete
-  candidate raised at the time for a future second setting — persisting it would mean adding it to
-  `KeyBindingsData`-alongside-or-a-sibling-DTO and a toggle row/control on the Settings screen, not
-  a new UI or save-file pattern from scratch.
 - **Teleport via the minimap** — click a spot on the minimap to teleport the player there. Today
   [Overlay.cs](Overlay.cs)'s `DrawMinimap()` is purely visual, no click handling at all; the minimap
   only shows a fixed 2000-unit radius around the player (`MinimapWorldRadius`), so a click position

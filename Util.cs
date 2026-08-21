@@ -47,6 +47,15 @@ namespace Realm
             "KeyBindingsData.json"
         );
 
+        // Not per-class, same reasoning as keyBindingsDataLocation — a
+        // separate file (rather than folding into KeyBindingsData.json)
+        // so that file stays scoped to just bindings, per
+        // Data/GameSettingsData.cs's own doc comment.
+        private static string gameSettingsDataLocation = Path.Combine(
+            AppContext.BaseDirectory,
+            "GameSettingsData.json"
+        );
+
         private static string weaponDataLocation = Path.Combine(
             AppContext.BaseDirectory,
             "WeaponData.json"
@@ -1006,6 +1015,35 @@ namespace Realm
             catch (System.IO.FileNotFoundException)
             {
                 Debug.WriteLine(keyBindingsDataLocation + ": file not found.");
+            }
+        }
+
+        // Reads/writes Player.Instance.AutoFireEnabled directly rather than
+        // routing through a dedicated manager class the way KeyBindings.cs
+        // does for bindings — there's only the one setting so far, so a
+        // whole parallel static-class layer isn't earning its keep yet;
+        // add one if/when a second setting needs the same generic
+        // get/set/reset shape KeyBindings already has.
+        public static void SaveGameSettingsData()
+        {
+            var data = new GameSettingsData { AutoFireEnabled = Player.Instance.AutoFireEnabled };
+            string json = JsonSerializer.Serialize(data);
+            File.WriteAllText(gameSettingsDataLocation, json);
+            Debug.WriteLine("GameSettingsData Saved.");
+        }
+
+        public static void LoadGameSettingsData()
+        {
+            try
+            {
+                using StreamReader r = new(gameSettingsDataLocation);
+                string json = r.ReadToEnd();
+                GameSettingsData data = JsonSerializer.Deserialize<GameSettingsData>(json);
+                Player.Instance.AutoFireEnabled = data.AutoFireEnabled;
+            }
+            catch (System.IO.FileNotFoundException)
+            {
+                Debug.WriteLine(gameSettingsDataLocation + ": file not found.");
             }
         }
 

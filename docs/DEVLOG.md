@@ -2600,3 +2600,44 @@ date/time for those individually; don't treat their grouping as meaning they all
      and visually confirmed it's centered (the label itself ran off the deliberately small 100px test
      canvas, not a real issue — the actual gameplay viewport is far wider). Clean build (new `.xnb`
      confirmed compiled) and a plain boot-check both passed.
+132. **Auto-Fire is now persisted, and the Settings screen extends beyond key bindings for the first
+     time** — the backlog's own concrete candidate for this item. `Player.AutoFireEnabled` was
+     previously session-only (reset to off on every launch, per its own doc comment). New
+     `Data/GameSettingsData.cs` (a small account-wide DTO, mirroring `KeyBindingsData.cs`'s own shape)
+     plus `Util.SaveGameSettingsData()`/`LoadGameSettingsData()` — a separate `GameSettingsData.json`
+     file rather than folding this into `KeyBindingsData.json`, so that file stays scoped to just
+     bindings, matching the backlog note's own "sibling DTO" framing. Reads/writes
+     `Player.Instance.AutoFireEnabled` directly rather than routing through a dedicated manager class
+     the way `KeyBindings.cs` does for bindings — there's only the one setting so far, so a parallel
+     static-class layer isn't earning its keep yet. `Input.cs`'s existing toggle handler now calls
+     `Util.SaveGameSettingsData()` right after flipping the value, matching the "save immediately,
+     don't wait for a checkpoint" convention already established for key bindings (entry 89) and stars
+     (entry 82). One real ordering bug caught before it shipped: `Game1.StartGame()` originally called
+     the new load alongside `LoadKeyBindingsData()`/`LoadFameData()` etc., all of which run *before*
+     `Util.LoadOrCreatePlayer()` — but `LoadOrCreatePlayer()` calls `ResetPlayer()`, which constructs a
+     brand new `Wizard`/`Archer`/`Knight` and replaces `Player.Instance` entirely (`instance = this;` in
+     `Player`'s own constructor), silently discarding anything set on the old instance beforehand.
+     Fixed by moving `Util.LoadGameSettingsData()` to run *after* `LoadOrCreatePlayer()` instead.
+     `States/SettingsState.cs` gained its first non-keybinding control: a plain click-to-toggle
+     "Auto-Fire: ON/OFF" row directly below the key-binding list (own dedicated `autoFireRect`/
+     `autoFireHover` fields rather than widening the existing `Row` class, which is typed around
+     `KeyBindings.Action` specifically — not worth generalizing for just one non-keybinding setting
+     yet), sharing the same two-column label/value layout and gated the same way as the existing rows
+     (ignored while `listeningFor` is armed). Verified via a scripted repro (confirmed no real
+     `GameSettingsData.json` existed on this account first, same discipline as entries 89-91 for
+     `KeyBindingsData.json` — deleted the test-created file afterward to restore that exact state):
+     confirmed a save→flip→load round-trip correctly restored the saved value; confirmed — the actual
+     bug this catches — that a value saved, then a *fresh* `Player.Instance` constructed via
+     `ResetPlayer()` (the same call `LoadOrCreatePlayer()` makes internally), still loads correctly
+     onto that new instance afterward; confirmed the Auto-Fire row's rect doesn't vertically overlap
+     the last key-binding row; rendered a real `SettingsState.Draw()` pass with no exception; and
+     simulated a real click on the row via `Input.mouse`/`previousMouse` (public fields, so direct
+     assignment — `SettingsState.Update()` reads them directly, unlike `Controls.Button`, which polls
+     hardware state itself) and confirmed it both toggled the value and persisted it. Caught two
+     harness-only mistakes along the way, not code bugs: an outer `SpriteBatch.Begin()/End()` wrapped
+     around `SettingsState.Draw()`, which already wraps its own internally — nesting them crashed the
+     real game loop's next frame with a corrupted `SpriteBatch` state (double-`Begin()`), fixed by
+     removing the redundant outer wrap; and an initial reflection-based mouse-state simulation that
+     returned null (`Input.mouse`/`previousMouse` are public fields, not private — `BindingFlags.
+     NonPublic` never finds them), fixed by assigning directly instead. Clean build and a plain
+     boot-check both passed.

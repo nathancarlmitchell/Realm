@@ -34,6 +34,17 @@ namespace Realm.States
         // CharacterSelectState's ConfirmingDelete gating out normal clicks.
         private KeyBindings.Action? listeningFor;
 
+        // First setting on this screen that isn't a rebindable
+        // KeyBindings.Action (see Util.SaveGameSettingsData()) — a plain
+        // click-to-toggle row rather than another entry in `rows`, since
+        // Row is typed around KeyBindings.Action specifically and there's
+        // only the one non-keybinding setting so far to justify widening
+        // it. Drawn/positioned as one more row directly below the key
+        // bindings, in the same two-column layout.
+        private const string AutoFireLabel = "Auto-Fire";
+        private Rectangle autoFireRect;
+        private bool autoFireHover;
+
         private const int RowHeight = 28;
         private int labelX;
         private int valueX;
@@ -51,14 +62,20 @@ namespace Realm.States
                 rows.Add(new Row { Action = action });
 
             // Widest label sets where the key-name column starts, same
-            // column-alignment trick as Overlay.DrawStats().
+            // column-alignment trick as Overlay.DrawStats() — includes
+            // AutoFireLabel too, so the toggle row below lines up in the
+            // same value column even though it isn't a KeyBindings.Action.
             float widestLabel = 0f;
             foreach (var action in KeyBindings.AllActions)
                 widestLabel = Math.Max(widestLabel, Art.HudFont.MeasureString(KeyBindings.DisplayName(action)).X);
+            widestLabel = Math.Max(widestLabel, Art.HudFont.MeasureString(AutoFireLabel).X);
 
             labelX = CenterWidth - 160;
             valueX = labelX + (int)widestLabel + 24;
-            rowsTop = CenterHeight - (rows.Count * RowHeight) / 2;
+
+            // +1 to include the Auto-Fire toggle row in the same
+            // vertically-centered block as the key bindings above it.
+            rowsTop = CenterHeight - ((rows.Count + 1) * RowHeight) / 2;
 
             for (int i = 0; i < rows.Count; i++)
             {
@@ -71,11 +88,18 @@ namespace Realm.States
                 );
             }
 
+            autoFireRect = new Rectangle(
+                labelX,
+                rowsTop + rows.Count * RowHeight,
+                valueX - labelX + 160,
+                (int)Art.HudFont.MeasureString("A").Y + 6
+            );
+
             backButton = new Button() { Text = "Back" };
             backButton.Click += (sender, e) => Game1.Instance.ChangeState(returnState);
             backButton.Position = new Vector2(
                 CenterWidth - backButton.Rectangle.Width - 10,
-                rowsTop + rows.Count * RowHeight + 30
+                rowsTop + (rows.Count + 1) * RowHeight + 30
             );
 
             resetButton = new Button() { Text = "Reset to Defaults" };
@@ -86,7 +110,7 @@ namespace Realm.States
             };
             resetButton.Position = new Vector2(
                 CenterWidth + 10,
-                rowsTop + rows.Count * RowHeight + 30
+                rowsTop + (rows.Count + 1) * RowHeight + 30
             );
         }
 
@@ -131,6 +155,13 @@ namespace Realm.States
                 }
             }
 
+            autoFireHover = autoFireRect.Intersects(Input.MouseBounds);
+            if (autoFireHover && Input.GetMouseClick())
+            {
+                Player.Instance.AutoFireEnabled = !Player.Instance.AutoFireEnabled;
+                Util.SaveGameSettingsData();
+            }
+
             backButton.Update(gameTime);
             resetButton.Update(gameTime);
         }
@@ -160,6 +191,20 @@ namespace Realm.States
                 spriteBatch.DrawString(Art.HudFont, label, new Vector2(labelX, row.Rect.Y), color);
                 spriteBatch.DrawString(Art.HudFont, value, new Vector2(valueX, row.Rect.Y), color);
             }
+
+            Color autoFireColor = autoFireHover ? Color.Gold : Color.White;
+            spriteBatch.DrawString(
+                Art.HudFont,
+                AutoFireLabel,
+                new Vector2(labelX, autoFireRect.Y),
+                autoFireColor
+            );
+            spriteBatch.DrawString(
+                Art.HudFont,
+                Player.Instance.AutoFireEnabled ? "ON" : "OFF",
+                new Vector2(valueX, autoFireRect.Y),
+                autoFireColor
+            );
 
             backButton.Draw(gameTime, spriteBatch);
             resetButton.Draw(gameTime, spriteBatch);

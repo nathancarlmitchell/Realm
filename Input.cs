@@ -65,11 +65,13 @@ public static class Input
         }
 
         // Toggle auto-fire — basic attack keeps firing on cooldown without
-        // needing the mouse button held. Session-only (Player.AutoFireEnabled
-        // isn't persisted), so this always resets to off on a fresh launch.
+        // needing the mouse button held. Persisted account-wide (see
+        // Util.SaveGameSettingsData()), same as this toggle's mirror
+        // control on the Settings screen.
         if (WasBindingPressed(KeyBindings.Get(KeyBindings.Action.ToggleAutoFire)))
         {
             Player.Instance.AutoFireEnabled = !Player.Instance.AutoFireEnabled;
+            Util.SaveGameSettingsData();
         }
 
         // Return to main menu. Only from the hub (NexusState) — not from the

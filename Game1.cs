@@ -162,6 +162,13 @@ namespace Realm
 
             Util.LoadOrCreatePlayer(Util.DetermineLastPlayedClass());
 
+            // Must run after LoadOrCreatePlayer(), not alongside the other
+            // Load*Data() calls above — ResetPlayer() (called from inside
+            // LoadOrCreatePlayer()) constructs a brand new Player.Instance
+            // (Wizard/Archer/Knight), which would silently discard whatever
+            // this set if it ran first.
+            Util.LoadGameSettingsData();
+
             EntityManager.Add(Player.Instance);
         }
 
