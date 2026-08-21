@@ -340,6 +340,19 @@ namespace Realm
             // proximity prompt in the game.
             if (Player.Instance.Bounds.Intersects(bounds))
             {
+                // Settings > Gameplay > "Auto-Enter Portals" — skips the
+                // confirm prompt entirely and teleports the instant the
+                // player steps into the trigger, same "call EnterPortal()
+                // and clear pendingConfirmation" shape the manual confirm
+                // paths below use, just triggered by proximity instead of a
+                // click/keypress.
+                if (Player.Instance.AutoEnterPortalsEnabled)
+                {
+                    pendingConfirmation = null;
+                    EnterPortal();
+                    return;
+                }
+
                 pendingConfirmation = this;
 
                 if (Input.WasBindingPressed(KeyBindings.Get(KeyBindings.Action.ConfirmPortalEntry)))

@@ -153,10 +153,17 @@ namespace Realm
         // later SavePlayerData() call doesn't regress it back to false.
         public bool HasBeenPlayed;
 
-        // Session-only — not persisted (deliberately absent from PlayerData/
-        // Util.BuildPlayerData()/LoadOrCreatePlayer()), so it always resets
-        // to off on a fresh launch. Toggled by the C key (Input.cs).
+        // Not part of PlayerData/Util.BuildPlayerData()/LoadOrCreatePlayer()
+        // (that's per-class save data) — persisted account-wide instead via
+        // GameSettingsData (Util.SaveGameSettingsData()/LoadGameSettingsData()).
+        // Toggled by the C key (Input.cs).
         public bool AutoFireEnabled;
+
+        // Same account-wide GameSettingsData persistence as AutoFireEnabled
+        // above. Defaults to false — bypasses Portal's confirm-before-
+        // teleporting prompt entirely when true (see Portal.cs's Update()).
+        // Toggled from the Settings > Gameplay tab.
+        public bool AutoEnterPortalsEnabled;
 
         // Set once this class first reaches the level cap (20) and never
         // cleared again — same permanent-through-death/delete treatment as

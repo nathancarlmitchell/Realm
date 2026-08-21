@@ -2953,3 +2953,46 @@ date/time for those individually; don't treat their grouping as meaning they all
      added exactly 20 entities to `EntityManager`, matching the burst's `count`; confirmed via a byte-
      for-byte diff against the pre-test backup that all 10 real save files were completely untouched
      after the run. Clean build and a plain boot-check both passed.
+143. **"Auto-Enter Portals" — a new Settings > Gameplay toggle (default OFF) that bypasses the portal
+     confirmation prompt.** New `Player.AutoEnterPortalsEnabled` (persisted via `GameSettingsData`,
+     same account-wide shape as `AutoFireEnabled`) is checked at the top of `Portal.Update()`'s
+     trigger-bounds branch: when true, the portal calls `EnterPortal()` immediately and clears
+     `pendingConfirmation` instead of arming it, the same "call `EnterPortal()`, clear
+     `pendingConfirmation`" shape the manual click/keypress confirm paths already use, just triggered
+     by proximity instead. Placed *after* the existing Bank-destination special case (which already
+     returns early on proximity, never reaching the confirm flow at all), so Bank's own always-been-
+     instant open/close behavior is unaffected either way. `SettingsState.cs`'s Gameplay tab — which
+     only ever had one non-keybinding toggle (Auto-Fire) — was generalized from dedicated
+     `autoFireRect`/`autoFireHover` fields into a small reusable `ToggleRow` class (`Label`/`Rect`/
+     `Hover`/`Get`/`Set`, the `Get`/`Set` closures each pointing at whichever `Player.Instance` bool
+     that row controls) backing a `List<ToggleRow> gameplayToggles`, now built from two entries
+     (Auto-Fire, Auto-Enter Portals) — the same "generalize once a second real instance shows up"
+     pattern this session has followed repeatedly (`DropPool`→`DropWeights`, `isSpriteGod`→
+     `portalDropOnDeath`, `DropTierRange`→`DropTierRanges`). `Update()`/`Draw()`'s Gameplay-tab
+     branches both collapsed from one hardcoded block into a loop over `gameplayToggles`, so a third
+     future toggle is just one more list entry, not another copy of the block.
+
+     Verified via a scripted repro (temp code in `Game1.StartGame()`), backed up first per `CLAUDE.md`
+     — this one genuinely needed it, since triggering the bypass for real calls `EnterPortal()` →
+     `StateManager.Nexus()`, which explicitly calls `Util.SavePlayerData()`/`SaveInventoryData()`/
+     `SaveBankData()`/`SaveFameData()` and constructs a real `NexusState`: confirmed a save→toggle→
+     load round trip on `AutoEnterPortalsEnabled` (mirroring entry 132's `AutoFireEnabled` test);
+     confirmed `SettingsState`'s `gameplayToggles` now holds exactly 2 non-overlapping rows with the
+     right labels; positioned a real `Portal` exactly at `Player.Instance.Position` (bounds
+     intersecting immediately) and confirmed `AutoEnterPortalsEnabled = true` left `pendingConfirmation`
+     null after `Update()` (bypassed, not armed) while `AutoEnterPortalsEnabled = false` against a
+     second portal still armed `pendingConfirmation` to it (the pre-existing behavior, unaffected — a
+     real regression check, not just a fresh test of new code). One real, if harmless, surprise caught
+     by the backup discipline: the triggered `StateManager.Nexus()` call ended up saving
+     `PlayerData_Knight.json` rather than `PlayerData_Wizard.json` (the class actually active all
+     session) — `Util.SavePlayerData()`'s target file is resolved from the static `Player.PlayerClass`,
+     not `Player.Instance` directly, and something (unrelated to this feature — no code touched here
+     reads or writes `Player.PlayerClass`/`DetermineLastPlayedClass()`) left it pointed at Knight at
+     that moment. The resulting diff was a full field-by-field match against the pre-test backup except
+     freshly-regenerated GUIDs on the equipped Weapon/Armor/Ring/Shield objects — cosmetic, since
+     entry 42 already established equipped items are re-resolved from the live catalog by Name/Tier on
+     every load, never looked up by their saved ID — but restored the exact pre-test bytes from backup
+     anyway rather than relying on that reasoning alone, since touching a file this test never meant to
+     touch at all warranted the conservative response regardless of how benign the diff looked. Worth
+     a closer look later if it recurs, but out of scope for this entry. Clean build and a plain
+     boot-check both passed.

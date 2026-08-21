@@ -1026,7 +1026,11 @@ namespace Realm
         // get/set/reset shape KeyBindings already has.
         public static void SaveGameSettingsData()
         {
-            var data = new GameSettingsData { AutoFireEnabled = Player.Instance.AutoFireEnabled };
+            var data = new GameSettingsData
+            {
+                AutoFireEnabled = Player.Instance.AutoFireEnabled,
+                AutoEnterPortalsEnabled = Player.Instance.AutoEnterPortalsEnabled,
+            };
             string json = JsonSerializer.Serialize(data);
             File.WriteAllText(gameSettingsDataLocation, json);
             Debug.WriteLine("GameSettingsData Saved.");
@@ -1040,6 +1044,7 @@ namespace Realm
                 string json = r.ReadToEnd();
                 GameSettingsData data = JsonSerializer.Deserialize<GameSettingsData>(json);
                 Player.Instance.AutoFireEnabled = data.AutoFireEnabled;
+                Player.Instance.AutoEnterPortalsEnabled = data.AutoEnterPortalsEnabled;
             }
             catch (System.IO.FileNotFoundException)
             {

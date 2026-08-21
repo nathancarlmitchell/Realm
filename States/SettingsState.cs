@@ -33,6 +33,23 @@ namespace Realm.States
             public bool Hover;
         }
 
+        // Gameplay tab's non-keybinding, plain click-to-toggle settings
+        // (Auto-Fire, Auto-Enter Portals) — Get/Set close over whichever
+        // Player.Instance bool the row actually controls, so adding a
+        // future toggle is just one more list entry instead of a new pair
+        // of dedicated Rect/Hover fields and a copy of the same
+        // Update()/Draw() block. Generalized from Auto-Fire's original
+        // single dedicated autoFireRect/autoFireHover fields now that a
+        // second real toggle (Auto-Enter Portals) showed up.
+        private class ToggleRow
+        {
+            public string Label;
+            public Rectangle Rect;
+            public bool Hover;
+            public Func<bool> Get;
+            public Action<bool> Set;
+        }
+
         // Whichever state was active when Settings was opened (Main Menu,
         // or an in-progress Nexus/Realm) — Back returns straight to this
         // exact object via ChangeState() rather than re-navigating, so
@@ -56,15 +73,7 @@ namespace Realm.States
 
         private SettingsTab currentTab = SettingsTab.Controls;
 
-        // First setting on this screen that isn't a rebindable
-        // KeyBindings.Action (see Util.SaveGameSettingsData()) — a plain
-        // click-to-toggle row rather than another entry in `rows`, since
-        // Row is typed around KeyBindings.Action specifically and there's
-        // only the one non-keybinding setting so far to justify widening
-        // it. Lives on the Gameplay tab.
-        private const string AutoFireLabel = "Auto-Fire";
-        private Rectangle autoFireRect;
-        private bool autoFireHover;
+        private readonly List<ToggleRow> gameplayToggles;
 
         private const int RowHeight = 28;
         private const int TabHeight = 32;
@@ -87,15 +96,32 @@ namespace Realm.States
             foreach (var action in KeyBindings.AllActions)
                 rows.Add(new Row { Action = action });
 
+            gameplayToggles =
+            [
+                new ToggleRow
+                {
+                    Label = "Auto-Fire",
+                    Get = () => Player.Instance.AutoFireEnabled,
+                    Set = v => Player.Instance.AutoFireEnabled = v,
+                },
+                new ToggleRow
+                {
+                    Label = "Auto-Enter Portals",
+                    Get = () => Player.Instance.AutoEnterPortalsEnabled,
+                    Set = v => Player.Instance.AutoEnterPortalsEnabled = v,
+                },
+            ];
+
             // Widest label sets where the key-name column starts, same
-            // column-alignment trick as Overlay.DrawStats() — includes
-            // AutoFireLabel too, so the Gameplay tab's toggle row lines up
-            // in the same column as the Controls tab's rows, even though
-            // only one tab's content is visible at a time.
+            // column-alignment trick as Overlay.DrawStats() — includes the
+            // Gameplay tab's toggle labels too, so its rows line up in the
+            // same column as the Controls tab's rows, even though only one
+            // tab's content is visible at a time.
             float widestLabel = 0f;
             foreach (var action in KeyBindings.AllActions)
                 widestLabel = Math.Max(widestLabel, Art.SettingsFont.MeasureString(KeyBindings.DisplayName(action)).X);
-            widestLabel = Math.Max(widestLabel, Art.SettingsFont.MeasureString(AutoFireLabel).X);
+            foreach (var toggle in gameplayToggles)
+                widestLabel = Math.Max(widestLabel, Art.SettingsFont.MeasureString(toggle.Label).X);
 
             labelX = CenterWidth - 160;
             valueX = labelX + (int)widestLabel + 24;
@@ -119,12 +145,15 @@ namespace Realm.States
                 );
             }
 
-            autoFireRect = new Rectangle(
-                labelX,
-                rowsTop,
-                valueX - labelX + 160,
-                (int)Art.SettingsFont.MeasureString("A").Y + 6
-            );
+            for (int i = 0; i < gameplayToggles.Count; i++)
+            {
+                gameplayToggles[i].Rect = new Rectangle(
+                    labelX,
+                    rowsTop + i * RowHeight,
+                    valueX - labelX + 160,
+                    (int)Art.SettingsFont.MeasureString("A").Y + 6
+                );
+            }
 
             // Tab bar, centered as a group above the content area.
             tabs = [];
@@ -216,11 +245,14 @@ namespace Realm.States
 
             if (currentTab == SettingsTab.Gameplay)
             {
-                autoFireHover = autoFireRect.Intersects(Input.MouseBounds);
-                if (autoFireHover && Input.GetMouseClick())
+                foreach (var toggle in gameplayToggles)
                 {
-                    Player.Instance.AutoFireEnabled = !Player.Instance.AutoFireEnabled;
-                    Util.SaveGameSettingsData();
+                    toggle.Hover = toggle.Rect.Intersects(Input.MouseBounds);
+                    if (toggle.Hover && Input.GetMouseClick())
+                    {
+                        toggle.Set(!toggle.Get());
+                        Util.SaveGameSettingsData();
+                    }
                 }
             }
 
@@ -290,19 +322,22 @@ namespace Realm.States
                     break;
 
                 case SettingsTab.Gameplay:
-                    Color autoFireColor = autoFireHover ? Color.Gold : Color.White;
-                    spriteBatch.DrawString(
-                        Art.SettingsFont,
-                        AutoFireLabel,
-                        new Vector2(labelX, autoFireRect.Y),
-                        autoFireColor
-                    );
-                    spriteBatch.DrawString(
-                        Art.SettingsFont,
-                        Player.Instance.AutoFireEnabled ? "ON" : "OFF",
-                        new Vector2(valueX, autoFireRect.Y),
-                        autoFireColor
-                    );
+                    foreach (var toggle in gameplayToggles)
+                    {
+                        Color toggleColor = toggle.Hover ? Color.Gold : Color.White;
+                        spriteBatch.DrawString(
+                            Art.SettingsFont,
+                            toggle.Label,
+                            new Vector2(labelX, toggle.Rect.Y),
+                            toggleColor
+                        );
+                        spriteBatch.DrawString(
+                            Art.SettingsFont,
+                            toggle.Get() ? "ON" : "OFF",
+                            new Vector2(valueX, toggle.Rect.Y),
+                            toggleColor
+                        );
+                    }
                     break;
 
                 case SettingsTab.Audio:
