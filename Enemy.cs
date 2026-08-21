@@ -318,7 +318,8 @@ namespace Realm
                 DropWeights,
                 DropTierRanges,
                 StatPotionPool,
-                GuaranteedPotionChances
+                GuaranteedPotionChances,
+                DropChances
             );
         }
 
@@ -380,6 +381,21 @@ namespace Realm
         // setting this on an enemy entirely replaces that enemy's normal
         // StatPotion roll rather than adding to it.
         protected Dictionary<Potions, float> GuaranteedPotionChances = new();
+
+        // Absolute, literal drop chance (0.0-1.0) for a whole category —
+        // Weapon/Armor/Ring/AbilityItem/StatPotion/HealthManaPotion — that
+        // bypasses both the PointValue-scaled base chance and the
+        // DropWeights multiplier above entirely. DropWeights is a
+        // *multiplier* on a PointValue-derived formula (the actual
+        // resulting percentage still depends on the enemy's toughness);
+        // this is for when an enemy needs an exact, fixed number instead
+        // (e.g. "this category is always 25%, full stop"). Empty by
+        // default (the existing PointValue/DropWeights-driven behavior,
+        // unchanged for any enemy that doesn't opt in for that category).
+        // Only affects Spawn() — SpawnGuaranteedLoot's gear categories are
+        // already deterministic (no chance roll to override) and it
+        // doesn't use HealthManaPotion at all.
+        protected Dictionary<ItemSpawner.LootCategory, float> DropChances = new();
 
         protected void AddBehaviour(IEnumerable<int> behaviour)
         {

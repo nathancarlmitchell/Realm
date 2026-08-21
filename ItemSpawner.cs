@@ -58,6 +58,28 @@ namespace Realm
         private static int WeightedChance(int baseChance, float weight) =>
             Math.Max(1, (int)Math.Round(baseChance / weight));
 
+        // Whether a category's chance-based roll succeeds this call. An
+        // enemy-supplied dropChances entry (Enemy.DropChances) is a literal
+        // absolute probability (0.0-1.0) that bypasses the PointValue-scaled
+        // baseChance and the DropWeights multiplier entirely — the same
+        // "just give me the exact number" want RollGuaranteedPotions()
+        // fills for specific stat potions, generalized to every other
+        // chance-based category. Falls back to the existing weighted
+        // formula when no override is set for that category, so an enemy
+        // that doesn't opt in behaves exactly as before. Only meaningful
+        // for Spawn() — SpawnGuaranteedLoot's gear categories are already
+        // deterministic (no chance roll to override) and it doesn't use
+        // HealthManaPotion at all, so this isn't threaded through there.
+        private static bool RollsCategory(
+            IReadOnlyDictionary<LootCategory, float> dropChances,
+            IReadOnlyDictionary<LootCategory, float> dropWeights,
+            LootCategory category,
+            int baseChance
+        ) =>
+            dropChances != null && dropChances.TryGetValue(category, out float chance)
+                ? rand.NextDouble() < chance
+                : rand.Next(WeightedChance(baseChance, WeightFor(dropWeights, category))) == 0;
+
         // Every stat potion the StatPotion category can roll from by
         // default — the 8 options both Spawn()'s and SpawnGuaranteedLoot's
         // switch blocks used to hardcode inline. Health/Mana aren't here —
@@ -256,7 +278,8 @@ namespace Realm
             IReadOnlyDictionary<LootCategory, float> dropWeights = null,
             IReadOnlyDictionary<LootCategory, (int Min, int Max)> dropTierRanges = null,
             IReadOnlyList<Potions> statPotionPool = null,
-            IReadOnlyDictionary<Potions, float> guaranteedPotionChances = null
+            IReadOnlyDictionary<Potions, float> guaranteedPotionChances = null,
+            IReadOnlyDictionary<LootCategory, float> dropChances = null
         )
         {
             List<Item> items = [];
@@ -266,7 +289,7 @@ namespace Realm
             int maxTierJump = MaxTierJump(pointValue);
 
             // Drop weapon.
-            if (dropPool.HasFlag(LootCategory.Weapon) && rand.Next(WeightedChance(dropChance, WeightFor(dropWeights, LootCategory.Weapon))) == 0)
+            if (dropPool.HasFlag(LootCategory.Weapon) && RollsCategory(dropChances, dropWeights, LootCategory.Weapon, dropChance))
             {
                 // Picked at random among every catalog entry at the resolved
                 // tier (both WeaponTypes), not just the first match.
@@ -286,7 +309,7 @@ namespace Realm
             }
 
             // Drop armor.
-            if (dropPool.HasFlag(LootCategory.Armor) && rand.Next(WeightedChance(dropChance, WeightFor(dropWeights, LootCategory.Armor))) == 0)
+            if (dropPool.HasFlag(LootCategory.Armor) && RollsCategory(dropChances, dropWeights, LootCategory.Armor, dropChance))
             {
                 // Same reasoning as the weapon drop above — ArmorData.json
                 // lists every Robe before any Leather piece.
@@ -303,7 +326,7 @@ namespace Realm
             }
 
             // Drop ring.
-            if (dropPool.HasFlag(LootCategory.Ring) && rand.Next(WeightedChance(dropChance, WeightFor(dropWeights, LootCategory.Ring))) == 0)
+            if (dropPool.HasFlag(LootCategory.Ring) && RollsCategory(dropChances, dropWeights, LootCategory.Ring, dropChance))
             {
                 int tier = ResolveDropTier(pointValue, Player.Instance.Ring.Tier, maxTierJump, TierRangeFor(dropTierRanges, LootCategory.Ring));
                 if (Game1.Instance.Rings.Exists(x => x.Tier == tier))
@@ -315,7 +338,7 @@ namespace Realm
             }
 
             // Drop ability item.
-            if (dropPool.HasFlag(LootCategory.AbilityItem) && rand.Next(WeightedChance(dropChance, WeightFor(dropWeights, LootCategory.AbilityItem))) == 0)
+            if (dropPool.HasFlag(LootCategory.AbilityItem) && RollsCategory(dropChances, dropWeights, LootCategory.AbilityItem, dropChance))
             {
                 // Same "wrong class is possible" spirit as weapon/armor drops
                 // above — not filtered to the player's own class. Spell,
@@ -350,14 +373,14 @@ namespace Realm
                         items.Add(new Potion(potion));
                     }
                 }
-                else if (rand.Next(WeightedChance(15, WeightFor(dropWeights, LootCategory.StatPotion))) == 0)
+                else if (RollsCategory(dropChances, dropWeights, LootCategory.StatPotion, 15))
                 {
                     bagTexture = Art.LootBagBlue;
                     items.Add(new Potion(RollStatPotion(statPotionPool)));
                 }
             }
 
-            if (dropPool.HasFlag(LootCategory.HealthManaPotion) && rand.Next(WeightedChance(10, WeightFor(dropWeights, LootCategory.HealthManaPotion))) == 0)
+            if (dropPool.HasFlag(LootCategory.HealthManaPotion) && RollsCategory(dropChances, dropWeights, LootCategory.HealthManaPotion, 10))
             {
                 if (rand.Next(2) == 0)
                     items.Add(new Potion(Potions.Mana));

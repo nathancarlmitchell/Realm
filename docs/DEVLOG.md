@@ -2847,3 +2847,28 @@ date/time for those individually; don't treat their grouping as meaning they all
      not a bug — same behavior already verified in entry 137); and `SpawnGuaranteedLoot()` under the
      same table produced Dexterity 40/40 and Defense 9/40 (~22.5%, also within expected noise of 25%).
      Clean build and a plain boot-check both passed.
+140. **Per-enemy drop pools gained a literal absolute drop chance per category, distinct from
+     `DropWeights`' multiplier.** `DropWeights` (entry 136) scales a *formula* — the actual resulting
+     percentage still depends on the enemy's `PointValue`, since it divides the PointValue-derived
+     base chance denominator by the weight. The user asked directly how to get an exact, fixed
+     percentage instead ("this category is always 25%, full stop," independent of how tough the
+     enemy is). New `Enemy.DropChances` (`Dictionary<LootCategory, float>`, empty by default) supplies
+     that: a literal 0.0-1.0 probability, checked via a new `ItemSpawner.RollsCategory()` helper that
+     takes priority over both the `PointValue` formula and `DropWeights` entirely when a category has
+     an entry, falling back to the existing weighted-formula path unchanged otherwise. Applied to
+     `Spawn()`'s 5 chance-gated categories — Weapon/Armor/Ring/AbilityItem (previously each an inline
+     `rand.Next(WeightedChance(...)) == 0` expression, now a single `RollsCategory(...)` call) and
+     both branches inside the `StatPotion`/`HealthManaPotion` blocks. Deliberately not threaded into
+     `SpawnGuaranteedLoot()`, matching `DropWeights`' own precedent — its gear categories are already
+     deterministic (no chance roll exists there to override) and it doesn't use `HealthManaPotion` at
+     all, so there's nowhere for an absolute chance to plug in. Not yet applied to any concrete enemy.
+     Verified via a scripted repro (temp code in `Game1.StartGame()`, calling `ItemSpawner.Spawn()`
+     directly at `PointValue = 1` — the weakest possible enemy, where the normal formula would give a
+     very low chance — specifically to prove the override truly ignores `PointValue`, not just
+     coincidentally agrees with it): a `Weapon = 1.0` / `Armor = 0.0` pair produced exactly 100/100
+     Weapon drops and 0/100 Armor drops; a `HealthManaPotion = 0.3` override at the same `PointValue =
+     1` landed at 67/200 (~33.5%, in the expected statistical-noise range of 30%, and nowhere near
+     `PointValue = 1`'s real formula-driven rate); and the same `Weapon` category with no override at
+     all, same `PointValue = 1`, landed at only 7/100 — confirming the fallback path still uses the
+     normal low-PointValue formula rather than silently defaulting to something else. Clean build and
+     a plain boot-check both passed.
