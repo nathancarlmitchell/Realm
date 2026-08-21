@@ -1,0 +1,730 @@
+<title>Realm Devlog</title>
+<style>
+  :root {
+    --ground: #eef0f3;
+    --surface: #ffffff;
+    --surface-2: #f5f6f8;
+    --ink: #1b1a22;
+    --ink-muted: #5b5866;
+    --ink-faint: #8a879a;
+    --rule: #d8d9e0;
+    --gold: #a8791f;
+    --gold-ink: #6e4f10;
+    --gold-wash: #a8791f14;
+    --ember: #b5432f;
+    --ember-ink: #7c2c1e;
+    --ember-wash: #b5432f14;
+    --focus: #4a5fd6;
+    --shadow: 0 1px 2px rgba(20, 18, 30, 0.06), 0 8px 24px -12px rgba(20, 18, 30, 0.18);
+
+    --font-display: "Iowan Old Style", "Palatino Linotype", Palatino, "Book Antiqua", Georgia, serif;
+    --font-body: "Avenir Next", "Century Gothic", "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-mono: ui-monospace, "Cascadia Code", "SF Mono", Consolas, "Liberation Mono", monospace;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --ground: #131219;
+      --surface: #1b1a24;
+      --surface-2: #211f2b;
+      --ink: #ecebf2;
+      --ink-muted: #a19eb0;
+      --ink-faint: #6f6c80;
+      --rule: #322f3e;
+      --gold: #d9a63e;
+      --gold-ink: #f0c369;
+      --gold-wash: #d9a63e1c;
+      --ember: #e2664c;
+      --ember-ink: #ff8a72;
+      --ember-wash: #e2664c1c;
+      --focus: #8b9bff;
+      --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 12px 28px -12px rgba(0, 0, 0, 0.55);
+    }
+  }
+
+  :root[data-theme="dark"] {
+    --ground: #131219;
+    --surface: #1b1a24;
+    --surface-2: #211f2b;
+    --ink: #ecebf2;
+    --ink-muted: #a19eb0;
+    --ink-faint: #6f6c80;
+    --rule: #322f3e;
+    --gold: #d9a63e;
+    --gold-ink: #f0c369;
+    --gold-wash: #d9a63e1c;
+    --ember: #e2664c;
+    --ember-ink: #ff8a72;
+    --ember-wash: #e2664c1c;
+    --focus: #8b9bff;
+    --shadow: 0 1px 2px rgba(0, 0, 0, 0.3), 0 12px 28px -12px rgba(0, 0, 0, 0.55);
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    background: var(--ground);
+    color: var(--ink);
+    font-family: var(--font-body);
+    font-size: 16px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  ::selection { background: var(--gold-wash); color: var(--ink); }
+
+  a { color: inherit; }
+
+  code, .mono {
+    font-family: var(--font-mono);
+    font-size: 0.87em;
+    background: var(--surface-2);
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    padding: 0.05em 0.4em;
+  }
+
+  .page {
+    max-width: 840px;
+    margin: 0 auto;
+    padding: 64px 24px 120px;
+  }
+
+  /* ---------- Masthead ---------- */
+
+  .masthead {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    margin-bottom: 40px;
+  }
+
+  .kicker {
+    font-family: var(--font-body);
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+  }
+
+  h1.title {
+    font-family: var(--font-display);
+    font-weight: 600;
+    font-size: clamp(34px, 5.5vw, 48px);
+    line-height: 1.08;
+    letter-spacing: -0.01em;
+    margin: 0;
+    text-wrap: balance;
+  }
+
+  h1.title em {
+    font-style: italic;
+    color: var(--gold-ink);
+  }
+
+  .dek {
+    font-size: 17px;
+    color: var(--ink-muted);
+    max-width: 60ch;
+    line-height: 1.55;
+  }
+
+  .stat-strip {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 28px;
+    margin-top: 10px;
+    padding-top: 22px;
+    border-top: 1px solid var(--rule);
+  }
+
+  .stat {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .stat .n {
+    font-family: var(--font-display);
+    font-size: 26px;
+    font-variant-numeric: tabular-nums;
+    line-height: 1;
+  }
+
+  .stat.gold .n { color: var(--gold-ink); }
+  .stat.ember .n { color: var(--ember-ink); }
+
+  .stat .l {
+    font-size: 12px;
+    color: var(--ink-faint);
+    letter-spacing: 0.04em;
+  }
+
+  /* ---------- Controls ---------- */
+
+  .controls {
+    position: sticky;
+    top: 16px;
+    z-index: 5;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    background: var(--surface);
+    border: 1px solid var(--rule);
+    border-radius: 12px;
+    padding: 10px 12px;
+    box-shadow: var(--shadow);
+    margin-bottom: 36px;
+  }
+
+  .search-wrap {
+    position: relative;
+    flex: 1;
+  }
+
+  .search-wrap svg {
+    position: absolute;
+    left: 10px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--ink-faint);
+    pointer-events: none;
+  }
+
+  #search {
+    width: 100%;
+    background: var(--surface-2);
+    border: 1px solid var(--rule);
+    border-radius: 8px;
+    padding: 9px 12px 9px 32px;
+    font-family: var(--font-body);
+    font-size: 14.5px;
+    color: var(--ink);
+  }
+
+  #search::placeholder { color: var(--ink-faint); }
+
+  #search:focus-visible,
+  .chip:focus-visible,
+  details summary:focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+  }
+
+  .chips { display: flex; gap: 6px; flex-shrink: 0; }
+
+  .chip {
+    font-family: var(--font-body);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    padding: 7px 13px;
+    border-radius: 999px;
+    border: 1px solid var(--rule);
+    background: var(--surface-2);
+    color: var(--ink-muted);
+    cursor: pointer;
+    transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+    white-space: nowrap;
+  }
+
+  .chip[aria-pressed="true"].gold {
+    background: var(--gold-wash);
+    color: var(--gold-ink);
+    border-color: var(--gold);
+  }
+
+  .chip[aria-pressed="true"].ember {
+    background: var(--ember-wash);
+    color: var(--ember-ink);
+    border-color: var(--ember);
+  }
+
+  .no-results {
+    display: none;
+    color: var(--ink-faint);
+    font-size: 14px;
+    padding: 20px 4px;
+  }
+
+  /* ---------- Sections ---------- */
+
+  .section-head {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    margin: 48px 0 4px;
+  }
+
+  .section-head h2 {
+    font-family: var(--font-display);
+    font-size: 22px;
+    font-weight: 600;
+    margin: 0;
+  }
+
+  .section-head .count {
+    font-size: 13px;
+    color: var(--ink-faint);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .section-head.gold h2 { color: var(--gold-ink); }
+  .section-head.ember h2 { color: var(--ember-ink); }
+
+  .section-rule {
+    height: 2px;
+    border: none;
+    margin: 0 0 20px;
+    background: linear-gradient(to right, var(--rule-accent, var(--rule)), transparent 70%);
+  }
+  .section-rule.gold { --rule-accent: var(--gold); }
+  .section-rule.ember { --rule-accent: var(--ember); }
+
+  .date-group { margin-bottom: 30px; }
+
+  .date-label {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--ink-faint);
+    letter-spacing: 0.04em;
+    margin: 0 0 10px 2px;
+  }
+
+  .entries {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    background: var(--rule);
+    border: 1px solid var(--rule);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+
+  details.entry { background: var(--surface); }
+
+  details.entry summary {
+    list-style: none;
+    cursor: pointer;
+    display: flex;
+    gap: 12px;
+    align-items: baseline;
+    padding: 13px 16px;
+    transition: background 0.12s ease;
+  }
+
+  details.entry summary::-webkit-details-marker { display: none; }
+
+  details.entry summary:hover { background: var(--surface-2); }
+
+  .entry-id {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    color: var(--ink-faint);
+    flex-shrink: 0;
+    padding-top: 2px;
+    min-width: 2ch;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+
+  .entry-caret {
+    flex-shrink: 0;
+    color: var(--ink-faint);
+    transition: transform 0.15s ease;
+    margin-top: 3px;
+  }
+
+  details[open] .entry-caret { transform: rotate(90deg); }
+
+  .entry-title {
+    font-size: 15px;
+    font-weight: 600;
+    line-height: 1.4;
+  }
+
+  details.entry[data-kind="feature"] summary:hover .entry-title,
+  details.entry[data-kind="feature"][open] .entry-title { color: var(--gold-ink); }
+  details.entry[data-kind="bug"] summary:hover .entry-title,
+  details.entry[data-kind="bug"][open] .entry-title { color: var(--ember-ink); }
+
+  .entry-body {
+    padding: 0 16px 16px 46px;
+    font-size: 14.5px;
+    color: var(--ink-muted);
+    line-height: 1.6;
+    max-width: 66ch;
+  }
+
+  .entry-body code { font-size: 0.83em; }
+
+  /* ---------- Footer ---------- */
+
+  .colophon {
+    margin-top: 64px;
+    padding-top: 20px;
+    border-top: 1px solid var(--rule);
+    font-size: 13px;
+    color: var(--ink-faint);
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+
+  @media (max-width: 600px) {
+    .page { padding: 40px 16px 100px; }
+    .controls { position: static; flex-wrap: wrap; }
+    .entry-body { padding-left: 16px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { transition: none !important; }
+  }
+</style>
+
+<div class="page">
+
+  <header class="masthead">
+    <div class="kicker">Realm &middot; development chronicle</div>
+    <h1 class="title">What shipped, what broke,<br><em>what got fixed</em></h1>
+    <p class="dek">
+      A running record of the Realm ARPG build — every feature landed and every bug
+      squashed, in the order it happened. Search across both logs, or filter to just
+      one.
+    </p>
+    <div class="stat-strip">
+      <div class="stat gold"><span class="n" id="stat-features">126</span><span class="l">Features shipped</span></div>
+      <div class="stat ember"><span class="n" id="stat-bugs">44</span><span class="l">Bugs fixed</span></div>
+      <div class="stat"><span class="n">8</span><span class="l">Days covered</span></div>
+      <div class="stat"><span class="n">Aug&nbsp;13&ndash;20</span><span class="l">2026</span></div>
+    </div>
+  </header>
+
+  <div class="controls">
+    <div class="search-wrap">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+      <input id="search" type="text" placeholder="Search entries&hellip; e.g. &ldquo;bank&rdquo;, &ldquo;Limon&rdquo;, &ldquo;collision&rdquo;" autocomplete="off" />
+    </div>
+    <div class="chips" role="group" aria-label="Filter by log">
+      <button class="chip gold" id="chip-features" aria-pressed="true" type="button">Features</button>
+      <button class="chip ember" id="chip-bugs" aria-pressed="true" type="button">Bugs</button>
+    </div>
+  </div>
+
+  <p class="no-results" id="no-results">No entries match &ldquo;<span id="no-results-term"></span>&rdquo;.</p>
+
+  <section id="section-features">
+    <div class="section-head gold">
+      <h2>Features</h2>
+      <span class="count" id="count-features">65 entries</span>
+    </div>
+    <hr class="section-rule gold" />
+    <div id="list-features"></div>
+  </section>
+
+  <section id="section-bugs">
+    <div class="section-head ember">
+      <h2>Bug fixes</h2>
+      <span class="count" id="count-bugs">31 entries</span>
+    </div>
+    <hr class="section-rule ember" />
+    <div id="list-bugs"></div>
+  </section>
+
+  <footer class="colophon">
+    <span>Sourced from the project's running dev logs.</span>
+    <span>Realm &mdash; top-down ARPG, C# / MonoGame</span>
+  </footer>
+
+</div>
+
+<script>
+  const FEATURES = [
+    { id: 1, date: "Undated", title: "Character Select screen", body: "Portraits per class, hover-to-preview stats, and per-class save files — required converting Player's static fields to instance fields first." },
+    { id: 2, date: "Undated", title: "Potion charge counters", body: "Health/Mana potions split into a dedicated HUD area (max stack 6) instead of eating general inventory slots." },
+    { id: 3, date: "Undated", title: "Potion portrait borders", body: "Matched the existing weapon slot's border style." },
+    { id: 4, date: "Undated", title: "Full Armor equipment system", body: "Placeholder stat bonuses spanning every player stat." },
+    { id: 5, date: "Undated", title: "ArmorType class restriction", body: "Wizard &rarr; Robe, Archer &rarr; Leather, mirroring the existing WeaponType pattern." },
+    { id: 6, date: "Undated", title: "Ring equipment slot", body: "No class restriction, unlike Weapon and Armor." },
+    { id: 7, date: "Undated", title: "Drag equipped items out", body: "Weapon/Armor/Ring can be dragged to inventory or the ground, with an error sound for shooting unarmed." },
+    { id: 8, date: "Undated", title: "Soft-lock prevention", body: "Your only usable weapon can't be unequipped; later refined to check WeaponType match, not just \"is a Weapon.\"" },
+    { id: 9, date: "Undated", title: "Debug HUD (F3)", body: "Shows potion-derived stat bonuses." },
+    { id: 10, date: "Undated", title: "Floating damage numbers", body: "On every hit." },
+    { id: 11, date: "Undated", title: "Projectiles render under the player", body: "Instead of on top of them." },
+    { id: 12, date: "Undated", title: "Projectile spawn point moved", body: "From the player's center to the player's edge, in the aim direction." },
+    { id: 13, date: "Undated", title: "Real Armor/Ring art wired in", body: "Replacing the placeholder texture, 2 tiers each to start." },
+    { id: 14, date: "Undated", title: "Full 15-tier Armor/Robe catalog", body: "Thematic names, descriptions, and linear stat scaling for every tier." },
+    { id: 15, date: "Undated", title: "Ability-readiness HUD bar", body: "Visualizes the existing mana-cost gate on UseAbility() &mdash; not a new cooldown." },
+    { id: 16, date: "Undated", title: "Fourth equipment slot: AbilityItem", body: "Spell (Wizard) and Quiver (Archer) as separate subclasses rather than one class plus an enum." },
+    { id: 17, date: "Undated", title: "AbilityItem content wiring", body: "Full 8-tier Spell/Quiver art and JSON catalogs, matching Armor's depth." },
+    { id: 18, date: "2026-08-13", title: "Portal destination labels", body: "Each portal draws its destination's name centered below the sprite." },
+    { id: 19, date: "2026-08-13", title: "Delete-with-confirmation", body: "On Character Select &mdash; preserves High Score permanently, resets everything else, via a dedicated HasBeenPlayed flag." },
+    { id: 20, date: "2026-08-13", title: "Bank system", body: "Persistent 16-slot account-level store shared across every class's save, opened by proximity to a Bank portal." },
+    { id: 21, date: "2026-08-13", title: "Bank item hover tooltips", body: "Full Tier/name/description/bonuses, matching the equip-slot tooltip instead of just the item name." },
+    { id: 22, date: "2026-08-13", title: "Ground-drop-into-bank redirect", body: "Dropping an item on the ground while the bank is open now banks it instead, falling back to loot-bag only when full." },
+    { id: 23, date: "2026-08-13", title: "Tooltip readability pass", body: "Full stat text on every hover, plus a shared translucent background panel behind all tooltips." },
+    { id: 24, date: "2026-08-13", title: "Fixed-position inventory/bank slots", body: "Switched to fixed-size arrays so removing one item leaves a gap instead of shifting everything after it." },
+    { id: 25, date: "2026-08-13", title: "Cursor-aware inventory drops", body: "Items land in whichever slot the mouse is over; wrong-slot equip drags now error instead of falling through." },
+    { id: 26, date: "2026-08-13", title: "Cursor-aware bank drops", body: "Same targeting mirrored for drops landing in the bank grid." },
+    { id: 27, date: "2026-08-13", title: "Same-panel drag reorder/swap", body: "Dragging within the same grid (inventory&rarr;inventory or bank&rarr;bank) now moves or swaps instead of no-op." },
+    { id: 28, date: "2026-08-13", title: "Wrong equip-slot drag errors", body: "Dragging an equipped item onto a different equip slot now errors instead of falling through to inventory/bank/ground." },
+    { id: 29, date: "2026-08-13", title: "Fame system", body: "Account-level progression counter earned 1:1 from a character's Score on death or delete; persisted and shown on the Main Menu." },
+    { id: 30, date: "2026-08-13", title: "Click-to-move items", body: "A plain click (no drag) now moves an item between bank and inventory, without disturbing drag/drop." },
+    { id: 31, date: "2026-08-14", title: "Knight &mdash; third playable class", body: "Sword weapon, Heavy armor, and a Shield ability item with \"Shield Slam\": a projectile plus a temporary Defense buff." },
+    { id: 32, date: "2026-08-14", title: "Knight's last placeholder assets swapped in", body: "Real hit sound and Shield Slam projectile art, closing out the class." },
+    { id: 33, date: "2026-08-14", title: "Renamed RealmState/GameState", body: "To match what they actually represent &mdash; the Nexus hub vs. the dungeon instance, which had always been swapped." },
+    { id: 34, date: "2026-08-14", title: "Generalized timed stat bonuses", body: "Knight's one-off Defense buff became a full Player-level system covering all 8 stats, with color-coded on-screen indicators." },
+    { id: 35, date: "2026-08-14", title: "Projectile.ExpiresOnHit", body: "Per-projectile field replacing a fragile weapon-type check for whether a shot passes through enemies." },
+    { id: 36, date: "2026-08-14", title: "Abilities usable in the Nexus", body: "Not just inside an active dungeon." },
+    { id: 37, date: "2026-08-14", title: "Stun mechanic", body: "Archer's Quiver ability stuns enemies on hit for 3 seconds by default." },
+    { id: 38, date: "2026-08-14", title: "Generalized debuff system", body: "Stun renamed Paralyzed and rebuilt as a reusable Entity-level debuff system with on-screen indicators, ready for the player too." },
+    { id: 39, date: "2026-08-14", title: "Second debuff: Stunned", body: "Sourced from Knight's Shield Slam, plus real 16&times;16 icon art replacing the old text-symbol indicators." },
+    { id: 40, date: "2026-08-14", title: "Debuff split clarified", body: "Stunned reworked to block attacks only, not movement &mdash; a clean split from Paralyzed." },
+    { id: 41, date: "2026-08-14", title: "Shield Slam's own projectile art", body: "Previously reused the Sword's basic-attack sprite." },
+    { id: 42, date: "2026-08-14", title: "ManaCost replaces mana-cost reduction", body: "Ability items now carry an absolute ManaCost instead of a per-tier reduction from a fixed base." },
+    { id: 43, date: "2026-08-14", title: "Shared ability-damage formula", body: "MinDamage/MaxDamage moved into item data; all three classes now roll damage identically instead of hardcoded per-class ranges." },
+    { id: 44, date: "2026-08-14", title: "Ability tooltip damage range", body: "Shows a \"Damage: X - Y\" line reflecting the actual roll range in combat." },
+    { id: 45, date: "2026-08-14", title: "Ability HUD cost + bonus removal", body: "Mana cost always visible on the HUD; AbilityDamageBonus removed from the game entirely, not just zeroed." },
+    { id: 46, date: "2026-08-14", title: "HUD moved into a sidebar panel", body: "Every HUD element relocated to a new right-side panel; window widened to make room, gameplay area unchanged." },
+    { id: 47, date: "2026-08-14", title: "Window shrunk back to 1280&times;720", body: "The sidebar now carves its width out of the original window instead of adding to it." },
+    { id: 48, date: "2026-08-15", title: "Boss enemies (first pass)", body: "Spawned deterministically every 5 levels, with a two-phase escalation attack pattern and guaranteed loot." },
+    { id: 49, date: "2026-08-15", title: "Boss moved to a dropped-portal arena", body: "Replaced the every-5-levels trigger &mdash; SpriteGod now drops an optional portal into a dedicated boss arena instance." },
+    { id: 50, date: "2026-08-15", title: "Enemy Defense stat", body: "Reduces incoming damage, floored at 0, defaulting to 0 for every existing enemy." },
+    { id: 51, date: "2026-08-15", title: "FollowPlayer no longer rotates sprites", body: "Movement and facing direction decoupled for that behavior." },
+    { id: 52, date: "2026-08-15", title: "Debug hitbox outlines (F3)", body: "Circle outlines at each entity's actual collision radius, for the player and every enemy." },
+    { id: 53, date: "2026-08-17", title: "Boss.cs base class + Limon renamed", body: "Introduced a Boss subclass pattern; the arena boss renamed \"Limon the Sprite Goddess\" with real art." },
+    { id: 54, date: "2026-08-17", title: "Boss moved into Bosses/ folder", body: "Pure reorganization to match the project's folder-matches-namespace convention." },
+    { id: 55, date: "2026-08-17", title: "SquareWall attack", body: "A constant square wall of stationary projectiles centered on the boss, active for the whole fight." },
+    { id: 56, date: "2026-08-17", title: "SquareWall redesigned to sweep", body: "From 80 stationary points per ring to 2 sweeping projectiles per line, crossing paths mid-line." },
+    { id: 57, date: "2026-08-17", title: "Wall synced to boss position", body: "Projectiles now track the boss's current position every frame instead of drifting behind it mid-sweep." },
+    { id: 58, date: "2026-08-17", title: "XCross attack", body: "A second constant attack &mdash; an X-shaped pair of diagonal sweeps through the boss's own center." },
+    { id: 59, date: "2026-08-17", title: "Limon's Spray gets dedicated art", body: "Fires its own projectile sprite instead of the shared enemy projectile." },
+    { id: 60, date: "2026-08-17", title: "Debug hitboxes cover projectiles", body: "Extended beyond player/enemies to both player-fired and enemy projectile lists." },
+    { id: 61, date: "2026-08-17", title: "Rectangle collision detection", body: "A second collision shape alongside circular, selectable per entity &mdash; built for non-circular projectiles." },
+    { id: 62, date: "2026-08-17", title: "Limon's Spray uses rectangle collision", body: "Matches its wide, non-square projectile sprite far better than a circle would." },
+    { id: 63, date: "2026-08-17", title: "Debug hitboxes reflect shape", body: "Draws a rectangle or circle outline per entity, matching whichever collision check actually runs." },
+    { id: 64, date: "2026-08-17", title: "Wrong-class equipment overlay", body: "A 25%-opacity red overlay flags gear the current class can't equip, in both the inventory and bank grids." },
+    { id: 65, date: "2026-08-17", title: "Max stats exclude gear/temp bonuses", body: "HealthMax/ManaMax now come from base, level, and potions only &mdash; equipment and temporary bonuses no longer count." },
+    { id: 66, date: "2026-08-18", title: "Green highlight for better item stats", body: "Inventory and bank tooltips now highlight stat lines that beat whatever's currently equipped." },
+    { id: 67, date: "2026-08-18", title: "Loot bag tooltips get full detail", body: "Ground loot now shows the same Tier/name/description/bonus tooltip as everywhere else, instead of just a bare name." },
+    { id: 68, date: "2026-08-18", title: "\"Maxed\" stat color ignores gear and buffs", body: "The sidebar's green highlight now checks only the permanent (level + potion) stat, not equipment or timed bonuses." },
+    { id: 69, date: "2026-08-18", title: "Sidebar shows the stat cap", body: "Each line now reads \"Attack: N / Max\" instead of just the raw number." },
+    { id: 70, date: "2026-08-18", title: "Sidebar number switched back to the full stat", body: "Displays the gear-inclusive value again; the maxed-color check still watches the permanent value underneath." },
+    { id: 71, date: "2026-08-18", title: "Empty equip slots show a placeholder icon", body: "A greyed-out Tier 0 icon for the player's class, instead of a bare border." },
+    { id: 72, date: "2026-08-18", title: "Sidebar shows all three stat numbers at once", body: "\"Attack: N (Permanent / Max)\" &mdash; live value, permanent progress, and cap together on one line." },
+    { id: 73, date: "2026-08-18", title: "Ability bar goes flat grey with nothing equipped", body: "No more misleading \"Ready\" state when there's no ability item to use." },
+    { id: 74, date: "2026-08-18", title: "Sidebar stat values line up in a column", body: "Independent of how wide each row's label happens to render." },
+    { id: 75, date: "2026-08-18", title: "Boss health bar and appearance announcement", body: "A name+health bar at the top of the screen during a boss fight, plus a fading name banner when the fight starts." },
+    { id: 76, date: "2026-08-18", title: "Minimap added to the HUD", body: "Shows the player, nearby portals, and nearby enemies in a small local-area map in the sidebar." },
+    { id: 77, date: "2026-08-18", title: "Minimap enlarged", body: "100px &rarr; 130px, per request." },
+    { id: 78, date: "2026-08-18", title: "Equipment row reordered", body: "Weapon, ability item, armor, ring &mdash; left to right." },
+    { id: 79, date: "2026-08-18", title: "Inventory/bank drag now swaps occupied slots", body: "Dropping an item onto an already-filled slot swaps the two instead of bouncing off or landing elsewhere." },
+    { id: 80, date: "2026-08-18", title: "Fame-gated character class unlocks", body: "Archer needs 1,000 account Fame, Knight needs 3,000; a locked class previews what's required on hover." },
+    { id: 81, date: "2026-08-18", title: "Per-class star rating, 0&ndash;5 stars", body: "Level 20 earns the first star; each star after that needs an exponentially higher personal-best score. Shown on Character Select." },
+    { id: 82, date: "2026-08-19", title: "Stars save the instant they're earned", body: "No more needing a death or checkpoint to lock in a new star; also backfilled Star 1 for the existing Archer and Knight saves." },
+    { id: 83, date: "2026-08-19", title: "Minimap blips resized smaller", body: "Player, portal, and enemy dots shrunk slightly for a cleaner look." },
+    { id: 84, date: "2026-08-18", title: "Spawn density scales with distance", body: "Enemies spawn more densely the farther the player wanders from where they entered the current Realm instance, layered on top of the existing time-based ramp." },
+    { id: 85, date: "2026-08-18", title: "“Erase All Data” button", body: "Wipes every class's save, the shared bank, Fame, and star progress, behind two full confirmation screens." },
+    { id: 86, date: "2026-08-18", title: "Erase-all buttons reversed, confirm turned red", body: "The final confirm button swapped sides from the warning screen so a reflexive double-click can't land on it twice, and switched to red." },
+    { id: 87, date: "2026-08-18", title: "XP field cleanup", body: "Removed the separately-tracked per-level Experience field entirely — both Level and the XP bar now derive purely from cumulative ExperienceTotal, so a big kill never discards overshoot XP again." },
+    { id: 88, date: "2026-08-18", title: "XP bar fill resets on level-up again", body: "Follow-up to the field cleanup: the bar's fill now reads 0% right after a level-up, while the printed numbers still show the real cumulative total." },
+    { id: 89, date: "2026-08-18", title: "Remappable key bindings + first settings system", body: "Every gameplay action, including movement, can now be rebound from a new Settings screen reachable from the Main Menu or in-game, with instant persistence and swap-on-conflict." },
+    { id: 90, date: "2026-08-18", title: "Toggle Mute added as a 10th remappable action", body: "Default key M, matching its old hardcoded binding." },
+    { id: 91, date: "2026-08-18", title: "Key bindings accept mouse buttons too", body: "An action can now be bound to right- or middle-click, not just a keyboard key." },
+    { id: 92, date: "2026-08-18", title: "Harder enemies drop higher-tier loot", body: "Drop chance and max reachable tier both scale with an enemy's existing PointValue, bucketed into four difficulty tiers." },
+    { id: 93, date: "2026-08-18", title: "Weak enemies drop from a fixed low tier", body: "Follow-up: Snake/Seeker-tier kills always drop Tier 0-2 loot regardless of the player's own gear tier, instead of scaling relative to it." },
+    { id: 94, date: "2026-08-18", title: "Level-gated enemy types + wave spawning", body: "Enemies now unlock by player level and spawn in clustered 2-4 packs on a timer, instead of every type rolling independently every frame from Level 1." },
+    { id: 95, date: "2026-08-18", title: "Two new enemies: Slime and Brute", body: "Both reuse existing art with a permanent color tint as the distinguishing signal — Slime a slow wandering low-level blob, Brute a rushing mid-level bruiser." },
+    { id: 96, date: "2026-08-18", title: "A third new enemy, BigSnake", body: "The first enemy to use real user-supplied art rather than a tint, spawning in the same group as regular Snakes from Level 1." },
+    { id: 97, date: "2026-08-18", title: "BigSnake became a rare mini-boss", body: "Pulled out of the regular spawn pool into its own 30-second timer, arriving with an escort of 4 ordinary Snakes." },
+    { id: 98, date: "2026-08-19", title: "Project memory notes moved into the repo", body: "The running dev logs and behavioral rules now live in git instead of only on one machine." },
+    { id: 99, date: "2026-08-20", title: "Portal.Destination reworked into a class hierarchy", body: "Replaced a fixed enum that could only route to one hardcoded boss, unblocking a second boss without touching Portal's own switch statements." },
+    { id: 100, date: "2026-08-20", title: "Second boss: Stheno the Snake Queen", body: "9,000 HP, a stationary 3-phase time-based fight (blade volleys, grenade bursts, a rotating spiral), orbiting pets that apply a new Slow debuff, and charge-then-chase Swarm adds." },
+    { id: 101, date: "2026-08-20", title: "New movement type: MoveTethered", body: "Weaving movement leashed to a radius around an enemy's spawn point, available for a future enemy that wants bounded wandering." },
+    { id: 102, date: "2026-08-20", title: "F4 debug key", body: "Maxes level, equips the current class's best gear in every slot, and tops off Health/Mana — for testing, not real play." },
+    { id: 103, date: "2026-08-20", title: "Only bosses drop loot", body: "Regular enemies stopped dropping loot entirely, per an initial reading of the request." },
+    { id: 104, date: "2026-08-20", title: "Correction: only boss pets don't drop loot", body: "Regular enemies went back to dropping loot; a new DropsLoot flag (default true) now opts out just Stheno's orbiting pets specifically." },
+    { id: 105, date: "2026-08-20", title: "Real art for Stheno Pet's projectile", body: "User-supplied sprite wired in, replacing the placeholder reuse of an existing effect." },
+    { id: 106, date: "2026-08-20", title: "Real art for Stheno Swarm's shots", body: "User-supplied sprite wired in, same treatment as the Pet's projectile." },
+    { id: 107, date: "2026-08-20", title: "Stheno's grenades reworked into a telegraphed AoE", body: "Replaced a plain projectile sprite with a shaded circle that ramps from a faint grey warning to a solid red hitbox, giving the player a real window to dodge." },
+    { id: 108, date: "2026-08-20", title: "Rotated rectangle hitboxes", body: "The Rectangle collision shape now checks against a projectile's true rotated silhouette instead of a loose axis-aligned box, fixing visibly-wrong dodges at diagonal angles." },
+    { id: 109, date: "2026-08-20", title: "Real art for Stheno's blade projectile", body: "User-supplied sprite wired in, alongside the rotated-hitbox fix it now lines up with correctly." },
+    { id: 110, date: "2026-08-20", title: "Grenade telegraph gets 3 ramping opacity stages", body: "Instead of one flat warning color, the grey pre-detonation phase now ramps through three stages as the fuse burns down." },
+    { id: 111, date: "2026-08-20", title: "Grenade's armed state pulses through 3 red stages", body: "A purely visual cycling effect once the hitbox goes live, unrelated to the (unchanged) hitbox itself." },
+    { id: 112, date: "2026-08-20", title: "Grenades no longer expire on first touch", body: "A live grenade now lingers for its full duration as a real persistent hazard, only ever damaging the player once." },
+    { id: 113, date: "2026-08-20", title: "Black backing on the player's own damage numbers", body: "Matches the same drop-shadow treatment the title screen's text already uses, for readability over busy backgrounds." },
+    { id: 114, date: "2026-08-20", title: "Dedicated bold font for damage numbers", body: "Replaces the regular-weight HUD font, which stayed hard to read even scaled up — the actual fix was weight, not size." },
+    { id: 115, date: "2026-08-20", title: "Boss portals show their dungeon's name and art", body: "Limon's portal now reads “Sprite World,” Stheno's reads “Snake Pit,” each with its own animated sprite sheet instead of the generic swirl." },
+    { id: 116, date: "2026-08-20", title: "F3 debug overlay outlines portals", body: "Portal isn't a game entity, so it was never covered by the existing hitbox overlay — added its own outline showing the real teleport-trigger area." },
+    { id: 117, date: "2026-08-20", title: "Fixed portal trigger box not scaling with new art", body: "The teleport zone was sized for the generic portal's larger sprite, so it poked outside the smaller dungeon-specific art." },
+    { id: 118, date: "2026-08-20", title: "Fixed the actual portal hitbox misalignment", body: "The trigger box was still anchored to a corner instead of centered on the sprite — every portal's roughly circular art doesn't fill its own bounding square's corners, so the box sat beside it, not on it." },
+    { id: 119, date: "2026-08-20", title: "Fixed Entity.Bounds itself", body: "The real remaining source of the misalignment: Entity.Bounds anchored an entity's Position at its top-left corner instead of its center, silently offsetting portal, loot bag, and pickup collision from where things visually sit." },
+    { id: 120, date: "2026-08-20", title: "F3 debug overlay outlines loot bag range too", body: "Loot bags use a hand-rolled rectangle check, not the usual circle radius, so they needed their own outline to actually match what triggers pickup." },
+    { id: 121, date: "2026-08-20", title: "Animations can now play once instead of looping", body: "Sprite World's portal now plays its opening animation through once and holds on the final frame, instead of replaying the closed state forever." },
+    { id: 122, date: "2026-08-20", title: "Bosses blink red entering an enraged phase", body: "Built as shared infrastructure any boss can trigger, not just Limon, at the moment its own escalation kicks in." },
+    { id: 123, date: "2026-08-20", title: "Portals require confirmation before teleporting", body: "Walking in now arms a prompt instead of teleporting instantly, confirmed via a clickable HUD button or a new remappable key bind." },
+    { id: 124, date: "2026-08-20", title: "Portal prompt moved into the sidebar", body: "Relocated from a floating widget above the portal in world space to a fixed spot below the inventory grid, with the dungeon's name shown above the button." },
+    { id: 125, date: "2026-08-20", title: "Portal animations are instance-specific", body: "Each portal now gets its own independent animation clock instead of sharing one — previously, a second portal dropped after the first one's animation finished would start out already-finished too." },
+    { id: 126, date: "2026-08-20", title: "Fixed portals spawning off-center", body: "A portal dropped exactly on a dying enemy's position rendered offset down-and-right of it instead of centered, since the same top-left-vs-center inconsistency entry 119 fixed for collision also applied to drawing." },
+  ];
+
+  const BUGS = [
+    { id: 1, date: "Undated", title: "Collection-modified crash in the draw loop", body: "Fixed by iterating a snapshot instead of the live entity collection." },
+    { id: 2, date: "Undated", title: "Loot bags misbehaved with a full inventory", body: "Broken \"use in place\" fallback logic on pickup." },
+    { id: 3, date: "Undated", title: "Re-equipping into an empty slot could insert a blank item", body: "Fixed by checking IsEquipped before swapping the old item back in." },
+    { id: 4, date: "Undated", title: "NullReferenceException saving an unequipped item", body: "Width/Height computed from a null image; fixed by null-guarding both in Entity." },
+    { id: 5, date: "Undated", title: "Stat bonuses were wiped on level-up", body: "First fix attempt added an accumulator alongside the direct stat mutation." },
+    { id: 6, date: "Undated", title: "That accumulator double-counted on reload", body: "Redesigned with persisted potion bonuses plus live-summed equipment bonuses instead of accumulating." },
+    { id: 7, date: "Undated", title: "Loot always resolved to Wizard-type gear", body: "FirstOrDefault deterministically matched whichever catalog entry was listed first; fixed with real random indexing." },
+    { id: 8, date: "Undated", title: "CS0104 'Color' is ambiguous", body: "A stray System.Drawing using collided with MonoGame's Color; fixed by fully qualifying the reference." },
+    { id: 9, date: "Undated", title: "Ability-readiness bar clipped off-screen", body: "Fixed by moving it above the experience bar and halving its height." },
+    { id: 10, date: "Undated", title: "Boot crash loading a save with Spell/Quiver equipped", body: "System.Text.Json needs a parameterless constructor; added one to match Weapon/Armor/Ring." },
+    { id: 11, date: "2026-08-13", title: "Delete link kept showing after deleting", body: "A wiped save still passed the \"file exists\" check; first fix switched to a progress-based heuristic." },
+    { id: 12, date: "2026-08-13", title: "That heuristic hid Delete for zero-progress characters", body: "Fixed with a dedicated HasBeenPlayed flag, set on real entry and reset on wipe." },
+    { id: 13, date: "2026-08-13", title: "HasBeenPlayed needed legacy-save handling", body: "Old saves without the field misread as false; resolved by simply deleting the old saves." },
+    { id: 14, date: "2026-08-13", title: "Nexus button silently auto-started a Wizard", body: "Instead of routing to Character Select when no character had ever been played." },
+    { id: 15, date: "2026-08-13", title: "Game Over's New Game button bypassed that check", body: "Silently respawned a reset character instead of redirecting; fixed by routing through the same check." },
+    { id: 16, date: "2026-08-13", title: "Dying briefly re-marked HasBeenPlayed true", body: "Inconsistent with every other field a death-reset wipes; fixed by removing the line." },
+    { id: 17, date: "2026-08-13", title: "Entering a dungeon skipped saving inventory", body: "Only player data was saved on entry; added the missing inventory save call." },
+    { id: 18, date: "2026-08-13", title: "Character Select route silently discarded changes", body: "One of two paths back to Character Select had no save calls at all; added matching ones." },
+    { id: 19, date: "2026-08-13", title: "Duplicate ability item after unequip-and-reselect", body: "Missing else-branch left a phantom default equipped alongside the real item; added the missing unequip call." },
+    { id: 20, date: "2026-08-13", title: "Drag-and-drop resolved a frame late", body: "Stale mouse position made bank drags fall through to the ground; fixed by detecting the real press&rarr;release transition." },
+    { id: 21, date: "2026-08-13", title: "Bank panel could clip at the screen's top", body: "Fixed by anchoring the panel to the Bank portal's actual world position via the camera transform." },
+    { id: 22, date: "2026-08-13", title: "Drag ghosts rendered underneath the bank panel", body: "Fixed by drawing every drag ghost last, after both panels' main content." },
+    { id: 23, date: "2026-08-13", title: "Self-inflicted: a cleanup edit deleted real code", body: "A temp-block removal accidentally swallowed the adjacent Quivers load line; restored it." },
+    { id: 24, date: "2026-08-13", title: "Bank contents vanished on every restart", body: "LoadBankData() was fully implemented but never actually called at boot; added the missing call." },
+    { id: 26, date: "2026-08-13", title: "Banking an item then quitting lost the change", body: "Saves only fired at state-transition checkpoints; both bank and inventory now save unconditionally after any drag/click." },
+    { id: 25, date: "2026-08-13", title: "Loot bags couldn't be picked up in the Nexus", body: "The Nexus draw loop never ran the click-to-pickup logic dungeons already had; added the missing call." },
+    { id: 26, date: "2026-08-14", title: "Sword's basic attack crashed the game at boot", body: "Real projectile art was referenced in data but never registered in the content pipeline; added the missing build entry." },
+    { id: 27, date: "2026-08-15", title: "Player could walk past the boss arena edge", body: "And the camera got stuck off-center permanently; fixed with a direct position clamp and a camera resync instead of delta-accumulation." },
+    { id: 28, date: "2026-08-15", title: "Scaled-up boss health bar sat under the sprite", body: "Offset math used the sprite's raw unscaled size; fixed by scaling the offsets to match drawScale." },
+    { id: 29, date: "2026-08-17", title: "Rectangle hitboxes looked reversed when rotated", body: "The box wasn't rotation-aware, so a spinning non-square projectile's box didn't match its visual silhouette; fixed with a rotated-AABB formula." },
+    { id: 30, date: "2026-08-17", title: "Ability-item loot never dropped Shields", body: "Only Spells and Quivers were in the random pool; added the missing third catalog." },
+    { id: 31, date: "2026-08-17", title: "The same missing-Shields bug existed in guaranteed loot", body: "A second, untouched copy of the same gap in the boss-drop method; fixed the same way." },
+    { id: 32, date: "2026-08-18", title: "Fresh characters crashed on creation", body: "A hardcoded starting ring name no longer matched the catalog after a rename, leaving Ring null and crashing the next equip call." },
+    { id: 33, date: "2026-08-18", title: "Knight couldn't equip a new Shield", body: "The ability-item drag-equip switch had no case for Shield; it silently swallowed the drag instead of equipping it." },
+    { id: 34, date: "2026-08-18", title: "A real saved Shield had lost its identity", body: "Shield was missing from Item's polymorphic type list, so it degraded to a generic Item on save &mdash; no tooltip, couldn't be equipped. Repaired the corrupted save entry by hand." },
+    { id: 35, date: "2026-08-18", title: "Comparison tooltips overlapped and clipped off-screen", body: "A description split on the wrong newline character collapsed into one overlapping block, and nothing clamped a tooltip drawn too close to the right edge." },
+    { id: 36, date: "2026-08-18", title: "Loot bag icons painted over their own tooltips", body: "Splitting the draw into two passes &mdash; icons first, then the hovered tooltip last &mdash; fixed the overlap." },
+    { id: 37, date: "2026-08-18", title: "Stat potions could be blocked by gear alone", body: "The gate compared the gear-inflated stat against the cap instead of the permanent value, blocking a potion that still had real room to grow." },
+    { id: 38, date: "2026-08-18", title: "Ring icon looked off-center", body: "Not a code bug &mdash; the ring artwork itself had uneven padding baked into the source images; re-centered the pixel content directly." },
+    { id: 39, date: "2026-08-18", title: "Using an ability with nothing equipped fired for free", body: "Zero damage, but still cost mana and spawned a projectile with no feedback; added the same guard the weapon slot already had." },
+    { id: 40, date: "2026-08-18", title: "Uneven spacing in the sidebar stat list", body: "One row had a 20px gap where every other row used 16px; normalized to one consistent step." },
+    { id: 41, date: "2026-08-18", title: "Equip-slot tooltips could be painted over", body: "Same draw-order bug as the bank and loot bag fixes &mdash; moved every equip slot's tooltip to its own final pass." },
+    { id: 42, date: "2026-08-18", title: "Self-inflicted: a test overwrote real inventory and bank saves", body: "A scripted test saved fake data straight over the user's real files with no backup, causing a crash entering the Nexus; the original contents weren't recoverable." },
+    { id: 43, date: "2026-08-18", title: "Loot bags survived state changes", body: "A dropped bag could keep existing (and rendering) after leaving the area, since only entering a dungeon ever cleared them. Now clearing happens on every state change." },
+    { id: 44, date: "2026-08-18", title: "Follow-up: a loot bag's icon kept rendering after despawn", body: "Clearing the interactive list didn't clear the bag's separate entity registration; now both are cleared together." },
+  ];
+
+  function groupByDate(entries) {
+    const groups = [];
+    let current = null;
+    for (const e of entries) {
+      if (!current || current.date !== e.date) {
+        current = { date: e.date, items: [] };
+        groups.push(current);
+      }
+      current.items.push(e);
+    }
+    return groups;
+  }
+
+  function renderList(containerId, entries, kind) {
+    const container = document.getElementById(containerId);
+    const groups = groupByDate(entries);
+    container.innerHTML = groups.map(g => `
+      <div class="date-group" data-date-group>
+        <p class="date-label">${g.date}</p>
+        <div class="entries">
+          ${g.items.map(e => `
+            <details class="entry" data-kind="${kind}" data-search="${(e.title + ' ' + e.body).toLowerCase().replace(/"/g, '&quot;')}">
+              <summary>
+                <span class="entry-id">${e.id}</span>
+                <svg class="entry-caret" width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"></polyline></svg>
+                <span class="entry-title">${e.title}</span>
+              </summary>
+              <div class="entry-body">${e.body}</div>
+            </details>
+          `).join('')}
+        </div>
+      </div>
+    `).join('');
+  }
+
+  renderList('list-features', FEATURES, 'feature');
+  renderList('list-bugs', BUGS, 'bug');
+
+  document.getElementById('stat-features').textContent = FEATURES.length;
+  document.getElementById('stat-bugs').textContent = BUGS.length;
+  document.getElementById('count-features').textContent = FEATURES.length + ' entries';
+  document.getElementById('count-bugs').textContent = BUGS.length + ' entries';
+
+  // ---- Filtering ----
+  const searchInput = document.getElementById('search');
+  const chipFeatures = document.getElementById('chip-features');
+  const chipBugs = document.getElementById('chip-bugs');
+  const sectionFeatures = document.getElementById('section-features');
+  const sectionBugs = document.getElementById('section-bugs');
+  const noResults = document.getElementById('no-results');
+  const noResultsTerm = document.getElementById('no-results-term');
+
+  let showFeatures = true;
+  let showBugs = true;
+
+  function applyFilter() {
+    const term = searchInput.value.trim().toLowerCase();
+    sectionFeatures.style.display = showFeatures ? '' : 'none';
+    sectionBugs.style.display = showBugs ? '' : 'none';
+
+    let totalVisible = 0;
+    let visibleFeatureCount = 0;
+    let visibleBugCount = 0;
+
+    document.querySelectorAll('.entry').forEach(el => {
+      const matches = !term || el.dataset.search.includes(term);
+      el.style.display = matches ? '' : 'none';
+      if (matches) {
+        totalVisible++;
+        if (el.dataset.kind === 'feature') visibleFeatureCount++;
+        else visibleBugCount++;
+      }
+      if (term && matches) el.open = true;
+      if (!term) el.open = false;
+    });
+
+    document.querySelectorAll('[data-date-group]').forEach(group => {
+      const anyVisible = Array.from(group.querySelectorAll('.entry')).some(e => e.style.display !== 'none');
+      group.style.display = anyVisible ? '' : 'none';
+    });
+
+    document.getElementById('count-features').textContent = visibleFeatureCount + (term ? ' matching' : ' entries');
+    document.getElementById('count-bugs').textContent = visibleBugCount + (term ? ' matching' : ' entries');
+
+    const nothingShown = (showFeatures || showBugs) &&
+      ((showFeatures ? visibleFeatureCount : 0) + (showBugs ? visibleBugCount : 0)) === 0;
+    noResults.style.display = nothingShown && term ? '' : 'none';
+    noResultsTerm.textContent = searchInput.value.trim();
+  }
+
+  searchInput.addEventListener('input', applyFilter);
+
+  chipFeatures.addEventListener('click', () => {
+    if (showFeatures && !showBugs) return;
+    showFeatures = !showFeatures;
+    if (!showFeatures && !showBugs) showBugs = true;
+    chipFeatures.setAttribute('aria-pressed', String(showFeatures));
+    chipBugs.setAttribute('aria-pressed', String(showBugs));
+    applyFilter();
+  });
+
+  chipBugs.addEventListener('click', () => {
+    if (showBugs && !showFeatures) return;
+    showBugs = !showBugs;
+    if (!showFeatures && !showBugs) showFeatures = true;
+    chipFeatures.setAttribute('aria-pressed', String(showFeatures));
+    chipBugs.setAttribute('aria-pressed', String(showBugs));
+    applyFilter();
+  });
+</script>
