@@ -113,14 +113,15 @@ prioritized or scheduled — the user asked to keep these noted for later rather
   free teleporting could trivialize or break the fight). Also needs a decision on whether it's a
   free instant teleport or has some cost/limit (cooldown, mana, distance cap) so it doesn't just
   replace normal movement outright.
-- **Visual effects — further targets beyond the first one shipped.** A hand-rolled particle system
-  now exists (`Particle.cs`, see [DEVLOG.md](DEVLOG.md) entry
-  141) — a lightweight `Entity` subclass managed by the normal `EntityManager` pipeline, no MonoGame
-  `Effect`/shader usage anywhere (that approach was explicitly considered and passed over). Currently
-  wired to exactly one target: `Enemy.WasShot()`'s hit/death bursts. Open follow-ups: a portal glow
-  (the other candidate originally raised, not yet built), particle effects on the *player* taking
-  damage (deliberately out of scope this round — only enemies were wired up), and any other
-  on-screen moment that could use the same `Particle.SpawnBurst()` entry point.
+- **Visual effects — further targets beyond the two shipped.** A hand-rolled particle system now
+  exists (`Particle.cs`, see [DEVLOG.md](DEVLOG.md) entries
+  141-142) — a lightweight `Entity` subclass managed by the normal `EntityManager` pipeline, no
+  MonoGame `Effect`/shader usage anywhere (that approach was explicitly considered and passed over).
+  Wired to two targets so far: `Enemy.WasShot()`'s hit/death bursts, and `Player.LevelUp()`'s gold
+  celebration burst. Open follow-ups: a portal glow (the original other candidate, not yet built),
+  particle effects on the *player* taking damage (deliberately out of scope — only enemy hits/deaths
+  were wired up), and any other on-screen moment that could use the same `Particle.SpawnBurst()`
+  entry point.
 
 ## Completed
 

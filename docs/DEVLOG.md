@@ -2927,3 +2927,29 @@ date/time for those individually; don't treat their grouping as meaning they all
      to get wrong; flagged here as a reminder to back up before constructing a real state object in any
      future test, not just when a test is known to mutate something. Clean build and a plain boot-check
      both passed.
+142. **Particle effect for the player leveling up.** `Player.LevelUp()` (the base implementation every
+     class's `Wizard`/`Archer`/`Knight.LevelUp()` override funnels into via `base.LevelUp()`, right
+     where the existing `Sound.LevelUp` cue already plays) now also calls `Particle.SpawnBurst()` —
+     same entry point entry 141's enemy hit/death effects use, given its own distinct look: gold
+     rather than white/orange-red, bigger (20 particles vs. 5/14), and longer-lingering (35 ticks vs.
+     15/25) — a celebratory moment reads differently from a combat reaction. Fires for every class
+     automatically, since all three subclass overrides funnel through the same base method; no
+     per-class change needed. Applying entry 141's lesson from the start this time: backed up the real
+     save files (`PlayerData_*.json`/`InventoryData_*.json`/`BankData.json`/`FameData.json`/
+     `KeyBindingsData.json`/`GameSettingsData.json`) *before* running the scripted repro, per
+     `CLAUDE.md`'s rule — the oversight flagged in that entry, actually applied this time rather than
+     just noted for later. Also avoided the risk a different way: rather than calling `LevelUp()` on
+     the real `Player.Instance` (already Level 20 on this account, so a real call would push it past 20
+     with no way back and no threshold to guard against it), the repro constructed a throwaway
+     `Wizard()` instead and called `LevelUp()` on that — never touching the real character at all.
+     One caught-and-documented gotcha along the way, not a bug: `Player`'s constructor unconditionally
+     does `instance = this` (already known from entry 132), so constructing the throwaway `Wizard`
+     silently repoints the static `Player.Instance` at it for the remainder of the process — harmless
+     here since nothing else in the test or the real game loop reads `Player.Instance` again before
+     the process exits, but worth remembering for any future test that constructs a second `Player`
+     subclass instance without meaning to replace the real one. Verified via a scripted repro (temp
+     code in `Game1.StartGame()`): the throwaway `Wizard`'s one `LevelUp()` call (Level 1 → 2, safely
+     under the Level-20 save threshold so `Util.SavePlayerData()` never fired on this fake instance)
+     added exactly 20 entities to `EntityManager`, matching the burst's `count`; confirmed via a byte-
+     for-byte diff against the pre-test backup that all 10 real save files were completely untouched
+     after the run. Clean build and a plain boot-check both passed.

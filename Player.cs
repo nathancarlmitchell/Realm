@@ -268,6 +268,13 @@ namespace Realm
             }
 
             Sound.Play(Sound.LevelUp, 0.4f);
+
+            // Bigger, longer-lingering, and gold rather than the enemy
+            // hit/death bursts' white/orange-red (Enemy.WasShot()) — a
+            // level up is a celebratory moment, not a combat reaction, so
+            // it gets its own distinct look via the same Particle.SpawnBurst()
+            // entry point.
+            Particle.SpawnBurst(Position, Microsoft.Xna.Framework.Color.Gold, count: 20, minSpeed: 2f, maxSpeed: 5f, lifespanTicks: 35, startScale: 0.25f);
         }
 
         // Shared with Overlay.DrawSidebar's ability section, so the
