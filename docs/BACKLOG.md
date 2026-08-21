@@ -127,11 +127,6 @@ prioritized or scheduled — the user asked to keep these noted for later rather
   free teleporting could trivialize or break the fight). Also needs a decision on whether it's a
   free instant teleport or has some cost/limit (cooldown, mana, distance cap) so it doesn't just
   replace normal movement outright.
-- **Improve the portal image and visuals.** Today [Portal.cs](Portal.cs) just plays `Art.Portal`, a
-  plain 7-frame `AnimatedTexture` sprite sheet, with no other visual treatment — same look for
-  every portal regardless of destination. Open-ended (new/reworked art, a per-destination color
-  tint, something more elaborate) — needs the user's own direction on what "improved" means before
-  picking an approach.
 - **Shaders / custom visual effects in general** — a portal glow, on-hit or on-death particle
   effects, etc. Nothing like this exists in the engine today: no MonoGame `Effect`/shader usage
   anywhere in the codebase (confirmed via a repo-wide search — the only `Effect`-named things are

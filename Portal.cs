@@ -85,6 +85,7 @@ namespace Realm
             {
                 public override string DisplayName => "Character Select";
                 public override void Enter() => StateManager.SelectClass();
+                internal override AnimatedTexture PortalArt() => Art.CharacterSelectPortal.Clone();
             }
 
             private sealed class BankDestination : Destination

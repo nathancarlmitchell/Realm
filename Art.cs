@@ -69,6 +69,11 @@ namespace Realm
         // same single-static-frame treatment, a stone archway.
         public static AnimatedTexture RealmPortal { get; private set; }
 
+        // The Character Select portal (see
+        // Portal.Destination.CharacterSelectDestination) — same
+        // single-static-frame treatment, a warrior figure.
+        public static AnimatedTexture CharacterSelectPortal { get; private set; }
+
         public static Texture2D Inventory { get; private set; }
         public static Texture2D HealthPotion { get; private set; }
         public static Texture2D ManaPotion { get; private set; }
@@ -147,6 +152,9 @@ namespace Realm
 
             RealmPortal = new AnimatedTexture(Vector2.Zero, 0f, 1.0f, 0.5f);
             RealmPortal.Load(content, "Portal to Realm", 1, 1);
+
+            CharacterSelectPortal = new AnimatedTexture(Vector2.Zero, 0f, 1.0f, 0.5f);
+            CharacterSelectPortal.Load(content, "Character Changer", 1, 1);
 
             HealthPotion = content.Load<Texture2D>("health_potion");
             ManaPotion = content.Load<Texture2D>("mana_potion");

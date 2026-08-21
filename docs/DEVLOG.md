@@ -2586,3 +2586,17 @@ date/time for those individually; don't treat their grouping as meaning they all
      just the explicit-destination one; and — per the entry 118 lesson — rendered the portal next to a
      marker at its exact construction position and visually confirmed it's centered. Clean build (new
      `.xnb` confirmed compiled) and a plain boot-check both passed.
+131. **Real art for the Character Select portal (`Portal.Destination.CharacterSelect`)** — a 56×56
+     warrior figure, user-supplied (`Content/Character Changer.png`), replacing the generic swirl.
+     Last of the four always-present Nexus destinations to get its own art (Bank/Nexus/Realm in
+     entries 127/129/130) — every fixed Nexus portal now has dedicated art, closing out the
+     `BACKLOG.md` "improve the portal image and visuals" item. Same single-static-frame treatment as
+     the prior three (`Art.CharacterSelectPortal`, a 1-frame `AnimatedTexture`),
+     `Destination.CharacterSelectDestination` now overrides `PortalArt()`. Verified via a scripted
+     repro (no save-file risk): confirmed a `CharacterSelect`-destination `Portal` gets its own
+     distinct `AnimatedTexture` sharing `Art.CharacterSelectPortal`'s underlying texture; confirmed
+     `FrameWidth`/`FrameHeight` read exactly 56×56 and `DisplayName` reads "Character Select"; and —
+     per the entry 118 lesson — rendered the portal next to a marker at its exact construction position
+     and visually confirmed it's centered (the label itself ran off the deliberately small 100px test
+     canvas, not a real issue — the actual gameplay viewport is far wider). Clean build (new `.xnb`
+     confirmed compiled) and a plain boot-check both passed.
