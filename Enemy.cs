@@ -311,7 +311,7 @@ namespace Realm
         // not by anything in here.
         protected virtual void SpawnLoot()
         {
-            ItemSpawner.Spawn(this.Position, PointValue, DropPool, DropWeights, DropTierRange);
+            ItemSpawner.Spawn(this.Position, PointValue, DropPool, DropWeights, DropTierRange, StatPotionPool);
         }
 
         // Whether this enemy drops anything on death at all (SpawnLoot()
@@ -346,6 +346,14 @@ namespace Realm
         // inclusive; Min must be <= Max, since a range where it isn't has
         // no valid roll.
         protected (int Min, int Max)? DropTierRange = null;
+
+        // Which specific stat potions (Attack/Defense/Dexterity/Life/
+        // ManaMax/Speed/Vitality/Wisdom) a StatPotion drop can roll from —
+        // narrows ItemSpawner.RollStatPotion()'s selection the same way
+        // DropPool narrows categories, just one level deeper (inside the
+        // category rather than across categories). Null/empty (the
+        // default) rolls uniformly from all 8, today's unchanged behavior.
+        protected List<Potions> StatPotionPool = null;
 
         protected void AddBehaviour(IEnumerable<int> behaviour)
         {

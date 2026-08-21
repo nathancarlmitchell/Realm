@@ -2778,3 +2778,32 @@ date/time for those individually; don't treat their grouping as meaning they all
      plus 1, per the untouched `playerTier + RollTierOffset` formula) — outside `[3,5]` and, since the
      catalog tops out at tier 14, correctly produced zero items rather than silently reusing the
      override branch. Clean build and a plain boot-check both passed.
+138. **Per-enemy drop pools gained control over which specific stat potion drops, one level deeper
+     than the category system above.** Previously `StatPotion` category rolls (both `Spawn()` and
+     `SpawnGuaranteedLoot()`) picked uniformly from a fixed list of 8 stat types
+     (Attack/Defense/Dexterity/Life/ManaMax/Speed/Vitality/Wisdom, each duplicated inline as its own
+     switch block in both methods) with no way to narrow which specific ones a given enemy could hand
+     out. New `Enemy.StatPotionPool` (`List<Potions>`, null by default — today's unrestricted,
+     unchanged behavior) is read by both `SpawnLoot()` overrides and passed into a new shared
+     `ItemSpawner.RollStatPotion()` helper, which the two previously-duplicated switch blocks were
+     both replaced with a single call to. `RollStatPotion()` falls back to the full 8-type list
+     (`AllStatPotions`, a new `private static readonly Potions[]`) whenever the pool is null *or*
+     empty — an enemy that constructs an empty list isn't treated as "roll from nothing," which would
+     otherwise be a silent dead category. `HealthManaPotion` is a separate category (Health/Mana, not
+     one of the 8) and is untouched by this — `StatPotionPool` only narrows the `StatPotion` category's
+     own roll. Not yet applied to any concrete enemy, same as `DropTierRange` (entry 137) before it —
+     built as the general mechanism in response to the user asking "can I control what specific stat
+     potions are dropped." Verified via a scripted repro (temp code in `Game1.StartGame()`, calling
+     `ItemSpawner` directly with an extreme `StatPotion` weight to force a near-guaranteed roll each
+     call, same technique as entry 137 — no `Player.Instance` mutation, no save-file risk): a
+     2-type pool (`[Attack, Defense]`) via `Spawn()` produced 50/50 drops, every one either Attack or
+     Defense, with both actually represented (not just one dominating by chance); a single-entry pool
+     (`[Wisdom]`) produced 30/30 Wisdom drops, ruling out a 1-item list being silently treated as
+     "empty = unrestricted"; a `null` pool over 60 runs produced all 8 distinct types, confirming the
+     unrestricted fallback path still reaches every type, not silently narrowed by the new plumbing;
+     and `SpawnGuaranteedLoot()` with the same 2-type pool produced only Attack/Defense across 30 runs,
+     confirming boss guaranteed loot respects the pool identically to the regular table. (Potion
+     identity was read via each dropped item's `Name` string — `Potion` has no retained `Potions`-enum
+     field after construction, just the per-type `Name`/`ID`/image it's built with — so the test
+     checked against the exact `"Attack Potion"`/`"Defense Potion"`/`"Wisdom Potion"` strings
+     `Potion.cs`'s constructor assigns per type.) Clean build and a plain boot-check both passed.

@@ -58,6 +58,36 @@ namespace Realm
         private static int WeightedChance(int baseChance, float weight) =>
             Math.Max(1, (int)Math.Round(baseChance / weight));
 
+        // Every stat potion the StatPotion category can roll from by
+        // default — the 8 options both Spawn()'s and SpawnGuaranteedLoot's
+        // switch blocks used to hardcode inline. Health/Mana aren't here —
+        // those are the separate HealthManaPotion category, not
+        // StatPotion.
+        private static readonly Potions[] AllStatPotions =
+        {
+            Potions.Attack,
+            Potions.Defense,
+            Potions.Dexterity,
+            Potions.Life,
+            Potions.ManaMax,
+            Potions.Speed,
+            Potions.Vitality,
+            Potions.Wisdom,
+        };
+
+        // Which specific stat potion a StatPotion drop actually is — an
+        // enemy-supplied pool (Enemy.StatPotionPool) narrows the roll to
+        // just those types; null or empty (the default) rolls uniformly
+        // from all 8, today's existing behavior unchanged. Shared by both
+        // Spawn() and SpawnGuaranteedLoot() instead of each keeping its own
+        // copy of the same 8-way switch.
+        private static Potions RollStatPotion(IReadOnlyList<Potions> statPotionPool)
+        {
+            IReadOnlyList<Potions> pool =
+                statPotionPool != null && statPotionPool.Count > 0 ? statPotionPool : AllStatPotions;
+            return pool[rand.Next(pool.Count)];
+        }
+
         private static readonly Random rand = new();
 
         // Move to RealmState?
@@ -186,7 +216,8 @@ namespace Realm
             int pointValue = 0,
             LootCategory dropPool = LootCategory.All,
             IReadOnlyDictionary<LootCategory, float> dropWeights = null,
-            (int Min, int Max)? dropTierRange = null
+            (int Min, int Max)? dropTierRange = null,
+            IReadOnlyList<Potions> statPotionPool = null
         )
         {
             List<Item> items = [];
@@ -271,36 +302,7 @@ namespace Realm
             if (dropPool.HasFlag(LootCategory.StatPotion) && rand.Next(WeightedChance(15, WeightFor(dropWeights, LootCategory.StatPotion))) == 0)
             {
                 bagTexture = Art.LootBagBlue;
-                int next = rand.Next(8);
-                Potions potion = Potions.Health;
-                switch (next)
-                {
-                    case 0:
-                        potion = Potions.Attack;
-                        break;
-                    case 1:
-                        potion = Potions.Defense;
-                        break;
-                    case 2:
-                        potion = Potions.Dexterity;
-                        break;
-                    case 3:
-                        potion = Potions.Life;
-                        break;
-                    case 4:
-                        potion = Potions.ManaMax;
-                        break;
-                    case 5:
-                        potion = Potions.Speed;
-                        break;
-                    case 6:
-                        potion = Potions.Vitality;
-                        break;
-                    case 7:
-                        potion = Potions.Wisdom;
-                        break;
-                }
-                items.Add(new Potion(potion));
+                items.Add(new Potion(RollStatPotion(statPotionPool)));
             }
 
             if (dropPool.HasFlag(LootCategory.HealthManaPotion) && rand.Next(WeightedChance(10, WeightFor(dropWeights, LootCategory.HealthManaPotion))) == 0)
@@ -374,7 +376,8 @@ namespace Realm
             Vector2 pos,
             int pointValue = 0,
             LootCategory dropPool = LootCategory.All,
-            (int Min, int Max)? dropTierRange = null
+            (int Min, int Max)? dropTierRange = null,
+            IReadOnlyList<Potions> statPotionPool = null
         )
         {
             List<Item> items = [];
@@ -443,19 +446,7 @@ namespace Realm
 
             if (dropPool.HasFlag(LootCategory.StatPotion))
             {
-                int next = rand.Next(8);
-                Potions potion = next switch
-                {
-                    0 => Potions.Attack,
-                    1 => Potions.Defense,
-                    2 => Potions.Dexterity,
-                    3 => Potions.Life,
-                    4 => Potions.ManaMax,
-                    5 => Potions.Speed,
-                    6 => Potions.Vitality,
-                    _ => Potions.Wisdom,
-                };
-                items.Add(new Potion(potion));
+                items.Add(new Potion(RollStatPotion(statPotionPool)));
             }
 
             LootBag bag = new()
