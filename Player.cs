@@ -175,6 +175,13 @@ namespace Realm
         // Graphics tab.
         public bool ShowHitboxesEnabled;
 
+        // Same account-wide GameSettingsData persistence, but defaults to
+        // TRUE (unlike every other toggle above) — see GameSettingsData.cs's
+        // matching comment on why the DTO's own default also has to be
+        // `true`, not just this field. Drives the low-health flash in
+        // Update()/Draw() below. Toggled from the Settings > Graphics tab.
+        public bool LowHealthIndicatorEnabled = true;
+
         // Set once this class first reaches the level cap (20) and never
         // cleared again — same permanent-through-death/delete treatment as
         // HighScore (see DeleteCharacterData/GameOverState), since this is
@@ -817,6 +824,19 @@ namespace Realm
             }
         }
 
+        // Settings > Graphics > "Low Health Indicator" — flashes the
+        // player sprite red once Health drops under this fraction of
+        // HealthMax, speeding up the closer Health gets to 0. Same
+        // accumulating-phase shape as LootBag's own despawn-warning blink
+        // (see LootBag.cs) — the per-tick phase increment (1 / halfPeriod)
+        // grows as Health approaches 0, so the flash visibly speeds up
+        // rather than blinking at one constant rate for the whole time
+        // it's active.
+        private const float LowHealthThresholdFraction = 0.25f;
+        private const float LowHealthSlowFlashHalfPeriodTicks = 20f;
+        private const float LowHealthFastFlashHalfPeriodTicks = 5f;
+        private float lowHealthFlashPhase = 0f;
+
         public override void Update()
         {
             // Update position. slowMultiplier halves speed while Slowed
@@ -849,6 +869,31 @@ namespace Realm
                 healthCooldown = 0;
                 if (Health < HealthMax)
                     Health++;
+            }
+
+            // Low-health flash (see the fields above Update()).
+            if (LowHealthIndicatorEnabled && Health < HealthMax * LowHealthThresholdFraction)
+            {
+                float progress = MathHelper.Clamp(
+                    1f - (Health / (HealthMax * LowHealthThresholdFraction)),
+                    0f,
+                    1f
+                );
+                float halfPeriod = MathHelper.Lerp(
+                    LowHealthSlowFlashHalfPeriodTicks,
+                    LowHealthFastFlashHalfPeriodTicks,
+                    progress
+                );
+                lowHealthFlashPhase += 1f / halfPeriod;
+                color =
+                    ((int)lowHealthFlashPhase % 2) == 0
+                        ? Microsoft.Xna.Framework.Color.White
+                        : Microsoft.Xna.Framework.Color.Red;
+            }
+            else
+            {
+                color = Microsoft.Xna.Framework.Color.White;
+                lowHealthFlashPhase = 0f;
             }
 
             // Regenerate mana.

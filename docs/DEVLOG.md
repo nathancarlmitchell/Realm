@@ -3189,3 +3189,39 @@ date/time for those individually; don't treat their grouping as meaning they all
      not `Player.Instance` — no save-file risk): confirmed all three classes' fresh `Ring.IsEquipped`
      reads `False`, and that `RecalculateStats()` still produces sane, nonzero derived stats
      (`HealthMax`/`Attack` etc.) with no exception. Clean build and a plain boot-check both passed.
+150. **Low-health flash — the player sprite flashes red under 25% Health, speeding up the lower it
+     gets, gated by a new Settings > Graphics > "Low Health Indicator" toggle (default ON).** Same
+     accumulating-`blinkPhase`/`MathHelper.Lerp` shape as entry 148's loot-bag despawn blink: a
+     `progress` value (0 right at the 25% threshold, 1 at 0 HP) drives `halfPeriod` from a slow 20-tick
+     value down to a fast 5-tick one, and `lowHealthFlashPhase` accumulates `1 / halfPeriod` every
+     tick in `Player.Update()`, toggling `color` between `White` and `Red` each time it crosses an
+     integer. Leaving the danger zone (Health back at/above 25%, or the setting disabled) resets both
+     `color` to `White` and the phase to `0`, so re-entering later always starts the same slow blink
+     rather than resuming wherever a stale phase left off. This is the first `GameSettingsData`-backed
+     toggle in the session to default **on** rather than off (every prior one — Auto-Fire, Auto-Enter
+     Portals, Show Hitboxes — defaults off); handled by giving `GameSettingsData.
+     LowHealthIndicatorEnabled` its own explicit `= true` property initializer, not just the
+     `Player.cs` field — `System.Text.Json` only overwrites properties actually present in the source
+     JSON, so an existing `GameSettingsData.json` saved before this field existed would otherwise
+     deserialize this property at its *unstated* default (`false` for a bare `bool`), silently turning
+     the indicator off for every account that already has a settings file, not just leaving it at the
+     intended on-by-default. `SettingsState.cs`'s Graphics tab gained a second `ToggleRow` entry
+     alongside entry 147's "Show Hitboxes," no other changes needed there since that list was already
+     built to take more entries.
+
+     Verified via a scripted repro (temp code in `Game1.StartGame()`, throwaway `Wizard`, not
+     `Player.Instance` — no save-file risk; `Game1.Camera` initialized directly via `new
+     Camera(...)` rather than constructing a real `NexusState`/`RealmState` to satisfy `Player.
+     Update()`'s `Game1.Camera.Pos = Position` dependency, avoiding entry 143's unconditional-save
+     surprise entirely this time): confirmed Health at 30/100 (above the 25% threshold) never flashed
+     red across 60 ticks; confirmed Health pinned at 24/100 flashed 4 times over 100 ticks while Health
+     pinned at 2/100 flashed 16 times over the same span, confirming the speed-up is real, not just
+     present in the formula (health was pinned each tick in both cases — an earlier version of this
+     same check let real health regeneration run alongside the flash and push Health back above the
+     threshold within the loop before a single slow blink cycle could complete, reading as "0 toggles"
+     — not a code bug, a test-isolation mistake, fixed by re-setting `Health` every iteration rather
+     than once before the loop); confirmed disabling the setting suppressed the flash even at 1 HP;
+     confirmed deserializing a literal old-shaped JSON string missing the new key still produced `True`
+     for `LowHealthIndicatorEnabled`, directly proving the upgrade scenario the explicit `= true`
+     initializer exists for; and confirmed `SettingsState`'s `graphicsToggles` now holds exactly 2
+     entries. Clean build and a plain boot-check both passed.

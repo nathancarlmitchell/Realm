@@ -121,6 +121,12 @@ namespace Realm.States
                     Get = () => Player.Instance.ShowHitboxesEnabled,
                     Set = v => Player.Instance.ShowHitboxesEnabled = v,
                 },
+                new ToggleRow
+                {
+                    Label = "Low Health Indicator",
+                    Get = () => Player.Instance.LowHealthIndicatorEnabled,
+                    Set = v => Player.Instance.LowHealthIndicatorEnabled = v,
+                },
             ];
 
             // Widest label sets where the key-name column starts, same

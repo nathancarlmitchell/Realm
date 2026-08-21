@@ -1031,6 +1031,7 @@ namespace Realm
                 AutoFireEnabled = Player.Instance.AutoFireEnabled,
                 AutoEnterPortalsEnabled = Player.Instance.AutoEnterPortalsEnabled,
                 ShowHitboxesEnabled = Player.Instance.ShowHitboxesEnabled,
+                LowHealthIndicatorEnabled = Player.Instance.LowHealthIndicatorEnabled,
             };
             string json = JsonSerializer.Serialize(data);
             File.WriteAllText(gameSettingsDataLocation, json);
@@ -1047,6 +1048,7 @@ namespace Realm
                 Player.Instance.AutoFireEnabled = data.AutoFireEnabled;
                 Player.Instance.AutoEnterPortalsEnabled = data.AutoEnterPortalsEnabled;
                 Player.Instance.ShowHitboxesEnabled = data.ShowHitboxesEnabled;
+                Player.Instance.LowHealthIndicatorEnabled = data.LowHealthIndicatorEnabled;
             }
             catch (System.IO.FileNotFoundException)
             {
