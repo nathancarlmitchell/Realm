@@ -30,10 +30,14 @@ namespace Realm
             : base(image, position) { }
 
         // Every boss drops something good, unlike the normal random-chance
-        // table every other enemy uses (Enemy.SpawnLoot()).
+        // table every other enemy uses (Enemy.SpawnLoot()). Still threads
+        // DropPool through (inherited from Enemy, defaults to All so no
+        // existing boss's drops change) — a future boss wanting a themed
+        // guaranteed-loot pool (e.g. never drops rings) can set it in its
+        // own constructor exactly like a regular enemy's factory would.
         protected override void SpawnLoot()
         {
-            ItemSpawner.SpawnGuaranteedLoot(this.Position, PointValue);
+            ItemSpawner.SpawnGuaranteedLoot(this.Position, PointValue, DropPool);
         }
 
         // No-op: a boss's health is shown by the dedicated top-of-screen bar

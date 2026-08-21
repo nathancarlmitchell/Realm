@@ -13,6 +13,32 @@ namespace Realm
 {
     public static class ItemSpawner
     {
+        // Which categories a given enemy's loot can roll from at all — the
+        // "real drop pool" backlog item's first real lever: previously
+        // every enemy rolled against every category uniformly (just at a
+        // difficulty-scaled chance/tier via PointValue), with no way for
+        // one enemy type to be excluded from a category entirely. See
+        // Enemy.DropPool (defaults to All, so nothing existing changes
+        // unless a specific factory opts into a narrower pool).
+        //
+        // Deliberately just on/off per category, not weighted odds — the
+        // backlog's own phrasing ("with its own odds") gestures at
+        // something richer than this, but that's a separate axis (a
+        // per-category chance multiplier) left for a follow-up pass rather
+        // than guessed here.
+        [Flags]
+        public enum LootCategory
+        {
+            None = 0,
+            Weapon = 1 << 0,
+            Armor = 1 << 1,
+            Ring = 1 << 2,
+            AbilityItem = 1 << 3,
+            StatPotion = 1 << 4,
+            HealthManaPotion = 1 << 5,
+            All = Weapon | Armor | Ring | AbilityItem | StatPotion | HealthManaPotion,
+        }
+
         private static readonly Random rand = new();
 
         // Move to RealmState?
@@ -126,7 +152,7 @@ namespace Realm
                 ? rand.Next(WeakEnemyMinTier, WeakEnemyMaxTier + 1)
                 : playerTier + RollTierOffset(maxTierJump);
 
-        public static void Spawn(Vector2 pos, int pointValue = 0)
+        public static void Spawn(Vector2 pos, int pointValue = 0, LootCategory dropPool = LootCategory.All)
         {
             List<Item> items = [];
             Texture2D bagTexture = Art.LootBag;
@@ -135,7 +161,7 @@ namespace Realm
             int maxTierJump = MaxTierJump(pointValue);
 
             // Drop weapon.
-            if (rand.Next(dropChance) == 0)
+            if (dropPool.HasFlag(LootCategory.Weapon) && rand.Next(dropChance) == 0)
             {
                 // Picked at random among every catalog entry at the resolved
                 // tier (both WeaponTypes), not just the first match.
@@ -155,7 +181,7 @@ namespace Realm
             }
 
             // Drop armor.
-            if (rand.Next(dropChance) == 0)
+            if (dropPool.HasFlag(LootCategory.Armor) && rand.Next(dropChance) == 0)
             {
                 // Same reasoning as the weapon drop above — ArmorData.json
                 // lists every Robe before any Leather piece.
@@ -172,7 +198,7 @@ namespace Realm
             }
 
             // Drop ring.
-            if (rand.Next(dropChance) == 0)
+            if (dropPool.HasFlag(LootCategory.Ring) && rand.Next(dropChance) == 0)
             {
                 int tier = ResolveDropTier(pointValue, Player.Instance.Ring.Tier, maxTierJump);
                 if (Game1.Instance.Rings.Exists(x => x.Tier == tier))
@@ -184,7 +210,7 @@ namespace Realm
             }
 
             // Drop ability item.
-            if (rand.Next(dropChance) == 0)
+            if (dropPool.HasFlag(LootCategory.AbilityItem) && rand.Next(dropChance) == 0)
             {
                 // Same "wrong class is possible" spirit as weapon/armor drops
                 // above — not filtered to the player's own class. Spell,
@@ -207,7 +233,7 @@ namespace Realm
             }
 
             // Drop stat potion.
-            if (rand.Next(15) == 0)
+            if (dropPool.HasFlag(LootCategory.StatPotion) && rand.Next(15) == 0)
             {
                 bagTexture = Art.LootBagBlue;
                 int next = rand.Next(8);
@@ -242,7 +268,7 @@ namespace Realm
                 items.Add(new Potion(potion));
             }
 
-            if (rand.Next(10) == 0)
+            if (dropPool.HasFlag(LootCategory.HealthManaPotion) && rand.Next(10) == 0)
             {
                 if (rand.Next(2) == 0)
                     items.Add(new Potion(Potions.Mana));
@@ -295,65 +321,84 @@ namespace Realm
         // tier for that category), plus always one random stat potion.
         // Single bag, in the same "premium" gold color Spawn() uses for
         // ability-item drops.
-        public static void SpawnGuaranteedLoot(Vector2 pos, int pointValue = 0)
+        public static void SpawnGuaranteedLoot(
+            Vector2 pos,
+            int pointValue = 0,
+            LootCategory dropPool = LootCategory.All
+        )
         {
             List<Item> items = [];
             int maxTierJump = MaxTierJump(pointValue);
 
-            List<Weapon> nextTierWeapons = ItemsAtBestAvailableTier(
-                Game1.Instance.Weapons,
-                x => x.Tier,
-                Player.Instance.Weapon.Tier,
-                RollTierOffset(maxTierJump)
-            );
-            if (nextTierWeapons.Count > 0)
-                items.Add(nextTierWeapons[rand.Next(nextTierWeapons.Count)]);
-
-            List<Armor> nextTierArmors = ItemsAtBestAvailableTier(
-                Game1.Instance.Armors,
-                x => x.Tier,
-                Player.Instance.Armor.Tier,
-                RollTierOffset(maxTierJump)
-            );
-            if (nextTierArmors.Count > 0)
-                items.Add(nextTierArmors[rand.Next(nextTierArmors.Count)]);
-
-            List<Ring> nextTierRings = ItemsAtBestAvailableTier(
-                Game1.Instance.Rings,
-                x => x.Tier,
-                Player.Instance.Ring.Tier,
-                RollTierOffset(maxTierJump)
-            );
-            if (nextTierRings.Count > 0)
-                items.Add(nextTierRings[rand.Next(nextTierRings.Count)]);
-
-            List<AbilityItem> allAbilityItems = Game1
-                .Instance.Spells.Cast<AbilityItem>()
-                .Concat(Game1.Instance.Quivers)
-                .Concat(Game1.Instance.Shields)
-                .ToList();
-            List<AbilityItem> nextTierAbilityItems = ItemsAtBestAvailableTier(
-                allAbilityItems,
-                x => x.Tier,
-                Player.Instance.AbilityItem.Tier,
-                RollTierOffset(maxTierJump)
-            );
-            if (nextTierAbilityItems.Count > 0)
-                items.Add(nextTierAbilityItems[rand.Next(nextTierAbilityItems.Count)]);
-
-            int next = rand.Next(8);
-            Potions potion = next switch
+            if (dropPool.HasFlag(LootCategory.Weapon))
             {
-                0 => Potions.Attack,
-                1 => Potions.Defense,
-                2 => Potions.Dexterity,
-                3 => Potions.Life,
-                4 => Potions.ManaMax,
-                5 => Potions.Speed,
-                6 => Potions.Vitality,
-                _ => Potions.Wisdom,
-            };
-            items.Add(new Potion(potion));
+                List<Weapon> nextTierWeapons = ItemsAtBestAvailableTier(
+                    Game1.Instance.Weapons,
+                    x => x.Tier,
+                    Player.Instance.Weapon.Tier,
+                    RollTierOffset(maxTierJump)
+                );
+                if (nextTierWeapons.Count > 0)
+                    items.Add(nextTierWeapons[rand.Next(nextTierWeapons.Count)]);
+            }
+
+            if (dropPool.HasFlag(LootCategory.Armor))
+            {
+                List<Armor> nextTierArmors = ItemsAtBestAvailableTier(
+                    Game1.Instance.Armors,
+                    x => x.Tier,
+                    Player.Instance.Armor.Tier,
+                    RollTierOffset(maxTierJump)
+                );
+                if (nextTierArmors.Count > 0)
+                    items.Add(nextTierArmors[rand.Next(nextTierArmors.Count)]);
+            }
+
+            if (dropPool.HasFlag(LootCategory.Ring))
+            {
+                List<Ring> nextTierRings = ItemsAtBestAvailableTier(
+                    Game1.Instance.Rings,
+                    x => x.Tier,
+                    Player.Instance.Ring.Tier,
+                    RollTierOffset(maxTierJump)
+                );
+                if (nextTierRings.Count > 0)
+                    items.Add(nextTierRings[rand.Next(nextTierRings.Count)]);
+            }
+
+            if (dropPool.HasFlag(LootCategory.AbilityItem))
+            {
+                List<AbilityItem> allAbilityItems = Game1
+                    .Instance.Spells.Cast<AbilityItem>()
+                    .Concat(Game1.Instance.Quivers)
+                    .Concat(Game1.Instance.Shields)
+                    .ToList();
+                List<AbilityItem> nextTierAbilityItems = ItemsAtBestAvailableTier(
+                    allAbilityItems,
+                    x => x.Tier,
+                    Player.Instance.AbilityItem.Tier,
+                    RollTierOffset(maxTierJump)
+                );
+                if (nextTierAbilityItems.Count > 0)
+                    items.Add(nextTierAbilityItems[rand.Next(nextTierAbilityItems.Count)]);
+            }
+
+            if (dropPool.HasFlag(LootCategory.StatPotion))
+            {
+                int next = rand.Next(8);
+                Potions potion = next switch
+                {
+                    0 => Potions.Attack,
+                    1 => Potions.Defense,
+                    2 => Potions.Dexterity,
+                    3 => Potions.Life,
+                    4 => Potions.ManaMax,
+                    5 => Potions.Speed,
+                    6 => Potions.Vitality,
+                    _ => Potions.Wisdom,
+                };
+                items.Add(new Potion(potion));
+            }
 
             LootBag bag = new()
             {

@@ -17,22 +17,20 @@ prioritized or scheduled — the user asked to keep these noted for later rather
   mana-gate as the HUD cooldown bar for now (see "recently completed" below) rather than add this,
   but flagged a real duration-based cooldown (independent of mana, on top of it) as a future
   addition — needs a duration decision (e.g. 1-2s) when picked up.
-- **Per-enemy drop pools — a real system for controlling what each enemy can drop.** Regular
-  enemies drop loot via the normal random-chance table (`Enemy.SpawnLoot()`'s base ->
-  `ItemSpawner.Spawn()`, tier/chance scaled off `PointValue` — see
-  `DropChanceDenominator()`/`MaxTierJump()`/`ResolveDropTier()` in `ItemSpawner.cs`); bosses get
-  guaranteed good loot instead (`Boss.SpawnLoot()`'s override ->
-  `ItemSpawner.SpawnGuaranteedLoot()`). A new `Enemy.DropsLoot` bool (default `true`) is a first,
-  minimal opt-out lever — `WasShot()` only calls `SpawnLoot()` at all when it's true — currently set
-  `false` only on `SthenoPet` (a boss's disposable orbiting add, not meant to be a loot source; the
-  user was explicit this is specifically about boss *pets*, not regular enemies broadly —
-  `SthenoSwarm` still drops normally). The user's own framing for the fuller system still open here:
-  build each enemy a real drop *pool* (a list of tiers and/or specific potions/items it can drop,
-  with its own odds) rather than one shared formula every enemy scales off — e.g. a Snake's pool
-  might be low-tier gear only, while a BigSnake's mini-boss pack could lean toward potions.
-  `DropsLoot` is a stepping stone toward this, not the system itself — no shape decided yet for the
-  full pool (a data-driven table per enemy type? a field on each `CreateX()` factory?) — needs
-  picking up as its own design pass, not guessed now.
+- **Per-enemy drop pools — weighted odds within a category, and applying the mechanism beyond
+  Snake.** The category-inclusion mechanism itself now exists (see
+  [DEVLOG.md](DEVLOG.md) entry 135): a new
+  `ItemSpawner.LootCategory` `[Flags]` enum gates which categories (`Weapon`/`Armor`/`Ring`/
+  `AbilityItem`/`StatPotion`/`HealthManaPotion`) an enemy's loot roll can draw from at all, via a new
+  `Enemy.DropPool` field threaded through both `Enemy.SpawnLoot()`/`Boss.SpawnLoot()`. Applied so far
+  only to `Enemy.CreateSnake()` (gear only, no potions) — the one concrete example the original
+  backlog item named; every other enemy, including BigSnake, still defaults to `All`. Two pieces
+  remain open: (1) BigSnake "leaning toward potions" implies *weighted* odds within an included
+  category, not just inclusion/exclusion — nothing in `ItemSpawner.cs`'s `HasFlag` gating adjusts
+  per-category chance, only whether a category can trigger at all; (2) extending `DropPool` to other
+  enemy types beyond Snake, once a specific pool is decided for each. Needs picking up as its own
+  design pass for the weighting piece specifically — no shape decided yet (a per-category weight
+  multiplier? separate chance denominators per category?).
 - **Animate the player character.** Blocked on art: no walk-cycle sprite sheets exist yet (just
   static "player"/"archer" textures). The engine-side piece isn't new work — `AnimatedTexture.cs`
   already implements horizontal-strip sprite-sheet animation and is used for the portal

@@ -2690,3 +2690,30 @@ date/time for those individually; don't treat their grouping as meaning they all
      longest button label, most likely to clip against its texture's fixed 160px width) confirmed
      real margin on both sides, not touching or overflowing the border. Clean build (new `.xnb`
      confirmed compiled) and a plain boot-check both passed.
+135. **Per-enemy drop pools — a real category-inclusion mechanism, applied to Snake.** New
+     `ItemSpawner.LootCategory` `[Flags]` enum (`Weapon`/`Armor`/`Ring`/`AbilityItem`/`StatPotion`/
+     `HealthManaPotion`/`All`) gates which categories an enemy's loot roll can even draw from, before
+     the existing tier/chance math (`DropChanceDenominator()`/`MaxTierJump()`/`ResolveDropTier()`)
+     runs at all. Threaded through both loot paths: `ItemSpawner.Spawn()` (the regular random-chance
+     table) gained a `LootCategory dropPool = LootCategory.All` parameter, with each of its 6 category
+     blocks now gated `dropPool.HasFlag(LootCategory.X) &&` in front of its existing roll check;
+     `ItemSpawner.SpawnGuaranteedLoot()` (boss loot) gained the same parameter, with each category
+     block now wrapped `if (dropPool.HasFlag(LootCategory.X)) { ... }`, including the previously-
+     unconditional stat potion. New `Enemy.DropPool` field (default `All`, so every existing enemy's
+     drops are unchanged unless a factory sets it explicitly) is read by both `Enemy.SpawnLoot()` and
+     `Boss.SpawnLoot()`, which now pass it through to their respective `ItemSpawner` calls instead of
+     omitting the argument. Applied to exactly the one concrete example the backlog itself gave:
+     `Enemy.CreateSnake()` now sets `DropPool = Weapon | Armor | Ring | AbilityItem` (gear only, no
+     potions). No other `CreateX()` factory was touched — every other enemy, including BigSnake, keeps
+     the default `All` pool; the backlog's other half ("with its own odds," BigSnake "leaning toward
+     potions") is a weighted-drop-chance axis this entry deliberately doesn't build, left open in the
+     backlog rather than guessed. Verified via a scripted repro (temp code in `Game1.StartGame()`, no
+     save-file risk — confirmed via reading `Player.cs`'s `EquipWeapon`/`EquipArmor`/`EquipRing`/
+     `EquipAbilityItem` that none of them call any `Save*Data()` method, and the test restores the
+     player's original equipment afterward regardless): confirmed `Enemy.DropPool` reads `Weapon,
+     Armor, Ring, AbilityItem` on a real `Snake` and the unchanged default `All` on a `Wanderer`; ran
+     300 real `Spawn()` calls with Snake's restricted pool (49 gear drops, 0 potion drops — the actual
+     gate working, not coincidentally silent) against a control of 300 calls with the default `All`
+     pool (61 potion drops — proving the category really is being excluded, not just always empty by
+     chance); confirmed `SpawnGuaranteedLoot()` with the default pool still includes a stat potion (no
+     boss regression). Clean build and a plain boot-check both passed.

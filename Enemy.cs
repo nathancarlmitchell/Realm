@@ -311,7 +311,7 @@ namespace Realm
         // not by anything in here.
         protected virtual void SpawnLoot()
         {
-            ItemSpawner.Spawn(this.Position, PointValue);
+            ItemSpawner.Spawn(this.Position, PointValue, DropPool);
         }
 
         // Whether this enemy drops anything on death at all (SpawnLoot()
@@ -320,6 +320,15 @@ namespace Realm
         // a disposable obstacle rather than a source of loot) sets this
         // false in its own constructor.
         protected bool DropsLoot = true;
+
+        // Which loot categories this enemy's drop table (SpawnLoot() above)
+        // rolls against at all — the "real drop pool" backlog item's first
+        // real lever. Defaults to every category (today's existing
+        // behavior, unchanged for any enemy that doesn't opt into a
+        // narrower pool); a specific factory below can set this to exclude
+        // categories that don't fit that enemy's theme (e.g. CreateSnake()
+        // below drops gear only, no potions).
+        protected ItemSpawner.LootCategory DropPool = ItemSpawner.LootCategory.All;
 
         protected void AddBehaviour(IEnumerable<int> behaviour)
         {
@@ -631,6 +640,15 @@ namespace Realm
                 PointValue = 2,
                 deathSound = Sound.SnakesDeath,
                 hitSound = Sound.SnakesHit,
+
+                // Low-tier gear only, per the backlog's own example — the
+                // weakest trash enemy in the game shouldn't ever hand out a
+                // stat potion, just (low-tier — see ItemSpawner.
+                // IsWeakEnemy) equipment.
+                DropPool = ItemSpawner.LootCategory.Weapon
+                    | ItemSpawner.LootCategory.Armor
+                    | ItemSpawner.LootCategory.Ring
+                    | ItemSpawner.LootCategory.AbilityItem,
             };
 
             enemy.AddBehaviour(enemy.MoveSnake());
