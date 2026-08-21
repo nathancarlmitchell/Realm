@@ -3039,3 +3039,53 @@ date/time for those individually; don't treat their grouping as meaning they all
      left behind) and a plain boot-check passed — since `Art.Load()` loads every texture eagerly at
      startup, a broken content reference here would have crashed the boot immediately rather than
      failing silently later.
+146. **Loot bag art now driven by the highest tier of equipment actually dropped, not by whichever
+     item category happened to roll last.** Previously `bagTexture` was overwritten sequentially as
+     each category's block ran (Weapon→Armor→Ring→AbilityItem→StatPotion), so a bag with both a
+     Weapon and a Ring always showed whichever of the two was checked *later* in the fixed order,
+     regardless of which was actually the better item — not a real tier signal at all. Two design
+     questions resolved via `AskUserQuestion` before touching any code: (1) tie-break rule when a bag
+     holds items at different tiers — highest tier present wins, so the bag always reflects the best
+     item inside it; (2) exact tier cutoffs/colors — the user supplied a full spec (Brown/Pink/Purple/
+     Cyan/Blue/Red/White, each with a description and tier ranges per category).
+
+     New per-category rank functions (`BagRankForWeaponOrArmor`/`BagRankForAbilityItem`/
+     `BagRankForRing`, each returning a nullable 0-3 rank — 0=Pink, 1=Purple, 2=Cyan, 3=Red, `null` for
+     tier 0/"not even worth a Pink bag") encode the user's cutoffs directly against each category's
+     real `Tier` field: Weapon/Armor share one scale (both catalogs run 0-14: 1-6→Pink, 7-9→Purple,
+     10-12→Cyan, 13-14→Red); AbilityItem has its own since Spell/Quiver/Shield only run 0-7 (1-2→Pink,
+     3-4→Purple, 5-6→Cyan, 7→Red); Ring has its own per the spec's numbers (1→Pink, 2-4→Purple,
+     5-6→Cyan, 7→Red) but its real catalog is far shallower than the other three — currently only
+     tiers 0-1 exist — so Purple/Cyan/Red are effectively unreachable for rings today; a content gap
+     in `RingData.json`'s depth, not a bug in this ranking, and out of scope to fix here. New
+     `TrackBestBagRank()` folds each category's own rank into a running best-so-far as `Spawn()`/
+     `SpawnGuaranteedLoot()` process every category, so the final bag texture reflects the true highest
+     rank across the whole bag, not just the last category checked. `Blue` (existing behavior,
+     unchanged) only shows when the bag has no ranked equipment at all — a stat-potion-only bag; the
+     final fallback (`Art.LootBag`, brown/"public" per the spec) covers everything else, e.g. a bag
+     with only a Health/Mana potion. `SpawnGuaranteedLoot()` (boss loot) was previously hardcoded to
+     always show the "premium" Gold bag regardless of what dropped — now uses the same ranking,
+     computed off each category's actually-*selected* item (not the originally-targeted tier, since
+     `ItemsAtBestAvailableTier`'s step-down search can land on a lower tier than requested). Two colors
+     from the user's spec are wired (new `Art.LootBagCyan`/`LootBagRed` fields — both `Items/Bags/
+     cyan.png`/`red.png` already had `Content.mgcb` build blocks from when the art was originally
+     supplied, just never loaded into `Art.cs` or used anywhere) but the spec's `White` band (rarest
+     "untiered" items that "change the way characters are played") was deliberately left unconnected —
+     this codebase has no unique/untiered-item concept at all today, so there's nothing for it to
+     trigger on; building that would be introducing a whole new item system, well beyond "adjust which
+     art gets assigned." `Art.LootBagWhite`/`LootBagGold` both stay loaded (real, valid textures) but
+     are now unused by `ItemSpawner.cs` — available for whenever an untiered-item system gets built.
+
+     Verified via a scripted repro (temp code in `Game1.StartGame()`, no save-file risk — the
+     tier-1-gear-equip-then-restore setup used to create drop headroom never calls a `Save*Data()`
+     method, confirmed via direct code reading in an earlier entry this session): forced `Weapon`
+     drops at tiers 0/3/8/11/14 via `DropTierRanges` and confirmed the resulting bag was exactly
+     Brown/Pink/Purple/Cyan/Red per the cutoffs; a mixed bag (`DropTierRanges` forcing a tier-14 Weapon
+     *and* a tier-1 Ring in the same roll) correctly showed Red — the Weapon's higher rank — with both
+     items actually present (2 total), proving the cross-category comparison is real and not just
+     coincidentally matching whichever category happens to be checked last; a potion-only bag (via
+     `GuaranteedPotionChances`) still showed Blue, confirming that path is unaffected; and
+     `SpawnGuaranteedLoot()` with a forced tier-14 Weapon showed Red, not the old hardcoded Gold,
+     confirming boss loot now goes through the same ranking. Clean build (new `Art.LootBagCyan`/
+     `LootBagRed` textures confirmed already compiled at their `.xnb` paths from a prior asset
+     registration) and a plain boot-check both passed.

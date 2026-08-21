@@ -125,6 +125,8 @@ namespace Realm
         public static Texture2D LootBagBlue { get; private set; }
         public static Texture2D LootBagWhite { get; private set; }
         public static Texture2D LootBagGold { get; private set; }
+        public static Texture2D LootBagCyan { get; private set; }
+        public static Texture2D LootBagRed { get; private set; }
 
         // Status effects (debuff indicator icons — see Entity.DrawDebuffIndicators).
         public static Texture2D Paralyzed { get; private set; }
@@ -172,6 +174,8 @@ namespace Realm
             LootBagBlue = content.Load<Texture2D>("Items/Bags/blue");
             LootBagWhite = content.Load<Texture2D>("Items/Bags/white");
             LootBagGold = content.Load<Texture2D>("Items/Bags/gold");
+            LootBagCyan = content.Load<Texture2D>("Items/Bags/cyan");
+            LootBagRed = content.Load<Texture2D>("Items/Bags/red");
 
             // Controls.
             ButtonTexture = content.Load<Texture2D>("Controls/Button");

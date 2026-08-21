@@ -137,6 +137,70 @@ namespace Realm
             return results;
         }
 
+        // Which loot bag texture a drop uses — driven by the highest tier
+        // of equipment actually dropped, not by which category happened to
+        // roll last (the old behavior). Ranks are compared across every
+        // dropped equipment item regardless of category, so a bag holding
+        // both a low-tier Ring and a high-tier Weapon shows the Weapon's
+        // higher rank. Cutoffs given directly against each category's own
+        // real Tier field (0-indexed) — Weapon/Armor share one scale since
+        // both catalogs run 0-14, AbilityItem has its own since Spell/
+        // Quiver/Shield only run 0-7, and Ring has its own since its
+        // catalog is far shallower (currently only 0-1) — so higher ranks
+        // (Purple 2+ and above) are effectively unreachable for rings today
+        // until the Ring catalog gets built out further; that's a content
+        // gap, not a bug in this ranking. Tier 0 in every category falls
+        // through to no band at all (null) — the "starting" tier isn't
+        // even worth a Pink bag. 4 ranks: 0=Pink, 1=Purple, 2=Cyan, 3=Red.
+        private static int? BagRankForWeaponOrArmor(int tier) =>
+            tier switch
+            {
+                >= 13 => 3,
+                >= 10 => 2,
+                >= 7 => 1,
+                >= 1 => 0,
+                _ => null,
+            };
+
+        private static int? BagRankForAbilityItem(int tier) =>
+            tier switch
+            {
+                >= 7 => 3,
+                >= 5 => 2,
+                >= 3 => 1,
+                >= 1 => 0,
+                _ => null,
+            };
+
+        private static int? BagRankForRing(int tier) =>
+            tier switch
+            {
+                >= 7 => 3,
+                >= 5 => 2,
+                >= 2 => 1,
+                >= 1 => 0,
+                _ => null,
+            };
+
+        private static Texture2D BagTextureForRank(int rank) =>
+            rank switch
+            {
+                3 => Art.LootBagRed,
+                2 => Art.LootBagCyan,
+                1 => Art.LootBagPurple,
+                _ => Art.LootBagPink, // rank 0
+            };
+
+        // Folds a category's own rank (or null, meaning that category
+        // either didn't drop or landed in the tier-0 "no band" gap) into
+        // the running best-so-far — "highest tier present" across every
+        // equipment category in the bag, not just whichever rolled last.
+        private static void TrackBestBagRank(ref int? bestRank, int? candidateRank)
+        {
+            if (candidateRank.HasValue && (!bestRank.HasValue || candidateRank.Value > bestRank.Value))
+                bestRank = candidateRank;
+        }
+
         private static readonly Random rand = new();
 
         // Move to RealmState?
@@ -283,7 +347,14 @@ namespace Realm
         )
         {
             List<Item> items = [];
-            Texture2D bagTexture = Art.LootBag;
+
+            // Best equipment rank seen across every category below (not
+            // just whichever rolled last — see TrackBestBagRank/
+            // BagRankFor*), plus whether any stat potion dropped, resolved
+            // into the actual bagTexture once every category's been
+            // checked.
+            int? bestEquipmentRank = null;
+            bool statPotionDropped = false;
 
             int dropChance = DropChanceDenominator(pointValue);
             int maxTierJump = MaxTierJump(pointValue);
@@ -303,7 +374,7 @@ namespace Realm
 
                 if (nextTierWeapons.Count > 0)
                 {
-                    bagTexture = Art.LootBagPink;
+                    TrackBestBagRank(ref bestEquipmentRank, BagRankForWeaponOrArmor(tier));
                     items.Add(nextTierWeapons[rand.Next(nextTierWeapons.Count)]);
                 }
             }
@@ -320,7 +391,7 @@ namespace Realm
 
                 if (nextTierArmors.Count > 0)
                 {
-                    bagTexture = Art.LootBagPurple;
+                    TrackBestBagRank(ref bestEquipmentRank, BagRankForWeaponOrArmor(tier));
                     items.Add(nextTierArmors[rand.Next(nextTierArmors.Count)]);
                 }
             }
@@ -331,7 +402,7 @@ namespace Realm
                 int tier = ResolveDropTier(pointValue, Player.Instance.Ring.Tier, maxTierJump, TierRangeFor(dropTierRanges, LootCategory.Ring));
                 if (Game1.Instance.Rings.Exists(x => x.Tier == tier))
                 {
-                    bagTexture = Art.LootBagWhite;
+                    TrackBestBagRank(ref bestEquipmentRank, BagRankForRing(tier));
                     Ring nextRing = Game1.Instance.Rings.FirstOrDefault(x => x.Tier == tier);
                     items.Add(nextRing);
                 }
@@ -355,7 +426,7 @@ namespace Realm
 
                 if (nextTierAbilityItems.Count > 0)
                 {
-                    bagTexture = Art.LootBagGold;
+                    TrackBestBagRank(ref bestEquipmentRank, BagRankForAbilityItem(tier));
                     items.Add(nextTierAbilityItems[rand.Next(nextTierAbilityItems.Count)]);
                 }
             }
@@ -369,13 +440,13 @@ namespace Realm
                 {
                     foreach (Potions potion in RollGuaranteedPotions(guaranteedPotionChances))
                     {
-                        bagTexture = Art.LootBagBlue;
+                        statPotionDropped = true;
                         items.Add(new Potion(potion));
                     }
                 }
                 else if (RollsCategory(dropChances, dropWeights, LootCategory.StatPotion, 15))
                 {
-                    bagTexture = Art.LootBagBlue;
+                    statPotionDropped = true;
                     items.Add(new Potion(RollStatPotion(statPotionPool)));
                 }
             }
@@ -387,6 +458,17 @@ namespace Realm
                 else
                     items.Add(new Potion(Potions.Health));
             }
+
+            // Equipment's tier always wins when any dropped — potions have
+            // no tier to compare against, so Blue only shows when the bag
+            // is potion-only. Brown (Art.LootBag) is the fallback when
+            // nothing tiered or Blue-worthy dropped at all (e.g. only a
+            // Health/Mana potion, which doesn't set either flag above).
+            Texture2D bagTexture = bestEquipmentRank.HasValue
+                ? BagTextureForRank(bestEquipmentRank.Value)
+                : statPotionDropped
+                    ? Art.LootBagBlue
+                    : Art.LootBag;
 
             if (items.Count > 0)
             {
@@ -445,8 +527,9 @@ namespace Realm
         // has any reachable tier available always contributes an item (a
         // graceful no-op only if the player is already at the catalog's max
         // tier for that category), plus always one random stat potion.
-        // Single bag, in the same "premium" gold color Spawn() uses for
-        // ability-item drops.
+        // Single bag, same tier-ranked bag art as Spawn() (see
+        // TrackBestBagRank/BagRankFor*) — a boss's typically-high-tier gear
+        // routinely lands Cyan/Red bags rather than one fixed color.
         public static void SpawnGuaranteedLoot(
             Vector2 pos,
             int pointValue = 0,
@@ -458,6 +541,14 @@ namespace Realm
         {
             List<Item> items = [];
             int maxTierJump = MaxTierJump(pointValue);
+
+            // Same "highest tier present wins" bag art as Spawn() — see
+            // TrackBestBagRank/BagRankFor*. Ranked off the actually-
+            // selected item's own Tier, not the originally-targeted one,
+            // since ItemsAtBestAvailableTier can step down to a lower tier
+            // than requested when the exact target has no catalog entries.
+            int? bestEquipmentRank = null;
+            bool statPotionDropped = false;
 
             if (dropPool.HasFlag(LootCategory.Weapon))
             {
@@ -471,7 +562,11 @@ namespace Realm
                         RollTierOffset(maxTierJump)
                     );
                 if (nextTierWeapons.Count > 0)
-                    items.Add(nextTierWeapons[rand.Next(nextTierWeapons.Count)]);
+                {
+                    Weapon chosen = nextTierWeapons[rand.Next(nextTierWeapons.Count)];
+                    TrackBestBagRank(ref bestEquipmentRank, BagRankForWeaponOrArmor(chosen.Tier));
+                    items.Add(chosen);
+                }
             }
 
             if (dropPool.HasFlag(LootCategory.Armor))
@@ -486,7 +581,11 @@ namespace Realm
                         RollTierOffset(maxTierJump)
                     );
                 if (nextTierArmors.Count > 0)
-                    items.Add(nextTierArmors[rand.Next(nextTierArmors.Count)]);
+                {
+                    Armor chosen = nextTierArmors[rand.Next(nextTierArmors.Count)];
+                    TrackBestBagRank(ref bestEquipmentRank, BagRankForWeaponOrArmor(chosen.Tier));
+                    items.Add(chosen);
+                }
             }
 
             if (dropPool.HasFlag(LootCategory.Ring))
@@ -501,7 +600,11 @@ namespace Realm
                         RollTierOffset(maxTierJump)
                     );
                 if (nextTierRings.Count > 0)
-                    items.Add(nextTierRings[rand.Next(nextTierRings.Count)]);
+                {
+                    Ring chosen = nextTierRings[rand.Next(nextTierRings.Count)];
+                    TrackBestBagRank(ref bestEquipmentRank, BagRankForRing(chosen.Tier));
+                    items.Add(chosen);
+                }
             }
 
             if (dropPool.HasFlag(LootCategory.AbilityItem))
@@ -521,7 +624,11 @@ namespace Realm
                         RollTierOffset(maxTierJump)
                     );
                 if (nextTierAbilityItems.Count > 0)
-                    items.Add(nextTierAbilityItems[rand.Next(nextTierAbilityItems.Count)]);
+                {
+                    AbilityItem chosen = nextTierAbilityItems[rand.Next(nextTierAbilityItems.Count)];
+                    TrackBestBagRank(ref bestEquipmentRank, BagRankForAbilityItem(chosen.Tier));
+                    items.Add(chosen);
+                }
             }
 
             if (dropPool.HasFlag(LootCategory.StatPotion))
@@ -529,19 +636,33 @@ namespace Realm
                 if (guaranteedPotionChances != null && guaranteedPotionChances.Count > 0)
                 {
                     foreach (Potions potion in RollGuaranteedPotions(guaranteedPotionChances))
+                    {
+                        statPotionDropped = true;
                         items.Add(new Potion(potion));
+                    }
                 }
                 else
                 {
+                    statPotionDropped = true;
                     items.Add(new Potion(RollStatPotion(statPotionPool)));
                 }
             }
+
+            // Same resolution as Spawn() — equipment's tier always wins,
+            // Blue only for a potion-only bag, Brown as the final fallback
+            // (though in practice a boss's guaranteed loot rarely ends up
+            // with nothing at all).
+            Texture2D bagTexture = bestEquipmentRank.HasValue
+                ? BagTextureForRank(bestEquipmentRank.Value)
+                : statPotionDropped
+                    ? Art.LootBagBlue
+                    : Art.LootBag;
 
             LootBag bag = new()
             {
                 Position = pos,
                 Items = items,
-                image = Art.LootBagGold,
+                image = bagTexture,
             };
 
             EntityManager.Add(bag);
