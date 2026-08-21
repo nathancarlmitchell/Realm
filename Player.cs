@@ -182,6 +182,14 @@ namespace Realm
         // Update()/Draw() below. Toggled from the Settings > Graphics tab.
         public bool LowHealthIndicatorEnabled = true;
 
+        // Same account-wide GameSettingsData persistence, 0-100, defaults
+        // to 25 — the threshold both the flash and the below-sprite health
+        // bar (see DrawLowHealthBar()) key off, replacing what used to be
+        // a hardcoded 25% (LowHealthThresholdFraction). Adjustable from
+        // the Settings > Graphics tab via a +/- stepper (SettingsState.cs's
+        // NumericRow), in steps of 5.
+        public int LowHealthThresholdPercent = 25;
+
         // Set once this class first reaches the level cap (20) and never
         // cleared again — same permanent-through-death/delete treatment as
         // HighScore (see DeleteCharacterData/GameOverState), since this is
@@ -778,8 +786,43 @@ namespace Realm
                 0
             );
 
+            DrawLowHealthBar(spriteBatch);
             DrawTemporaryBonusIndicators(spriteBatch);
             DrawDebuffIndicators(spriteBatch);
+        }
+
+        // Small bar centered beneath the sprite, only while IsLowHealth —
+        // same "stretched Art.HealthBar rect" technique Overlay.cs's own
+        // sidebar health bar already uses (a 1x1 pixel texture, sized via
+        // the source rectangle's Width/Height rather than actual sampled
+        // pixel content), just a compact in-world version rather than a
+        // fixed HUD element. Proportional to Health/HealthMax (not to the
+        // threshold), so a fuller bar reads as "closer to the threshold"
+        // and an emptier one as "closer to death," same as any other
+        // health bar.
+        private void DrawLowHealthBar(SpriteBatch spriteBatch)
+        {
+            if (!IsLowHealth)
+                return;
+
+            float fraction = MathHelper.Clamp(Health / (float)HealthMax, 0f, 1f);
+            Vector2 barPos = new(
+                Position.X - LowHealthBarWidth / 2f,
+                Position.Y + Size.Y / 2f + LowHealthBarOffsetY
+            );
+
+            spriteBatch.Draw(
+                Art.HealthBar,
+                barPos,
+                new Microsoft.Xna.Framework.Rectangle(0, 0, LowHealthBarWidth, LowHealthBarHeight),
+                Microsoft.Xna.Framework.Color.Black * 0.6f
+            );
+            spriteBatch.Draw(
+                Art.HealthBar,
+                barPos,
+                new Microsoft.Xna.Framework.Rectangle(0, 0, (int)(LowHealthBarWidth * fraction), LowHealthBarHeight),
+                Microsoft.Xna.Framework.Color.Red
+            );
         }
 
         // One "+" above the sprite per active temporary bonus that has an
@@ -825,17 +868,30 @@ namespace Realm
         }
 
         // Settings > Graphics > "Low Health Indicator" — flashes the
-        // player sprite red once Health drops under this fraction of
-        // HealthMax, speeding up the closer Health gets to 0. Same
+        // player sprite red once Health drops under LowHealthThresholdPercent
+        // of HealthMax, speeding up the closer Health gets to 0. Same
         // accumulating-phase shape as LootBag's own despawn-warning blink
         // (see LootBag.cs) — the per-tick phase increment (1 / halfPeriod)
         // grows as Health approaches 0, so the flash visibly speeds up
         // rather than blinking at one constant rate for the whole time
         // it's active.
-        private const float LowHealthThresholdFraction = 0.25f;
         private const float LowHealthSlowFlashHalfPeriodTicks = 20f;
         private const float LowHealthFastFlashHalfPeriodTicks = 5f;
         private float lowHealthFlashPhase = 0f;
+
+        // Below-sprite bar shown under the same condition as the flash
+        // above (LowHealthIndicatorEnabled + under threshold) — see
+        // DrawLowHealthBar(), called from Draw().
+        private const int LowHealthBarWidth = 40;
+        private const int LowHealthBarHeight = 6;
+        private const int LowHealthBarOffsetY = 8;
+
+        // Shared by both the flash (Update()) and the bar (DrawLowHealthBar())
+        // so the two conditions can never drift apart.
+        private bool IsLowHealth =>
+            LowHealthIndicatorEnabled
+            && HealthMax > 0
+            && Health < HealthMax * (LowHealthThresholdPercent / 100f);
 
         public override void Update()
         {
@@ -872,13 +928,10 @@ namespace Realm
             }
 
             // Low-health flash (see the fields above Update()).
-            if (LowHealthIndicatorEnabled && Health < HealthMax * LowHealthThresholdFraction)
+            if (IsLowHealth)
             {
-                float progress = MathHelper.Clamp(
-                    1f - (Health / (HealthMax * LowHealthThresholdFraction)),
-                    0f,
-                    1f
-                );
+                float threshold = HealthMax * (LowHealthThresholdPercent / 100f);
+                float progress = MathHelper.Clamp(1f - (Health / threshold), 0f, 1f);
                 float halfPeriod = MathHelper.Lerp(
                     LowHealthSlowFlashHalfPeriodTicks,
                     LowHealthFastFlashHalfPeriodTicks,

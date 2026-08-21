@@ -50,6 +50,25 @@ namespace Realm.States
             public Action<bool> Set;
         }
 
+        // A clamped, steppable int setting (currently just "Low Health
+        // Threshold") — same Get/Set-closure shape as ToggleRow, but two
+        // small "-"/"+" hit-rects instead of one whole-row click, since
+        // there's a range to move through rather than a plain on/off flip.
+        private class NumericRow
+        {
+            public string Label;
+            public Rectangle Rect;
+            public Rectangle DecrementRect;
+            public Rectangle IncrementRect;
+            public bool DecrementHover;
+            public bool IncrementHover;
+            public Func<int> Get;
+            public Action<int> Set;
+            public int Step;
+            public int Min;
+            public int Max;
+        }
+
         // Whichever state was active when Settings was opened (Main Menu,
         // or an in-progress Nexus/Realm) — Back returns straight to this
         // exact object via ChangeState() rather than re-navigating, so
@@ -75,11 +94,14 @@ namespace Realm.States
 
         private readonly List<ToggleRow> gameplayToggles;
         private readonly List<ToggleRow> graphicsToggles;
+        private readonly List<NumericRow> graphicsNumerics;
 
         private const int RowHeight = 28;
         private const int TabHeight = 32;
         private const int TabGap = 16;
         private const int TabPaddingX = 16;
+        private const int StepperButtonWidth = 24;
+        private const int StepperValueGap = 50; // room for "100%" between the two buttons
 
         private int labelX;
         private int valueX;
@@ -129,11 +151,24 @@ namespace Realm.States
                 },
             ];
 
+            graphicsNumerics =
+            [
+                new NumericRow
+                {
+                    Label = "Low Health Threshold",
+                    Get = () => Player.Instance.LowHealthThresholdPercent,
+                    Set = v => Player.Instance.LowHealthThresholdPercent = v,
+                    Step = 5,
+                    Min = 0,
+                    Max = 100,
+                },
+            ];
+
             // Widest label sets where the key-name column starts, same
             // column-alignment trick as Overlay.DrawStats() — includes the
-            // Gameplay/Graphics tabs' toggle labels too, so their rows line
-            // up in the same column as the Controls tab's rows, even
-            // though only one tab's content is visible at a time.
+            // Gameplay/Graphics tabs' toggle/numeric labels too, so their
+            // rows line up in the same column as the Controls tab's rows,
+            // even though only one tab's content is visible at a time.
             float widestLabel = 0f;
             foreach (var action in KeyBindings.AllActions)
                 widestLabel = Math.Max(widestLabel, Art.SettingsFont.MeasureString(KeyBindings.DisplayName(action)).X);
@@ -141,6 +176,8 @@ namespace Realm.States
                 widestLabel = Math.Max(widestLabel, Art.SettingsFont.MeasureString(toggle.Label).X);
             foreach (var toggle in graphicsToggles)
                 widestLabel = Math.Max(widestLabel, Art.SettingsFont.MeasureString(toggle.Label).X);
+            foreach (var numeric in graphicsNumerics)
+                widestLabel = Math.Max(widestLabel, Art.SettingsFont.MeasureString(numeric.Label).X);
 
             labelX = CenterWidth - 160;
             valueX = labelX + (int)widestLabel + 24;
@@ -181,6 +218,23 @@ namespace Realm.States
                     rowsTop + i * RowHeight,
                     valueX - labelX + 160,
                     (int)Art.SettingsFont.MeasureString("A").Y + 6
+                );
+            }
+
+            // Continues right after the Graphics tab's toggle rows, same
+            // column, same row height — the two lists together read as one
+            // continuous stack even though they're separately typed.
+            for (int i = 0; i < graphicsNumerics.Count; i++)
+            {
+                int rowY = rowsTop + (graphicsToggles.Count + i) * RowHeight;
+                int rowHeightPx = (int)Art.SettingsFont.MeasureString("A").Y + 6;
+                graphicsNumerics[i].Rect = new Rectangle(labelX, rowY, valueX - labelX + 160, rowHeightPx);
+                graphicsNumerics[i].DecrementRect = new Rectangle(valueX, rowY, StepperButtonWidth, rowHeightPx);
+                graphicsNumerics[i].IncrementRect = new Rectangle(
+                    valueX + StepperButtonWidth + StepperValueGap,
+                    rowY,
+                    StepperButtonWidth,
+                    rowHeightPx
                 );
             }
 
@@ -296,6 +350,23 @@ namespace Realm.States
                         Util.SaveGameSettingsData();
                     }
                 }
+
+                foreach (var numeric in graphicsNumerics)
+                {
+                    numeric.DecrementHover = numeric.DecrementRect.Intersects(Input.MouseBounds);
+                    numeric.IncrementHover = numeric.IncrementRect.Intersects(Input.MouseBounds);
+
+                    if (numeric.DecrementHover && Input.GetMouseClick())
+                    {
+                        numeric.Set(Math.Max(numeric.Min, numeric.Get() - numeric.Step));
+                        Util.SaveGameSettingsData();
+                    }
+                    else if (numeric.IncrementHover && Input.GetMouseClick())
+                    {
+                        numeric.Set(Math.Min(numeric.Max, numeric.Get() + numeric.Step));
+                        Util.SaveGameSettingsData();
+                    }
+                }
             }
 
             backButton.Update(gameTime);
@@ -397,6 +468,42 @@ namespace Realm.States
                             toggle.Get() ? "ON" : "OFF",
                             new Vector2(valueX, toggle.Rect.Y),
                             toggleColor
+                        );
+                    }
+
+                    foreach (var numeric in graphicsNumerics)
+                    {
+                        spriteBatch.DrawString(
+                            Art.SettingsFont,
+                            numeric.Label,
+                            new Vector2(labelX, numeric.Rect.Y),
+                            Color.White
+                        );
+
+                        Color decColor = numeric.DecrementHover ? Color.Gold : Color.White;
+                        spriteBatch.DrawString(
+                            Art.SettingsFont,
+                            "-",
+                            new Vector2(numeric.DecrementRect.X, numeric.Rect.Y),
+                            decColor
+                        );
+
+                        string valueText = $"{numeric.Get()}%";
+                        Vector2 valueTextSize = Art.SettingsFont.MeasureString(valueText);
+                        float valueCenterX = (numeric.DecrementRect.Right + numeric.IncrementRect.X) / 2f;
+                        spriteBatch.DrawString(
+                            Art.SettingsFont,
+                            valueText,
+                            new Vector2(valueCenterX - valueTextSize.X / 2f, numeric.Rect.Y),
+                            Color.White
+                        );
+
+                        Color incColor = numeric.IncrementHover ? Color.Gold : Color.White;
+                        spriteBatch.DrawString(
+                            Art.SettingsFont,
+                            "+",
+                            new Vector2(numeric.IncrementRect.X, numeric.Rect.Y),
+                            incColor
                         );
                     }
                     break;

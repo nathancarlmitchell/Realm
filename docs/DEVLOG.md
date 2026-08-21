@@ -3225,3 +3225,41 @@ date/time for those individually; don't treat their grouping as meaning they all
      for `LowHealthIndicatorEnabled`, directly proving the upgrade scenario the explicit `= true`
      initializer exists for; and confirmed `SettingsState`'s `graphicsToggles` now holds exactly 2
      entries. Clean build and a plain boot-check both passed.
+151. **A below-sprite player health bar that only appears at low health, and the hardcoded 25%
+     threshold replaced with a new "Low Health Threshold" (0-100, default 25) Settings > Graphics
+     setting shared by both it and entry 150's flash.** New `Player.LowHealthThresholdPercent`
+     (persisted via `GameSettingsData`, same "explicit default matters for old JSON files" reasoning
+     as `LowHealthIndicatorEnabled` — an old save missing this int key would otherwise silently
+     deserialize to `0`, which makes `Health < HealthMax * 0%` never true and disables the whole
+     feature rather than leaving it at the intended 25) replaces the flash's old hardcoded
+     `LowHealthThresholdFraction` constant. New private `Player.IsLowHealth` property
+     (`LowHealthIndicatorEnabled && HealthMax > 0 && Health < HealthMax * (LowHealthThresholdPercent /
+     100f)`) is the single shared condition both the flash (`Update()`) and the new
+     `DrawLowHealthBar()` (`Draw()`) check, so the two can never drift out of sync with each other or
+     with the setting. The bar itself reuses `Overlay.cs`'s own "stretched `Art.HealthBar` rect"
+     technique (a 1x1 pixel texture sized via the source rectangle rather than sampled pixel content)
+     — a small dark-red background behind a brighter red fill proportional to `Health/HealthMax` (not
+     to the threshold, so a fuller bar reads as "closer to the threshold" and an emptier one as "closer
+     to death," like any other health bar), centered beneath the sprite in world space so it scrolls
+     with the camera like the player does.
+
+     `SettingsState.cs` gained a new `NumericRow` class alongside the existing `ToggleRow` — a
+     different shape was needed since a 0-100 range doesn't fit a single-click on/off flip: two small
+     "-"/"+" hit-rects (`DecrementRect`/`IncrementRect`) adjusting the value by a configurable `Step`
+     (5 here) and clamping to `Min`/`Max`, versus `ToggleRow`'s one whole-row click. Lives in a new
+     `graphicsNumerics` list, positioned directly after `graphicsToggles`' rows in the same column so
+     the two lists read as one continuous stack on the Graphics tab despite being separately typed.
+
+     Verified via a scripted repro (temp code in `Game1.StartGame()`, backed up real save files first
+     since the round trip genuinely calls `Util.SaveGameSettingsData()`): confirmed a save→toggle→load
+     round trip on `LowHealthThresholdPercent` correctly restored the saved value; confirmed
+     deserializing a literal old-shaped JSON string missing the key still produced `25`, not `0`;
+     confirmed changing the threshold actually changes `IsLowHealth`'s result at a fixed `Health` value
+     (45/100 read as low health at a 50% threshold but not at a 10% threshold, proving the setting
+     genuinely drives the condition rather than a leftover hardcoded 25% still lurking somewhere); and,
+     per the entry-118 lesson, rendered two real passes — the `SettingsState` Graphics tab (saved to a
+     PNG and visually inspected: "Low Health Threshold  -  10%  +" renders cleanly, correctly aligned
+     in the same value column as the toggles above it, no overlap or clipping) and the player itself at
+     low HP (confirmed real red-ish pixels appear below the sprite) versus above the threshold
+     (confirmed zero red-ish pixels — the bar correctly doesn't render at all when not needed). Clean
+     build and a plain boot-check both passed.

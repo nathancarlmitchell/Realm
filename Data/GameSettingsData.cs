@@ -28,4 +28,12 @@ public class GameSettingsData
     // the setting off for every existing account instead of leaving it on.
     // See Player.cs's flash logic and SettingsState.cs's Graphics tab.
     public bool LowHealthIndicatorEnabled { get; set; } = true;
+
+    // 0-100, defaults to 25 — same "give it its own explicit default"
+    // reasoning as LowHealthIndicatorEnabled just above: an old
+    // GameSettingsData.json missing this key would otherwise deserialize
+    // it at the unstated default (0 for a bare int), which would silently
+    // disable the flash/bar entirely (Health < HealthMax * 0% is never
+    // true) instead of leaving it at the intended 25%.
+    public int LowHealthThresholdPercent { get; set; } = 25;
 }
