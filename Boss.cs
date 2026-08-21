@@ -37,7 +37,14 @@ namespace Realm
         // own constructor exactly like a regular enemy's factory would.
         protected override void SpawnLoot()
         {
-            ItemSpawner.SpawnGuaranteedLoot(this.Position, PointValue, DropPool, DropTierRange, StatPotionPool);
+            ItemSpawner.SpawnGuaranteedLoot(
+                this.Position,
+                PointValue,
+                DropPool,
+                DropTierRanges,
+                StatPotionPool,
+                GuaranteedPotionChances
+            );
         }
 
         // No-op: a boss's health is shown by the dedicated top-of-screen bar

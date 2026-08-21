@@ -2807,3 +2807,43 @@ date/time for those individually; don't treat their grouping as meaning they all
      field after construction, just the per-type `Name`/`ID`/image it's built with — so the test
      checked against the exact `"Attack Potion"`/`"Defense Potion"`/`"Wisdom Potion"` strings
      `Potion.cs`'s constructor assigns per type.) Clean build and a plain boot-check both passed.
+139. **Two more drop-table levers, both prompted by the user asking for a worked example: "DEX potion
+     100% chance, DEF potion 25% chance, Weapon tiers 7-10, Ring tiers 3-4."** Neither existing
+     mechanism could represent that spec, for two different reasons — both fixed.
+
+     First, `Enemy.DropTierRange` (entry 137) was a single enemy-wide `(Min, Max)?` applied to every
+     gear category alike, but the spec wants *different* ranges for Weapon (7-10) and Ring (3-4) on
+     the same enemy. Generalized to `Enemy.DropTierRanges`, a `Dictionary<LootCategory, (int Min, int
+     Max)>` keyed per category — mirrors `DropWeights`' existing per-category shape rather than
+     `DropTierRange`'s old single-range one. New `ItemSpawner.TierRangeFor()` looks up one category's
+     override out of the map (or returns null, falling through to the normal PointValue/player-tier
+     formula for that category, unchanged); `ResolveDropTier()` and `SpawnGuaranteedLoot()`'s 4 gear
+     blocks were updated to look up their own category's range instead of sharing one. This replaces
+     entry 137's field shape outright — nothing used the old single-range form yet (never applied to a
+     concrete enemy), so there was no migration to preserve.
+
+     Second, "DEX 100% + DEF 25%, independently" isn't expressible as a single roll picking one type
+     out of a pool (entry 138's `StatPotionPool`/`RollStatPotion()`) — a kill needs to be able to drop
+     *both* potions at once, which one categorical roll can never produce. Asked the user directly
+     (`AskUserQuestion`) whether the two potions should be independent (a kill could drop 0, 1, or
+     both) or a single weighted roll between them (mutually exclusive) — user chose independent. New
+     `Enemy.GuaranteedPotionChances` (`Dictionary<Potions, float>`, empty by default) and
+     `ItemSpawner.RollGuaranteedPotions()`: for each entry, an independent `rand.NextDouble() <
+     chance` roll, appending every potion that succeeds — 0 to N results per call, not exactly 1. Both
+     `Spawn()`'s and `SpawnGuaranteedLoot()`'s `StatPotion` blocks now check this first: if non-empty,
+     it entirely replaces the old single-roll behavior for that enemy's `StatPotion` category (so
+     `DropWeights`' `StatPotion` entry and `StatPotionPool` both stop applying — there's no longer a
+     single roll for them to modify); if empty, behavior is byte-for-byte the same single-roll path as
+     before. Not yet applied to any concrete enemy — same "build the mechanism, demonstrate it, wire
+     it to a real enemy later if wanted" pattern as entries 137/138.
+
+     Verified via a scripted repro (temp code in `Game1.StartGame()`, calling `ItemSpawner` directly
+     with the user's exact numbers — no `Player.Instance` mutation, no save-file risk): 100 `Spawn()`
+     runs produced Dexterity 100/100 (matches 100% exactly, as expected for a probability of 1.0) and
+     Defense 29/100 (close to the target 25% — expected statistical noise, not a bug); at least one
+     run dropped both potions together, proving the independence (not mutual exclusivity); every
+     Weapon drop landed in `[7,10]` and every Ring drop attempt correctly found nothing (`RingData.
+     json`'s real catalog only spans tiers 0-1, so a 3-4 request is a legitimate graceful-empty case,
+     not a bug — same behavior already verified in entry 137); and `SpawnGuaranteedLoot()` under the
+     same table produced Dexterity 40/40 and Defense 9/40 (~22.5%, also within expected noise of 25%).
+     Clean build and a plain boot-check both passed.

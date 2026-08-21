@@ -311,7 +311,15 @@ namespace Realm
         // not by anything in here.
         protected virtual void SpawnLoot()
         {
-            ItemSpawner.Spawn(this.Position, PointValue, DropPool, DropWeights, DropTierRange, StatPotionPool);
+            ItemSpawner.Spawn(
+                this.Position,
+                PointValue,
+                DropPool,
+                DropWeights,
+                DropTierRanges,
+                StatPotionPool,
+                GuaranteedPotionChances
+            );
         }
 
         // Whether this enemy drops anything on death at all (SpawnLoot()
@@ -338,14 +346,17 @@ namespace Realm
         // leaning toward potions without excluding gear the way DropPool would.
         protected Dictionary<ItemSpawner.LootCategory, float> DropWeights = new();
 
-        // Absolute tier range to roll every dropped item's tier from,
-        // bypassing the PointValue/player-tier formula (ResolveDropTier())
-        // entirely — the direct "what tier of gear can this enemy drop"
-        // lever. Null by default (the existing PointValue-driven behavior,
-        // unchanged for any enemy that doesn't opt in). Min/Max are
-        // inclusive; Min must be <= Max, since a range where it isn't has
-        // no valid roll.
-        protected (int Min, int Max)? DropTierRange = null;
+        // Absolute tier range to roll a given category's dropped items
+        // from, bypassing the PointValue/player-tier formula
+        // (ResolveDropTier()) entirely for that category — the direct
+        // "what tier of gear can this enemy drop" lever. Per-category
+        // (e.g. Weapon at tier 7-10, Ring at tier 3-4 on the same enemy),
+        // not one shared range — keyed by LootCategory, empty by default
+        // (a category with no entry falls back to the existing
+        // PointValue-driven behavior, unchanged for any enemy that doesn't
+        // opt in for that category). Min/Max are inclusive; Min must be
+        // <= Max, since a range where it isn't has no valid roll.
+        protected Dictionary<ItemSpawner.LootCategory, (int Min, int Max)> DropTierRanges = new();
 
         // Which specific stat potions (Attack/Defense/Dexterity/Life/
         // ManaMax/Speed/Vitality/Wisdom) a StatPotion drop can roll from —
@@ -353,7 +364,22 @@ namespace Realm
         // DropPool narrows categories, just one level deeper (inside the
         // category rather than across categories). Null/empty (the
         // default) rolls uniformly from all 8, today's unchanged behavior.
+        // Has no effect on an enemy that sets GuaranteedPotionChances below
+        // — that mechanism replaces the single-roll selection this narrows.
         protected List<Potions> StatPotionPool = null;
+
+        // Independent per-potion drop chance (0.0-1.0), one entry per
+        // specific stat potion type — a different shape from
+        // StatPotionPool above: that's one roll picking one type out of an
+        // allowed set (mutually exclusive), this is N separate rolls, one
+        // per entry, each able to succeed independently — so a kill can
+        // drop several of them at once (e.g. a guaranteed Dexterity potion
+        // at 1.0 alongside an independent 25% chance at a Defense potion,
+        // and both landing on the same kill is possible). Empty by default
+        // (the existing single-roll StatPotionPool behavior, unaffected);
+        // setting this on an enemy entirely replaces that enemy's normal
+        // StatPotion roll rather than adding to it.
+        protected Dictionary<Potions, float> GuaranteedPotionChances = new();
 
         protected void AddBehaviour(IEnumerable<int> behaviour)
         {

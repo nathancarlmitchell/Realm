@@ -88,6 +88,33 @@ namespace Realm
             return pool[rand.Next(pool.Count)];
         }
 
+        // Independent per-potion drop chances (Enemy.GuaranteedPotionChances)
+        // — a fundamentally different shape from RollStatPotion() above:
+        // that's one roll that picks exactly one type out of a pool
+        // (mutually exclusive), this is N independent rolls, one per entry,
+        // each of which can succeed or fail on its own — so a single kill
+        // could drop 0, 1, or all of them together (e.g. a guaranteed
+        // Dexterity potion at 1.0 plus an independent 25% chance at a
+        // Defense potion, which can both land on the same kill). When an
+        // enemy sets this (non-empty), it entirely replaces the normal
+        // single-roll StatPotion behavior for that enemy — StatPotionPool
+        // and the category's own DropWeights entry stop applying, since
+        // there's no longer a single roll for them to modify.
+        private static List<Potions> RollGuaranteedPotions(
+            IReadOnlyDictionary<Potions, float> guaranteedPotionChances
+        )
+        {
+            List<Potions> results = [];
+            if (guaranteedPotionChances == null)
+                return results;
+
+            foreach (var (potion, chance) in guaranteedPotionChances)
+                if (rand.NextDouble() < chance)
+                    results.Add(potion);
+
+            return results;
+        }
+
         private static readonly Random rand = new();
 
         // Move to RealmState?
@@ -190,14 +217,25 @@ namespace Realm
 
         private static bool IsWeakEnemy(int pointValue) => pointValue < 10;
 
+        // Looks up a specific category's tier-range override out of an
+        // enemy's full per-category map (Enemy.DropTierRanges) — a category
+        // with no entry falls through to null, meaning "use the normal
+        // PointValue/player-tier formula for this category." Per-category
+        // rather than one shared range, since an enemy might want e.g.
+        // Weapon at tier 7-10 but Ring at 3-4, not the same window for both.
+        private static (int Min, int Max)? TierRangeFor(
+            IReadOnlyDictionary<LootCategory, (int Min, int Max)> tierRanges,
+            LootCategory category
+        ) => tierRanges != null && tierRanges.TryGetValue(category, out var range) ? range : null;
+
         // The tier a drop should target for the given category. An enemy-
-        // supplied tierRange (Enemy.DropTierRange) takes priority over
-        // everything else — a designer-picked absolute range, generalizing
-        // the weak-enemy fixed range below to any enemy rather than just
-        // ones under the PointValue threshold. Falling through that: a
-        // fixed low absolute roll for weak enemies (see above), or the
-        // player's current tier plus a random jump (see MaxTierJump) for
-        // everything else. Every category's drop routes through this
+        // supplied tierRange (via TierRangeFor/Enemy.DropTierRanges) takes
+        // priority over everything else — a designer-picked absolute range,
+        // generalizing the weak-enemy fixed range below to any enemy rather
+        // than just ones under the PointValue threshold. Falling through
+        // that: a fixed low absolute roll for weak enemies (see above), or
+        // the player's current tier plus a random jump (see MaxTierJump)
+        // for everything else. Every category's drop routes through this
         // instead of repeating the branch.
         private static int ResolveDropTier(
             int pointValue,
@@ -216,8 +254,9 @@ namespace Realm
             int pointValue = 0,
             LootCategory dropPool = LootCategory.All,
             IReadOnlyDictionary<LootCategory, float> dropWeights = null,
-            (int Min, int Max)? dropTierRange = null,
-            IReadOnlyList<Potions> statPotionPool = null
+            IReadOnlyDictionary<LootCategory, (int Min, int Max)> dropTierRanges = null,
+            IReadOnlyList<Potions> statPotionPool = null,
+            IReadOnlyDictionary<Potions, float> guaranteedPotionChances = null
         )
         {
             List<Item> items = [];
@@ -234,7 +273,7 @@ namespace Realm
                 // WeaponData.json lists every Wand before any Bow, so
                 // FirstOrDefault would always resolve to a Wand regardless
                 // of the player's actual class.
-                int tier = ResolveDropTier(pointValue, Player.Instance.Weapon.Tier, maxTierJump, dropTierRange);
+                int tier = ResolveDropTier(pointValue, Player.Instance.Weapon.Tier, maxTierJump, TierRangeFor(dropTierRanges, LootCategory.Weapon));
                 List<Weapon> nextTierWeapons = Game1
                     .Instance.Weapons.Where(x => x.Tier == tier)
                     .ToList();
@@ -251,7 +290,7 @@ namespace Realm
             {
                 // Same reasoning as the weapon drop above — ArmorData.json
                 // lists every Robe before any Leather piece.
-                int tier = ResolveDropTier(pointValue, Player.Instance.Armor.Tier, maxTierJump, dropTierRange);
+                int tier = ResolveDropTier(pointValue, Player.Instance.Armor.Tier, maxTierJump, TierRangeFor(dropTierRanges, LootCategory.Armor));
                 List<Armor> nextTierArmors = Game1
                     .Instance.Armors.Where(x => x.Tier == tier)
                     .ToList();
@@ -266,7 +305,7 @@ namespace Realm
             // Drop ring.
             if (dropPool.HasFlag(LootCategory.Ring) && rand.Next(WeightedChance(dropChance, WeightFor(dropWeights, LootCategory.Ring))) == 0)
             {
-                int tier = ResolveDropTier(pointValue, Player.Instance.Ring.Tier, maxTierJump, dropTierRange);
+                int tier = ResolveDropTier(pointValue, Player.Instance.Ring.Tier, maxTierJump, TierRangeFor(dropTierRanges, LootCategory.Ring));
                 if (Game1.Instance.Rings.Exists(x => x.Tier == tier))
                 {
                     bagTexture = Art.LootBagWhite;
@@ -283,7 +322,7 @@ namespace Realm
                 // Quiver, and Shield are separate catalogs (not a single
                 // shared list like Weapons/Armors), so concatenate all three
                 // next-tier results before picking at random.
-                int tier = ResolveDropTier(pointValue, Player.Instance.AbilityItem.Tier, maxTierJump, dropTierRange);
+                int tier = ResolveDropTier(pointValue, Player.Instance.AbilityItem.Tier, maxTierJump, TierRangeFor(dropTierRanges, LootCategory.AbilityItem));
                 List<AbilityItem> nextTierAbilityItems = Game1
                     .Instance.Spells.Where(x => x.Tier == tier)
                     .Cast<AbilityItem>()
@@ -298,11 +337,24 @@ namespace Realm
                 }
             }
 
-            // Drop stat potion.
-            if (dropPool.HasFlag(LootCategory.StatPotion) && rand.Next(WeightedChance(15, WeightFor(dropWeights, LootCategory.StatPotion))) == 0)
+            // Drop stat potion(s). A non-empty guaranteedPotionChances
+            // entirely replaces the normal single-roll behavior below with
+            // N independent per-potion rolls — see RollGuaranteedPotions().
+            if (dropPool.HasFlag(LootCategory.StatPotion))
             {
-                bagTexture = Art.LootBagBlue;
-                items.Add(new Potion(RollStatPotion(statPotionPool)));
+                if (guaranteedPotionChances != null && guaranteedPotionChances.Count > 0)
+                {
+                    foreach (Potions potion in RollGuaranteedPotions(guaranteedPotionChances))
+                    {
+                        bagTexture = Art.LootBagBlue;
+                        items.Add(new Potion(potion));
+                    }
+                }
+                else if (rand.Next(WeightedChance(15, WeightFor(dropWeights, LootCategory.StatPotion))) == 0)
+                {
+                    bagTexture = Art.LootBagBlue;
+                    items.Add(new Potion(RollStatPotion(statPotionPool)));
+                }
             }
 
             if (dropPool.HasFlag(LootCategory.HealthManaPotion) && rand.Next(WeightedChance(10, WeightFor(dropWeights, LootCategory.HealthManaPotion))) == 0)
@@ -376,8 +428,9 @@ namespace Realm
             Vector2 pos,
             int pointValue = 0,
             LootCategory dropPool = LootCategory.All,
-            (int Min, int Max)? dropTierRange = null,
-            IReadOnlyList<Potions> statPotionPool = null
+            IReadOnlyDictionary<LootCategory, (int Min, int Max)> dropTierRanges = null,
+            IReadOnlyList<Potions> statPotionPool = null,
+            IReadOnlyDictionary<Potions, float> guaranteedPotionChances = null
         )
         {
             List<Item> items = [];
@@ -385,8 +438,9 @@ namespace Realm
 
             if (dropPool.HasFlag(LootCategory.Weapon))
             {
-                List<Weapon> nextTierWeapons = dropTierRange.HasValue
-                    ? ItemsAtOverrideTier(Game1.Instance.Weapons, x => x.Tier, dropTierRange.Value)
+                (int Min, int Max)? weaponTierRange = TierRangeFor(dropTierRanges, LootCategory.Weapon);
+                List<Weapon> nextTierWeapons = weaponTierRange.HasValue
+                    ? ItemsAtOverrideTier(Game1.Instance.Weapons, x => x.Tier, weaponTierRange.Value)
                     : ItemsAtBestAvailableTier(
                         Game1.Instance.Weapons,
                         x => x.Tier,
@@ -399,8 +453,9 @@ namespace Realm
 
             if (dropPool.HasFlag(LootCategory.Armor))
             {
-                List<Armor> nextTierArmors = dropTierRange.HasValue
-                    ? ItemsAtOverrideTier(Game1.Instance.Armors, x => x.Tier, dropTierRange.Value)
+                (int Min, int Max)? armorTierRange = TierRangeFor(dropTierRanges, LootCategory.Armor);
+                List<Armor> nextTierArmors = armorTierRange.HasValue
+                    ? ItemsAtOverrideTier(Game1.Instance.Armors, x => x.Tier, armorTierRange.Value)
                     : ItemsAtBestAvailableTier(
                         Game1.Instance.Armors,
                         x => x.Tier,
@@ -413,8 +468,9 @@ namespace Realm
 
             if (dropPool.HasFlag(LootCategory.Ring))
             {
-                List<Ring> nextTierRings = dropTierRange.HasValue
-                    ? ItemsAtOverrideTier(Game1.Instance.Rings, x => x.Tier, dropTierRange.Value)
+                (int Min, int Max)? ringTierRange = TierRangeFor(dropTierRanges, LootCategory.Ring);
+                List<Ring> nextTierRings = ringTierRange.HasValue
+                    ? ItemsAtOverrideTier(Game1.Instance.Rings, x => x.Tier, ringTierRange.Value)
                     : ItemsAtBestAvailableTier(
                         Game1.Instance.Rings,
                         x => x.Tier,
@@ -432,8 +488,9 @@ namespace Realm
                     .Concat(Game1.Instance.Quivers)
                     .Concat(Game1.Instance.Shields)
                     .ToList();
-                List<AbilityItem> nextTierAbilityItems = dropTierRange.HasValue
-                    ? ItemsAtOverrideTier(allAbilityItems, x => x.Tier, dropTierRange.Value)
+                (int Min, int Max)? abilityItemTierRange = TierRangeFor(dropTierRanges, LootCategory.AbilityItem);
+                List<AbilityItem> nextTierAbilityItems = abilityItemTierRange.HasValue
+                    ? ItemsAtOverrideTier(allAbilityItems, x => x.Tier, abilityItemTierRange.Value)
                     : ItemsAtBestAvailableTier(
                         allAbilityItems,
                         x => x.Tier,
@@ -446,7 +503,15 @@ namespace Realm
 
             if (dropPool.HasFlag(LootCategory.StatPotion))
             {
-                items.Add(new Potion(RollStatPotion(statPotionPool)));
+                if (guaranteedPotionChances != null && guaranteedPotionChances.Count > 0)
+                {
+                    foreach (Potions potion in RollGuaranteedPotions(guaranteedPotionChances))
+                        items.Add(new Potion(potion));
+                }
+                else
+                {
+                    items.Add(new Potion(RollStatPotion(statPotionPool)));
+                }
             }
 
             LootBag bag = new()
