@@ -311,7 +311,7 @@ namespace Realm
         // not by anything in here.
         protected virtual void SpawnLoot()
         {
-            ItemSpawner.Spawn(this.Position, PointValue, DropPool, DropWeights);
+            ItemSpawner.Spawn(this.Position, PointValue, DropPool, DropWeights, DropTierRange);
         }
 
         // Whether this enemy drops anything on death at all (SpawnLoot()
@@ -337,6 +337,15 @@ namespace Realm
         // below can raise or lower individual categories, e.g. CreateBigSnake()
         // leaning toward potions without excluding gear the way DropPool would.
         protected Dictionary<ItemSpawner.LootCategory, float> DropWeights = new();
+
+        // Absolute tier range to roll every dropped item's tier from,
+        // bypassing the PointValue/player-tier formula (ResolveDropTier())
+        // entirely — the direct "what tier of gear can this enemy drop"
+        // lever. Null by default (the existing PointValue-driven behavior,
+        // unchanged for any enemy that doesn't opt in). Min/Max are
+        // inclusive; Min must be <= Max, since a range where it isn't has
+        // no valid roll.
+        protected (int Min, int Max)? DropTierRange = null;
 
         protected void AddBehaviour(IEnumerable<int> behaviour)
         {

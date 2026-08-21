@@ -2746,3 +2746,35 @@ date/time for those individually; don't treat their grouping as meaning they all
      parameter with its own (empty) `DropWeights` dict, confirming gear-only/no-potions behavior is
      byte-for-byte unaffected by an enemy that never opted in. Clean build and a plain boot-check both
      passed.
+137. **Per-enemy drop pools gained direct tier control** — a new `Enemy.DropTierRange`
+     (`(int Min, int Max)?`, null by default) bypasses `ItemSpawner`'s `PointValue`/player-tier tier
+     math entirely, in favor of a fixed absolute tier range an enemy's own factory picks. Previously
+     tier was only ever indirect: a fixed low range for "weak" enemies under a `PointValue` threshold,
+     or the player's own current tier plus a random jump for everything else — no enemy could just say
+     "always drop tier 3-5 gear" regardless of either. `ItemSpawner.ResolveDropTier()` (used by
+     `Spawn()`'s 4 gear/ability categories) now checks the override first, before falling through to
+     the existing weak-enemy/player-tier branches unchanged. `SpawnGuaranteedLoot()` needed its own
+     parallel path — its existing `ItemsAtBestAvailableTier()` *steps down* from a rolled offset until
+     it finds a non-empty tier (built to keep boss loot "guaranteed" even as the player's own tier
+     climbs), which doesn't fit an enemy-fixed range at all; new `ItemsAtOverrideTier()` does one
+     exact-tier roll within the range and filters the catalog to just that tier, with the same
+     graceful-empty behavior as everywhere else in the file if that exact tier happens to have no
+     entries (the enemy's own range is expected to have real content, not stepped-around). Both
+     `Enemy.SpawnLoot()` and `Boss.SpawnLoot()` thread `DropTierRange` through to their respective
+     `ItemSpawner` call. Not yet applied to any concrete enemy — built as the general mechanism the
+     user asked for ("can I control what tier of equipment is dropped... build that with min/max tier
+     options"), same shape as `DropPool`/`DropWeights` before either was applied to a specific enemy.
+     Verified via a scripted repro (temp code in `Game1.StartGame()`, calling `ItemSpawner.Spawn()`/
+     `SpawnGuaranteedLoot()` directly rather than through a real enemy since nothing wires
+     `DropTierRange` yet — no `Player.Instance` mutation at all, so no save-file risk): a `(3,5)`
+     override on `Spawn()` produced 50/50 weapon drops every one of which landed in `[3,5]`; the same
+     range on `SpawnGuaranteedLoot()` for Weapon and Armor produced in-range drops every time (30 and
+     29 of 30 runs respectively — the 1 miss being the tier-roll's own inherent chance of landing on
+     an empty sub-tier, not a bug); a `(3,5)` range against Ring (whose real catalog only spans tiers
+     0-1) correctly produced zero drops across 30 runs rather than crashing or falling back to a
+     nearby tier, and the same category with its real `(0,1)` range produced drops in most runs,
+     confirming the override path also works against a 2-entry catalog; and a `tierRange=null` control
+     run under the exact same weighted setup computed tier 15 (this account's own equipped Weapon tier
+     plus 1, per the untouched `playerTier + RollTierOffset` formula) — outside `[3,5]` and, since the
+     catalog tops out at tier 14, correctly produced zero items rather than silently reusing the
+     override branch. Clean build and a plain boot-check both passed.
