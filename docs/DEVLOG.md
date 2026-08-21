@@ -2569,3 +2569,20 @@ date/time for those individually; don't treat their grouping as meaning they all
      exception; and — per the entry 118 lesson — rendered the portal next to a marker at its exact
      construction position and visually confirmed it's centered. Clean build (new `.xnb` confirmed
      compiled) and a plain boot-check both passed.
+130. **Real art for the main Realm portal (`Portal.Destination.Realm`)** — an 80×80 stone archway,
+     user-supplied (`Content/Portal to Realm.png`), replacing the generic swirl. Last of the four
+     always-present Nexus destinations to get its own art (Bank/Nexus in entries 127/129, Realm here —
+     CharacterSelect is the only one still on the generic swirl, no art supplied for it yet). Same
+     single-static-frame treatment as entries 127/129 (`Art.RealmPortal`, a 1-frame `AnimatedTexture`),
+     `Destination.RealmDestination` now overrides `PortalArt()`. Both the explicit-position constructor
+     and the parameterless `Portal()` constructor (`dest = Destination.Realm` — the `// TEMP` first
+     entry in `NexusState`'s fixed portal list) pick up the new art automatically, since both already
+     resolve their image generically via `dest.PortalArt()`. Verified via a scripted repro (no
+     `Player.Instance.Position` write has any save-file risk — confirmed not part of `PlayerData` back
+     in entry 119 — so no backup needed this time): confirmed a `Realm`-destination `Portal` gets its
+     own distinct `AnimatedTexture` sharing `Art.RealmPortal`'s underlying texture; confirmed
+     `FrameWidth`/`FrameHeight` read exactly 80×80 and `DisplayName` reads "Realm"; confirmed the
+     parameterless `Portal()` constructor independently resolves to the same underlying texture, not
+     just the explicit-destination one; and — per the entry 118 lesson — rendered the portal next to a
+     marker at its exact construction position and visually confirmed it's centered. Clean build (new
+     `.xnb` confirmed compiled) and a plain boot-check both passed.

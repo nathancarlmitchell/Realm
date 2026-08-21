@@ -78,6 +78,7 @@ namespace Realm
             {
                 public override string DisplayName => "Realm";
                 public override void Enter() => StateManager.EnterPortal();
+                internal override AnimatedTexture PortalArt() => Art.RealmPortal.Clone();
             }
 
             private sealed class CharacterSelectDestination : Destination

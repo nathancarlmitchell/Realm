@@ -65,6 +65,10 @@ namespace Realm
         // rather than a swirl/doorway.
         public static AnimatedTexture BankPortal { get; private set; }
 
+        // The main Realm portal (see Portal.Destination.RealmDestination) —
+        // same single-static-frame treatment, a stone archway.
+        public static AnimatedTexture RealmPortal { get; private set; }
+
         public static Texture2D Inventory { get; private set; }
         public static Texture2D HealthPotion { get; private set; }
         public static Texture2D ManaPotion { get; private set; }
@@ -140,6 +144,9 @@ namespace Realm
 
             BankPortal = new AnimatedTexture(Vector2.Zero, 0f, 1.0f, 0.5f);
             BankPortal.Load(content, "Vault Chest", 1, 1);
+
+            RealmPortal = new AnimatedTexture(Vector2.Zero, 0f, 1.0f, 0.5f);
+            RealmPortal.Load(content, "Portal to Realm", 1, 1);
 
             HealthPotion = content.Load<Texture2D>("health_potion");
             ManaPotion = content.Load<Texture2D>("mana_potion");
