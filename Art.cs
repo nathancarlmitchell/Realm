@@ -99,6 +99,12 @@ namespace Realm
         // hard to read even after bumping its draw scale up.
         public static SpriteFont DamageFont { get; private set; }
 
+        // A dedicated font for States/SettingsState.cs — same Arial
+        // family as HudFont, just a size up (14pt vs 12pt) for a menu
+        // screen read at a normal, unhurried pace, rather than reusing the
+        // small HUD-scale font that's tuned for compact in-game overlays.
+        public static SpriteFont SettingsFont { get; private set; }
+
         // Weapons.
         public static Texture2D Wand { get; private set; }
 
@@ -235,6 +241,7 @@ namespace Realm
             HudFont = content.Load<SpriteFont>("Fonts/HudFont");
             TitleFont = content.Load<SpriteFont>("Fonts/TitleFont");
             DamageFont = content.Load<SpriteFont>("Fonts/DamageFont");
+            SettingsFont = content.Load<SpriteFont>("Fonts/SettingsFont");
         }
 
         // Hard-edged filled circle, diameter x diameter, opaque white

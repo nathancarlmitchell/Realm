@@ -2674,3 +2674,19 @@ date/time for those individually; don't treat their grouping as meaning they all
      Auto-Fire row with Reset correctly absent, Audio shows the placeholder text with Reset absent —
      and the title/tab bar/button positions held exactly still across all three renders, confirming the
      fixed-layout approach actually works. Clean build and a plain boot-check both passed.
+134. **Dedicated `Art.SettingsFont` for the Settings screen**, replacing every `Art.HudFont` reference
+     in `States/SettingsState.cs` (labels, tab bar, row values, the Back/Reset buttons' own text via
+     the `Button(Texture2D, SpriteFont)` overload instead of the default HudFont-using constructor).
+     New `Content/Fonts/SettingsFont.spritefont` — same Arial family as `HudFont` for visual
+     consistency with the rest of the game, just a size up (14pt vs. 12pt): a menu screen read at a
+     normal, unhurried pace doesn't need HudFont's compact in-combat-overlay scale. Wired the same way
+     as every other font asset (`Content.mgcb` block, `Art.cs` field/load line). Verified via a
+     scripted repro (no save-file risk): confirmed `Art.SettingsFont` is a genuinely distinct
+     `SpriteFont` instance from `Art.HudFont`, measuring visibly larger (22px tall vs. 18px for the
+     same "A", both under the fixed 28px `RowHeight` so no inter-row overlap); per the entry 118
+     lesson, rendered a real `SettingsState` (Controls tab, the most text-dense) to a full-window
+     offscreen `RenderTarget2D` and visually inspected it — all 10 rows read cleanly with no overlap,
+     tab labels/underline look correct, and a zoomed crop of the "Reset to Defaults" button (the
+     longest button label, most likely to clip against its texture's fixed 160px width) confirmed
+     real margin on both sides, not touching or overflowing the border. Clean build (new `.xnb`
+     confirmed compiled) and a plain boot-check both passed.

@@ -1030,6 +1030,13 @@
 /processorParam:TextureFormat=Compressed
 /build:Fonts/TitleFont.spritefont
 
+#begin Fonts/SettingsFont.spritefont
+/importer:FontDescriptionImporter
+/processor:FontDescriptionProcessor
+/processorParam:PremultiplyAlpha=True
+/processorParam:TextureFormat=Compressed
+/build:Fonts/SettingsFont.spritefont
+
 #begin health_potion.png
 /importer:TextureImporter
 /processor:TextureProcessor
