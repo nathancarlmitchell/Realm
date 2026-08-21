@@ -17,20 +17,16 @@ prioritized or scheduled — the user asked to keep these noted for later rather
   mana-gate as the HUD cooldown bar for now (see "recently completed" below) rather than add this,
   but flagged a real duration-based cooldown (independent of mana, on top of it) as a future
   addition — needs a duration decision (e.g. 1-2s) when picked up.
-- **Per-enemy drop pools — weighted odds within a category, and applying the mechanism beyond
-  Snake.** The category-inclusion mechanism itself now exists (see
-  [DEVLOG.md](DEVLOG.md) entry 135): a new
-  `ItemSpawner.LootCategory` `[Flags]` enum gates which categories (`Weapon`/`Armor`/`Ring`/
-  `AbilityItem`/`StatPotion`/`HealthManaPotion`) an enemy's loot roll can draw from at all, via a new
-  `Enemy.DropPool` field threaded through both `Enemy.SpawnLoot()`/`Boss.SpawnLoot()`. Applied so far
-  only to `Enemy.CreateSnake()` (gear only, no potions) — the one concrete example the original
-  backlog item named; every other enemy, including BigSnake, still defaults to `All`. Two pieces
-  remain open: (1) BigSnake "leaning toward potions" implies *weighted* odds within an included
-  category, not just inclusion/exclusion — nothing in `ItemSpawner.cs`'s `HasFlag` gating adjusts
-  per-category chance, only whether a category can trigger at all; (2) extending `DropPool` to other
-  enemy types beyond Snake, once a specific pool is decided for each. Needs picking up as its own
-  design pass for the weighting piece specifically — no shape decided yet (a per-category weight
-  multiplier? separate chance denominators per category?).
+- **Per-enemy drop pools — extending the now-complete mechanism to enemies beyond Snake/BigSnake.**
+  Both halves of the original ask now exist: category inclusion/exclusion
+  (`Enemy.DropPool`/`ItemSpawner.LootCategory`, [DEVLOG.md](DEVLOG.md)
+  entry 135) and per-category weighted odds on top of it (`Enemy.DropWeights`,
+  [DEVLOG.md](DEVLOG.md) entry 136). Applied so far to
+  exactly the two enemies the backlog itself named — `CreateSnake()` (gear-only `DropPool`) and
+  `CreateBigSnake()` (potion-leaning `DropWeights`) — every other enemy still defaults to `All`/no
+  weighting, unchanged. What's left is purely applying the existing mechanism to more enemy types,
+  once specific pools/weights are decided per enemy — no new engine work needed, just picking
+  values.
 - **Animate the player character.** Blocked on art: no walk-cycle sprite sheets exist yet (just
   static "player"/"archer" textures). The engine-side piece isn't new work — `AnimatedTexture.cs`
   already implements horizontal-strip sprite-sheet animation and is used for the portal

@@ -2717,3 +2717,32 @@ date/time for those individually; don't treat their grouping as meaning they all
      pool (61 potion drops — proving the category really is being excluded, not just always empty by
      chance); confirmed `SpawnGuaranteedLoot()` with the default pool still includes a stat potion (no
      boss regression). Clean build and a plain boot-check both passed.
+136. **Per-enemy drop pools gained the weighting half — a per-category chance multiplier layered on
+     top of entry 135's in/out `DropPool` gate.** New `Enemy.DropWeights` field
+     (`Dictionary<ItemSpawner.LootCategory, float>`, defaults to an empty dict — no entry for a
+     category means weight 1.0, today's unweighted rate, unchanged for any enemy that doesn't opt
+     in), read by `Enemy.SpawnLoot()` and passed into `ItemSpawner.Spawn()`'s new `dropWeights`
+     parameter. Two new private `ItemSpawner` helpers apply it: `WeightFor()` looks up a category's
+     multiplier (defaulting missing entries to `1f`), and `WeightedChance()` divides the category's
+     base chance denominator by that multiplier (floored at 1, since `rand.Next(1)` is always 0, so
+     an extreme weight can't produce a non-positive `Next()` argument) — a `rand.Next(N) == 0` roll
+     gets more frequent as `N` shrinks, so dividing the denominator by the weight is what makes >1
+     roll more often and <1 roll less often. Applied to all 6 of `Spawn()`'s category rolls
+     (Weapon/Armor/Ring/AbilityItem share the difficulty-scaled `dropChance`; StatPotion/
+     HealthManaPotion keep their own separate base chances of 15/10). Deliberately *not* threaded into
+     `SpawnGuaranteedLoot()` — every included category there always contributes once a reachable tier
+     exists (that's what makes boss loot "guaranteed"), so a chance multiplier has nothing to act on;
+     `Boss.SpawnLoot()` is unchanged. Applied to the backlog's own concrete example:
+     `Enemy.CreateBigSnake()` now sets `DropWeights` to `StatPotion`/`HealthManaPotion` at `2.5f` and
+     `Weapon`/`Armor`/`Ring`/`AbilityItem` at `0.5f` — leans toward potions without excluding gear
+     outright the way Snake's `DropPool` does (BigSnake's own `DropPool` stays the default `All`).
+     Verified via a scripted repro (temp code in `Game1.StartGame()`, no save-file risk — same
+     reasoning and equip-then-restore technique as entry 135's test): ran 300 real `Spawn()` calls
+     with BigSnake's actual weighted pool (114 potion drops, 40 gear drops) against a 300-run control
+     at the same `PointValue`/`DropPool` with no weights (57 potions, 73 gear) — potions up, gear down,
+     in the direction and rough magnitude the 2.5x/0.5x multipliers predict; confirmed an extreme
+     1000x weight still produces a drop rather than throwing or silently breaking (the floor-at-1
+     logic actually engages); and re-ran Snake's entry-135 baseline test through the new `dropWeights`
+     parameter with its own (empty) `DropWeights` dict, confirming gear-only/no-potions behavior is
+     byte-for-byte unaffected by an enemy that never opted in. Clean build and a plain boot-check both
+     passed.

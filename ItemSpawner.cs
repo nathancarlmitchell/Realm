@@ -21,11 +21,10 @@ namespace Realm
         // Enemy.DropPool (defaults to All, so nothing existing changes
         // unless a specific factory opts into a narrower pool).
         //
-        // Deliberately just on/off per category, not weighted odds — the
-        // backlog's own phrasing ("with its own odds") gestures at
-        // something richer than this, but that's a separate axis (a
-        // per-category chance multiplier) left for a follow-up pass rather
-        // than guessed here.
+        // On/off per category. The backlog's other half — "with its own
+        // odds" — is the separate per-category weight multiplier below
+        // (see WeightFor/WeightedChance, and Enemy.DropWeights), applied on
+        // top of whatever this gate lets through.
         [Flags]
         public enum LootCategory
         {
@@ -38,6 +37,26 @@ namespace Realm
             HealthManaPotion = 1 << 5,
             All = Weapon | Armor | Ring | AbilityItem | StatPotion | HealthManaPotion,
         }
+
+        // Per-category chance multiplier layered on top of LootCategory's
+        // simple in/out gate — the backlog's "with its own odds" half,
+        // deliberately left out when DropPool/LootCategory first shipped.
+        // 1.0 (i.e. no entry for that category) matches today's unweighted
+        // rate exactly; >1 rolls more often, <1 less often. Only meaningful
+        // for Spawn()'s chance-based rolls below — SpawnGuaranteedLoot's
+        // included categories are deterministic once a reachable tier
+        // exists (that's what makes the loot "guaranteed"), so a weight
+        // wouldn't change anything there and isn't threaded through.
+        private static float WeightFor(IReadOnlyDictionary<LootCategory, float> weights, LootCategory category) =>
+            weights != null && weights.TryGetValue(category, out float weight) ? weight : 1f;
+
+        // rand.Next(N) == 0 style chances get more frequent as N shrinks, so
+        // a weight is applied as a divisor on the base denominator rather
+        // than a multiplier on the chance itself. Floored at 1 (guaranteed,
+        // rand.Next(1) is always 0) so an extreme weight can't produce a
+        // zero/negative Next() argument.
+        private static int WeightedChance(int baseChance, float weight) =>
+            Math.Max(1, (int)Math.Round(baseChance / weight));
 
         private static readonly Random rand = new();
 
@@ -152,7 +171,12 @@ namespace Realm
                 ? rand.Next(WeakEnemyMinTier, WeakEnemyMaxTier + 1)
                 : playerTier + RollTierOffset(maxTierJump);
 
-        public static void Spawn(Vector2 pos, int pointValue = 0, LootCategory dropPool = LootCategory.All)
+        public static void Spawn(
+            Vector2 pos,
+            int pointValue = 0,
+            LootCategory dropPool = LootCategory.All,
+            IReadOnlyDictionary<LootCategory, float> dropWeights = null
+        )
         {
             List<Item> items = [];
             Texture2D bagTexture = Art.LootBag;
@@ -161,7 +185,7 @@ namespace Realm
             int maxTierJump = MaxTierJump(pointValue);
 
             // Drop weapon.
-            if (dropPool.HasFlag(LootCategory.Weapon) && rand.Next(dropChance) == 0)
+            if (dropPool.HasFlag(LootCategory.Weapon) && rand.Next(WeightedChance(dropChance, WeightFor(dropWeights, LootCategory.Weapon))) == 0)
             {
                 // Picked at random among every catalog entry at the resolved
                 // tier (both WeaponTypes), not just the first match.
@@ -181,7 +205,7 @@ namespace Realm
             }
 
             // Drop armor.
-            if (dropPool.HasFlag(LootCategory.Armor) && rand.Next(dropChance) == 0)
+            if (dropPool.HasFlag(LootCategory.Armor) && rand.Next(WeightedChance(dropChance, WeightFor(dropWeights, LootCategory.Armor))) == 0)
             {
                 // Same reasoning as the weapon drop above — ArmorData.json
                 // lists every Robe before any Leather piece.
@@ -198,7 +222,7 @@ namespace Realm
             }
 
             // Drop ring.
-            if (dropPool.HasFlag(LootCategory.Ring) && rand.Next(dropChance) == 0)
+            if (dropPool.HasFlag(LootCategory.Ring) && rand.Next(WeightedChance(dropChance, WeightFor(dropWeights, LootCategory.Ring))) == 0)
             {
                 int tier = ResolveDropTier(pointValue, Player.Instance.Ring.Tier, maxTierJump);
                 if (Game1.Instance.Rings.Exists(x => x.Tier == tier))
@@ -210,7 +234,7 @@ namespace Realm
             }
 
             // Drop ability item.
-            if (dropPool.HasFlag(LootCategory.AbilityItem) && rand.Next(dropChance) == 0)
+            if (dropPool.HasFlag(LootCategory.AbilityItem) && rand.Next(WeightedChance(dropChance, WeightFor(dropWeights, LootCategory.AbilityItem))) == 0)
             {
                 // Same "wrong class is possible" spirit as weapon/armor drops
                 // above — not filtered to the player's own class. Spell,
@@ -233,7 +257,7 @@ namespace Realm
             }
 
             // Drop stat potion.
-            if (dropPool.HasFlag(LootCategory.StatPotion) && rand.Next(15) == 0)
+            if (dropPool.HasFlag(LootCategory.StatPotion) && rand.Next(WeightedChance(15, WeightFor(dropWeights, LootCategory.StatPotion))) == 0)
             {
                 bagTexture = Art.LootBagBlue;
                 int next = rand.Next(8);
@@ -268,7 +292,7 @@ namespace Realm
                 items.Add(new Potion(potion));
             }
 
-            if (dropPool.HasFlag(LootCategory.HealthManaPotion) && rand.Next(10) == 0)
+            if (dropPool.HasFlag(LootCategory.HealthManaPotion) && rand.Next(WeightedChance(10, WeightFor(dropWeights, LootCategory.HealthManaPotion))) == 0)
             {
                 if (rand.Next(2) == 0)
                     items.Add(new Potion(Potions.Mana));

@@ -311,7 +311,7 @@ namespace Realm
         // not by anything in here.
         protected virtual void SpawnLoot()
         {
-            ItemSpawner.Spawn(this.Position, PointValue, DropPool);
+            ItemSpawner.Spawn(this.Position, PointValue, DropPool, DropWeights);
         }
 
         // Whether this enemy drops anything on death at all (SpawnLoot()
@@ -329,6 +329,14 @@ namespace Realm
         // categories that don't fit that enemy's theme (e.g. CreateSnake()
         // below drops gear only, no potions).
         protected ItemSpawner.LootCategory DropPool = ItemSpawner.LootCategory.All;
+
+        // Per-category chance multiplier layered on top of DropPool above —
+        // the backlog's "with its own odds" half. Empty by default (every
+        // category implicitly weight 1.0, i.e. today's unweighted rate,
+        // unchanged for any enemy that doesn't opt in); a specific factory
+        // below can raise or lower individual categories, e.g. CreateBigSnake()
+        // leaning toward potions without excluding gear the way DropPool would.
+        protected Dictionary<ItemSpawner.LootCategory, float> DropWeights = new();
 
         protected void AddBehaviour(IEnumerable<int> behaviour)
         {
@@ -675,6 +683,20 @@ namespace Realm
                 deathSound = Sound.SnakesDeath,
                 hitSound = Sound.SnakesHit,
                 portalDropOnDeath = Portal.Destination.SthenoBossRealm,
+
+                // Leans toward potions per the backlog's own example — gear
+                // stays fully in the pool (DropPool defaults to All, unlike
+                // Snake's gear-only exclusion), just weighted less likely to
+                // roll relative to potions.
+                DropWeights = new()
+                {
+                    [ItemSpawner.LootCategory.StatPotion] = 2.5f,
+                    [ItemSpawner.LootCategory.HealthManaPotion] = 2.5f,
+                    [ItemSpawner.LootCategory.Weapon] = 0.5f,
+                    [ItemSpawner.LootCategory.Armor] = 0.5f,
+                    [ItemSpawner.LootCategory.Ring] = 0.5f,
+                    [ItemSpawner.LootCategory.AbilityItem] = 0.5f,
+                },
             };
 
             enemy.AddBehaviour(enemy.MoveSnake());
