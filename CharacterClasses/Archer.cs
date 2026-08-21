@@ -40,7 +40,8 @@ namespace Realm.CharacterClasses
             Weapon.Type = Weapon.WeaponType.Bow;
 
             Armor = Armor.LoadArmor("Leather Vest");
-            Ring = Ring.LoadRing("Ring of Minor Defense");
+            // No starting Ring, regardless of class — see Wizard.cs's
+            // matching comment.
             AbilityItem = Quiver.LoadQuiver("Worn Quiver");
 
             // HealthMax/ManaMax/Attack/Defense/etc. are already set by

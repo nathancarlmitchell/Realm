@@ -41,7 +41,11 @@ namespace Realm.CharacterClasses
             Weapon.Type = Weapon.WeaponType.Wand;
 
             Armor = Armor.LoadArmor("Cloth Robe");
-            Ring = Ring.LoadRing("Ring of Minor Defense");
+            // No starting Ring, regardless of class — Player()'s base
+            // constructor already leaves Ring as a fresh, unequipped
+            // `new Ring()` (IsEquipped is just `image != null`, and the
+            // parameterless constructor never sets image), so simply not
+            // overriding it here is enough.
             AbilityItem = Spell.LoadSpell("Novice Spellbook");
 
             // HealthMax/ManaMax/Attack/Defense/etc. are already set by

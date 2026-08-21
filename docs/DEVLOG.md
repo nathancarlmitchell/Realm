@@ -3172,3 +3172,20 @@ date/time for those individually; don't treat their grouping as meaning they all
      confirming the blink genuinely speeds up rather than just existing at a fixed rate; and confirmed
      a fresh bag well outside the warning window stays fully opaque (`A=255`) the whole time. Clean
      build and a plain boot-check both passed.
+149. **Fresh characters no longer start with a Ring equipped, for any class.** All three
+     `Wizard`/`Archer`/`Knight` constructors previously had an identical
+     `Ring = Ring.LoadRing("Ring of Minor Defense");` line among their other starting-gear equips.
+     Removed from all three — `Player()`'s own base constructor already leaves `Ring` as a fresh,
+     genuinely-unequipped `new Ring()` (`Equipment.IsEquipped` is just `image != null`, and `Ring`'s
+     parameterless constructor never sets `image`), so simply not overriding it in the subclass
+     constructors is the entire fix; no new mechanism needed. `RecalculateStats()` (already triggered
+     right after the starting-gear block in each constructor) needed no changes either — it reads
+     `Ring`'s bonus fields the same way whether or not it's "equipped," and an unequipped `Ring`'s
+     bonuses are just their default `0`, identical to what happens whenever a player manually
+     unequips their ring during a normal session. `Util.DebugMaxLevelAndEquipTopGear()` (the F3-
+     adjacent debug helper that also equips a top-tier Ring) was deliberately left untouched — that's
+     a debug utility, not the normal character-creation path this request was about. Verified via a
+     scripted repro (temp code in `Game1.StartGame()`, throwaway `Wizard`/`Archer`/`Knight` instances,
+     not `Player.Instance` — no save-file risk): confirmed all three classes' fresh `Ring.IsEquipped`
+     reads `False`, and that `RecalculateStats()` still produces sane, nonzero derived stats
+     (`HealthMax`/`Attack` etc.) with no exception. Clean build and a plain boot-check both passed.

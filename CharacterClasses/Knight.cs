@@ -43,7 +43,8 @@ namespace Realm.CharacterClasses
             Weapon.Type = Weapon.WeaponType.Sword;
 
             Armor = Armor.LoadArmor("Iron Plate");
-            Ring = Ring.LoadRing("Ring of Minor Defense");
+            // No starting Ring, regardless of class — see Wizard.cs's
+            // matching comment.
             AbilityItem = Shield.LoadShield("Wooden Shield");
 
             // HealthMax/ManaMax/Attack/Defense/etc. are already set by
