@@ -2996,3 +2996,35 @@ date/time for those individually; don't treat their grouping as meaning they all
      touch at all warranted the conservative response regardless of how benign the diff looked. Worth
      a closer look later if it recurs, but out of scope for this entry. Clean build and a plain
      boot-check both passed.
+144. **Level-up effect replaced with a dedicated sparkle-and-swirl, per the user's explicit request for
+     "a dense cluster in the center swirling outward" rather than entry 142's straight-line burst.**
+     New `SwirlParticle.cs` (`SwirlParticle : Entity`, a second particle "flavor" alongside
+     `Particle.cs`, not a variant of it — the underlying motion model is fundamentally different)
+     moves in polar coordinates around a tracked center rather than a fixed velocity: `radius` grows
+     every tick (the "swirling outward" from a small `startRadius` — the dense starting cluster) while
+     `angle` advances every tick (the actual swirl/rotation), with every particle in one burst sharing
+     the same randomly-chosen spin direction so it reads as one coherent swirl rather than particles
+     scattering past each other both ways. The "sparkle" half is a fast sine-wave "twinkle" layered on
+     top of the overall lifespan fade — both `color`'s alpha and `drawScale` oscillate each tick
+     (`0.5 + 0.5*sin(...)`, phase/speed randomized per particle so they don't all twinkle in lockstep),
+     floored rather than hitting true zero so a dimming particle still reads as present. Center is a
+     `Func<Vector2>` re-evaluated every `Update()`, not a `Vector2` captured once at spawn — the swirl
+     keeps following the player if they keep moving during the ~0.8s it plays, which a fixed spawn
+     point couldn't do. `SwirlParticle.SpawnSwirl()` also alternates each particle between two supplied
+     colors (gold/white here) for a two-tone shimmer, rather than one flat color. `Player.LevelUp()`
+     now calls this instead of entry 142's `Particle.SpawnBurst()` — `() => Position` as the center
+     delegate, 24 particles, 50-tick lifespan, 60px max radius. Verified via a scripted repro (temp
+     code in `Game1.StartGame()`, backed up real save files first as a precaution even though nothing
+     in this test constructs a real state or calls a Save method — cheap insurance after entry 143's
+     surprise): confirmed `radius` grew from 2 to 26 over 20 ticks (matches the configured
+     `radiusGrowth`) and `angle` advanced by exactly 2.0 radians over the same 20 ticks (matches the
+     configured `angularSpeed`), together proving the outward-spiral motion is real, not just a static
+     offset; confirmed the alpha channel genuinely oscillates tick-to-tick (190→149→115→95→94→109→...,
+     a real wave, not a constant) — the twinkle actually doing something, not just present in the
+     formula; confirmed moving the center delegate's underlying value mid-flight and calling `Update()`
+     again moved the particle to the new center, not the frozen spawn point; confirmed a real
+     `LevelUp()` call (throwaway `Wizard`, not `Player.Instance` — same reasoning as entry 142, real
+     account already Level 20) added exactly 24 entities; and, per the entry-118/141/142 lesson,
+     rendered a real burst to an offscreen `RenderTarget2D` and confirmed non-black pixels actually
+     appeared. Confirmed via a post-test diff that all 10 real save files were completely untouched.
+     Clean build and a plain boot-check both passed.
