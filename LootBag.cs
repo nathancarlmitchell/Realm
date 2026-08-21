@@ -16,6 +16,37 @@ namespace Realm
         private bool isOpen;
         private bool clicked;
 
+        // Despawn countdown, fixed at spawn and never touched by Add()/
+        // Remove()/Clear() below — adding or removing items doesn't reset
+        // it. Lazily initialized on the first Update() call rather than in
+        // the constructor: every real LootBag is constructed via an object
+        // initializer (`new LootBag { image = bagTexture, ... }` in
+        // ItemSpawner.cs), which only assigns `image` *after* the
+        // constructor body already ran — too early there to know which
+        // color this bag actually is.
+        private int? lifespanTicksRemaining = null;
+
+        // Orange/Red/White run twice as long as every other color — the
+        // rarer/better bags (Red and White sit at the top of the tier
+        // ladder — see ItemSpawner.cs's BagRankFor*/entry 146; Orange isn't
+        // wired to any drop yet but gets the same treatment now in case it
+        // is later) are worth a longer window to notice and grab.
+        private const int NormalLifespanTicks = 60 * 60; // 60s @ 60 ticks/sec
+        private const int LongLifespanTicks = 120 * 60; // 120s
+
+        private static int LifespanTicksFor(Texture2D texture) =>
+            texture == Art.LootBagOrange || texture == Art.LootBagRed || texture == Art.LootBagWhite
+                ? LongLifespanTicks
+                : NormalLifespanTicks;
+
+        // Blink window before despawn — starts slow, ramps up to a fast
+        // blink right before the bag actually disappears, rather than one
+        // fixed blink rate for the whole warning window.
+        private const int BlinkWarningTicks = 10 * 60; // last 10s
+        private const float SlowBlinkHalfPeriodTicks = 20f;
+        private const float FastBlinkHalfPeriodTicks = 4f;
+        private float blinkPhase = 0f;
+
         public LootBag()
         {
             image = Art.LootBag;
@@ -36,6 +67,37 @@ namespace Realm
         {
             isOpen = false;
             clicked = false;
+
+            lifespanTicksRemaining ??= LifespanTicksFor(image);
+            lifespanTicksRemaining--;
+
+            if (lifespanTicksRemaining <= 0)
+            {
+                // Same explicit removal the pickup-emptied-the-bag path
+                // below already does — an expired entity never gets
+                // Update() called on it again, and nothing in
+                // EntityManager prunes ItemSpawner.LootBags on its own, so
+                // skipping this would leave a ghost bag that still renders
+                // via DrawLoot() (called directly off that list, not
+                // through EntityManager) even after despawning.
+                IsExpired = true;
+                ItemSpawner.LootBags.Remove(this);
+                return;
+            }
+
+            if (lifespanTicksRemaining <= BlinkWarningTicks)
+            {
+                // 0 at the start of the warning window, 1 right at despawn
+                // — drives the blink period from slow to fast.
+                float progress = 1f - (lifespanTicksRemaining.Value / (float)BlinkWarningTicks);
+                float halfPeriod = MathHelper.Lerp(SlowBlinkHalfPeriodTicks, FastBlinkHalfPeriodTicks, progress);
+                blinkPhase += 1f / halfPeriod;
+                color = ((int)blinkPhase % 2) == 0 ? Color.White : Color.Transparent;
+            }
+            else
+            {
+                color = Color.White;
+            }
 
             // Check if player is touching bag.
             if (Player.Instance.Bounds.Intersects(this.Bounds))

@@ -3128,3 +3128,47 @@ date/time for those individually; don't treat their grouping as meaning they all
      diff that every real save file was untouched except `GameSettingsData.json`, which gained exactly
      the new field, correctly restored to its original value. Clean build and a plain boot-check both
      passed.
+148. **Loot bags now despawn on a timer, with a warning blink that speeds up right before they
+     disappear.** New `LootBag.lifespanTicksRemaining` counts down every `Update()` — 60 seconds (3600
+     ticks) for every bag color, except Orange/Red/White at 120 seconds, per the user's own spec (Red
+     and White sit at the top of entry 146's tier ladder, and Orange — not wired to any drop yet — gets
+     the same treatment in case it is later; new `Art.LootBagOrange` field added alongside, since it
+     didn't exist until now despite `Items/Bags/orange.png` already having a `Content.mgcb` block).
+     Lazily initialized on the bag's first `Update()` call rather than in the constructor: every real
+     `LootBag` is built via an object initializer (`new LootBag { image = bagTexture, ... }` in
+     `ItemSpawner.cs`) which only assigns `image` *after* the constructor body runs — too early there
+     to know which color a given bag actually is. `Add()`/`Remove()`/`Clear()` are untouched, so the
+     countdown never resets when items go in or out, per the user's explicit ask.
+
+     In the last 10 seconds before despawn, the bag blinks — alternates between opaque and
+     `Color.Transparent` via the same `color` field `Particle`/`SwirlParticle` already use for their
+     own fades, driven by an accumulating `blinkPhase` whose per-tick increment (`1 / halfPeriod`)
+     grows as the remaining time shrinks (`MathHelper.Lerp` from a 20-tick half-period down to 4), so
+     the blink starts slow and visibly speeds up right before the bag vanishes rather than blinking at
+     one constant rate for the whole warning window. When the countdown actually reaches 0, the bag
+     doesn't just get `IsExpired = true` — it's also explicitly removed from `ItemSpawner.LootBags`
+     (mirroring the existing pickup-emptied-the-bag path just below in the same file), since nothing in
+     `EntityManager` prunes that separate list on its own and `DrawLoot()` reads it directly rather
+     than going through `EntityManager` — without this, a despawned bag would stop drawing via the
+     normal entity pass but silently keep rendering its (now-invisible-but-still-technically-there)
+     interactive contents via `DrawLoot()` forever.
+
+     Confirmed this applies automatically to manually-dropped items too (`InventorySystem.
+     AddToLootBagAtPlayer()`'s `new LootBag { Position = Player.Instance.Position, Items = items }`),
+     since it's the exact same class — that object initializer never sets `image`, so it keeps
+     whatever the constructor already assigned (`Art.LootBag`, Brown), meaning a manually-dropped item
+     always gets the normal 60-second lifespan rather than the 120-second one, and adding a second item
+     to that same bag (the "add to an existing nearby bag" branch just above in that method) correctly
+     doesn't reset its timer either, since it also just calls the untouched `Add()`.
+
+     Verified via a scripted repro (temp code in `Game1.StartGame()`, no save-file risk — `LootBag`/
+     `ItemSpawner` never touch `Player.Instance` persistence): confirmed the lazy-init lifespan reads
+     ~3599 (3600 - 1 tick) for Brown/Purple and ~7199 for Red/White right after each bag's first
+     `Update()`; confirmed `Add()`/`Remove()` leave the countdown completely unchanged; forced the
+     countdown to 1 tick on a bag actually present in `ItemSpawner.LootBags` and confirmed both
+     `IsExpired` flipped true *and* the bag was actually removed from that list, not just marked
+     expired; counted color toggles over 100 identical ticks at two different countdown positions —
+     just inside the 10-second warning window (5 toggles) versus close to despawn (10 toggles) —
+     confirming the blink genuinely speeds up rather than just existing at a fixed rate; and confirmed
+     a fresh bag well outside the warning window stays fully opaque (`A=255`) the whole time. Clean
+     build and a plain boot-check both passed.
