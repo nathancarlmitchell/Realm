@@ -3320,3 +3320,56 @@ date/time for those individually; don't treat their grouping as meaning they all
      depend on real hardware). Same category as entry 36's Space-key-in-Nexus check: confirmed by code
      inspection and the parts that *are* mechanically verifiable, but real playback needs the user to
      confirm in a live, focused game window. Clean build and a plain boot-check both passed.
+153. **New weapon type: Staff.** Wizard now wields a Staff instead of a Wand — Wand stays fully in
+     the game, unused by any class yet, reserved for a future Necromancer/Mystic-style class per the
+     user's explicit intent. `Weapon.WeaponType` gained a third case, `Staff`; `WeaponData`/
+     `WeaponData.json` gained two new float fields, `Amplitude` and `Frequency`, alongside 15 new
+     tier-0-through-14 Staff catalog entries (`Gnarled Staff` through its top tier), each with
+     `ProjectileMagnitude=9.6` (18 tiles/sec), `ProjectileDuration=29` (8.55-tile range), `Amplitude=16`
+     (0.5 tiles), `Frequency=2`, and the same DamageMin/DamageMax progression as the corresponding Wand
+     tier — per spec, "other staves are the same unless explicitly stated otherwise," and no tier-
+     specific exception was given. Weapon icon art (`Content/Weapons/Staves/0.png`–`14.png`) and
+     dedicated per-tier projectile art (`Content/Weapons/Staves/Projectiles/0.png`–`14.png`, distinct
+     colored bolt sprites per tier) were both already supplied by the user; each Staff tier's
+     `ProjectileImageName` points at its own `Weapons/Staves/Projectiles/{tier}` rather than reusing
+     Wand's shared generic pool (`Projectiles/red_fire`, `Projectiles/blue_magic`, etc.) — confirmed
+     with the user directly after noticing the dedicated art sitting unused on disk, since defaulting
+     to the shared pool (matching how `DamageMin`/`DamageMax`/everything else was copied tier-for-tier
+     from Wand) would have silently ignored real, purpose-made content. `Content.mgcb` gained 30 new
+     `#begin`/`/build` blocks total: 15 for the weapon icons, 15 for the dedicated projectile art.
+
+     New `SineWaveProjectile : Projectile` overrides `Update()` completely rather than extending the
+     base class's velocity-accumulation approach — position is recomputed fresh every tick as
+     `origin + forward * distanceTraveled + perpendicular * (amplitude * sin(2π * frequency * progress
+     + phaseOffset))`, avoiding double-counting forward motion between the base class's own approach
+     and a second perpendicular term. `Weapon.Shoot()` gained an early `WeaponType.Staff` branch (before
+     the existing default-shot/Bow branches, which are otherwise untouched) that spawns exactly two
+     `SineWaveProjectile`s at a 0-degree arc gap (`Weapon.Amplitude` is documented as 0 for Staff, so
+     both shots share the same aim angle) but opposite phase offsets (`0` and `π`), so the two bolts
+     visibly weave apart from each other rather than overlapping. `ExpiresOnHit` for Staff shots follows
+     the existing `expiresOnHit = this.Type != WeaponType.Wand` rule unchanged — Staff being anything-
+     but-Wand already satisfies "Staff shots do not pass through targets" with no extra code needed.
+
+     One real-save-data risk was caught and resolved before writing any code: an existing save with a
+     Wizard whose `WeaponType` was `Wand` (the old default) would silently lose its equipped weapon on
+     next load once `Wizard.cs` switched to `WeaponType.Staff`, since `Weapon.LoadWeapon()`'s type-
+     mismatch path is silent, not an error. Asked the user directly rather than guessing; they chose to
+     accept the reset over an auto-migration to an equivalent-tier Staff — their live Wizard save's
+     equipped Wand resets to the starting tier-0 Staff on next load, by their own explicit choice.
+
+     Verified via a two-part scripted repro in `Game1.StartGame()` (real save files backed up first,
+     verified byte-identical afterward). Part 1 exercised `SineWaveProjectile` in isolation: forward
+     distance after 29 ticks landed at 278.4001 against an expected 278.4 (9.6 px/tick × 29); the
+     perpendicular Y range came out to [-15.976535, 15.976535] against an expected amplitude of ±16,
+     with 4 zero crossings confirming a real 2-cycle oscillation rather than a single displacement;
+     `IsExpired` correctly flipped `true` at exactly `Duration` ticks; and phase `0` vs `π` after one
+     tick produced opposite-signed Y values (6.718226 vs -6.7182274) with equal X (9.6 vs 9.6),
+     confirming the two shots weave apart symmetrically rather than one just lagging the other. Part 2
+     exercised the full integration path: confirmed exactly 15 Staff catalog entries with tier 0 reading
+     `Amplitude=16, Frequency=2, Magnitude=9.6, Duration=29` as expected; constructed a throwaway
+     `Wizard` and confirmed `WeaponType=Staff` and its starting weapon is `Gnarled Staff`/`Type=Staff`/
+     `IsEquipped=True`; called `Weapon.Shoot()` on it and confirmed exactly 2 entities were added (not
+     1 like Wand, not 3 like Bow), both real `SineWaveProjectile` instances, both `ExpiresOnHit=True`;
+     and advanced both one tick each, confirming X stayed aligned (41.61687 vs 41.583065) while Y had
+     already diverged (6.694053 vs -6.7423573) — proving the weave is real end-to-end, not just in the
+     isolated Part 1 test. Clean build and a plain boot-check both passed.

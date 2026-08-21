@@ -509,6 +509,8 @@ namespace Realm
                             ProjectileDuration = weaponData[i].ProjectileDuration,
                             ImageName = weaponData[i].ImageName,
                             ProjectileImageName = weaponData[i].ProjectileImageName,
+                            Amplitude = weaponData[i].Amplitude,
+                            Frequency = weaponData[i].Frequency,
                         }
                     );
                 }

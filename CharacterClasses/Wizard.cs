@@ -16,7 +16,7 @@ namespace Realm.CharacterClasses
             image = Art.Wizard;
             Sound.PlayerHit = Game1.Instance.Content.Load<SoundEffect>("Sounds/Player/wizard_hit");
 
-            WeaponType = Weapon.WeaponType.Wand;
+            WeaponType = Weapon.WeaponType.Staff;
             ArmorType = Armor.ArmorType.Robe;
 
             baseHealth = 100;
@@ -37,8 +37,8 @@ namespace Realm.CharacterClasses
             MaxVitality = 40;
             MaxWisdom = 60;
 
-            Weapon = LoadWeapon("Fire Wand");
-            Weapon.Type = Weapon.WeaponType.Wand;
+            Weapon = LoadWeapon("Gnarled Staff");
+            Weapon.Type = Weapon.WeaponType.Staff;
 
             Armor = Armor.LoadArmor("Cloth Robe");
             // No starting Ring, regardless of class — Player()'s base
@@ -136,8 +136,10 @@ namespace Realm.CharacterClasses
                 Mana -= AbilityCost;
 
                 int SpellBombProjectileCount = 16;
-                // Spell bomb. Expires on hit even though the Wand basic
-                // attack passes through — an ability shot, not a wand bolt.
+                // Spell bomb. Always expires on hit regardless of what the
+                // currently-equipped weapon's own basic attack does (e.g.
+                // Wand's pass-through) — an ability shot, not a basic
+                // attack bolt.
                 for (int i = 0; i < SpellBombProjectileCount; i++)
                 {
                     Vector2 vel = Extensions.FromPolar(

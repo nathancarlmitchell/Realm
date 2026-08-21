@@ -16,6 +16,7 @@ namespace Realm
             Wand, // 0
             Bow, // 1
             Sword, // 2
+            Staff, // 3
         }
 
         public WeaponType Type { get; set; }
@@ -29,6 +30,13 @@ namespace Realm
         public int ProjectileDuration { get; set; }
         public Texture2D ProjectileImage;
         public string ProjectileImageName { get; set; }
+
+        // Staff-only — see SineWaveProjectile.cs. 0 for every other
+        // weapon type, which correctly produces no perpendicular offset
+        // at all (a straight line), so nothing else needs to check Type
+        // before reading these.
+        public float Amplitude { get; set; }
+        public float Frequency { get; set; }
 
         private readonly Random rand = new();
 
@@ -77,6 +85,8 @@ namespace Realm
                     ProjectileDuration = weaponData.ProjectileDuration,
                     ImageName = weaponData.ImageName,
                     ProjectileImageName = weaponData.ProjectileImageName,
+                    Amplitude = weaponData.Amplitude,
+                    Frequency = weaponData.Frequency,
                 };
 
                 Player.Instance.EquipWeapon(weapon);
@@ -113,8 +123,56 @@ namespace Realm
 
                 // Wand bolts pass through enemies (still only damaging each
                 // one once, via EntityManager's HitBy tracking); every other
-                // weapon type's shot expires on the first thing it hits.
+                // weapon type's shot expires on the first thing it hits —
+                // Staff included ("Staff shots do not pass through
+                // targets").
                 bool expiresOnHit = this.Type != WeaponType.Wand;
+
+                if (this.Type == WeaponType.Staff)
+                {
+                    // Two shots, 0-degree arc gap — both fire along the
+                    // exact same angle (unlike Bow's ±0.35 rad spread),
+                    // distinguished only by sine-wave phase: one leads,
+                    // the other trails a half-cycle behind, so they weave
+                    // opposite each other around the aim line rather than
+                    // moving in lockstep. See SineWaveProjectile.cs.
+                    EntityManager.Add(
+                        new SineWaveProjectile(
+                            spawnPosition,
+                            aimAngle + randomSpread,
+                            this.ProjectileMagnitude,
+                            this.Amplitude,
+                            this.Frequency,
+                            phaseOffset: 0f
+                        )
+                        {
+                            image = this.ProjectileImage,
+                            Damage = (int)damage,
+                            ExpiresOnHit = expiresOnHit,
+                            Duration = this.ProjectileDuration,
+                        }
+                    );
+
+                    EntityManager.Add(
+                        new SineWaveProjectile(
+                            spawnPosition,
+                            aimAngle + randomSpread,
+                            this.ProjectileMagnitude,
+                            this.Amplitude,
+                            this.Frequency,
+                            phaseOffset: MathHelper.Pi
+                        )
+                        {
+                            image = this.ProjectileImage,
+                            Damage = (int)damage,
+                            ExpiresOnHit = expiresOnHit,
+                            Duration = this.ProjectileDuration,
+                        }
+                    );
+
+                    Sound.Play(Sound.MagicShoot, 0.3f);
+                    return;
+                }
 
                 Vector2 vel = Extensions.FromPolar(
                     aimAngle + randomSpread,
