@@ -1033,6 +1033,12 @@ namespace Realm
                 ShowHitboxesEnabled = Player.Instance.ShowHitboxesEnabled,
                 LowHealthIndicatorEnabled = Player.Instance.LowHealthIndicatorEnabled,
                 LowHealthThresholdPercent = Player.Instance.LowHealthThresholdPercent,
+                MusicEnabled = Player.Instance.MusicEnabled,
+                MusicVolumePercent = Player.Instance.MusicVolumePercent,
+                MusicMuted = Player.Instance.MusicMuted,
+                SfxVolumePercent = Player.Instance.SfxVolumePercent,
+                SfxMuted = Player.Instance.SfxMuted,
+                WeaponShotsMuted = Player.Instance.WeaponShotsMuted,
             };
             string json = JsonSerializer.Serialize(data);
             File.WriteAllText(gameSettingsDataLocation, json);
@@ -1051,6 +1057,12 @@ namespace Realm
                 Player.Instance.ShowHitboxesEnabled = data.ShowHitboxesEnabled;
                 Player.Instance.LowHealthIndicatorEnabled = data.LowHealthIndicatorEnabled;
                 Player.Instance.LowHealthThresholdPercent = data.LowHealthThresholdPercent;
+                Player.Instance.MusicEnabled = data.MusicEnabled;
+                Player.Instance.MusicVolumePercent = data.MusicVolumePercent;
+                Player.Instance.MusicMuted = data.MusicMuted;
+                Player.Instance.SfxVolumePercent = data.SfxVolumePercent;
+                Player.Instance.SfxMuted = data.SfxMuted;
+                Player.Instance.WeaponShotsMuted = data.WeaponShotsMuted;
             }
             catch (System.IO.FileNotFoundException)
             {

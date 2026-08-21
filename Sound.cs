@@ -62,18 +62,36 @@ namespace Realm
         {
             Game1.Mute = !Game1.Mute;
             Overlay.ToggleAudio();
-            SongInstance.Volume = 0.0f;
-            if (!Game1.Mute)
+            RefreshMusicState();
+        }
+
+        // Called once per dungeon entry (RealmState's constructor, which
+        // BossRealmState inherits) to start the track, and again whenever
+        // any of Player.Instance's Music* settings change (via
+        // SettingsState.cs's Audio tab) or the master Game1.Mute toggles —
+        // the single place that reconciles "should the song be playing at
+        // all" and "at what volume" from every source that can affect
+        // either, so none of those call sites need to duplicate this
+        // logic or risk drifting out of sync with each other.
+        public static void RefreshMusicState()
+        {
+            bool shouldPlay = !Game1.Mute && Player.Instance.MusicEnabled;
+            bool audible = shouldPlay && !Player.Instance.MusicMuted;
+
+            SongInstance.Volume = audible ? Player.Instance.MusicVolumePercent / 100f : 0f;
+
+            if (shouldPlay)
             {
-                SongInstance.Volume = 0.5f;
+                if (SongInstance.State != SoundState.Playing)
+                    SongInstance.Play();
+            }
+            else if (SongInstance.State == SoundState.Playing)
+            {
+                SongInstance.Pause();
             }
         }
 
-        public static void PlaySong()
-        {
-            if (!Game1.Mute)
-                SongInstance.Play();
-        }
+        public static void PlaySong() => RefreshMusicState();
 
         public static void SongVolume(float volume)
         {
@@ -91,23 +109,35 @@ namespace Realm
             SongInstance.Volume = volume;
         }
 
+        // Every non-music sound effect routes through here (or the
+        // pitchVariance overload below) — Game1.Mute is still the master
+        // override (unchanged from before these settings existed), then
+        // Player.Instance.SfxMuted/SfxVolumePercent apply on top, and
+        // MagicShoot specifically also respects WeaponShotsMuted, since
+        // that's the one sound Weapon.Shoot() plays for every class's
+        // basic attack.
+        private static bool ShouldPlaySfx(SoundEffect sound) =>
+            !Game1.Mute
+            && !Player.Instance.SfxMuted
+            && !(Player.Instance.WeaponShotsMuted && sound == MagicShoot);
+
         public static void Play(SoundEffect sound, float volume)
         {
-            if (!Game1.Mute)
+            if (ShouldPlaySfx(sound))
             {
-                sound.Play(volume, 0.0f, 0.0f);
+                sound.Play(volume * (Player.Instance.SfxVolumePercent / 100f), 0.0f, 0.0f);
             }
         }
 
         public static void Play(SoundEffect sound, float volume, float pitchVariance)
         {
-            if (!Game1.Mute)
+            if (ShouldPlaySfx(sound))
             {
                 float pitch = (float)(
                     rand.NextDouble() * (pitchVariance - -pitchVariance) + -pitchVariance
                 );
 
-                sound.Play(volume, pitch, 0.0f);
+                sound.Play(volume * (Player.Instance.SfxVolumePercent / 100f), pitch, 0.0f);
             }
         }
     }

@@ -33,37 +33,41 @@ namespace Realm.States
             public bool Hover;
         }
 
-        // Gameplay tab's non-keybinding, plain click-to-toggle settings
-        // (Auto-Fire, Auto-Enter Portals) — Get/Set close over whichever
-        // Player.Instance bool the row actually controls, so adding a
-        // future toggle is just one more list entry instead of a new pair
-        // of dedicated Rect/Hover fields and a copy of the same
-        // Update()/Draw() block. Generalized from Auto-Fire's original
-        // single dedicated autoFireRect/autoFireHover fields now that a
-        // second real toggle (Auto-Enter Portals) showed up.
-        private class ToggleRow
+        private enum RowKind
         {
-            public string Label;
-            public Rectangle Rect;
-            public bool Hover;
-            public Func<bool> Get;
-            public Action<bool> Set;
+            Toggle,
+            Numeric,
         }
 
-        // A clamped, steppable int setting (currently just "Low Health
-        // Threshold") — same Get/Set-closure shape as ToggleRow, but two
-        // small "-"/"+" hit-rects instead of one whole-row click, since
-        // there's a range to move through rather than a plain on/off flip.
-        private class NumericRow
+        // Every non-keybinding setting on the Gameplay/Graphics/Audio tabs
+        // — a plain on/off flip (Toggle) or a clamped, steppable int
+        // (Numeric), picked by Kind. Unified into one type (rather than
+        // the separate ToggleRow/NumericRow classes this started as) once
+        // the Audio tab needed toggles and numerics interleaved in a
+        // specific order (Music, Music Volume, Music Mute, ...) — two
+        // separate lists could only ever render as two separate blocks,
+        // toggles-then-numerics, not the order the settings actually read
+        // best in. Get/Set close over whichever Player.Instance field the
+        // row actually controls, so adding a future setting to any of
+        // these three tabs is just one more list entry.
+        private class SettingsRow
         {
+            public RowKind Kind;
             public string Label;
             public Rectangle Rect;
+
+            // Toggle
+            public bool Hover;
+            public Func<bool> GetBool;
+            public Action<bool> SetBool;
+
+            // Numeric
             public Rectangle DecrementRect;
             public Rectangle IncrementRect;
             public bool DecrementHover;
             public bool IncrementHover;
-            public Func<int> Get;
-            public Action<int> Set;
+            public Func<int> GetInt;
+            public Action<int> SetInt;
             public int Step;
             public int Min;
             public int Max;
@@ -92,16 +96,16 @@ namespace Realm.States
 
         private SettingsTab currentTab = SettingsTab.Controls;
 
-        private readonly List<ToggleRow> gameplayToggles;
-        private readonly List<ToggleRow> graphicsToggles;
-        private readonly List<NumericRow> graphicsNumerics;
+        private readonly List<SettingsRow> gameplayRows;
+        private readonly List<SettingsRow> graphicsRows;
+        private readonly List<SettingsRow> audioRows;
 
         private const int RowHeight = 28;
         private const int TabHeight = 32;
         private const int TabGap = 16;
         private const int TabPaddingX = 16;
         private const int StepperButtonWidth = 24;
-        private const int StepperValueGap = 50; // room for "100%" between the two buttons
+        private const int StepperValueGap = 70; // room for "100%" between the two buttons, with real padding on both sides
 
         private int labelX;
         private int valueX;
@@ -119,65 +123,139 @@ namespace Realm.States
             foreach (var action in KeyBindings.AllActions)
                 rows.Add(new Row { Action = action });
 
-            gameplayToggles =
+            gameplayRows =
             [
-                new ToggleRow
+                new SettingsRow
                 {
+                    Kind = RowKind.Toggle,
                     Label = "Auto-Fire",
-                    Get = () => Player.Instance.AutoFireEnabled,
-                    Set = v => Player.Instance.AutoFireEnabled = v,
+                    GetBool = () => Player.Instance.AutoFireEnabled,
+                    SetBool = v => Player.Instance.AutoFireEnabled = v,
                 },
-                new ToggleRow
+                new SettingsRow
                 {
+                    Kind = RowKind.Toggle,
                     Label = "Auto-Enter Portals",
-                    Get = () => Player.Instance.AutoEnterPortalsEnabled,
-                    Set = v => Player.Instance.AutoEnterPortalsEnabled = v,
+                    GetBool = () => Player.Instance.AutoEnterPortalsEnabled,
+                    SetBool = v => Player.Instance.AutoEnterPortalsEnabled = v,
                 },
             ];
 
-            graphicsToggles =
+            graphicsRows =
             [
-                new ToggleRow
+                new SettingsRow
                 {
+                    Kind = RowKind.Toggle,
                     Label = "Show Hitboxes",
-                    Get = () => Player.Instance.ShowHitboxesEnabled,
-                    Set = v => Player.Instance.ShowHitboxesEnabled = v,
+                    GetBool = () => Player.Instance.ShowHitboxesEnabled,
+                    SetBool = v => Player.Instance.ShowHitboxesEnabled = v,
                 },
-                new ToggleRow
+                new SettingsRow
                 {
+                    Kind = RowKind.Toggle,
                     Label = "Low Health Indicator",
-                    Get = () => Player.Instance.LowHealthIndicatorEnabled,
-                    Set = v => Player.Instance.LowHealthIndicatorEnabled = v,
+                    GetBool = () => Player.Instance.LowHealthIndicatorEnabled,
+                    SetBool = v => Player.Instance.LowHealthIndicatorEnabled = v,
                 },
-            ];
-
-            graphicsNumerics =
-            [
-                new NumericRow
+                new SettingsRow
                 {
+                    Kind = RowKind.Numeric,
                     Label = "Low Health Threshold",
-                    Get = () => Player.Instance.LowHealthThresholdPercent,
-                    Set = v => Player.Instance.LowHealthThresholdPercent = v,
+                    GetInt = () => Player.Instance.LowHealthThresholdPercent,
+                    SetInt = v => Player.Instance.LowHealthThresholdPercent = v,
                     Step = 5,
                     Min = 0,
                     Max = 100,
                 },
             ];
 
-            // Widest label sets where the key-name column starts, same
-            // column-alignment trick as Overlay.DrawStats() — includes the
-            // Gameplay/Graphics tabs' toggle/numeric labels too, so their
-            // rows line up in the same column as the Controls tab's rows,
-            // even though only one tab's content is visible at a time.
+            // Order matches how the settings actually read best together —
+            // Music's own on/off, then its volume, then its quick-mute,
+            // followed by the same Volume/Mute pair for Sound Effects, and
+            // finally the one narrower mute scoped to just the player's own
+            // weapon-fire sound (Weapon.Shoot()'s Sound.MagicShoot call).
+            // The three Music-affecting rows also call
+            // Sound.RefreshMusicState() on top of the usual Set(), so a
+            // change takes effect on the currently-playing track
+            // immediately rather than only on the next dungeon entry.
+            audioRows =
+            [
+                new SettingsRow
+                {
+                    Kind = RowKind.Toggle,
+                    Label = "Music",
+                    GetBool = () => Player.Instance.MusicEnabled,
+                    SetBool = v =>
+                    {
+                        Player.Instance.MusicEnabled = v;
+                        Sound.RefreshMusicState();
+                    },
+                },
+                new SettingsRow
+                {
+                    Kind = RowKind.Numeric,
+                    Label = "Music Volume",
+                    GetInt = () => Player.Instance.MusicVolumePercent,
+                    SetInt = v =>
+                    {
+                        Player.Instance.MusicVolumePercent = v;
+                        Sound.RefreshMusicState();
+                    },
+                    Step = 5,
+                    Min = 0,
+                    Max = 100,
+                },
+                new SettingsRow
+                {
+                    Kind = RowKind.Toggle,
+                    Label = "Music Mute",
+                    GetBool = () => Player.Instance.MusicMuted,
+                    SetBool = v =>
+                    {
+                        Player.Instance.MusicMuted = v;
+                        Sound.RefreshMusicState();
+                    },
+                },
+                new SettingsRow
+                {
+                    Kind = RowKind.Numeric,
+                    Label = "Sound Effects Volume",
+                    GetInt = () => Player.Instance.SfxVolumePercent,
+                    SetInt = v => Player.Instance.SfxVolumePercent = v,
+                    Step = 5,
+                    Min = 0,
+                    Max = 100,
+                },
+                new SettingsRow
+                {
+                    Kind = RowKind.Toggle,
+                    Label = "Sound Effects Mute",
+                    GetBool = () => Player.Instance.SfxMuted,
+                    SetBool = v => Player.Instance.SfxMuted = v,
+                },
+                new SettingsRow
+                {
+                    Kind = RowKind.Toggle,
+                    Label = "Mute Weapon Shots",
+                    GetBool = () => Player.Instance.WeaponShotsMuted,
+                    SetBool = v => Player.Instance.WeaponShotsMuted = v,
+                },
+            ];
+
+            // Widest label sets where the value column starts, same
+            // column-alignment trick as Overlay.DrawStats() — includes
+            // every tab's row labels too, so they all line up in the same
+            // column even though only one tab's content is visible at a
+            // time.
             float widestLabel = 0f;
             foreach (var action in KeyBindings.AllActions)
                 widestLabel = Math.Max(widestLabel, Art.SettingsFont.MeasureString(KeyBindings.DisplayName(action)).X);
-            foreach (var toggle in gameplayToggles)
-                widestLabel = Math.Max(widestLabel, Art.SettingsFont.MeasureString(toggle.Label).X);
-            foreach (var toggle in graphicsToggles)
-                widestLabel = Math.Max(widestLabel, Art.SettingsFont.MeasureString(toggle.Label).X);
-            foreach (var numeric in graphicsNumerics)
-                widestLabel = Math.Max(widestLabel, Art.SettingsFont.MeasureString(numeric.Label).X);
+            foreach (var row in gameplayRows)
+                widestLabel = Math.Max(widestLabel, Art.SettingsFont.MeasureString(row.Label).X);
+            foreach (var row in graphicsRows)
+                widestLabel = Math.Max(widestLabel, Art.SettingsFont.MeasureString(row.Label).X);
+            foreach (var row in audioRows)
+                widestLabel = Math.Max(widestLabel, Art.SettingsFont.MeasureString(row.Label).X);
 
             labelX = CenterWidth - 160;
             valueX = labelX + (int)widestLabel + 24;
@@ -186,7 +264,8 @@ namespace Realm.States
             // many rows) is currently active — content has to stay in the
             // same place across tab switches, or the whole screen would
             // jump around every time the user clicked a different tab.
-            // Sized against the Controls tab (10 rows), the tallest one.
+            // Sized against the Controls tab (10 rows) and the Audio tab
+            // (6 rows), the two tallest.
             tabBarY = CenterHeight - 200;
             rowsTop = tabBarY + TabHeight + 20;
 
@@ -201,42 +280,9 @@ namespace Realm.States
                 );
             }
 
-            for (int i = 0; i < gameplayToggles.Count; i++)
-            {
-                gameplayToggles[i].Rect = new Rectangle(
-                    labelX,
-                    rowsTop + i * RowHeight,
-                    valueX - labelX + 160,
-                    (int)Art.SettingsFont.MeasureString("A").Y + 6
-                );
-            }
-
-            for (int i = 0; i < graphicsToggles.Count; i++)
-            {
-                graphicsToggles[i].Rect = new Rectangle(
-                    labelX,
-                    rowsTop + i * RowHeight,
-                    valueX - labelX + 160,
-                    (int)Art.SettingsFont.MeasureString("A").Y + 6
-                );
-            }
-
-            // Continues right after the Graphics tab's toggle rows, same
-            // column, same row height — the two lists together read as one
-            // continuous stack even though they're separately typed.
-            for (int i = 0; i < graphicsNumerics.Count; i++)
-            {
-                int rowY = rowsTop + (graphicsToggles.Count + i) * RowHeight;
-                int rowHeightPx = (int)Art.SettingsFont.MeasureString("A").Y + 6;
-                graphicsNumerics[i].Rect = new Rectangle(labelX, rowY, valueX - labelX + 160, rowHeightPx);
-                graphicsNumerics[i].DecrementRect = new Rectangle(valueX, rowY, StepperButtonWidth, rowHeightPx);
-                graphicsNumerics[i].IncrementRect = new Rectangle(
-                    valueX + StepperButtonWidth + StepperValueGap,
-                    rowY,
-                    StepperButtonWidth,
-                    rowHeightPx
-                );
-            }
+            LayoutRows(gameplayRows);
+            LayoutRows(graphicsRows);
+            LayoutRows(audioRows);
 
             // Tab bar, centered as a group above the content area.
             tabs = [];
@@ -256,9 +302,10 @@ namespace Realm.States
             }
 
             // Also fixed, for the same reason as rowsTop/tabBarY above —
-            // sized to comfortably clear the Controls tab's full row list
+            // sized to comfortably clear the tallest tab's full row list
             // regardless of which tab happens to be showing right now.
-            int buttonsY = rowsTop + rows.Count * RowHeight + 30;
+            int tallestRowCount = Math.Max(rows.Count, audioRows.Count);
+            int buttonsY = rowsTop + tallestRowCount * RowHeight + 30;
 
             backButton = new Button(Art.ButtonTexture, Art.SettingsFont) { Text = "Back" };
             backButton.Click += (sender, e) => Game1.Instance.ChangeState(returnState);
@@ -271,6 +318,110 @@ namespace Realm.States
                 Util.SaveKeyBindingsData();
             };
             resetButton.Position = new Vector2(CenterWidth + 10, buttonsY);
+        }
+
+        // Assigns Rect (and DecrementRect/IncrementRect for Numeric rows)
+        // to every row in a tab's list, stacked in list order at the same
+        // fixed column/row height every other tab uses.
+        private void LayoutRows(List<SettingsRow> tabRows)
+        {
+            int rowHeightPx = (int)Art.SettingsFont.MeasureString("A").Y + 6;
+            for (int i = 0; i < tabRows.Count; i++)
+            {
+                int rowY = rowsTop + i * RowHeight;
+                tabRows[i].Rect = new Rectangle(labelX, rowY, valueX - labelX + 160, rowHeightPx);
+
+                if (tabRows[i].Kind == RowKind.Numeric)
+                {
+                    tabRows[i].DecrementRect = new Rectangle(valueX, rowY, StepperButtonWidth, rowHeightPx);
+                    tabRows[i].IncrementRect = new Rectangle(
+                        valueX + StepperButtonWidth + StepperValueGap,
+                        rowY,
+                        StepperButtonWidth,
+                        rowHeightPx
+                    );
+                }
+            }
+        }
+
+        private static void UpdateRows(List<SettingsRow> tabRows)
+        {
+            foreach (var row in tabRows)
+            {
+                if (row.Kind == RowKind.Toggle)
+                {
+                    row.Hover = row.Rect.Intersects(Input.MouseBounds);
+                    if (row.Hover && Input.GetMouseClick())
+                    {
+                        row.SetBool(!row.GetBool());
+                        Util.SaveGameSettingsData();
+                    }
+                }
+                else
+                {
+                    row.DecrementHover = row.DecrementRect.Intersects(Input.MouseBounds);
+                    row.IncrementHover = row.IncrementRect.Intersects(Input.MouseBounds);
+
+                    if (row.DecrementHover && Input.GetMouseClick())
+                    {
+                        row.SetInt(Math.Max(row.Min, row.GetInt() - row.Step));
+                        Util.SaveGameSettingsData();
+                    }
+                    else if (row.IncrementHover && Input.GetMouseClick())
+                    {
+                        row.SetInt(Math.Min(row.Max, row.GetInt() + row.Step));
+                        Util.SaveGameSettingsData();
+                    }
+                }
+            }
+        }
+
+        private void DrawRows(SpriteBatch spriteBatch, List<SettingsRow> tabRows)
+        {
+            foreach (var row in tabRows)
+            {
+                if (row.Kind == RowKind.Toggle)
+                {
+                    Color toggleColor = row.Hover ? Color.Gold : Color.White;
+                    spriteBatch.DrawString(Art.SettingsFont, row.Label, new Vector2(labelX, row.Rect.Y), toggleColor);
+                    spriteBatch.DrawString(
+                        Art.SettingsFont,
+                        row.GetBool() ? "ON" : "OFF",
+                        new Vector2(valueX, row.Rect.Y),
+                        toggleColor
+                    );
+                }
+                else
+                {
+                    spriteBatch.DrawString(Art.SettingsFont, row.Label, new Vector2(labelX, row.Rect.Y), Color.White);
+
+                    Color decColor = row.DecrementHover ? Color.Gold : Color.White;
+                    spriteBatch.DrawString(
+                        Art.SettingsFont,
+                        "-",
+                        new Vector2(row.DecrementRect.X, row.Rect.Y),
+                        decColor
+                    );
+
+                    string valueText = $"{row.GetInt()}%";
+                    Vector2 valueTextSize = Art.SettingsFont.MeasureString(valueText);
+                    float valueCenterX = (row.DecrementRect.Right + row.IncrementRect.X) / 2f;
+                    spriteBatch.DrawString(
+                        Art.SettingsFont,
+                        valueText,
+                        new Vector2(valueCenterX - valueTextSize.X / 2f, row.Rect.Y),
+                        Color.White
+                    );
+
+                    Color incColor = row.IncrementHover ? Color.Gold : Color.White;
+                    spriteBatch.DrawString(
+                        Art.SettingsFont,
+                        "+",
+                        new Vector2(row.IncrementRect.X, row.Rect.Y),
+                        incColor
+                    );
+                }
+            }
         }
 
         public override void Update(GameTime gameTime)
@@ -327,47 +478,13 @@ namespace Realm.States
             }
 
             if (currentTab == SettingsTab.Gameplay)
-            {
-                foreach (var toggle in gameplayToggles)
-                {
-                    toggle.Hover = toggle.Rect.Intersects(Input.MouseBounds);
-                    if (toggle.Hover && Input.GetMouseClick())
-                    {
-                        toggle.Set(!toggle.Get());
-                        Util.SaveGameSettingsData();
-                    }
-                }
-            }
+                UpdateRows(gameplayRows);
 
             if (currentTab == SettingsTab.Graphics)
-            {
-                foreach (var toggle in graphicsToggles)
-                {
-                    toggle.Hover = toggle.Rect.Intersects(Input.MouseBounds);
-                    if (toggle.Hover && Input.GetMouseClick())
-                    {
-                        toggle.Set(!toggle.Get());
-                        Util.SaveGameSettingsData();
-                    }
-                }
+                UpdateRows(graphicsRows);
 
-                foreach (var numeric in graphicsNumerics)
-                {
-                    numeric.DecrementHover = numeric.DecrementRect.Intersects(Input.MouseBounds);
-                    numeric.IncrementHover = numeric.IncrementRect.Intersects(Input.MouseBounds);
-
-                    if (numeric.DecrementHover && Input.GetMouseClick())
-                    {
-                        numeric.Set(Math.Max(numeric.Min, numeric.Get() - numeric.Step));
-                        Util.SaveGameSettingsData();
-                    }
-                    else if (numeric.IncrementHover && Input.GetMouseClick())
-                    {
-                        numeric.Set(Math.Min(numeric.Max, numeric.Get() + numeric.Step));
-                        Util.SaveGameSettingsData();
-                    }
-                }
-            }
+            if (currentTab == SettingsTab.Audio)
+                UpdateRows(audioRows);
 
             backButton.Update(gameTime);
 
@@ -435,93 +552,15 @@ namespace Realm.States
                     break;
 
                 case SettingsTab.Gameplay:
-                    foreach (var toggle in gameplayToggles)
-                    {
-                        Color toggleColor = toggle.Hover ? Color.Gold : Color.White;
-                        spriteBatch.DrawString(
-                            Art.SettingsFont,
-                            toggle.Label,
-                            new Vector2(labelX, toggle.Rect.Y),
-                            toggleColor
-                        );
-                        spriteBatch.DrawString(
-                            Art.SettingsFont,
-                            toggle.Get() ? "ON" : "OFF",
-                            new Vector2(valueX, toggle.Rect.Y),
-                            toggleColor
-                        );
-                    }
+                    DrawRows(spriteBatch, gameplayRows);
                     break;
 
                 case SettingsTab.Graphics:
-                    foreach (var toggle in graphicsToggles)
-                    {
-                        Color toggleColor = toggle.Hover ? Color.Gold : Color.White;
-                        spriteBatch.DrawString(
-                            Art.SettingsFont,
-                            toggle.Label,
-                            new Vector2(labelX, toggle.Rect.Y),
-                            toggleColor
-                        );
-                        spriteBatch.DrawString(
-                            Art.SettingsFont,
-                            toggle.Get() ? "ON" : "OFF",
-                            new Vector2(valueX, toggle.Rect.Y),
-                            toggleColor
-                        );
-                    }
-
-                    foreach (var numeric in graphicsNumerics)
-                    {
-                        spriteBatch.DrawString(
-                            Art.SettingsFont,
-                            numeric.Label,
-                            new Vector2(labelX, numeric.Rect.Y),
-                            Color.White
-                        );
-
-                        Color decColor = numeric.DecrementHover ? Color.Gold : Color.White;
-                        spriteBatch.DrawString(
-                            Art.SettingsFont,
-                            "-",
-                            new Vector2(numeric.DecrementRect.X, numeric.Rect.Y),
-                            decColor
-                        );
-
-                        string valueText = $"{numeric.Get()}%";
-                        Vector2 valueTextSize = Art.SettingsFont.MeasureString(valueText);
-                        float valueCenterX = (numeric.DecrementRect.Right + numeric.IncrementRect.X) / 2f;
-                        spriteBatch.DrawString(
-                            Art.SettingsFont,
-                            valueText,
-                            new Vector2(valueCenterX - valueTextSize.X / 2f, numeric.Rect.Y),
-                            Color.White
-                        );
-
-                        Color incColor = numeric.IncrementHover ? Color.Gold : Color.White;
-                        spriteBatch.DrawString(
-                            Art.SettingsFont,
-                            "+",
-                            new Vector2(numeric.IncrementRect.X, numeric.Rect.Y),
-                            incColor
-                        );
-                    }
+                    DrawRows(spriteBatch, graphicsRows);
                     break;
 
                 case SettingsTab.Audio:
-                    // Nothing to expose yet — no volume control exists
-                    // anywhere in the codebase today (confirmed via a
-                    // repo-wide check before building this). Placeholder
-                    // rather than an empty-looking tab, so it reads as "not
-                    // built yet" instead of "broken."
-                    const string placeholder = "No settings here yet.";
-                    Vector2 placeholderSize = Art.SettingsFont.MeasureString(placeholder);
-                    spriteBatch.DrawString(
-                        Art.SettingsFont,
-                        placeholder,
-                        new Vector2(CenterWidth - placeholderSize.X / 2, rowsTop),
-                        Color.Gray
-                    );
+                    DrawRows(spriteBatch, audioRows);
                     break;
             }
 

@@ -190,6 +190,20 @@ namespace Realm
         // NumericRow), in steps of 5.
         public int LowHealthThresholdPercent = 25;
 
+        // Same account-wide GameSettingsData persistence — see Sound.cs's
+        // RefreshMusicState()/ShouldPlaySfx() for how these actually gate
+        // playback, and SettingsState.cs's Audio tab for the controls.
+        // MusicEnabled/MusicVolumePercent/SfxVolumePercent all default to
+        // their real intended values directly (matching what Sound.cs
+        // already hardcoded before these settings existed), same as
+        // LowHealthIndicatorEnabled/LowHealthThresholdPercent above.
+        public bool MusicEnabled = true;
+        public int MusicVolumePercent = 25;
+        public bool MusicMuted;
+        public int SfxVolumePercent = 100;
+        public bool SfxMuted;
+        public bool WeaponShotsMuted;
+
         // Set once this class first reaches the level cap (20) and never
         // cleared again — same permanent-through-death/delete treatment as
         // HighScore (see DeleteCharacterData/GameOverState), since this is

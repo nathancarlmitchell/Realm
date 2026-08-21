@@ -36,4 +36,19 @@ public class GameSettingsData
     // disable the flash/bar entirely (Health < HealthMax * 0% is never
     // true) instead of leaving it at the intended 25%.
     public int LowHealthThresholdPercent { get; set; } = 25;
+
+    // Audio — see Sound.cs's RefreshMusicState()/ShouldPlaySfx() and
+    // SettingsState.cs's Audio tab. MusicEnabled/MusicVolumePercent/
+    // SfxVolumePercent all need their own explicit defaults for the same
+    // reason as LowHealthIndicatorEnabled/LowHealthThresholdPercent above
+    // — an old GameSettingsData.json missing these keys must not silently
+    // deserialize to "music off"/"everything silent" instead of the real
+    // intended defaults. The three *Muted flags default correctly to
+    // false either way, so they don't need one.
+    public bool MusicEnabled { get; set; } = true;
+    public int MusicVolumePercent { get; set; } = 25; // matches the volume Sound.cs already hardcoded before this setting existed
+    public bool MusicMuted { get; set; }
+    public int SfxVolumePercent { get; set; } = 100; // 100% preserves every existing Sound.Play() call's own tuned volume unchanged until the user turns it down
+    public bool SfxMuted { get; set; }
+    public bool WeaponShotsMuted { get; set; }
 }

@@ -3263,3 +3263,60 @@ date/time for those individually; don't treat their grouping as meaning they all
      low HP (confirmed real red-ish pixels appear below the sprite) versus above the threshold
      (confirmed zero red-ish pixels — the bar correctly doesn't render at all when not needed). Clean
      build and a plain boot-check both passed.
+152. **A real Audio tab — Music (on/off, default on), Music Volume, Music Mute, Sound Effects Volume,
+     Sound Effects Mute, and a separate Mute Weapon Shots that only silences the player's own basic-
+     attack sound.** Previously Audio shared a flat "No settings here yet." placeholder with Graphics,
+     since the game had exactly one global on/off (`Game1.Mute`, still bound to the M key via
+     `KeyBindings.Action.ToggleMute`) covering music and every sound effect together, with no volume
+     concept at all. `Game1.Mute` stays the master override, unchanged — every new setting below only
+     applies once it isn't muted globally, so the existing M-key behavior can't regress.
+
+     New `Sound.RefreshMusicState()` is the one place that reconciles "should the track be playing at
+     all" (`!Game1.Mute && Player.Instance.MusicEnabled`) from "how loud, if so"
+     (`MusicMuted ? 0 : MusicVolumePercent / 100f`) — `Enabled` actually starts/pauses the
+     `SongInstance`, while `Muted` just silences the volume without stopping playback (a quick,
+     resumable "shut it up" versus a real "don't play music" preference) — called from `Sound.
+     PlaySong()` (`RealmState`'s constructor, unchanged call site, now just delegates here), `Sound.
+     ToggleMute()` (so M still immediately affects music), and from each of the three Music-related
+     `SettingsState` rows' own `Set` closures, so a change is heard on the currently-playing track
+     immediately rather than only on the next dungeon entry. New `Sound.ShouldPlaySfx(SoundEffect)`
+     gates every other `Sound.Play()` call: `Game1.Mute` first (unchanged), then `Player.Instance.
+     SfxMuted`, then — only for `sound == MagicShoot` specifically (the one sound `Weapon.Shoot()`
+     plays for every class's basic attack) — `Player.Instance.WeaponShotsMuted`. `SfxVolumePercent`
+     multiplies the *existing* per-call volume every `Sound.Play()` site already passes (e.g.
+     `Sound.Play(Sound.MagicShoot, 0.3f)`), rather than replacing it, so 100% (the default) preserves
+     every sound's current hand-tuned level exactly, and turning it down scales all of them together.
+
+     `SettingsState.cs`'s separate `ToggleRow`/`NumericRow` classes and their three separate per-tab
+     lists (`gameplayToggles`/`graphicsToggles`/`graphicsNumerics`) were consolidated into one unified
+     `SettingsRow` (a `RowKind.Toggle`-or-`RowKind.Numeric` discriminated class) backing one list per
+     tab (`gameplayRows`/`graphicsRows`/`audioRows`) — needed because the Audio tab's 6 settings only
+     read naturally in a specific interleaved order (Music, Music Volume, Music Mute, Sound Effects
+     Volume, Sound Effects Mute, Mute Weapon Shots), which two separate toggles-then-numerics lists
+     could never produce; two toggles and two numerics can now sit in any order within one list.
+     `Update()`/`Draw()`'s three near-duplicate per-tab blocks collapsed into shared `UpdateRows()`/
+     `DrawRows()` helpers taking whichever tab's list is active, so all three tabs (and any future one)
+     share the exact same input/render logic instead of each maintaining its own copy. Also fixed a
+     layout constant while building this: the numeric stepper's `StepperValueGap` (`50`) was sized
+     around "100%" without real margin — caught via the entry-118 render-and-inspect step, where
+     "Sound Effects Volume"'s `100%` visibly crowded its `+` button while `Music Volume`'s shorter
+     `40%` had room to spare; widened to `70` and re-rendered to confirm both now match.
+
+     Verified via a scripted repro (temp code in `Game1.StartGame()`, backed up real save files first
+     since it genuinely calls `Util.SaveGameSettingsData()`): confirmed a save→toggle→load round trip
+     across all 6 new fields; confirmed deserializing an old-shaped JSON missing the audio keys still
+     produced the real intended defaults (`MusicEnabled=True`, `MusicVolumePercent=25`,
+     `SfxVolumePercent=100`) rather than a bare bool/int's unstated `false`/`0`; confirmed `Sound.Play()`
+     with `WeaponShotsMuted=true` still played a non-weapon sound (`Sound.Blip`) while skipping
+     `MagicShoot` specifically, and that `SfxMuted=true` skipped everything, both with no exception;
+     confirmed `SettingsState`'s three row lists now hold exactly 2/3/6 entries with the Audio list in
+     the intended order; and rendered the Audio tab to a PNG, visually confirming (after the
+     `StepperValueGap` fix above) all 6 rows read cleanly with no overlap. One thing this pass could
+     *not* verify: `RefreshMusicState()`'s actual `SongInstance.Play()`/`.Pause()` transitions — even
+     a direct, unwrapped `SongInstance.Play()` call left `SongInstance.State` reading `Stopped`
+     afterward with no exception thrown, in this minimized/automated boot-check environment specifically
+     (most likely no audio playback device available to a backgrounded process, not a logic bug — the
+     `Volume` side of the same calls set exactly the expected values in every scenario, which doesn't
+     depend on real hardware). Same category as entry 36's Space-key-in-Nexus check: confirmed by code
+     inspection and the parts that *are* mechanically verifiable, but real playback needs the user to
+     confirm in a live, focused game window. Clean build and a plain boot-check both passed.
