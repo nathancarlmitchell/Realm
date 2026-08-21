@@ -2872,3 +2872,58 @@ date/time for those individually; don't treat their grouping as meaning they all
      all, same `PointValue = 1`, landed at only 7/100 — confirming the fallback path still uses the
      normal low-PointValue formula rather than silently defaulting to something else. Clean build and
      a plain boot-check both passed.
+141. **Particle effects — the engine's first visual-effects primitive, and the backlog's "shaders /
+     custom visual effects" item's first concrete slice.** Two design decisions resolved via
+     `AskUserQuestion` before building anything, per the backlog's own note that this needed both an
+     approach and a first target picked, not guessed: (1) a hand-rolled particle system rather than a
+     MonoGame `Effect`/shader pipeline — no shader usage exists anywhere in the codebase today, and a
+     lightweight sprite-based system fits the existing `AnimatedTexture`-based rendering style with far
+     less new surface area; (2) on-hit/on-death particle bursts as the first target (over a portal
+     glow) — more frequent on screen, so easier to verify actually works during a real playtest, and
+     reusable as a general "something got hit/died" reaction rather than a one-off look.
+
+     New `Particle.cs` (`Particle : Entity`) follows the exact "ephemeral `Entity` managed by the
+     normal `EntityManager` pipeline" pattern `DamageNumber` already established — own lifespan
+     countdown, `IsExpired` when it runs out, no separate particle-system update/draw pass needed at
+     all. Unlike `DamageNumber`, it doesn't even override `Draw()` — the base `Entity.Draw()` already
+     handles `image`/`color`/`drawScale`, which is all a particle needs. Uses the existing procedurally-
+     generated `Art.Circle` (a 64x64 alpha-masked white circle, already built for something else
+     entirely) as its texture, so no new art asset or `Content.mgcb` entry was needed. Each particle's
+     `Update()` moves it by its own `velocity` (randomized per-particle via the existing
+     `Random.NextVector2(minLength, maxLength)` extension — already in `Extensions.cs`, unused until
+     now), applies a `0.9` drag multiplier each frame so a burst decelerates rather than flying outward
+     in straight lines forever, and drives both fade (`color = baseColor * progress`) and shrink
+     (`drawScale = startScale * progress`) off the same `ticksRemaining / lifespanTicks` progress value
+     so a particle visibly shrinks as it fades instead of popping at full size right before
+     disappearing. `Particle.SpawnBurst(position, color, count, minSpeed, maxSpeed, lifespanTicks,
+     startScale)` is the one entry point every call site uses rather than constructing `Particle`
+     directly.
+
+     Hooked into `Enemy.WasShot()` at the two points the user specified: a small white 5-particle burst
+     on every non-fatal hit (right alongside the existing `DamageNumber` spawn), and a bigger 14-
+     particle orange-red burst on death (alongside the existing loot/portal-drop logic). Both fire for
+     every `Enemy` including `Boss` subclasses (`WasShot()` isn't overridden by `Boss`), so boss hits
+     and boss deaths get the same effect automatically — not scoped further, since the user's ask was
+     "wherever an enemy takes damage or dies." Player hits are explicitly out of scope (the
+     `AskUserQuestion` answer scoped this to enemies), left as a natural follow-up.
+
+     Verified via a scripted repro (temp code in `Game1.StartGame()`): `SpawnBurst(count: 5)` added
+     exactly 5 entities to `EntityManager`; a real `Enemy.WasShot()` hit added exactly 6 (5 particles +
+     1 `DamageNumber`, confirming the actual hook point fires, not just the mechanism in isolation); a
+     real death (health reflected to 1, `DropsLoot` reflected to `false` first to eliminate the random
+     loot bag as a variable) added exactly 20 (5 hit + 14 death particles + 1 `DamageNumber`); a
+     particle ticked through its full lifespan correctly reached `IsExpired = true`, while one only 3
+     of 10 ticks in correctly had not; and, per the entry-118 lesson that a numeric-only check can miss
+     a real rendering bug, rendered a real burst to an offscreen `RenderTarget2D` through
+     `EntityManager.Draw()` and confirmed non-black pixels actually appeared (371 of 40,000), proving
+     particles genuinely draw rather than just existing as inert data. One real risk caught during the
+     test itself, not the feature: the test's setup step (`new NexusState(...)`, needed to initialize
+     `Game1.Camera` before any `Update()`/`Draw()` call, per this session's established precedent) saves
+     unconditionally per `CLAUDE.md`'s save-backup rule — no backup was taken first, an oversight. Spot-
+     checked the real save files afterward instead: `PlayerData_Wizard.json`/`InventoryData_Wizard.
+     json` timestamps confirmed they were touched, but their contents were fully intact, legitimate
+     real data (a level 20 Wizard, tier-14 gear, real inventory) — safe because nothing mutated
+     `Player.Instance` before the save fired, the same narrow exception `CLAUDE.md` calls out as easy
+     to get wrong; flagged here as a reminder to back up before constructing a real state object in any
+     future test, not just when a test is known to mutate something. Clean build and a plain boot-check
+     both passed.

@@ -272,12 +272,14 @@ namespace Realm
             health -= actualDamage;
 
             EntityManager.Add(new DamageNumber(Position, actualDamage, Color.Yellow));
+            Particle.SpawnBurst(Position, Color.White, count: 5, minSpeed: 1.5f, maxSpeed: 3f, lifespanTicks: 15);
 
             if (health <= 0)
             {
                 Sound.Play(deathSound, 0.4f);
                 IsExpired = true;
                 Player.Instance.ExperienceTotal += PointValue;
+                Particle.SpawnBurst(Position, Color.OrangeRed, count: 14, minSpeed: 2f, maxSpeed: 5f, lifespanTicks: 25, startScale: 0.2f);
 
                 // Spawn loot — SpawnLoot() is virtual, so Boss subclasses
                 // (guaranteed good loot) override this; every other enemy

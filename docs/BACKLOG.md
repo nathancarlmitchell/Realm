@@ -113,14 +113,14 @@ prioritized or scheduled — the user asked to keep these noted for later rather
   free teleporting could trivialize or break the fight). Also needs a decision on whether it's a
   free instant teleport or has some cost/limit (cooldown, mana, distance cap) so it doesn't just
   replace normal movement outright.
-- **Shaders / custom visual effects in general** — a portal glow, on-hit or on-death particle
-  effects, etc. Nothing like this exists in the engine today: no MonoGame `Effect`/shader usage
-  anywhere in the codebase (confirmed via a repo-wide search — the only `Effect`-named things are
-  `SoundEffect`, unrelated), no particle system, every visual is a plain static or `AnimatedTexture`
-  sprite-sheet draw. A real engine addition, not a small tweak — would need deciding on an approach
-  (hand-rolled particle system vs. a MonoGame shader/`Effect` pipeline) and a first concrete target
-  to build it against (the portal glow and on-hit/on-death particles above are the two candidates
-  raised so far) rather than building generic infrastructure with nothing using it yet.
+- **Visual effects — further targets beyond the first one shipped.** A hand-rolled particle system
+  now exists (`Particle.cs`, see [DEVLOG.md](DEVLOG.md) entry
+  141) — a lightweight `Entity` subclass managed by the normal `EntityManager` pipeline, no MonoGame
+  `Effect`/shader usage anywhere (that approach was explicitly considered and passed over). Currently
+  wired to exactly one target: `Enemy.WasShot()`'s hit/death bursts. Open follow-ups: a portal glow
+  (the other candidate originally raised, not yet built), particle effects on the *player* taking
+  damage (deliberately out of scope this round — only enemies were wired up), and any other
+  on-screen moment that could use the same `Particle.SpawnBurst()` entry point.
 
 ## Completed
 

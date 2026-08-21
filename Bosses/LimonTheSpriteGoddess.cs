@@ -89,6 +89,12 @@ namespace Realm.Bosses
             AddAttackBehaviour(SquareWall());
             AddAttackBehaviour(XCross());
             AddBehaviour(PhaseWatcher());
+
+            GuaranteedPotionChances = new()
+            {
+                [Potions.Dexterity] = 1.0f,
+                [Potions.Defense] = 0.25f,
+            };
         }
 
         // Constant square-shaped wall centered on the boss's current

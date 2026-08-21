@@ -77,6 +77,8 @@ namespace Realm.Bosses
             AddAttackBehaviour(GrenadeBursts());
             AddAttackBehaviour(AimedBombs());
             AddAttackBehaviour(Spiral());
+
+            GuaranteedPotionChances = new() { [Potions.Speed] = 1.0f, [Potions.Defense] = 0.25f };
         }
 
         // Runs the current phase for PhaseDurationFrames, then becomes
