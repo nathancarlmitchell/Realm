@@ -2641,3 +2641,36 @@ date/time for those individually; don't treat their grouping as meaning they all
      returned null (`Input.mouse`/`previousMouse` are public fields, not private — `BindingFlags.
      NonPublic` never finds them), fixed by assigning directly instead. Clean build and a plain
      boot-check both passed.
+133. **Settings screen gained a tab bar — Controls, Gameplay, Audio, Graphics** — turning entry 132's
+     single flat list into a real multi-tab layout. Key bindings (all 10 `KeyBindings.Action` rows)
+     stayed on Controls; the Auto-Fire toggle row moved to its own new Gameplay tab. Audio and
+     Graphics are both real, clickable tabs today showing a "No settings here yet." placeholder rather
+     than anything functional — no volume control or graphics option exists anywhere else in the
+     codebase yet to expose there (confirmed via a repo-wide check before building this), so nothing
+     was invented to fill them. New `private enum SettingsTab` and a `TabInfo` class (label + `Rect` +
+     hover, mirroring `Row`'s existing shape) drive a `List<TabInfo> tabs` built from
+     `Enum.GetValues()`, centered as a group above the content area with each tab's width measured
+     from its own label text (same `Art.HudFont.MeasureString()` technique the row-column alignment
+     already used). Clicking a tab just sets `currentTab`; clicks are gated by the same
+     `listeningFor.HasValue` check that already blocked every other control during an in-progress key
+     rebind, so there's no separate "cancel the pending rebind when switching tabs" case to handle —
+     it's simply not reachable. The whole layout was rebuilt around **fixed** vertical anchors
+     (`tabBarY`, `rowsTop`, the Back/Reset button row) sized against the Controls tab's full 10-row
+     list, rather than the old per-tab-row-count centering — otherwise the screen would visibly jump
+     every time the user switched tabs, since Gameplay has 1 row and Audio/Graphics have 0. `Reset to
+     Defaults` (a key-bindings-only action) is now only drawn/updated while `currentTab ==
+     SettingsTab.Controls`, rather than always visible but inert on tabs where it doesn't apply, same
+     "don't show a control that can't do anything right now" reasoning as entry 73's ability-bar
+     placeholder. Active-tab state gets a persistent gold underline (`Art.HealthBar` stretched into a
+     2px bar, same technique `Overlay.cs`'s HUD bars already use) independent of hover, since hover
+     alone (shared with every other tab's existing Gold-on-hover feedback) wasn't a reliable enough
+     "you are here" cue by itself. Verified via a scripted repro (no save-file risk — constructing
+     `SettingsState` and clicking tabs doesn't save anything): confirmed exactly 4 tabs exist with
+     non-overlapping rects; confirmed the default `currentTab` is `Controls`; confirmed simulated
+     clicks (via direct `Input.mouse`/`previousMouse` assignment, same technique as entry 132) on the
+     Gameplay and Audio tabs correctly updated `currentTab`; and — per the entry 118 lesson — rendered
+     all three tabs (Controls, Gameplay, Audio) to full-window offscreen `RenderTarget2D`s and visually
+     inspected each: Controls shows all 10 key-binding rows with Back+Reset, Gameplay shows just the
+     Auto-Fire row with Reset correctly absent, Audio shows the placeholder text with Reset absent —
+     and the title/tab bar/button positions held exactly still across all three renders, confirming the
+     fixed-layout approach actually works. Clean build and a plain boot-check both passed.
