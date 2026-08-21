@@ -166,7 +166,7 @@ namespace Realm
             ManaPotion = content.Load<Texture2D>("mana_potion");
 
             // Loot bags.
-            LootBag = content.Load<Texture2D>("loot_bag");
+            LootBag = content.Load<Texture2D>("Items/Bags/brown");
             LootBagPink = content.Load<Texture2D>("Items/Bags/pink");
             LootBagPurple = content.Load<Texture2D>("Items/Bags/purple");
             LootBagBlue = content.Load<Texture2D>("Items/Bags/blue");

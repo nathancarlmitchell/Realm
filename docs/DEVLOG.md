@@ -3028,3 +3028,14 @@ date/time for those individually; don't treat their grouping as meaning they all
      rendered a real burst to an offscreen `RenderTarget2D` and confirmed non-black pixels actually
      appeared. Confirmed via a post-test diff that all 10 real save files were completely untouched.
      Clean build and a plain boot-check both passed.
+145. **Default loot bag art moved to `Content/Items/Bags/brown.png` and renamed from `loot_bag`,
+     matching the other 5 bag colors' existing location/naming convention** (`Items/Bags/pink.png`,
+     `purple.png`, `blue.png`, `white.png`, `gold.png`) — previously the only one of the 6 still sitting
+     at the content root under its old name. `Art.LootBag`'s load line and its `Content.mgcb` build
+     block both updated to the new path (`content.Load<Texture2D>("Items/Bags/brown")`, `#begin
+     Items/Bags/brown.png` / `/build:Items/Bags/brown.png`) — a repo-wide search confirmed no other
+     code referenced the old `loot_bag` name. Verified the new `.xnb` actually compiled at the new path
+     (`bin/Debug/net8.0-windows/Content/Items/Bags/brown.xnb`, confirmed present, no stale `loot_bag.xnb`
+     left behind) and a plain boot-check passed — since `Art.Load()` loads every texture eagerly at
+     startup, a broken content reference here would have crashed the boot immediately rather than
+     failing silently later.

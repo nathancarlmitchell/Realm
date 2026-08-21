@@ -1313,7 +1313,7 @@
 /processorParam:TextureFormat=Color
 /build:Items/Potions/wisdom.png
 
-#begin loot_bag.png
+#begin Items/Bags/brown.png
 /importer:TextureImporter
 /processor:TextureProcessor
 /processorParam:ColorKeyColor=255,0,255,255
@@ -1323,7 +1323,7 @@
 /processorParam:ResizeToPowerOfTwo=False
 /processorParam:MakeSquare=False
 /processorParam:TextureFormat=Color
-/build:loot_bag.png
+/build:Items/Bags/brown.png
 
 #begin mana_potion.png
 /importer:TextureImporter

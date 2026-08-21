@@ -60,9 +60,9 @@ namespace Realm.States
         private const int ArcherFameRequirement = 1000;
         private const int KnightFameRequirement = 3000;
 
-
         private const int PortraitSize = 80;
         private const int BorderPadding = 14;
+
         // Widened from the original 2-slot value (110) — with a third slot
         // now sitting dead-center, the old offset left adjacent
         // portraits/borders (108px wide each) almost touching.
@@ -91,7 +91,11 @@ namespace Realm.States
         private readonly Button eraseCancelButton;
         private readonly Button eraseConfirmButton;
 
-        public CharacterSelectState(Game1 game, GraphicsDevice graphicsDevice, ContentManager content)
+        public CharacterSelectState(
+            Game1 game,
+            GraphicsDevice graphicsDevice,
+            ContentManager content
+        )
             : base()
         {
             Game1.Instance.IsMouseVisible = true;
@@ -114,27 +118,27 @@ namespace Realm.States
                 },
                 new Slot
                 {
-                    PlayerClass = Player.Class.Knight,
-                    Portrait = Art.Knight,
+                    PlayerClass = Player.Class.Archer,
+                    Portrait = Art.Archer,
                     PortraitRect = new Rectangle(
                         CenterWidth - PortraitSize / 2,
                         y,
                         PortraitSize,
                         PortraitSize
                     ),
-                    RequiredFame = KnightFameRequirement,
+                    RequiredFame = ArcherFameRequirement,
                 },
                 new Slot
                 {
-                    PlayerClass = Player.Class.Archer,
-                    Portrait = Art.Archer,
+                    PlayerClass = Player.Class.Knight,
+                    Portrait = Art.Knight,
                     PortraitRect = new Rectangle(
                         CenterWidth + SlotOffsetFromCenter - PortraitSize / 2,
                         y,
                         PortraitSize,
                         PortraitSize
                     ),
-                    RequiredFame = ArcherFameRequirement,
+                    RequiredFame = KnightFameRequirement,
                 },
             ];
 
@@ -254,7 +258,10 @@ namespace Realm.States
                 // permanent record shown either way (see Slot.Stars), unlike
                 // HasSave/delete, which only matter for a playable slot.
                 PlayerData saved = Util.PeekPlayerData(slot.PlayerClass);
-                slot.Stars = Player.ComputeStars(saved?.HasReachedLevel20 ?? false, saved?.HighScore ?? 0);
+                slot.Stars = Player.ComputeStars(
+                    saved?.HasReachedLevel20 ?? false,
+                    saved?.HighScore ?? 0
+                );
 
                 if (slot.IsLocked)
                 {
@@ -422,7 +429,9 @@ namespace Realm.States
 
             foreach (var slot in slots)
             {
-                Color borderColor = slot.IsLocked ? Color.DarkGray : (slot.Hover ? Color.Gold : Color.White);
+                Color borderColor = slot.IsLocked
+                    ? Color.DarkGray
+                    : (slot.Hover ? Color.Gold : Color.White);
                 Color portraitColor = slot.IsLocked ? Color.DarkGray : Color.White;
 
                 spriteBatch.Draw(Art.Border, slot.BorderRect, borderColor);
@@ -435,7 +444,10 @@ namespace Realm.States
                 spriteBatch.DrawString(
                     Art.HudFont,
                     label,
-                    new Vector2(slot.PortraitRect.Center.X - labelSize.X / 2, slot.BorderRect.Bottom + 8),
+                    new Vector2(
+                        slot.PortraitRect.Center.X - labelSize.X / 2,
+                        slot.BorderRect.Bottom + 8
+                    ),
                     slot.IsLocked ? Color.Gray : Color.White
                 );
 
@@ -469,7 +481,12 @@ namespace Realm.States
 
                 if (slot.ConfirmingDelete)
                 {
-                    DrawShadowedText(spriteBatch, "Delete save? ", slot.ConfirmLabelPos, Color.White);
+                    DrawShadowedText(
+                        spriteBatch,
+                        "Delete save? ",
+                        slot.ConfirmLabelPos,
+                        Color.White
+                    );
                     DrawShadowedText(
                         spriteBatch,
                         "Yes",
@@ -570,7 +587,10 @@ namespace Realm.States
             float bottom = slot.BorderRect.Top - PreviewGap;
 
             Vector2 statsSize = Art.HudFont.MeasureString(statsText);
-            Vector2 statsPos = new(slot.PortraitRect.Center.X - statsSize.X / 2, bottom - statsSize.Y);
+            Vector2 statsPos = new(
+                slot.PortraitRect.Center.X - statsSize.X / 2,
+                bottom - statsSize.Y
+            );
 
             Vector2 scoreSize = Art.HudFont.MeasureString(scoreText);
             Vector2 scorePos = new(
@@ -594,8 +614,7 @@ namespace Realm.States
         // never been playable yet.
         private void DrawLockedPreview(SpriteBatch spriteBatch, Slot slot)
         {
-            string text =
-                $"Requires {slot.RequiredFame} Fame\n(You have {FameSystem.Fame})";
+            string text = $"Requires {slot.RequiredFame} Fame\n(You have {FameSystem.Fame})";
 
             Vector2 size = Art.HudFont.MeasureString(text);
             Vector2 pos = new(
@@ -629,8 +648,7 @@ namespace Realm.States
             int wisdom
         )
         {
-            return
-                $"Level: {level}\n"
+            return $"Level: {level}\n"
                 + $"Health: {healthMax}\n"
                 + $"Mana: {manaMax}\n"
                 + $"Attack: {attack}\n"

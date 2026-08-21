@@ -285,10 +285,10 @@ namespace Realm
             SwirlParticle.SpawnSwirl(
                 () => Position,
                 Microsoft.Xna.Framework.Color.Gold,
-                Microsoft.Xna.Framework.Color.White,
-                count: 24,
-                lifespanTicks: 50,
-                maxRadius: 60f,
+                Microsoft.Xna.Framework.Color.Silver,
+                count: 48,
+                lifespanTicks: 100,
+                maxRadius: 80f,
                 startScale: 0.18f
             );
         }
@@ -592,8 +592,7 @@ namespace Realm
         public float PermanentSpeed => Speed - EquipmentSpeedBonus - TemporarySpeedBonus;
         public int PermanentDexterity =>
             Dexterity - EquipmentDexterityBonus - TemporaryDexterityBonus;
-        public int PermanentVitality =>
-            Vitality - EquipmentVitalityBonus - TemporaryVitalityBonus;
+        public int PermanentVitality => Vitality - EquipmentVitalityBonus - TemporaryVitalityBonus;
         public int PermanentWisdom => Wisdom - EquipmentWisdomBonus - TemporaryWisdomBonus;
 
         // Recomputes every derived stat from this class's base-at-current-level
