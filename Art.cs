@@ -50,6 +50,16 @@ namespace Realm
         // the plain swirl above.
         public static AnimatedTexture SpriteWorldPortal { get; private set; }
         public static AnimatedTexture SnakePitPortal { get; private set; }
+
+        // The boss arena's own exit portal (see
+        // Portal.Destination.NexusDestination) — a single static frame, not
+        // a real animation, so it's loaded as a 1-frame AnimatedTexture
+        // rather than a plain Texture2D. That still works cleanly with
+        // Portal's existing AnimatedTexture-typed `image` field/DrawFrame()
+        // call with no special-casing: frameCount 1 just means UpdateFrame()
+        // never has anywhere to advance to.
+        public static AnimatedTexture NexusPortal { get; private set; }
+
         public static Texture2D Inventory { get; private set; }
         public static Texture2D HealthPotion { get; private set; }
         public static Texture2D ManaPotion { get; private set; }
@@ -119,6 +129,9 @@ namespace Realm
 
             SnakePitPortal = new AnimatedTexture(Vector2.Zero, 0f, 1.5f, 0.5f);
             SnakePitPortal.Load(content, "Snake Pit Portal", 7, 8, 5);
+
+            NexusPortal = new AnimatedTexture(Vector2.Zero, 0f, 1.5f, 0.5f);
+            NexusPortal.Load(content, "Portal to Nexus", 1, 1);
 
             HealthPotion = content.Load<Texture2D>("health_potion");
             ManaPotion = content.Load<Texture2D>("mana_potion");

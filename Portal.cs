@@ -103,6 +103,7 @@ namespace Realm
             {
                 public override string DisplayName => "Nexus";
                 public override void Enter() => StateManager.Nexus();
+                internal override AnimatedTexture PortalArt() => Art.NexusPortal.Clone();
             }
 
             // Carries which boss to spawn, so BossRealmState no longer

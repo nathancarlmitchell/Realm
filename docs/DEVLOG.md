@@ -2514,3 +2514,21 @@ date/time for those individually; don't treat their grouping as meaning they all
      the exact position it was constructed with to an offscreen `RenderTarget2D` and visually confirmed
      the marker sits in the middle of the portal sprite rather than at its top-left corner. Clean build
      and a plain boot-check both passed.
+127. **Real art for the boss arena's exit portal (`Portal.Destination.Nexus`)**, user-supplied
+     (`Content/Portal to Nexus.png`, 56×56). Unlike the other two dungeon-specific sheets (entry 115),
+     this is a single static frame, not an animation — loaded as a 1-frame `AnimatedTexture` anyway
+     (`Art.NexusPortal.Load(content, "Portal to Nexus", 1, 1)`) rather than a plain `Texture2D`, so it
+     drops into `Portal`'s existing `AnimatedTexture`-typed `image` field and `DrawFrame()` call with
+     no special-casing — `UpdateFrame()` simply has nowhere to advance to with `frameCount = 1`.
+     `Destination.NexusDestination` (previously falling through to the base class's default generic
+     swirl) now overrides `PortalArt()` to return `Art.NexusPortal.Clone()`, matching entry 125's
+     per-instance-clone convention so multiple exit portals (if that's ever a thing) wouldn't share one
+     animation clock. Content.mgcb block added in the same shape as every other portal art. Verified via
+     a scripted repro (no `Player.Instance` mutation, no save-file risk): confirmed a `Portal`
+     constructed with `Destination.Nexus` gets a genuinely distinct `AnimatedTexture` instance from
+     `Art.NexusPortal` (not the same reference) while still sharing its underlying `Texture2D`;
+     confirmed `FrameWidth`/`FrameHeight` read exactly 56×56; confirmed `DisplayName` reads "Nexus";
+     called `Draw()` through a real `SpriteBatch` pass with no exception; and — per the entry 118 lesson
+     — rendered the portal next to a marker at its exact construction position and visually confirmed
+     it's centered rather than offset. Clean build (new `.xnb` confirmed compiled, not skipped) and a
+     plain boot-check both passed.
