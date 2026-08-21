@@ -12,4 +12,8 @@ public class GameSettingsData
     // Defaults to false (off) — bypasses Portal's confirm-before-
     // teleporting prompt entirely when true. See Portal.cs's Update().
     public bool AutoEnterPortalsEnabled { get; set; }
+
+    // Defaults to false (off) — shows collision hitbox outlines
+    // independent of the F3 debug HUD. See RealmState/NexusState.Draw().
+    public bool ShowHitboxesEnabled { get; set; }
 }

@@ -74,6 +74,7 @@ namespace Realm.States
         private SettingsTab currentTab = SettingsTab.Controls;
 
         private readonly List<ToggleRow> gameplayToggles;
+        private readonly List<ToggleRow> graphicsToggles;
 
         private const int RowHeight = 28;
         private const int TabHeight = 32;
@@ -112,15 +113,27 @@ namespace Realm.States
                 },
             ];
 
+            graphicsToggles =
+            [
+                new ToggleRow
+                {
+                    Label = "Show Hitboxes",
+                    Get = () => Player.Instance.ShowHitboxesEnabled,
+                    Set = v => Player.Instance.ShowHitboxesEnabled = v,
+                },
+            ];
+
             // Widest label sets where the key-name column starts, same
             // column-alignment trick as Overlay.DrawStats() — includes the
-            // Gameplay tab's toggle labels too, so its rows line up in the
-            // same column as the Controls tab's rows, even though only one
-            // tab's content is visible at a time.
+            // Gameplay/Graphics tabs' toggle labels too, so their rows line
+            // up in the same column as the Controls tab's rows, even
+            // though only one tab's content is visible at a time.
             float widestLabel = 0f;
             foreach (var action in KeyBindings.AllActions)
                 widestLabel = Math.Max(widestLabel, Art.SettingsFont.MeasureString(KeyBindings.DisplayName(action)).X);
             foreach (var toggle in gameplayToggles)
+                widestLabel = Math.Max(widestLabel, Art.SettingsFont.MeasureString(toggle.Label).X);
+            foreach (var toggle in graphicsToggles)
                 widestLabel = Math.Max(widestLabel, Art.SettingsFont.MeasureString(toggle.Label).X);
 
             labelX = CenterWidth - 160;
@@ -148,6 +161,16 @@ namespace Realm.States
             for (int i = 0; i < gameplayToggles.Count; i++)
             {
                 gameplayToggles[i].Rect = new Rectangle(
+                    labelX,
+                    rowsTop + i * RowHeight,
+                    valueX - labelX + 160,
+                    (int)Art.SettingsFont.MeasureString("A").Y + 6
+                );
+            }
+
+            for (int i = 0; i < graphicsToggles.Count; i++)
+            {
+                graphicsToggles[i].Rect = new Rectangle(
                     labelX,
                     rowsTop + i * RowHeight,
                     valueX - labelX + 160,
@@ -256,6 +279,19 @@ namespace Realm.States
                 }
             }
 
+            if (currentTab == SettingsTab.Graphics)
+            {
+                foreach (var toggle in graphicsToggles)
+                {
+                    toggle.Hover = toggle.Rect.Intersects(Input.MouseBounds);
+                    if (toggle.Hover && Input.GetMouseClick())
+                    {
+                        toggle.Set(!toggle.Get());
+                        Util.SaveGameSettingsData();
+                    }
+                }
+            }
+
             backButton.Update(gameTime);
 
             // Only meaningful for key bindings — inert (not updated, not
@@ -340,14 +376,31 @@ namespace Realm.States
                     }
                     break;
 
-                case SettingsTab.Audio:
                 case SettingsTab.Graphics:
-                    // Nothing to expose yet on either tab — no volume
-                    // control or graphics option exists anywhere in the
-                    // codebase today (confirmed via a repo-wide check
-                    // before building this). Placeholder rather than an
-                    // empty-looking tab, so it reads as "not built yet"
-                    // instead of "broken."
+                    foreach (var toggle in graphicsToggles)
+                    {
+                        Color toggleColor = toggle.Hover ? Color.Gold : Color.White;
+                        spriteBatch.DrawString(
+                            Art.SettingsFont,
+                            toggle.Label,
+                            new Vector2(labelX, toggle.Rect.Y),
+                            toggleColor
+                        );
+                        spriteBatch.DrawString(
+                            Art.SettingsFont,
+                            toggle.Get() ? "ON" : "OFF",
+                            new Vector2(valueX, toggle.Rect.Y),
+                            toggleColor
+                        );
+                    }
+                    break;
+
+                case SettingsTab.Audio:
+                    // Nothing to expose yet — no volume control exists
+                    // anywhere in the codebase today (confirmed via a
+                    // repo-wide check before building this). Placeholder
+                    // rather than an empty-looking tab, so it reads as "not
+                    // built yet" instead of "broken."
                     const string placeholder = "No settings here yet.";
                     Vector2 placeholderSize = Art.SettingsFont.MeasureString(placeholder);
                     spriteBatch.DrawString(

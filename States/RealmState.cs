@@ -120,7 +120,7 @@ namespace Realm.States
             // Draw entities (player, enemies, projectiles).
             EntityManager.Draw(spriteBatch);
 
-            if (Game1._Debug)
+            if (Game1._Debug || Player.Instance.ShowHitboxesEnabled)
             {
                 EntityManager.DrawHitboxes(spriteBatch, Portal.DroppedPortals);
             }

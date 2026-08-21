@@ -3089,3 +3089,42 @@ date/time for those individually; don't treat their grouping as meaning they all
      confirming boss loot now goes through the same ranking. Clean build (new `Art.LootBagCyan`/
      `LootBagRed` textures confirmed already compiled at their `.xnb` paths from a prior asset
      registration) and a plain boot-check both passed.
+147. **New Settings > Graphics toggle: "Show Hitboxes," default off.** New `Player.ShowHitboxesEnabled`
+     (persisted via `GameSettingsData`, same shape as `AutoFireEnabled`/`AutoEnterPortalsEnabled`)
+     shows the F3 debug hitbox outlines (`EntityManager.DrawHitboxes()`) independent of the rest of the
+     F3 debug bundle. F3/`Game1._Debug` previously gated two separate things together — the hitbox
+     outlines and a separate debug HUD panel (`Overlay.DrawDebug()`, potion-derived stat bonuses) — in
+     both `RealmState.Draw()` and `NexusState.Draw()` (which `BossRealmState` inherits, covering boss
+     fights too). Rather than splitting hitboxes out from F3 entirely (which would silently change
+     existing F3 behavior for anyone already using it), the new setting is additive: both draw sites
+     changed from `if (Game1._Debug)` to `if (Game1._Debug || Player.Instance.ShowHitboxesEnabled)`
+     around the hitbox call specifically — F3 still shows hitboxes *and* the debug panel together as
+     before, while the new setting shows just the hitboxes on their own, persisted across sessions,
+     without needing the rest of the debug HUD. `SettingsState.cs`'s Graphics tab — previously sharing
+     a flat "No settings here yet." placeholder with Audio, since no graphics option existed anywhere
+     in the codebase — split into its own case using entry 143's `ToggleRow` mechanism (a second
+     `graphicsToggles` list alongside `gameplayToggles`, same `Get`/`Set`-closure shape), so a future
+     Graphics setting is just another list entry; Audio keeps the placeholder alone now, since no audio
+     setting exists yet either.
+
+     While testing this feature, discovered `PlayerData_Archer.json`/`PlayerData_Knight.json`/
+     `InventoryData_Archer.json`/`InventoryData_Knight.json` were missing from disk entirely (not
+     reset, not empty — just gone), despite nothing in any test this session targeting those files
+     since entry 143's Knight-save incident. Found a surviving backup from earlier today in a temp
+     directory and asked the user before touching anything; the user confirmed this was expected and
+     asked to leave it as-is, so nothing was restored — noted here only because it was a real mid-task
+     pause, not because anything about it involved this entry's actual code changes.
+
+     Verified via a scripted repro (temp code in `Game1.StartGame()`, backed up real save files first
+     since the round trip below genuinely calls `Util.SaveGameSettingsData()`): confirmed a
+     save→toggle→load round trip on `ShowHitboxesEnabled` correctly restored the saved value (mirroring
+     entries 132/143's same pattern for the other two settings); confirmed `SettingsState`'s
+     `graphicsToggles` now holds exactly 1 entry labeled "Show Hitboxes." The `Game1._Debug ||
+     Player.Instance.ShowHitboxesEnabled` boolean-OR draw-gate itself was verified by direct code
+     reading rather than a render pass — the change is a one-line, low-risk boolean addition mirrored
+     identically in both files, re-read after editing to confirm both read correctly, so a full
+     render-based test (constructing a real `NexusState`, another unconditional-save risk per
+     `CLAUDE.md`) wasn't judged worth the added risk for this specific piece. Confirmed via a post-test
+     diff that every real save file was untouched except `GameSettingsData.json`, which gained exactly
+     the new field, correctly restored to its original value. Clean build and a plain boot-check both
+     passed.

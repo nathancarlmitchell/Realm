@@ -165,6 +165,16 @@ namespace Realm
         // Toggled from the Settings > Gameplay tab.
         public bool AutoEnterPortalsEnabled;
 
+        // Same account-wide GameSettingsData persistence, defaults to
+        // false. Independent of (additive with) the F3/Game1._Debug
+        // toggle — F3 still shows hitboxes plus the full debug HUD panel
+        // together as before; this setting shows just the hitbox outlines
+        // on their own, persisted across sessions, without needing the
+        // rest of the debug HUD. See RealmState/NexusState.Draw()'s
+        // EntityManager.DrawHitboxes() gate. Toggled from the Settings >
+        // Graphics tab.
+        public bool ShowHitboxesEnabled;
+
         // Set once this class first reaches the level cap (20) and never
         // cleared again — same permanent-through-death/delete treatment as
         // HighScore (see DeleteCharacterData/GameOverState), since this is

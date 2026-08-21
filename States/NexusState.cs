@@ -96,7 +96,7 @@ namespace Realm.States
             // Draw player.
             EntityManager.Draw(spriteBatch);
 
-            if (Game1._Debug)
+            if (Game1._Debug || Player.Instance.ShowHitboxesEnabled)
             {
                 EntityManager.DrawHitboxes(spriteBatch, portalList);
             }
