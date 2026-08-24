@@ -283,8 +283,20 @@ namespace Realm
                 // is the player's feedback, not a mark on what just died.
                 // Goldenrod matches the sidebar's XP bar fill color
                 // (Overlay.DrawExperience()), so it reads as "that" resource.
+                // Bigger, longer-lived, and spawned further above the
+                // player's head than a plain damage number (-45 vs the
+                // default -20) so it reads as a distinct, more prominent
+                // event rather than blending in with hit numbers.
                 EntityManager.Add(
-                    new DamageNumber(Player.Instance.Position, PointValue, Color.Goldenrod, prefix: "+")
+                    new DamageNumber(
+                        Player.Instance.Position,
+                        PointValue,
+                        Color.Goldenrod,
+                        prefix: "+",
+                        scale: 1.3f,
+                        lifespanTicks: 70,
+                        verticalOffset: -45f
+                    )
                 );
                 Particle.SpawnBurst(Position, Color.OrangeRed, count: 14, minSpeed: 2f, maxSpeed: 5f, lifespanTicks: 25, startScale: 0.2f);
 

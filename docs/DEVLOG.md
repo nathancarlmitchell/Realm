@@ -3509,3 +3509,20 @@ date/time for those individually; don't treat their grouping as meaning they all
      `PointValue`) positioned at the *player's* location with `Color.Goldenrod` (`R:218 G:165 B:32`);
      and confirmed `ExperienceTotal` actually increased by 15. Clean build and a plain boot-check both
      passed.
+158. **Follow-up to entry 157 — the +XP number is now bigger, stays on screen longer, and spawns further
+     above the player's head**, per direct user feedback after it shipped. `DamageNumber`'s `Scale`/
+     `LifespanTicks`/the constructor's hardcoded `-20` vertical spawn offset were all `const`s shared
+     by every instance — turned into constructor parameters (`scale`/`lifespanTicks`/`verticalOffset`)
+     defaulting to the exact same values (`1.0f`/`40`/`-20f`), so every existing call site (a plain
+     enemy hit, `Player.Hit()`) is completely unaffected. The XP call in `Enemy.WasShot()` now passes
+     `scale: 1.3f, lifespanTicks: 70, verticalOffset: -45f` — noticeably bigger, ~75% longer on screen,
+     and spawning more than double as far above the player as a regular hit number, so it reads as a
+     distinct, more prominent event rather than blending in.
+
+     Verified via a scripted repro (throwaway `Wizard`/`Enemy.CreateWanderer()`, same setup as entry
+     157): killed the test enemy and reflected into both resulting `DamageNumber`s' now-instance `scale`/
+     `lifespanTicks` fields plus their actual spawn position relative to their own origin (enemy for the
+     hit number, player for the XP number, not the same point) — confirmed the hit number read exactly
+     `scale=1, lifespanTicks=40, 20px above its origin` (unchanged from before this entry) while the XP
+     number read exactly `scale=1.3, lifespanTicks=70, 45px above its origin` (the new values). Real save
+     files confirmed byte-identical before and after. Clean build and a plain boot-check both passed.
