@@ -163,6 +163,17 @@ namespace Realm
         // above).
         public float TilesPerSecond => 4f + 5.6f * (Speed / 75f);
 
+        // Health regen rate: 2 HP/sec at 0 Vitality, +0.2407 HP/sec per
+        // point past that (linear, no /75 scaling unlike AttacksPerSecond/
+        // TilesPerSecond above). Drives Update()'s healthCooldown
+        // accumulator below. No Healing bonus — this engine has no Healing
+        // status effect to add the +20 HP/sec into.
+        public float HealthRegenPerSecond => 2f + 0.2407f * Vitality;
+
+        // Mana regen rate: 0.5 MP/sec at 0 Wisdom, +0.12 MP/sec per point
+        // past that. Drives Update()'s manaCooldown accumulator below.
+        public float ManaRegenPerSecond => 0.5f + 0.12f * Wisdom;
+
         // See PlayerData.HasBeenPlayed — mirrors it on the live instance so a
         // later SavePlayerData() call doesn't regress it back to false.
         public bool HasBeenPlayed;
@@ -853,11 +864,14 @@ namespace Realm
             StateManager.GameOver();
         }
 
-        private int healthCooldown = 0;
-        private int healthCooldownCount = 160;
+        // Float accumulators, same reasoning/pattern as projectileCooldown
+        // below — HealthRegenPerSecond/ManaRegenPerSecond need to land on
+        // real fractional values (e.g. 11.63 HP/sec at 40 Vitality), and an
+        // int-tick-count threshold with a reset-to-0 discards the leftover
+        // fraction every cycle instead of carrying it forward.
+        private float healthCooldown = 0f;
 
-        private int manaCooldown = 0;
-        private int manaCooldownCount = 320;
+        private float manaCooldown = 0f;
 
         // Float accumulator, not the int-tick-count style the other
         // cooldowns above use — AttacksPerSecond needs to land on real
@@ -1018,11 +1032,15 @@ namespace Realm
                 LevelUp();
             }
 
-            // Regenerate Health.
-            healthCooldown += 1 + (int)(0.24 * Vitality);
-            if (healthCooldown >= healthCooldownCount)
+            // Regenerate Health. HealthRegenPerSecond / 60 is the fraction
+            // of one HP completed this tick; subtracting 1 (not resetting
+            // to 0) on regen carries the leftover fraction into the next
+            // cycle instead of discarding it, same precision fix as
+            // AttacksPerSecond/TilesPerSecond above.
+            healthCooldown += HealthRegenPerSecond / 60f;
+            if (healthCooldown >= 1f)
             {
-                healthCooldown = 0;
+                healthCooldown -= 1f;
                 if (Health < HealthMax)
                     Health++;
             }
@@ -1049,11 +1067,12 @@ namespace Realm
                 lowHealthFlashPhase = 0f;
             }
 
-            // Regenerate mana.
-            manaCooldown += 1 + (int)(0.12 * Wisdom);
-            if (manaCooldown >= manaCooldownCount)
+            // Regenerate mana. Same fraction-per-tick/carry-forward pattern
+            // as Health above.
+            manaCooldown += ManaRegenPerSecond / 60f;
+            if (manaCooldown >= 1f)
             {
-                manaCooldown = 0;
+                manaCooldown -= 1f;
                 if (Mana < ManaMax)
                     Mana++;
             }

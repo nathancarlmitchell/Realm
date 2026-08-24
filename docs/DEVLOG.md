@@ -3708,3 +3708,32 @@ date/time for those individually; don't treat their grouping as meaning they all
      landed exactly on `TilesPerSecond`'s own value at all three Speed levels with zero rounding loss.
      Real save files confirmed byte-identical before and after. Clean build and a plain boot-check both
      passed.
+166. **Fixed the Vitality/Wisdom health-and-mana regen formulas to match the real intended curves**,
+     the third and fourth stat-calculation double-checks this session (after entries 164/165's
+     Dexterity/Speed). Both old formulas used the same int-tick-count-with-reset-to-0 pattern already
+     found broken twice: `healthCooldown += 1 + (int)(0.24 * Vitality)`, fire (+1 HP) at 160; and
+     `manaCooldown += 1 + (int)(0.12 * Wisdom)`, fire (+1 MP) at 320. Converted to HP/s and MP/s, these
+     gave 0.375/3.75/7.12 HP/s and 0.1875/1.3125/1.875 MP/s at the spec's own example stat values —
+     nowhere close to the intended 2.0/11.63/20.05 HP/s and 0.5/6.5/9.5 MP/s.
+
+     New `Player.HealthRegenPerSecond` (`2f + 0.2407f * Vitality`) and `ManaRegenPerSecond` (`0.5f +
+     0.12f * Wisdom`) properties — note these are flat linear rates (no `/75` scaling), unlike
+     `AttacksPerSecond`/`TilesPerSecond`'s 0-75 range formulas, since the spec expresses VIT/WIS regen
+     as a straight per-point bonus with no explicit cap breakpoint. `healthCooldown`/`manaCooldown`
+     changed from `int` fields compared against fixed `160`/`320` thresholds to `float` accumulators
+     adding `HealthRegenPerSecond / 60`/`ManaRegenPerSecond / 60` each tick and firing (+1 HP/MP) at
+     `1.0`, subtracting `1f` (not resetting to `0f`) to carry the leftover fraction forward — the exact
+     precision fix from entry 164, applied here proactively before shipping rather than after finding
+     the same bug a third time. No Healing bonus was added (the spec's "+20 HP/sec while Healing") —
+     this engine has no Healing status effect to add it into, same category as entries 164/165's
+     Berserk/Speedy notes.
+
+     Verified via a scripted repro (throwaway `Wizard`, so `Player.Instance` briefly points at it but
+     nothing persists): confirmed `HealthRegenPerSecond` reads exactly `11.628`/`20.0525` at
+     `40`/`75` Vitality and `ManaRegenPerSecond` reads exactly `6.5`/`9.5` at `50`/`75` Wisdom; then, with
+     `HealthMax`/`ManaMax` raised high enough that regen never hit the cap, ran 600 real ticks (10
+     seconds) at `40` Vitality / `75` Wisdom simultaneously and confirmed real `Health`/`Mana` gained
+     landed at `116`/`94` against the formula's own `116.28`/`95` prediction — within a single unit in
+     both directions, that remaining gap being pure integer-HP/MP quantization at the tick boundary
+     (Health/Mana are both `int`), not systematic drift. Real save files confirmed byte-identical
+     before and after. Clean build and a plain boot-check both passed.

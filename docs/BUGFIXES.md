@@ -658,3 +658,17 @@ happened at once.
     travel through a real `Update()` tick — reproduced `Update()`'s exact conversion math with a
     synthetic direction vector and confirmed it round-trips back to precisely `TilesPerSecond`'s own
     value at all three Speed levels with zero rounding loss.
+48. **Health and mana regen never matched any documented formula either** — the third and fourth
+    "double check the calculation" request this session, after entries 46/47's Dexterity/Speed. See
+    [DEVLOG.md](DEVLOG.md) entry 166 for the full fix. `Player.cs`'s `Update()` computed both regen
+    rates with the same int-tick-count-and-reset-to-0 pattern already found broken twice: converted to
+    HP/s and MP/s, the old formulas gave 0.375/3.75/7.12 HP/s and 0.1875/1.3125/1.875 MP/s at the
+    spec's own example stat values, versus the intended 2.0/11.63/20.05 and 0.5/6.5/9.5. Replaced with
+    `Player.HealthRegenPerSecond` (`2f + 0.2407f * Vitality`) and `ManaRegenPerSecond` (`0.5f + 0.12f *
+    Wisdom`), and switched `healthCooldown`/`manaCooldown` to float accumulators that subtract `1f`
+    (not reset to `0f`) on regen — applying entry 46's precision fix proactively this time, before
+    shipping rather than after a report. Verified via a scripted repro: confirmed both properties read
+    the spec's exact example values, then ran 600 real `Update()` ticks (10 seconds) with
+    `HealthMax`/`ManaMax` raised so regen never hit the cap and confirmed real Health/Mana gained
+    landed within a single unit of the formula's own prediction in both directions (the gap being pure
+    integer quantization on the `int Health`/`Mana` fields, not drift).
