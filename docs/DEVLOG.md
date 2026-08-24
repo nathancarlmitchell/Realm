@@ -3535,3 +3535,28 @@ date/time for those individually; don't treat their grouping as meaning they all
      a scripted repro (throwaway `Enemy.CreateWanderer()`, hit once): confirmed the resulting
      `DamageNumber`'s color read exactly `Color.Red`. Real save files confirmed byte-identical before
      and after. Clean build and a plain boot-check both passed.
+160. **New Settings > Graphics toggle: "Show XP Drops," default on.** Gates the floating "+XP" number
+     from entries 157/158 — `Enemy.WasShot()`'s death branch now only spawns that `DamageNumber` when
+     `Player.ShowXpDropsEnabled` is true; `ExperienceTotal` itself still increments unconditionally
+     either way, this only controls the number's visibility. New `Player.ShowXpDropsEnabled = true`
+     field and matching `GameSettingsData.ShowXpDropsEnabled { get; set; } = true` DTO property — both
+     need the explicit `= true` (not just documentation), same reasoning as
+     `LowHealthIndicatorEnabled`'s existing comment: `System.Text.Json` only overwrites properties
+     actually present in the JSON, so an existing `GameSettingsData.json` predating this field would
+     otherwise deserialize it at the unstated bare-bool default (`false`), silently turning the setting
+     off for every existing account instead of leaving it on. `Util.Save/LoadGameSettingsData()` and a
+     new `SettingsRow` (`RowKind.Toggle`) in `SettingsState.cs`'s Graphics tab, right after "Low Health
+     Threshold," complete the wiring — same shape as every other on/off setting added this session.
+
+     Verified via a scripted repro (real `GameSettingsData.json` backed up first since this genuinely
+     calls `Util.SaveGameSettingsData()`, restored immediately after): confirmed a fresh `Player`
+     defaults to `ShowXpDropsEnabled = true`; confirmed deserializing an old-shaped JSON missing the key
+     still produces `true`, not the bare-bool default; confirmed a real save(`false`)→load() round trip
+     actually flips the in-memory value; confirmed the gate itself — with the setting off, killing a
+     test enemy added no floating number above the player (only the existing hit number at the enemy),
+     and with it on, exactly one appeared. Per the entry-118 lesson (a numeric check alone missed a real
+     stepper-spacing bug once), also rendered the Graphics tab itself to a PNG and visually confirmed
+     "Show XP Drops" reads "ON," aligned in the same value column as the other three rows, no overlap.
+     Real save files confirmed byte-identical before and after (including `GameSettingsData.json`,
+     restored to its exact original bytes despite the round-trip test genuinely rewriting it mid-test).
+     Clean build and a plain boot-check both passed.

@@ -37,6 +37,12 @@ public class GameSettingsData
     // true) instead of leaving it at the intended 25%.
     public int LowHealthThresholdPercent { get; set; } = 25;
 
+    // Defaults to TRUE (on) — same "give it its own explicit default"
+    // reasoning as LowHealthIndicatorEnabled above. Gates the floating
+    // "+XP" number spawned in Enemy.WasShot()'s death branch. See
+    // SettingsState.cs's Graphics tab.
+    public bool ShowXpDropsEnabled { get; set; } = true;
+
     // Audio — see Sound.cs's RefreshMusicState()/ShouldPlaySfx() and
     // SettingsState.cs's Audio tab. MusicEnabled/MusicVolumePercent/
     // SfxVolumePercent all need their own explicit defaults for the same

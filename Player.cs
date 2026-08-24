@@ -190,6 +190,14 @@ namespace Realm
         // NumericRow), in steps of 5.
         public int LowHealthThresholdPercent = 25;
 
+        // Same account-wide GameSettingsData persistence, defaults to TRUE
+        // (same reasoning as LowHealthIndicatorEnabled above — see
+        // GameSettingsData.cs's matching comment on why the DTO's own
+        // default also has to be `true`). Gates the floating "+XP" number
+        // spawned in Enemy.WasShot()'s death branch. Toggled from the
+        // Settings > Graphics tab.
+        public bool ShowXpDropsEnabled = true;
+
         // Same account-wide GameSettingsData persistence — see Sound.cs's
         // RefreshMusicState()/ShouldPlaySfx() for how these actually gate
         // playback, and SettingsState.cs's Audio tab for the controls.

@@ -167,6 +167,13 @@ namespace Realm.States
                     Min = 0,
                     Max = 100,
                 },
+                new SettingsRow
+                {
+                    Kind = RowKind.Toggle,
+                    Label = "Show XP Drops",
+                    GetBool = () => Player.Instance.ShowXpDropsEnabled,
+                    SetBool = v => Player.Instance.ShowXpDropsEnabled = v,
+                },
             ];
 
             // Order matches how the settings actually read best together —
