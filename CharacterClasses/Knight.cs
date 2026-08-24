@@ -127,9 +127,11 @@ namespace Realm.CharacterClasses
         // stuns whatever it hits (blocks attacks only — unlike Archer's
         // Quiver, which paralyzes and blocks movement only), plus a
         // temporary Damage Reduction buff on the Knight regardless of
-        // whether the shot connects. The shot itself pierces (hits multiple
-        // targets, same as Bow/Quiver) and uses its own fixed speed/lifetime
-        // rather than the equipped Sword's.
+        // whether any shot connects. Each shot pierces (hits multiple
+        // targets, same as Bow/Quiver) and uses the ability's own fixed
+        // speed/lifetime rather than the equipped Sword's. Higher-tier
+        // Shields fire more shots in a wider fan — see Data/ShieldData.cs's
+        // Shots/ArcGapDegrees.
         public override void UseAbility()
         {
             base.UseAbility();
@@ -147,6 +149,7 @@ namespace Realm.CharacterClasses
             }
 
             int damage = rand.Next(AbilityItem.MinDamage, AbilityItem.MaxDamage);
+            Shield shield = (Shield)AbilityItem;
 
             if (Mana >= AbilityCost)
             {
@@ -154,19 +157,28 @@ namespace Realm.CharacterClasses
 
                 var aim = Input.GetMouseAimDirection();
                 float aimAngle = aim.ToAngle();
+                float arcGapRad = MathHelper.ToRadians(shield.ArcGapDegrees);
 
-                Vector2 vel = Extensions.FromPolar(aimAngle, ShieldProjectileMagnitude);
+                // Symmetric fan, same formula as Archer's Quiver (entry
+                // 156): an odd Shots count centers one shot on the aim
+                // line, an even count straddles it evenly. Shots=1 (Tier 0)
+                // degenerates to a single shot straight down the aim line.
+                for (int i = 0; i < shield.Shots; i++)
+                {
+                    float angle = aimAngle + (i - (shield.Shots - 1) / 2f) * arcGapRad;
+                    Vector2 vel = Extensions.FromPolar(angle, ShieldProjectileMagnitude);
 
-                EntityManager.Add(
-                    new Projectile(Player.Instance.Position, vel)
-                    {
-                        Damage = damage,
-                        Duration = ShieldProjectileDuration,
-                        image = Art.ShieldProjectile,
-                        ExpiresOnHit = false,
-                        StunsOnHit = true,
-                    }
-                );
+                    EntityManager.Add(
+                        new Projectile(Player.Instance.Position, vel)
+                        {
+                            Damage = damage,
+                            Duration = ShieldProjectileDuration,
+                            image = Art.ShieldProjectile,
+                            ExpiresOnHit = false,
+                            StunsOnHit = true,
+                        }
+                    );
+                }
 
                 AddTemporaryDamageTakenMultiplier(
                     ShieldDamageReductionMultiplier,

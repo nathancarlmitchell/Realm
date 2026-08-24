@@ -681,6 +681,13 @@ namespace Realm
                 quiverCopy.ProjectileImageName = quiverBest.ProjectileImageName;
             }
 
+            // Shield-only — Shield Slam's shot fan. See Data/ShieldData.cs.
+            if (copy is Shield shieldCopy && best is Shield shieldBest)
+            {
+                shieldCopy.Shots = shieldBest.Shots;
+                shieldCopy.ArcGapDegrees = shieldBest.ArcGapDegrees;
+            }
+
             EquipAbilityItem(copy);
         }
 

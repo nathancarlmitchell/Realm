@@ -14,7 +14,9 @@
         "ManaCost": 85,
         "MinDamage": 50,
         "MaxDamage": 90,
-        "ImageName": "AbilityItems/Shields/0"
+        "ImageName": "AbilityItems/Shields/0",
+        "Shots": 1,
+        "ArcGapDegrees": 10.0
     },
     {
         "Name": "Iron Shield",
@@ -31,7 +33,9 @@
         "ManaCost": 85,
         "MinDamage": 100,
         "MaxDamage": 140,
-        "ImageName": "AbilityItems/Shields/1"
+        "ImageName": "AbilityItems/Shields/1",
+        "Shots": 2,
+        "ArcGapDegrees": 10.0
     },
     {
         "Name": "Kite Shield",
@@ -48,7 +52,9 @@
         "ManaCost": 90,
         "MinDamage": 150,
         "MaxDamage": 190,
-        "ImageName": "AbilityItems/Shields/2"
+        "ImageName": "AbilityItems/Shields/2",
+        "Shots": 3,
+        "ArcGapDegrees": 10.0
     },
     {
         "Name": "Shield of the Vanguard",
@@ -65,7 +71,9 @@
         "ManaCost": 90,
         "MinDamage": 190,
         "MaxDamage": 240,
-        "ImageName": "AbilityItems/Shields/3"
+        "ImageName": "AbilityItems/Shields/3",
+        "Shots": 3,
+        "ArcGapDegrees": 10.0
     },
     {
         "Name": "Stormforged Shield",
@@ -82,7 +90,9 @@
         "ManaCost": 95,
         "MinDamage": 230,
         "MaxDamage": 280,
-        "ImageName": "AbilityItems/Shields/4"
+        "ImageName": "AbilityItems/Shields/4",
+        "Shots": 4,
+        "ArcGapDegrees": 10.0
     },
     {
         "Name": "Runed Shield",
@@ -99,7 +109,9 @@
         "ManaCost": 95,
         "MinDamage": 270,
         "MaxDamage": 330,
-        "ImageName": "AbilityItems/Shields/5"
+        "ImageName": "AbilityItems/Shields/5",
+        "Shots": 4,
+        "ArcGapDegrees": 10.0
     },
     {
         "Name": "Champion's Shield",
@@ -116,7 +128,9 @@
         "ManaCost": 100,
         "MinDamage": 300,
         "MaxDamage": 360,
-        "ImageName": "AbilityItems/Shields/6"
+        "ImageName": "AbilityItems/Shields/6",
+        "Shots": 5,
+        "ArcGapDegrees": 10.0
     },
     {
         "Name": "Shield of Legends",
@@ -133,6 +147,8 @@
         "ManaCost": 100,
         "MinDamage": 340,
         "MaxDamage": 400,
-        "ImageName": "AbilityItems/Shields/7"
+        "ImageName": "AbilityItems/Shields/7",
+        "Shots": 5,
+        "ArcGapDegrees": 10.0
     }
 ]

@@ -7,6 +7,10 @@ namespace Realm
 {
     public class Shield : AbilityItem
     {
+        // Shield Slam's shot fan — see Data/ShieldData.cs.
+        public int Shots { get; set; }
+        public float ArcGapDegrees { get; set; }
+
         public Shield(Texture2D image)
         {
             ID = Guid.NewGuid();
@@ -53,6 +57,8 @@ namespace Realm
                     MinDamage = shieldData.MinDamage,
                     MaxDamage = shieldData.MaxDamage,
                     ImageName = shieldData.ImageName,
+                    Shots = shieldData.Shots,
+                    ArcGapDegrees = shieldData.ArcGapDegrees,
                 };
 
                 Player.Instance.EquipAbilityItem(shield);

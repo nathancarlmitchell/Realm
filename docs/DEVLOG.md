@@ -3820,3 +3820,27 @@ date/time for those individually; don't treat their grouping as meaning they all
      + Iron Plate) present and identical in both calls, canceling out algebraically and leaving no
      ambiguity that the multiplier itself was the only thing that changed. Real save files confirmed
      byte-identical before and after. Clean build and a plain boot-check both passed.
+170. **Shield Slam now fires a per-tier fan of shots — 1 at Tier 0, scaling up to 5 at Tier 6-7 —
+     instead of always firing exactly one.** Follow-up to entry 169, same day. Per the user's table
+     (T0:1, T1:2, T2:3, T3:3, T4:4, T5:4, T6:5, T7:5), new `Shots`/`ArcGapDegrees` fields added to
+     `Data/ShieldData.cs`/`ShieldData.json`/`Shield.cs`, mirroring Quiver's exact per-tier-fan pattern
+     from entry 156 — `Knight.UseAbility()` now loops `Shots` times firing the same symmetric-fan
+     formula Quiver uses (`angle = aimAngle + (i - (Shots-1)/2f) * arcGapRad`), so an odd count centers
+     one shot on the aim line and an even count straddles it evenly; Tier 0's `Shots=1` degenerates
+     cleanly to a single straight shot with no special-casing needed. `ArcGapDegrees` set to a uniform
+     `10°` per adjacent-shot gap across all 8 tiers — not specified in the request (only shot counts
+     were given), chosen as a reasonable starting spread and flagged here as tunable; because total fan
+     width scales with `(Shots-1) × ArcGapDegrees`, a fixed per-gap angle already satisfies "higher-tier
+     shields have a wider projectile arc" on its own as shot count grows, without needing per-tier angle
+     values. Speed/lifetime/art stay the fixed `ShieldProjectileMagnitude`/`ShieldProjectileDuration`
+     constants from entry 169, applied identically to every shot in the fan. `Player.cs`'s
+     `EquipHighestTierAbilityItem()` (F4) got a proactive Shield-specific branch to copy the two new
+     fields, applying the entry 45/154/156 lesson before any bug report this time.
+
+     Verified via a scripted repro (throwaway `Knight`, so `Player.Instance` briefly points at it but
+     nothing persists): confirmed all 8 catalog entries' `Shots` matched the user's table exactly;
+     confirmed the starting Tier 0 Wooden Shield's `UseAbility()` added exactly 1 entity; confirmed F4
+     correctly equipped the Tier 7 Shield with `Shots=5`; confirmed that Shield's `UseAbility()` added
+     exactly 5 entities; and measured the angular gap between all 4 adjacent pairs of the resulting
+     5-shot fan, landing at exactly `0.174533` rad (10°) in every case. Real save files confirmed
+     byte-identical before and after. Clean build and a plain boot-check both passed.

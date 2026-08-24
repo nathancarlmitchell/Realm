@@ -887,6 +887,8 @@ namespace Realm
                             MinDamage = shieldData[i].MinDamage,
                             MaxDamage = shieldData[i].MaxDamage,
                             ImageName = shieldData[i].ImageName,
+                            Shots = shieldData[i].Shots,
+                            ArcGapDegrees = shieldData[i].ArcGapDegrees,
                         }
                     );
                 }
