@@ -16,6 +16,7 @@
     <PackageReference Include="MonoGame.Content.Builder.Task" Version="3.8.2.1105" />
   </ItemGroup>
   <ItemGroup>
+    <Folder Include="Content\AbilityItems\Tomes\" />
     <Folder Include="Content\AbilityItems\Shields\" />
     <Folder Include="Content\AbilityItems\Spells\" />
     <Folder Include="Content\AbilityItems\Quivers\" />
@@ -23,6 +24,7 @@
     <Folder Include="Content\Controls\" />
     <Folder Include="Content\Projectiles\Spells\" />
     <Folder Include="Content\Weapons\Swords\" />
+    <Folder Include="Content\Weapons\Wands\Projectiles\" />
     <Folder Include="Weapons\" />
   </ItemGroup>
   <ItemGroup>

@@ -195,6 +195,13 @@ namespace Realm.States
                     GetBool = () => Player.Instance.ShowHitParticlesEnabled,
                     SetBool = v => Player.Instance.ShowHitParticlesEnabled = v,
                 },
+                new SettingsRow
+                {
+                    Kind = RowKind.Toggle,
+                    Label = "Show Combat Indicator",
+                    GetBool = () => Player.Instance.ShowCombatIndicatorEnabled,
+                    SetBool = v => Player.Instance.ShowCombatIndicatorEnabled = v,
+                },
             ];
 
             // Order matches how the settings actually read best together —

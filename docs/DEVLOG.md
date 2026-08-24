@@ -3972,3 +3972,84 @@ date/time for those individually; don't treat their grouping as meaning they all
      `/importer`/`/processor`/`/processorParam` lines with a leading backslash instead of forward
      slash; fixed and rebuilt clean. Real save files confirmed byte-identical before and after. Clean
      build and a plain boot-check both passed.
+172. **Added Vital Combat**, a new in-combat (IC) / out-of-combat (OOC) system: a single hit whose
+     raw damage clears a Defense-scaled Combat Trigger puts the player IC for up to 7 seconds
+     (reduced by Vitality), during which VIT/WIS-driven regen is halved. Visualized in the sidebar
+     by a yellow border around the HP bar (togglable) and a small badge above it that lights up and
+     shows the current trigger on hover.
+
+     The design doc itself had an internal contradiction: an opening paragraph described DEF
+     brackets at 15/30/45, but a second bulleted list gave 15/35/65/125, and only the second set
+     reproduces the doc's own three worked examples (Archer 25 DEF -> 22, Rogue 45 DEF -> 35, Knight
+     77 DEF -> 48) — checked by hand against both layouts before writing any code. Went with
+     15/35/65/125 as the real intended bracket edges and treated the first paragraph as a leftover
+     draft, not a second scaling to reconcile. `Player.CombatTrigger` implements this as four
+     brackets at 100%/75%/50%/25%, each folding its own contribution into the next bracket's
+     starting value (15/30/45/60) rather than recomputing from 0 every time, permanently capped at
+     60 beyond 125 DEF (the doc's own "0% rate" bracket) and floored at 1 (the doc's "starts at 1
+     damage" line, otherwise meaningless at exactly 0 Defense where the 1:1 bracket would give a
+     trigger of 0).
+
+     Two real ambiguities were resolved via `AskUserQuestion` before writing any code, both answered
+     with the recommended option: (1) whether the trigger check compares the *raw* incoming hit or
+     the Defense-*mitigated* HP actually lost — went with raw, since comparing against the mitigated
+     value would double-count Defense (it already shrinks both the compared value and, separately,
+     the threshold itself); (2) no sword icon art exists anywhere in `Content/` for the "lights up"
+     indicator — went with a plain placeholder (a tinted square via `Art.HealthBar`, the same
+     solid-color-rectangle technique `Util.DrawTooltip`'s background panel already uses), a one-line
+     `spriteBatch.Draw` swap away from real art later.
+
+     New `Player.cs` state: `InCombat`/`inCombatFrames` (same opt-in-temporary-effect shape as
+     `DamageTakenMultiplier`/`HealingAmountPerSecond`), `CombatTrigger` (the bracket formula above,
+     reading the live `Defense` field), `InCombatDurationFrames` (`7 - Vitality * 0.04` seconds,
+     clamped to a 1-frame floor rather than 0 — a literal 0 would let `UpdateTemporaryBonuses()`'s
+     `> 0` tick-down guard never fire, leaving `InCombat` stuck true forever; purely theoretical,
+     since no class's Vitality cap comes close to the 175 VIT needed to actually hit it), and
+     `RegisterHit(int rawDamage)` (called from `Hit()` with the hit *before* Defense's own
+     reduction, entering or refreshing combat back to the full duration on a qualifying hit).
+     `HealthRegenPerSecond`/`ManaRegenPerSecond` now multiply only their Vitality-/Wisdom-driven
+     term by `0.5f` while `InCombat` — the flat per-second base and a Priest Tome's
+     `HealingAmountPerSecond` bonus are both left untouched, matching the design doc's own
+     "regeneration *caused by* VIT and WIS" wording. The doc's "Pets take 2 more seconds to trigger
+     while IC" line has nothing to hook into — this engine has no pet system at all — so it's noted
+     here, not implemented, same as this session's running precedent for other out-of-scope spec
+     lines (Feed Power, Sick, "Shots pass through obstacles").
+
+     New account-wide `ShowCombatIndicatorEnabled` setting (defaults on), added end-to-end following
+     the established `ShowHitParticlesEnabled`-shaped pattern exactly: `Player.cs` field,
+     `Data/GameSettingsData.cs` DTO property (with its own explicit `= true` default so an existing
+     settings file predating this field still deserializes to "on", not a silently-`false` bare
+     default), `Util.cs` save/load wiring, and a new `SettingsRow` on the Settings > Graphics tab.
+     Gates only the yellow border — the badge's own idle-vs-lit-up appearance always shows,
+     regardless of the setting, matching the design doc's own wording only conditioning the border
+     on "if they have it enabled".
+
+     `Overlay.cs` gained `DrawCombatIndicator()` (called right after `DrawHealthSection()`, so its
+     border draws on top of the already-drawn HP bar rather than underneath it) plus a small
+     `DrawBorder()` helper (four `Art.HealthBar` strips) — the codebase had no colored-border
+     helper to reuse; the equipment slots' `Art.Border` texture is drawn plain-white-tinted only,
+     not built for recoloring per state. The hover tooltip is anchored to the badge's *left*,
+     computed from `Art.HudFont.MeasureString()` up front, rather than trusting
+     `Util.DrawTooltip()`'s own `ClampTooltipX` alone — the badge sits at the sidebar's own right
+     edge, and a first attempt anchoring the tooltip near it (`icon.X - 100`) rendered with its
+     right edge clipped past the visible window in an offscreen-rendered test PNG; anchoring by the
+     tooltip's own measured width instead fixed it immediately, confirmed by re-rendering.
+
+     Verified via a scripted repro (throwaway `Wizard`, reflection into the private
+     `UpdateTemporaryBonuses()` to advance frames without a full `Update()`/`Camera`/`Input` setup):
+     confirmed `CombatTrigger` against all three worked examples plus every bracket edge (15/35/65/
+     125), the sub-1 floor at 0 DEF, and the permanent cap past 125 DEF; confirmed a sub-trigger hit
+     doesn't enter combat while a qualifying one does; confirmed IC duration at 25 VIT lands at
+     exactly 360 frames (6s), including that a mid-duration qualifying re-hit refreshes the full
+     360 frames from the *refresh* point rather than extending or stacking from the original hit;
+     confirmed `HealthRegenPerSecond`/`ManaRegenPerSecond` numerically match hand-computed
+     IC-halved and OOC-full values, and that a Tome's `HealingAmountPerSecond` contributes
+     identically either way; confirmed `GameSettingsData`'s new field defaults to `true` both fresh
+     and when deserializing JSON missing the key entirely (an isolated in-memory
+     `JsonSerializer` round-trip, deliberately never touching the real `GameSettingsData.json` file);
+     and rendered `Overlay.DrawSidebar()` to two offscreen PNGs (IC and OOC) and visually confirmed
+     the border/badge/tooltip all appear, disappear, and recolor correctly between the two states
+     (this is also what caught the tooltip clipping bug above — never would have been visible from
+     the passing numeric checks alone). Real save files confirmed byte-identical before and after,
+     including the account's real `PlayerData_Priest.json`/`InventoryData_Priest.json` created by
+     actual play since entry 171. Clean build and a plain boot-check both passed.

@@ -93,6 +93,7 @@ namespace Realm
             DrawStats(spriteBatch);
             DrawExperience(spriteBatch);
             DrawHealthSection(spriteBatch);
+            DrawCombatIndicator(spriteBatch);
             DrawManaSection(spriteBatch);
             DrawAbilitySection(spriteBatch);
             DrawEquipment(spriteBatch);
@@ -400,6 +401,82 @@ namespace Realm
                 1f,
                 0,
                 0
+            );
+        }
+
+        // Vital Combat's two HUD indicators, both anchored to the HP
+        // section (y=224) just above: a yellow outline around the HP bar
+        // itself while InCombat (gated behind ShowCombatIndicatorEnabled),
+        // and a small sword badge at the right edge of the HP label row
+        // that "lights up" (gold vs dim gray) unconditionally — per the
+        // design doc's own wording, only the border is behind the setting.
+        // Placeholder shape (a plain tinted square via Art.HealthBar, same
+        // solid-color-rectangle technique DrawTooltip already uses) until
+        // real icon art exists; swapping in real art later is a one-line
+        // change to a spriteBatch.Draw call, nothing structural.
+        private const int CombatIconSize = 20;
+        private const int CombatBorderThickness = 2;
+
+        private static void DrawCombatIndicator(SpriteBatch spriteBatch)
+        {
+            int x = Game1.SidebarX + SidebarPadding;
+            int y = 224;
+
+            if (Player.Instance.InCombat && Player.Instance.ShowCombatIndicatorEnabled)
+            {
+                Rectangle barRect = new(
+                    x,
+                    y + 20,
+                    100 * SidebarBarScale,
+                    SidebarBarHeight
+                );
+                DrawBorder(spriteBatch, barRect, Color.Yellow, CombatBorderThickness);
+            }
+
+            Rectangle iconRect = new(
+                Game1.SidebarX + Game1.SidebarWidth - SidebarPadding - CombatIconSize,
+                y,
+                CombatIconSize,
+                CombatIconSize
+            );
+            Color iconColor = Player.Instance.InCombat ? Color.Gold : Color.DarkGray;
+            spriteBatch.Draw(Art.HealthBar, iconRect, iconColor);
+
+            if (iconRect.Intersects(Input.MouseBounds))
+            {
+                string status = Player.Instance.InCombat ? "In Combat" : "Out of Combat";
+                string text =
+                    status + Environment.NewLine + "Combat Trigger: " + Player.Instance.CombatTrigger;
+                Color textColor = Player.Instance.InCombat ? Color.Gold : Color.White;
+
+                // Anchored so the tooltip's right edge sits just left of the
+                // icon (which itself sits at the sidebar's own right edge) —
+                // guarantees on-screen placement without relying on
+                // Util.DrawTooltip's own ClampTooltipX to rescue a
+                // right-edge overflow, since the icon is already about as
+                // far right as anything in the sidebar gets.
+                Vector2 textSize = Art.HudFont.MeasureString(text);
+                Vector2 tooltipPos = new(
+                    iconRect.X - textSize.X - 10,
+                    iconRect.Y - textSize.Y - 10
+                );
+                Util.DrawTooltip(spriteBatch, Art.HudFont, text, tooltipPos, textColor);
+            }
+        }
+
+        private static void DrawBorder(SpriteBatch spriteBatch, Rectangle rect, Color color, int thickness)
+        {
+            spriteBatch.Draw(Art.HealthBar, new Rectangle(rect.X, rect.Y, rect.Width, thickness), color);
+            spriteBatch.Draw(
+                Art.HealthBar,
+                new Rectangle(rect.X, rect.Bottom - thickness, rect.Width, thickness),
+                color
+            );
+            spriteBatch.Draw(Art.HealthBar, new Rectangle(rect.X, rect.Y, thickness, rect.Height), color);
+            spriteBatch.Draw(
+                Art.HealthBar,
+                new Rectangle(rect.Right - thickness, rect.Y, thickness, rect.Height),
+                color
             );
         }
 

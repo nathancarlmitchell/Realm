@@ -58,6 +58,11 @@ public class GameSettingsData
     // separate gold swirl.
     public bool ShowHitParticlesEnabled { get; set; } = true;
 
+    // Defaults to TRUE (on) — same reasoning. Gates only the yellow
+    // in-combat border around the sidebar HP bar; the sword icon itself
+    // always shows. See Overlay.cs's DrawCombatIndicator().
+    public bool ShowCombatIndicatorEnabled { get; set; } = true;
+
     // Audio — see Sound.cs's RefreshMusicState()/ShouldPlaySfx() and
     // SettingsState.cs's Audio tab. MusicEnabled/MusicVolumePercent/
     // SfxVolumePercent all need their own explicit defaults for the same

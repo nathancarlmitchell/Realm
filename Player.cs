@@ -125,6 +125,83 @@ namespace Realm
         public float HealingAmountPerSecond;
         private int healingDurationFrames;
 
+        // Vital Combat: true while the player is "in combat" (IC) —
+        // entered (or refreshed) by RegisterHit() below whenever a single
+        // hit's raw damage meets or exceeds CombatTrigger, and exited
+        // automatically once inCombatFrames counts down to 0 without
+        // another qualifying hit in the meantime. While IC, VIT/WIS-driven
+        // regeneration is halved — see HealthRegenPerSecond/
+        // ManaRegenPerSecond above, which read this directly. The design
+        // doc also calls out a 2-second delay on HP/MP recovery from Pets
+        // while IC, but this engine has no pet system for that to apply
+        // to, so there's nothing to hook it into.
+        public bool InCombat { get; private set; }
+        private int inCombatFrames;
+
+        // Minimum raw (pre-Defense, post-DamageTakenMultiplier) hit damage
+        // needed to (re-)enter combat. Scales with Defense across four
+        // brackets of diminishing effectiveness — each bracket's own
+        // contribution is folded into the next bracket's starting value
+        // (15/30/45/60) rather than recomputed from 0 every time. Bracket
+        // edges are 15/35/65/125 DEF, at rates 100%/75%/50%/25%, capping
+        // permanently at 60 beyond 125 DEF (0% rate) — verified directly
+        // against the three worked examples in the design doc (Archer 25
+        // DEF -> 22, Rogue 45 DEF -> 35, Knight 77 DEF -> 48). An earlier
+        // paragraph in the same doc described 15/30/45 edges instead, but
+        // that layout doesn't reproduce those same worked examples — a
+        // documentation error, not a second intended scaling. Floored to
+        // an int, matching the doc's own "22.5 rounds down to 22" example,
+        // with a 1-damage minimum ("the combat trigger starts at 1
+        // damage") for the degenerate 0-Defense case, where the 1:1
+        // bracket would otherwise give a meaningless trigger of 0.
+        public int CombatTrigger
+        {
+            get
+            {
+                float def = Defense;
+                float trigger;
+                if (def <= 15f)
+                    trigger = def;
+                else if (def <= 35f)
+                    trigger = 15f + (def - 15f) * 0.75f;
+                else if (def <= 65f)
+                    trigger = 30f + (def - 35f) * 0.5f;
+                else if (def <= 125f)
+                    trigger = 45f + (def - 65f) * 0.25f;
+                else
+                    trigger = 60f;
+                return Math.Max(1, (int)trigger);
+            }
+        }
+
+        // 7 seconds at 0 Vitality, reduced by 4% of Vitality (1 second per
+        // 25 VIT). Clamped to a 1-frame minimum rather than 0 — a
+        // literal 0 would let inCombatFrames get set to 0 by RegisterHit()
+        // below, which UpdateTemporaryBonuses()'s `> 0` guard would then
+        // never see, leaving InCombat stuck true forever. Purely a safety
+        // floor: no class's Vitality cap comes remotely close to the 175
+        // VIT it'd take to actually zero out the 7-second base.
+        private int InCombatDurationFrames =>
+            Math.Max(1, (int)(Math.Max(0f, 7f - Vitality * 0.04f) * 60f));
+
+        // Called from Hit() with the raw hit (after DamageTakenMultiplier,
+        // before Defense) — comparing against the raw hit rather than the
+        // Defense-mitigated damage actually taken avoids double-counting
+        // Defense's effect (it already shrinks both the trigger's
+        // "hardness" and, separately, the HP actually lost). A qualifying
+        // hit both enters combat for the first time and refreshes an
+        // already-active one back to the full duration, matching "avoid
+        // taking damage above the Combat Trigger for a period of time" to
+        // exit.
+        private void RegisterHit(int rawDamage)
+        {
+            if (rawDamage < CombatTrigger)
+                return;
+
+            InCombat = true;
+            inCombatFrames = InCombatDurationFrames;
+        }
+
         // ExperienceTotal is the only XP value actually stored — the sole
         // "how much has this character ever earned" running total,
         // incremented directly on each kill (Enemy.cs) and never reset by a
@@ -184,12 +261,18 @@ namespace Realm
         // TilesPerSecond above), plus the Healing status's own rate on top
         // when active (e.g. a Priest's Tome — see HealingAmountPerSecond/
         // ApplyHealing() below). Drives Update()'s healthCooldown
-        // accumulator below.
-        public float HealthRegenPerSecond => 2f + 0.2407f * Vitality + HealingAmountPerSecond;
+        // accumulator below. Vital Combat: only the Vitality-driven term is
+        // halved while InCombat (below) — the flat 2f base and Healing's
+        // own rate are both untouched, matching the design doc's own
+        // "regeneration caused by VIT and WIS" wording.
+        public float HealthRegenPerSecond =>
+            2f + 0.2407f * Vitality * (InCombat ? 0.5f : 1f) + HealingAmountPerSecond;
 
         // Mana regen rate: 0.5 MP/sec at 0 Wisdom, +0.12 MP/sec per point
-        // past that. Drives Update()'s manaCooldown accumulator below.
-        public float ManaRegenPerSecond => 0.5f + 0.12f * Wisdom;
+        // past that. Drives Update()'s manaCooldown accumulator below. Same
+        // Vital Combat halving as HealthRegenPerSecond above, applied only
+        // to the Wisdom-driven term.
+        public float ManaRegenPerSecond => 0.5f + 0.12f * Wisdom * (InCombat ? 0.5f : 1f);
 
         // See PlayerData.HasBeenPlayed — mirrors it on the live instance so a
         // later SavePlayerData() call doesn't regress it back to false.
@@ -262,6 +345,15 @@ namespace Realm
         // flavor (SwirlParticle) for a distinct celebratory moment, not a
         // combat hit. Toggled from the Settings > Graphics tab.
         public bool ShowHitParticlesEnabled = true;
+
+        // Same account-wide GameSettingsData persistence, defaults to TRUE.
+        // Gates only the yellow border Overlay.cs draws around the sidebar
+        // HP bar while InCombat — the sword icon itself (and its "lighting
+        // up" while InCombat) always shows regardless of this setting, per
+        // the design doc's own wording only conditioning the border on
+        // "if they have it enabled". Toggled from the Settings > Graphics
+        // tab.
+        public bool ShowCombatIndicatorEnabled = true;
 
         // Same account-wide GameSettingsData persistence — see Sound.cs's
         // RefreshMusicState()/ShouldPlaySfx() for how these actually gate
@@ -437,6 +529,10 @@ namespace Realm
             // hit before Defense's own reduction/floor below — the two
             // stack rather than one replacing the other.
             damage = (int)(damage * DamageTakenMultiplier);
+
+            // Vital Combat: checked against the raw hit, before Defense
+            // reduces it below — see RegisterHit()'s own comment for why.
+            RegisterHit(damage);
 
             int damageModified = damage - Defense;
             if (damageModified <= damage / 10)
@@ -946,6 +1042,14 @@ namespace Realm
 
             if (healingDurationFrames > 0 && --healingDurationFrames == 0)
                 HealingAmountPerSecond = 0f;
+
+            // Vital Combat: ticks down independently of RecalculateStats()
+            // above, same as damageTakenMultiplierFrames/
+            // healingDurationFrames — InCombat isn't a stat bonus, just a
+            // gate HealthRegenPerSecond/ManaRegenPerSecond/RegisterHit()
+            // read directly.
+            if (inCombatFrames > 0 && --inCombatFrames == 0)
+                InCombat = false;
         }
 
         private void ClampVitals()
