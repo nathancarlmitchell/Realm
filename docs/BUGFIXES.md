@@ -645,3 +645,16 @@ happened at once.
     discarded. Re-verified via the same 600-tick simulation: exactly 58 shots at 50 Dexterity (vs. the
     ~58.3 the formula predicts) and exactly 80 at 75 Dexterity (an exact match, since 8 attacks/sec
     divides the 60-tick second evenly with no rounding at all).
+47. **The player's real movement speed never matched any documented formula either** — the same
+    "double check the calculation" request as entry 46, this time for Speed instead of Dexterity. See
+    [DEVLOG.md](DEVLOG.md) entry 165 for the full fix. `Player.cs`'s `Update()` computed Velocity
+    magnitude as `(int)((Speed / 75) * 5.6 + 2)` — converted to tiles/sec it gave 3.75/9.375/13.125 at
+    0/50/75 Speed, versus the intended 4.0/7.733/9.6, and the `(int)` cast on top threw away real
+    precision for no reason (`Velocity`/`Position` are already `Vector2`/float, nothing needed an int).
+    Replaced with a new `Player.TilesPerSecond` property (`4f + 5.6f * (Speed / 75f)`) and a
+    float-only `pixelsPerTick = TilesPerSecond * 32f / 60f` conversion, no truncation anywhere.
+    Verified via a scripted repro: confirmed `TilesPerSecond` reads exactly `4`/`7.7333336`/`9.6` at
+    Speed `0`/`50`/`75`, and — since this environment can't simulate real keyboard input to measure
+    travel through a real `Update()` tick — reproduced `Update()`'s exact conversion math with a
+    synthetic direction vector and confirmed it round-trips back to precisely `TilesPerSecond`'s own
+    value at all three Speed levels with zero rounding loss.

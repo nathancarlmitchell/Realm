@@ -3680,3 +3680,31 @@ date/time for those individually; don't treat their grouping as meaning they all
      entity growth — landed at 58 (50 DEX, expected ~58.3) and exactly 80 (75 DEX, expected exactly 80)
      after the fix, versus 54 and 75 before it. Real save files confirmed byte-identical before and
      after. Clean build and a plain boot-check both passed.
+165. **Fixed the Speed-to-movement-speed formula to match the real intended curve**, the same
+     double-check requested for entry 164's attack speed. The old formula (`Velocity = (int)((Speed /
+     75) * 5.6 + 2) * slowMultiplier * Input.GetMovementDirection()`) didn't match any documented
+     rate either — converted to tiles/sec via the established 32px/tile, 60-ticks/sec basis, it gave
+     3.75 T/s at 0 Speed, 9.375 T/s at 50 Speed, and 13.125 T/s at 75 Speed, versus the intended 4.0 /
+     7.733 / 9.6. Its `(int)` cast on the whole px/tick magnitude also threw away real precision on
+     top of that (e.g. truncated a true 5.7333 px/tick down to 5 at 50 Speed) — the same class of bug
+     as entry 164's reset-to-`0` issue, just a cruder, single-tick version of it rather than a
+     compounding one.
+
+     New `Player.TilesPerSecond` property implements the real formula directly: `4f + 5.6f * (Speed /
+     75f)` — 4.0 T/s at 0 Speed, scaling to exactly 9.6 T/s at 75 Speed. `Update()`'s Velocity line now
+     computes `pixelsPerTick = TilesPerSecond * 32f / 60f` and multiplies that directly into `Velocity`
+     with no `(int)` truncation anywhere — `Velocity`/`Position` are both already `Vector2` (float), so
+     the old cast wasn't converting between representations, just discarding precision for no reason.
+     No Speedy multiplier was added — this engine has no Speedy status effect to hook a ×1.5 into, same
+     situation as entry 164's Berserk note.
+
+     Verified via a scripted repro (throwaway `Wizard`, so `Player.Instance` briefly points at it but
+     nothing persists): confirmed `TilesPerSecond` reads exactly `4`/`7.7333336`/`9.6` at Speed
+     `0`/`50`/`75`; confirmed a real `Update()` tick with no key actually held (this environment can't
+     simulate real keyboard input — see CLAUDE.md's `Input.Update()` gotcha) correctly left Position/
+     Velocity unchanged; and, since that meant real travel distance couldn't be measured through
+     `Update()` directly, reproduced `Update()`'s exact conversion formula with a synthetic direction
+     vector and confirmed the resulting px/tick magnitude, converted back to tiles/sec over 60 ticks,
+     landed exactly on `TilesPerSecond`'s own value at all three Speed levels with zero rounding loss.
+     Real save files confirmed byte-identical before and after. Clean build and a plain boot-check both
+     passed.

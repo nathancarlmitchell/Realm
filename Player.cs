@@ -156,6 +156,13 @@ namespace Realm
         // into.
         public float AttacksPerSecond => 1.5f + 6.5f * (Dexterity / 75f);
 
+        // Movement rate: 4 tiles/sec at 0 Speed, scaling up to 9.6 tiles/sec
+        // at 75 Speed. Drives Update()'s Velocity calculation below. No
+        // Speedy multiplier — this engine has no Speedy status effect to
+        // hook one into (same situation as AttacksPerSecond's Berserk note
+        // above).
+        public float TilesPerSecond => 4f + 5.6f * (Speed / 75f);
+
         // See PlayerData.HasBeenPlayed — mirrors it on the live instance so a
         // later SavePlayerData() call doesn't regress it back to false.
         public bool HasBeenPlayed;
@@ -987,8 +994,13 @@ namespace Realm
             // (Entity's general debuff system) is active — e.g. a Stheno
             // Pet's trailing orb.
             float slowMultiplier = HasDebuff(DebuffType.Slow) ? 0.5f : 1f;
-            Velocity =
-                (int)((Speed / 75) * 5.6 + 2) * slowMultiplier * Input.GetMovementDirection();
+            // TilesPerSecond * 32px/tile / 60 ticks/sec (MonoGame's default
+            // fixed timestep) converts the tiles/sec formula into this
+            // engine's px/tick Velocity unit — no int truncation, unlike the
+            // old formula, which threw away real precision (e.g. rounded a
+            // true 5.7333 px/tick down to 5 at 50 Speed).
+            float pixelsPerTick = TilesPerSecond * 32f / 60f;
+            Velocity = pixelsPerTick * slowMultiplier * Input.GetMovementDirection();
             Position += Velocity;
 
             // Update camera position. Syncs directly to the player's actual
