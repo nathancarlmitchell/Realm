@@ -300,7 +300,8 @@ namespace Realm
                             prefix: "+",
                             scale: 1.3f,
                             lifespanTicks: 70,
-                            verticalOffset: -45f
+                            verticalOffset: -45f,
+                            followsPlayer: true
                         )
                     );
                 }

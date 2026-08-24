@@ -3560,3 +3560,29 @@ date/time for those individually; don't treat their grouping as meaning they all
      Real save files confirmed byte-identical before and after (including `GameSettingsData.json`,
      restored to its exact original bytes despite the round-trip test genuinely rewriting it mid-test).
      Clean build and a plain boot-check both passed.
+161. **The player's own damage-taken number and the XP gain number now follow the player as they move,
+     instead of being left behind in empty space.** Previously every `DamageNumber` only applied a fixed
+     upward `FloatVelocity` each tick from a frozen spawn-time position — fine for enemy hit/death
+     numbers (the enemy itself dies or stays roughly put), but the player keeps moving after taking a
+     hit or getting a kill, so those two numbers would visibly detach and drift in a fixed spot the
+     player had already walked away from.
+
+     New optional `followsPlayer` constructor parameter (defaults `false` — every other call site,
+     i.e. enemy hit/death numbers, is unaffected and stays anchored to wherever it spawned). When true,
+     `Update()` recomputes `Position` every tick as `Player.Instance.Position + spawnOffset +
+     floatOffset` instead of just accumulating `Position += FloatVelocity` from a frozen start — the
+     spawn jitter and the upward float are both preserved as offsets layered on top of the player's
+     *current* position, so the number still jitters and floats up exactly as before, it just does so
+     relative to a moving anchor instead of a fixed point. Passed `followsPlayer: true` at the two
+     player-anchored call sites: `Player.Hit()`'s own damage-taken number, and `Enemy.WasShot()`'s XP
+     gain number (entries 157/158/160).
+
+     Verified via a scripted repro (throwaway `Wizard`, so `Player.Instance` briefly points at it but
+     nothing persists): triggered all three kinds of number (an enemy hit, an XP gain, and the player's
+     own damage-taken) in one pass, advanced 10 ticks, then moved the test player 4000+ units away, then
+     advanced 10 more ticks. The enemy hit number (`followsPlayer=False`) ended up ~5634 units from the
+     player's new position (correctly left behind, only the float-up drift moved it at all); both
+     player-anchored numbers (`followsPlayer=True`) ended up only ~33-57 units from the player's new
+     position (correctly tracking the move, that remaining distance being just their own jitter/float
+     offset). Real save files confirmed byte-identical before and after. Clean build and a plain
+     boot-check both passed.

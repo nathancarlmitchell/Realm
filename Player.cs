@@ -378,7 +378,8 @@ namespace Realm
                     Position,
                     damageModified,
                     Microsoft.Xna.Framework.Color.Red,
-                    hasBlackBacking: true
+                    hasBlackBacking: true,
+                    followsPlayer: true
                 )
             );
 

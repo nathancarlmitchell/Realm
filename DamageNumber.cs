@@ -27,6 +27,17 @@ namespace Realm
         private int ticksRemaining;
         private float currentAlpha = 1f;
 
+        // When true, Position is recomputed every tick from the player's
+        // live Position instead of just drifting from a frozen spawn point
+        // — so a number spawned on the player (its own "I took damage"
+        // number, or an XP gain) stays anchored above the player's head as
+        // they walk away, rather than being left behind in empty space. The
+        // spawn jitter and the upward float are both preserved as offsets
+        // layered on top of the player's current position each tick.
+        private readonly bool followsPlayer;
+        private readonly Vector2 spawnOffset;
+        private Vector2 floatOffset = Vector2.Zero;
+
         // hasBlackBacking: only the player's own "I took damage" numbers
         // get the title-style backing (see Player.Hit()) — enemy hit
         // numbers (Enemy.WasShot()) are unaffected, matching the user's
@@ -40,6 +51,11 @@ namespace Realm
         // damage-number look, unaffected for every existing call site — the
         // XP gain number (see Enemy.WasShot()) passes larger/longer/higher
         // values instead so it reads as a distinct, more prominent event.
+        //
+        // followsPlayer: false for every existing call site except the two
+        // player-anchored numbers (Player.Hit()'s own damage-taken number
+        // and Enemy.WasShot()'s XP gain) — an enemy's own hit/death number
+        // stays anchored to where that enemy was, unaffected.
         public DamageNumber(
             Vector2 position,
             int damage,
@@ -48,12 +64,15 @@ namespace Realm
             string prefix = "",
             float scale = DefaultScale,
             int lifespanTicks = DefaultLifespanTicks,
-            float verticalOffset = DefaultVerticalOffset
+            float verticalOffset = DefaultVerticalOffset,
+            bool followsPlayer = false
         )
         {
             // Small spawn jitter so simultaneous hits (a bow's multiple arrows,
             // an AoE ability) don't render as one illegible stack of digits.
-            Position = position + new Vector2(rand.NextFloat(-10, 10), verticalOffset);
+            spawnOffset = new Vector2(rand.NextFloat(-10, 10), verticalOffset);
+            this.followsPlayer = followsPlayer;
+            Position = (followsPlayer ? Player.Instance.Position : position) + spawnOffset;
             text = prefix + damage;
             baseColor = color;
             this.color = color;
@@ -65,7 +84,10 @@ namespace Realm
 
         public override void Update()
         {
-            Position += FloatVelocity;
+            floatOffset += FloatVelocity;
+            Position = followsPlayer
+                ? Player.Instance.Position + spawnOffset + floatOffset
+                : Position + FloatVelocity;
             ticksRemaining--;
 
             currentAlpha = MathHelper.Clamp(ticksRemaining / (float)lifespanTicks, 0f, 1f);
