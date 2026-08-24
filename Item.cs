@@ -31,6 +31,7 @@ namespace Realm
     [JsonDerivedType(typeof(Spell), typeDiscriminator: "Spell")]
     [JsonDerivedType(typeof(Quiver), typeDiscriminator: "Quiver")]
     [JsonDerivedType(typeof(Shield), typeDiscriminator: "Shield")]
+    [JsonDerivedType(typeof(Tome), typeDiscriminator: "Tome")]
     public class Item : Entity
     {
         public Guid ID { get; set; }

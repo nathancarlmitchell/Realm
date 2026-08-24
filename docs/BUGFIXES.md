@@ -704,3 +704,24 @@ happened at once.
     the exact spec'd duration/speed, and confirmed two `Hit(100)` calls (one during the effect, one
     300 ticks after it expired) differed by exactly `25` HP — the real Defense present in both calls
     canceled out algebraically, leaving no ambiguity that the multiplier was the only variable.
+51. **The Priest was unable to equip a Tome** — reported directly as "the priest is unable to equip a
+    tome." See [DEVLOG.md](DEVLOG.md) entry 175 for the full writeup. Root cause:
+    `InventorySystem.TryEquipFromRecord()`'s ability-item drag-drop swap `switch`ed on the dragged
+    item's concrete type (`Spell`/`Quiver`/`Shield`) to decide which `LoadX()` factory to call, but
+    was never updated with a `Tome` case when Tome was added — a Tome dragged onto the ability-item
+    slot fell through to `_ => null` and silently did nothing. The exact same class of bug (a new
+    `AbilityItem` subclass added without updating every old exhaustive switch over the other three)
+    had already bitten this project multiple times before Tome even existed (entries 45, 154/156,
+    170) — a full audit turned up three more instances of it specifically for Tome: `Item.cs`'s
+    `[JsonDerivedType]` polymorphic-serialization list (missing `Tome` entirely — an unequipped Tome
+    sitting in inventory/bank would throw `NotSupportedException` the moment it tried to save) and
+    two loot-pool `Concat()` chains in `ItemSpawner.cs` (`Spawn()`'s regular per-kill pool and
+    `SpawnGuaranteedLoot()`'s guaranteed pool), both missing `Game1.Instance.Tomes` — meaning Tomes
+    could never drop as loot anywhere in the game, for any class. All four fixed together. Verified
+    via a scripted repro: confirmed a real `InventorySystem.TryEquipFromRecord()` call with a dragged
+    Tome now returns `true` and correctly swaps it onto a Priest's ability-item slot (with the
+    previously-equipped Tome swapping back into the dragged record); confirmed a Tome round-trips
+    through `JsonSerializer.Serialize`/`Deserialize` via its base `Item` type without throwing;
+    confirmed a Tome can actually appear across 200 forced tier-0 `AbilityItem` rolls in both
+    `Spawn()` and `SpawnGuaranteedLoot()` (statistically airtight given all 4 candidate types share
+    equal odds). Real save files confirmed byte-identical before and after.

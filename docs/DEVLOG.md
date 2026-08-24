@@ -4093,3 +4093,44 @@ date/time for those individually; don't treat their grouping as meaning they all
      the existing floor-at-1 still holds when a temporary bonus alone would push it negative. Real
      save files confirmed byte-identical before and after. Clean build and a plain boot-check both
      passed.
+175. **Fixed "the priest is unable to equip a tome"** — see [BUGFIXES.md](BUGFIXES.md) entry 51 for
+     the user-facing summary. Root cause: `InventorySystem.cs`'s `TryEquipFromRecord()` (the
+     drag-and-drop handler for dropping an inventory item onto an equip slot) has a `switch` over the
+     dragged item's concrete type for the ability-item slot specifically — `Spell`/`Quiver`/`Shield`
+     each map to their own `LoadX()` factory — that was never given a `Tome` case when Tome was added
+     (entry 171), so a dragged Tome fell straight through to `_ => null` and the whole drag was a
+     silent no-op. This is precisely the bug class flagged in entries 45/154/156/170 — a new
+     `AbilityItem` subclass not propagated to every old exhaustive switch over the other three — just
+     never actually caught for the one spot that matters most: the primary way a player equips
+     anything at all.
+
+     Given that history, treated this as a prompt for a full audit rather than a one-line fix: spawned
+     an Explore agent to grep the entire codebase for every `Spell`/`Quiver`/`Shield`-specific branch
+     and check each for a matching `Tome` case. Found three more real gaps, all fixed together:
+     `Item.cs`'s `[JsonDerivedType]` list (used for `System.Text.Json`'s polymorphic serialization of
+     an `Item`-typed slot, e.g. an inventory/bank entry) never got a `Tome` entry — per that file's
+     own doc comment, a runtime type absent from this list throws `NotSupportedException` the instant
+     `System.Text.Json` tries to *serialize* it (only *deserializing* has a fallback), so an
+     unequipped Tome sitting in inventory or the bank would have crashed on the next save; and two
+     `Concat()` chains in `ItemSpawner.cs` (`Spawn()`'s regular per-kill loot roll, and
+     `SpawnGuaranteedLoot()`'s guaranteed/boss-style roll) that build the "any class's ability item"
+     drop pool from `Spells`/`Quivers`/`Shields` but never `Tomes` — meaning a Tome could never drop
+     as loot anywhere in the game, for any class, independent of the equip bug. All three already had
+     a correctly-Tome-aware sibling elsewhere in the same codebase to model the fix on
+     (`AbilityItem.PlaceholderImage`'s own 4-way `Concat()`, and `Player.EquipHighestTierAbilityItem()`'s
+     already-correct `Tome` switch case from entry 171) — this was a case of the fix pattern already
+     being established and just not applied everywhere, not a new design decision.
+
+     Verified via a scripted repro: called the real, public `InventorySystem.TryEquipFromRecord()`
+     directly (with `Input.mouse` preset over the ability-item slot's bounds, since the method reads
+     `Input.MouseBounds` itself but nothing upstream needs simulating) with a dragged Tier-1 Tome
+     against a fresh Priest already wearing its starting Tier-0 Tome — confirmed it returns `true`,
+     the Priest's `AbilityItem` becomes the Tier-1 Tome, and the old Tier-0 Tome correctly swaps back
+     into the dragged record's inventory slot; confirmed a Tome serializes and deserializes cleanly
+     through its base `Item` type via `JsonSerializer` with no exception; confirmed a Tome can
+     actually be selected across 200 forced tier-0 `AbilityItem` rolls in both `Spawn()` and
+     `SpawnGuaranteedLoot()` (with 4 equally-weighted candidate types at that tier, the odds of 200
+     rolls never once landing on Tome are effectively zero if the fix is working, and exactly zero
+     — impossible — if it isn't, making this a clean pass/fail signal rather than a flaky one). Real
+     save files confirmed byte-identical before and after. Clean build and a plain boot-check both
+     passed.
