@@ -271,7 +271,7 @@ namespace Realm
             int actualDamage = ignoresDefense ? Math.Max(0, damage) : Math.Max(0, damage - Defense);
             health -= actualDamage;
 
-            EntityManager.Add(new DamageNumber(Position, actualDamage, Color.Yellow));
+            EntityManager.Add(new DamageNumber(Position, actualDamage, Color.Red));
             Particle.SpawnBurst(Position, Color.White, count: 5, minSpeed: 1.5f, maxSpeed: 3f, lifespanTicks: 15);
 
             if (health <= 0)

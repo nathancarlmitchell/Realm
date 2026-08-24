@@ -3526,3 +3526,12 @@ date/time for those individually; don't treat their grouping as meaning they all
      `scale=1, lifespanTicks=40, 20px above its origin` (unchanged from before this entry) while the XP
      number read exactly `scale=1.3, lifespanTicks=70, 45px above its origin` (the new values). Real save
      files confirmed byte-identical before and after. Clean build and a plain boot-check both passed.
+159. **Enemy hit numbers changed from Yellow to Red.** `Enemy.WasShot()`'s `DamageNumber` call — the
+     number that appears over an enemy when the player damages it — now uses `Color.Red` instead of
+     `Color.Yellow`. Now the same color as the player's own "I took damage" number
+     (`Player.Hit()`), which already used Red with a black backing (`hasBlackBacking: true`) — the two
+     stay visually distinct via that backing (enemy hits are plain red text, the player's own damage
+     has the extra black outline), so no collision in readability despite sharing a color. Verified via
+     a scripted repro (throwaway `Enemy.CreateWanderer()`, hit once): confirmed the resulting
+     `DamageNumber`'s color read exactly `Color.Red`. Real save files confirmed byte-identical before
+     and after. Clean build and a plain boot-check both passed.
