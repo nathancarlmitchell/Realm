@@ -1127,6 +1127,9 @@ namespace Realm
                 LowHealthIndicatorEnabled = Player.Instance.LowHealthIndicatorEnabled,
                 LowHealthThresholdPercent = Player.Instance.LowHealthThresholdPercent,
                 ShowXpDropsEnabled = Player.Instance.ShowXpDropsEnabled,
+                ShowPlayerDamageNumbersEnabled = Player.Instance.ShowPlayerDamageNumbersEnabled,
+                ShowEnemyDamageNumbersEnabled = Player.Instance.ShowEnemyDamageNumbersEnabled,
+                ShowHitParticlesEnabled = Player.Instance.ShowHitParticlesEnabled,
                 MusicEnabled = Player.Instance.MusicEnabled,
                 MusicVolumePercent = Player.Instance.MusicVolumePercent,
                 MusicMuted = Player.Instance.MusicMuted,
@@ -1152,6 +1155,9 @@ namespace Realm
                 Player.Instance.LowHealthIndicatorEnabled = data.LowHealthIndicatorEnabled;
                 Player.Instance.LowHealthThresholdPercent = data.LowHealthThresholdPercent;
                 Player.Instance.ShowXpDropsEnabled = data.ShowXpDropsEnabled;
+                Player.Instance.ShowPlayerDamageNumbersEnabled = data.ShowPlayerDamageNumbersEnabled;
+                Player.Instance.ShowEnemyDamageNumbersEnabled = data.ShowEnemyDamageNumbersEnabled;
+                Player.Instance.ShowHitParticlesEnabled = data.ShowHitParticlesEnabled;
                 Player.Instance.MusicEnabled = data.MusicEnabled;
                 Player.Instance.MusicVolumePercent = data.MusicVolumePercent;
                 Player.Instance.MusicMuted = data.MusicMuted;

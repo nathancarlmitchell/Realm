@@ -43,6 +43,21 @@ public class GameSettingsData
     // SettingsState.cs's Graphics tab.
     public bool ShowXpDropsEnabled { get; set; } = true;
 
+    // Defaults to TRUE (on) — same "give it its own explicit default"
+    // reasoning as LowHealthIndicatorEnabled above. Gates the player's own
+    // "I took damage" number (Player.Hit()). See SettingsState.cs's
+    // Graphics tab.
+    public bool ShowPlayerDamageNumbersEnabled { get; set; } = true;
+
+    // Defaults to TRUE (on) — same reasoning. Gates the hit number shown
+    // over an enemy when the player damages it (Enemy.WasShot()).
+    public bool ShowEnemyDamageNumbersEnabled { get; set; } = true;
+
+    // Defaults to TRUE (on) — same reasoning. Gates Enemy.WasShot()'s two
+    // Particle.SpawnBurst() calls (hit/death), not Player.LevelUp()'s
+    // separate gold swirl.
+    public bool ShowHitParticlesEnabled { get; set; } = true;
+
     // Audio — see Sound.cs's RefreshMusicState()/ShouldPlaySfx() and
     // SettingsState.cs's Audio tab. MusicEnabled/MusicVolumePercent/
     // SfxVolumePercent all need their own explicit defaults for the same

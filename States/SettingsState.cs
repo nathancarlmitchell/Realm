@@ -174,6 +174,27 @@ namespace Realm.States
                     GetBool = () => Player.Instance.ShowXpDropsEnabled,
                     SetBool = v => Player.Instance.ShowXpDropsEnabled = v,
                 },
+                new SettingsRow
+                {
+                    Kind = RowKind.Toggle,
+                    Label = "Show Player Damage Numbers",
+                    GetBool = () => Player.Instance.ShowPlayerDamageNumbersEnabled,
+                    SetBool = v => Player.Instance.ShowPlayerDamageNumbersEnabled = v,
+                },
+                new SettingsRow
+                {
+                    Kind = RowKind.Toggle,
+                    Label = "Show Enemy Damage Numbers",
+                    GetBool = () => Player.Instance.ShowEnemyDamageNumbersEnabled,
+                    SetBool = v => Player.Instance.ShowEnemyDamageNumbersEnabled = v,
+                },
+                new SettingsRow
+                {
+                    Kind = RowKind.Toggle,
+                    Label = "Show Hit Particles",
+                    GetBool = () => Player.Instance.ShowHitParticlesEnabled,
+                    SetBool = v => Player.Instance.ShowHitParticlesEnabled = v,
+                },
             ];
 
             // Order matches how the settings actually read best together —

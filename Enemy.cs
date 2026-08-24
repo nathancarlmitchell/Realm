@@ -271,8 +271,10 @@ namespace Realm
             int actualDamage = ignoresDefense ? Math.Max(0, damage) : Math.Max(0, damage - Defense);
             health -= actualDamage;
 
-            EntityManager.Add(new DamageNumber(Position, actualDamage, Color.Red));
-            Particle.SpawnBurst(Position, Color.White, count: 5, minSpeed: 1.5f, maxSpeed: 3f, lifespanTicks: 15);
+            if (Player.Instance.ShowEnemyDamageNumbersEnabled)
+                EntityManager.Add(new DamageNumber(Position, actualDamage, Color.Red));
+            if (Player.Instance.ShowHitParticlesEnabled)
+                Particle.SpawnBurst(Position, Color.White, count: 5, minSpeed: 1.5f, maxSpeed: 3f, lifespanTicks: 15);
 
             if (health <= 0)
             {
@@ -305,7 +307,8 @@ namespace Realm
                         )
                     );
                 }
-                Particle.SpawnBurst(Position, Color.OrangeRed, count: 14, minSpeed: 2f, maxSpeed: 5f, lifespanTicks: 25, startScale: 0.2f);
+                if (Player.Instance.ShowHitParticlesEnabled)
+                    Particle.SpawnBurst(Position, Color.OrangeRed, count: 14, minSpeed: 2f, maxSpeed: 5f, lifespanTicks: 25, startScale: 0.2f);
 
                 // Spawn loot — SpawnLoot() is virtual, so Boss subclasses
                 // (guaranteed good loot) override this; every other enemy

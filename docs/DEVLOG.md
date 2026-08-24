@@ -3610,3 +3610,34 @@ date/time for those individually; don't treat their grouping as meaning they all
      unconditionally in their constructors) and inspected it directly — the number's leading digit
      visibly paints over the sprite where they overlap, confirming the new draw order. Real save files
      confirmed byte-identical before and after. Clean build and a plain boot-check both passed.
+163. **Three new Settings > Graphics toggles, all default on: "Show Player Damage Numbers," "Show
+     Enemy Damage Numbers," "Show Hit Particles."** Each independently gates one specific piece of
+     combat feedback, separate from the existing "Show XP Drops" (entry 160) which only covers the XP
+     gain number:
+     - **Show Player Damage Numbers** gates `Player.Hit()`'s own "I took damage" number.
+     - **Show Enemy Damage Numbers** gates `Enemy.WasShot()`'s hit number (the one over an enemy when
+       the player damages it).
+     - **Show Hit Particles** gates `Enemy.WasShot()`'s two `Particle.SpawnBurst()` calls (the white
+       burst on a hit, the orange-red burst on a kill) — not `Player.LevelUp()`'s separate gold swirl,
+       which uses a different particle flavor (`SwirlParticle`) for a distinct celebratory moment, not
+       a combat hit.
+
+     New `Player.ShowPlayerDamageNumbersEnabled`/`ShowEnemyDamageNumbersEnabled`/
+     `ShowHitParticlesEnabled` fields and matching `GameSettingsData` DTO properties, all three with
+     the explicit `= true` default (not just documentation — same `System.Text.Json` "only overwrites
+     properties present in the JSON" reasoning as every prior on-by-default setting this session, so
+     an old `GameSettingsData.json` predating these fields deserializes them at `true`, not the unstated
+     bare-bool `false`). `Util.Save/LoadGameSettingsData()` and three new `SettingsRow`s in
+     `SettingsState.cs`'s Graphics tab, right after "Show XP Drops," complete the wiring.
+
+     Verified via a scripted repro (real `GameSettingsData.json` backed up first, restored immediately
+     after the round-trip test): confirmed all three default to `true` on a fresh `Player`; with all
+     three off, killing a test enemy and hitting the test player produced exactly one `DamageNumber`
+     (the still-independently-on XP number from entry 160, correctly unaffected by these three) and
+     zero `Particle`s; with all three back on, the same sequence produced exactly 2 more
+     `DamageNumber`s (the enemy hit + player hit numbers) and 19 `Particle`s (5 from the hit burst + 14
+     from the death burst); and a real save(`false`)→load() round trip correctly flipped all three
+     in-memory values. Per the entry-118 lesson, also rendered the Graphics tab to a PNG and visually
+     confirmed all three new rows read correctly and align in the same value column as the other four,
+     no overlap. Real save files confirmed byte-identical before and after. Clean build and a plain
+     boot-check both passed.

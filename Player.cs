@@ -198,6 +198,29 @@ namespace Realm
         // Settings > Graphics tab.
         public bool ShowXpDropsEnabled = true;
 
+        // Same account-wide GameSettingsData persistence, defaults to TRUE
+        // (same reasoning as ShowXpDropsEnabled above). Gates the player's
+        // own "I took damage" number (Player.Hit()) — separate from
+        // ShowXpDropsEnabled, which only covers the XP gain number, and
+        // ShowEnemyDamageNumbersEnabled below, which covers the other
+        // direction (damage the player deals). Toggled from the Settings >
+        // Graphics tab.
+        public bool ShowPlayerDamageNumbersEnabled = true;
+
+        // Same account-wide GameSettingsData persistence, defaults to TRUE.
+        // Gates the hit number that appears over an enemy when the player
+        // damages it (Enemy.WasShot()). Toggled from the Settings > Graphics
+        // tab.
+        public bool ShowEnemyDamageNumbersEnabled = true;
+
+        // Same account-wide GameSettingsData persistence, defaults to TRUE.
+        // Gates the two Particle.SpawnBurst() calls in Enemy.WasShot() (the
+        // white burst on a hit, the orange-red burst on a kill) — not
+        // Player.LevelUp()'s gold swirl, which uses a different particle
+        // flavor (SwirlParticle) for a distinct celebratory moment, not a
+        // combat hit. Toggled from the Settings > Graphics tab.
+        public bool ShowHitParticlesEnabled = true;
+
         // Same account-wide GameSettingsData persistence — see Sound.cs's
         // RefreshMusicState()/ShouldPlaySfx() for how these actually gate
         // playback, and SettingsState.cs's Audio tab for the controls.
@@ -373,15 +396,18 @@ namespace Realm
                 damageModified = damage / 10;
             }
 
-            EntityManager.Add(
-                new DamageNumber(
-                    Position,
-                    damageModified,
-                    Microsoft.Xna.Framework.Color.Red,
-                    hasBlackBacking: true,
-                    followsPlayer: true
-                )
-            );
+            if (ShowPlayerDamageNumbersEnabled)
+            {
+                EntityManager.Add(
+                    new DamageNumber(
+                        Position,
+                        damageModified,
+                        Microsoft.Xna.Framework.Color.Red,
+                        hasBlackBacking: true,
+                        followsPlayer: true
+                    )
+                );
+            }
 
             Health = Health - damageModified;
             if (Health <= 0)
