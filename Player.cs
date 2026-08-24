@@ -594,6 +594,20 @@ namespace Realm
             copy.MaxDamage = best.MaxDamage;
             copy.ImageName = best.ImageName;
 
+            // Quiver-only — its ability shot's own fields, not shared by
+            // Spell/Shield. See Data/QuiverData.cs.
+            if (copy is Quiver quiverCopy && best is Quiver quiverBest)
+            {
+                quiverCopy.Shots = quiverBest.Shots;
+                quiverCopy.ArcGapDegrees = quiverBest.ArcGapDegrees;
+                quiverCopy.ProjectileMagnitude = quiverBest.ProjectileMagnitude;
+                quiverCopy.ProjectileDuration = quiverBest.ProjectileDuration;
+                quiverCopy.ProjectileImage = Game1.Instance.Content.Load<Texture2D>(
+                    quiverBest.ProjectileImageName
+                );
+                quiverCopy.ProjectileImageName = quiverBest.ProjectileImageName;
+            }
+
             EquipAbilityItem(copy);
         }
 

@@ -14,7 +14,12 @@
         "ManaCost": 45,
         "MinDamage": 35,
         "MaxDamage": 50,
-        "ImageName": "AbilityItems/Quivers/0"
+        "ImageName": "AbilityItems/Quivers/0",
+        "Shots": 2,
+        "ArcGapDegrees": 7.0,
+        "ProjectileMagnitude": 8.0,
+        "ProjectileDuration": 60,
+        "ProjectileImageName": "AbilityItems/Quivers/Projectiles/0"
     },
     {
         "Name": "Hunter's Quiver",
@@ -31,7 +36,12 @@
         "ManaCost": 50,
         "MinDamage": 60,
         "MaxDamage": 80,
-        "ImageName": "AbilityItems/Quivers/1"
+        "ImageName": "AbilityItems/Quivers/1",
+        "Shots": 2,
+        "ArcGapDegrees": 7.0,
+        "ProjectileMagnitude": 8.0,
+        "ProjectileDuration": 60,
+        "ProjectileImageName": "AbilityItems/Quivers/Projectiles/0"
     },
     {
         "Name": "Falcon's Quiver",
@@ -48,7 +58,12 @@
         "ManaCost": 55,
         "MinDamage": 95,
         "MaxDamage": 115,
-        "ImageName": "AbilityItems/Quivers/2"
+        "ImageName": "AbilityItems/Quivers/2",
+        "Shots": 2,
+        "ArcGapDegrees": 7.0,
+        "ProjectileMagnitude": 8.0,
+        "ProjectileDuration": 60,
+        "ProjectileImageName": "AbilityItems/Quivers/Projectiles/2"
     },
     {
         "Name": "Quiver of the Vanguard",
@@ -65,7 +80,12 @@
         "ManaCost": 60,
         "MinDamage": 150,
         "MaxDamage": 175,
-        "ImageName": "AbilityItems/Quivers/3"
+        "ImageName": "AbilityItems/Quivers/3",
+        "Shots": 3,
+        "ArcGapDegrees": 7.0,
+        "ProjectileMagnitude": 8.0,
+        "ProjectileDuration": 60,
+        "ProjectileImageName": "AbilityItems/Quivers/Projectiles/3"
     },
     {
         "Name": "Stormtouched Quiver",
@@ -82,7 +102,12 @@
         "ManaCost": 65,
         "MinDamage": 190,
         "MaxDamage": 235,
-        "ImageName": "AbilityItems/Quivers/4"
+        "ImageName": "AbilityItems/Quivers/4",
+        "Shots": 3,
+        "ArcGapDegrees": 7.0,
+        "ProjectileMagnitude": 8.0,
+        "ProjectileDuration": 60,
+        "ProjectileImageName": "AbilityItems/Quivers/Projectiles/4"
     },
     {
         "Name": "Shadowstep Quiver",
@@ -99,7 +124,12 @@
         "ManaCost": 70,
         "MinDamage": 245,
         "MaxDamage": 285,
-        "ImageName": "AbilityItems/Quivers/5"
+        "ImageName": "AbilityItems/Quivers/5",
+        "Shots": 3,
+        "ArcGapDegrees": 7.0,
+        "ProjectileMagnitude": 8.0,
+        "ProjectileDuration": 60,
+        "ProjectileImageName": "AbilityItems/Quivers/Projectiles/5"
     },
     {
         "Name": "Quiver of the Wilds",
@@ -116,7 +146,12 @@
         "ManaCost": 75,
         "MinDamage": 295,
         "MaxDamage": 335,
-        "ImageName": "AbilityItems/Quivers/6"
+        "ImageName": "AbilityItems/Quivers/6",
+        "Shots": 4,
+        "ArcGapDegrees": 7.0,
+        "ProjectileMagnitude": 8.0,
+        "ProjectileDuration": 60,
+        "ProjectileImageName": "AbilityItems/Quivers/Projectiles/6"
     },
     {
         "Name": "Quiver of Legends",
@@ -133,6 +168,11 @@
         "ManaCost": 80,
         "MinDamage": 350,
         "MaxDamage": 390,
-        "ImageName": "AbilityItems/Quivers/7"
+        "ImageName": "AbilityItems/Quivers/7",
+        "Shots": 4,
+        "ArcGapDegrees": 7.0,
+        "ProjectileMagnitude": 8.0,
+        "ProjectileDuration": 60,
+        "ProjectileImageName": "AbilityItems/Quivers/Projectiles/7"
     }
 ]

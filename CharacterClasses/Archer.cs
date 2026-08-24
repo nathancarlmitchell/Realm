@@ -126,6 +126,7 @@ namespace Realm.CharacterClasses
             }
 
             int damage = rand.Next(AbilityItem.MinDamage, AbilityItem.MaxDamage);
+            Quiver quiver = (Quiver)AbilityItem;
 
             if (Mana >= AbilityCost)
             {
@@ -133,19 +134,32 @@ namespace Realm.CharacterClasses
 
                 var aim = Input.GetMouseAimDirection();
                 float aimAngle = aim.ToAngle();
+                float arcGapRad = MathHelper.ToRadians(quiver.ArcGapDegrees);
 
-                Vector2 vel = Extensions.FromPolar(aimAngle, Weapon.ProjectileMagnitude);
+                // A symmetric fan of Shots projectiles, each adjacent pair
+                // ArcGapDegrees apart — an odd count centers one shot exactly
+                // on the aim line, an even count straddles it evenly (e.g.
+                // Shots=2 fires at +-half the gap, Shots=3 fires at
+                // -gap/0/+gap). Same shot for every position: piercing
+                // (ExpiresOnHit=false — "Piercing Shots hit multiple
+                // targets"), paralyzing, using the Quiver's own independent
+                // speed/lifetime/art rather than the equipped Bow's.
+                for (int i = 0; i < quiver.Shots; i++)
+                {
+                    float angle = aimAngle + (i - (quiver.Shots - 1) / 2f) * arcGapRad;
+                    Vector2 vel = Extensions.FromPolar(angle, quiver.ProjectileMagnitude);
 
-                EntityManager.Add(
-                    new Projectile(Player.Instance.Position, vel)
-                    {
-                        Damage = damage,
-                        Duration = Weapon.ProjectileDuration + 25,
-                        image = Weapon.ProjectileImage,
-                        ExpiresOnHit = false,
-                        ParalyzesOnHit = true,
-                    }
-                );
+                    EntityManager.Add(
+                        new Projectile(Player.Instance.Position, vel)
+                        {
+                            Damage = damage,
+                            Duration = quiver.ProjectileDuration,
+                            image = quiver.ProjectileImage,
+                            ExpiresOnHit = false,
+                            ParalyzesOnHit = true,
+                        }
+                    );
+                }
             }
             else
             {

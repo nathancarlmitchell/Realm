@@ -801,6 +801,9 @@ namespace Realm
                     Texture2D quiverTexture = Game1.Instance.Content.Load<Texture2D>(
                         quiverData[i].ImageName
                     );
+                    Texture2D projectileTexture = Game1.Instance.Content.Load<Texture2D>(
+                        quiverData[i].ProjectileImageName
+                    );
 
                     quivers.Add(
                         new Quiver(quiverTexture)
@@ -820,6 +823,12 @@ namespace Realm
                             MinDamage = quiverData[i].MinDamage,
                             MaxDamage = quiverData[i].MaxDamage,
                             ImageName = quiverData[i].ImageName,
+                            Shots = quiverData[i].Shots,
+                            ArcGapDegrees = quiverData[i].ArcGapDegrees,
+                            ProjectileMagnitude = quiverData[i].ProjectileMagnitude,
+                            ProjectileDuration = quiverData[i].ProjectileDuration,
+                            ProjectileImage = projectileTexture,
+                            ProjectileImageName = quiverData[i].ProjectileImageName,
                         }
                     );
                 }

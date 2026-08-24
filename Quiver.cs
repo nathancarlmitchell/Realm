@@ -7,6 +7,14 @@ namespace Realm
 {
     public class Quiver : AbilityItem
     {
+        // The Quiver ability's own shot — see Data/QuiverData.cs.
+        public int Shots { get; set; }
+        public float ArcGapDegrees { get; set; }
+        public float ProjectileMagnitude { get; set; }
+        public int ProjectileDuration { get; set; }
+        public Texture2D ProjectileImage;
+        public string ProjectileImageName { get; set; }
+
         public Quiver(Texture2D image)
         {
             ID = Guid.NewGuid();
@@ -35,6 +43,9 @@ namespace Realm
                 Texture2D quiverTexture = Game1.Instance.Content.Load<Texture2D>(
                     quiverData.ImageName
                 );
+                Texture2D projectileTexture = Game1.Instance.Content.Load<Texture2D>(
+                    quiverData.ProjectileImageName
+                );
 
                 Quiver quiver = new(quiverTexture)
                 {
@@ -53,6 +64,12 @@ namespace Realm
                     MinDamage = quiverData.MinDamage,
                     MaxDamage = quiverData.MaxDamage,
                     ImageName = quiverData.ImageName,
+                    Shots = quiverData.Shots,
+                    ArcGapDegrees = quiverData.ArcGapDegrees,
+                    ProjectileMagnitude = quiverData.ProjectileMagnitude,
+                    ProjectileDuration = quiverData.ProjectileDuration,
+                    ProjectileImage = projectileTexture,
+                    ProjectileImageName = quiverData.ProjectileImageName,
                 };
 
                 Player.Instance.EquipAbilityItem(quiver);

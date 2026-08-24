@@ -17,5 +17,15 @@ namespace Realm.Data
         public int MinDamage { get; set; }
         public int MaxDamage { get; set; }
         public string ImageName { get; set; }
+
+        // The Quiver ability's own shot — independent of whatever Bow is
+        // currently equipped (previously it borrowed the equipped Weapon's
+        // ProjectileMagnitude/ProjectileDuration/ProjectileImage; now it has
+        // its own, same reasoning as Bow's own Main/Side split).
+        public int Shots { get; set; }
+        public float ArcGapDegrees { get; set; }
+        public float ProjectileMagnitude { get; set; }
+        public int ProjectileDuration { get; set; }
+        public string ProjectileImageName { get; set; }
     }
 }

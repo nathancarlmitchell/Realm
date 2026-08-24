@@ -3441,3 +3441,51 @@ date/time for those individually; don't treat their grouping as meaning they all
      reading (as opposed to keeping the same 14° spread and treating the new value as the *total* gap,
      which would have needed halving it in code) before editing, since the two readings produce
      opposite in-game results. Clean build and a plain boot-check both passed.
+156. **Quiver ability reworked to fire its own independent, tier-scaled shot fan instead of borrowing
+     the equipped Bow's projectile stats.** Previously `Archer.UseAbility()` fired exactly one
+     projectile using `Weapon.ProjectileMagnitude`/`ProjectileDuration`/`ProjectileImage` (the equipped
+     Bow's own basic-attack stats) with the Quiver contributing only its damage range. Per spec, the
+     Quiver now has its own `Shots` (2 for T0-2, 3 for T3-5, 4 for T6-7), `ArcGapDegrees` (7, uniform),
+     `ProjectileMagnitude`/`ProjectileDuration` (15 tiles/sec / 1s lifetime → 8.0 px/tick / 60 ticks,
+     both exact with no rounding this time — 8.0×60=480px=15 tiles on the nose), and its own dedicated
+     `ProjectileImageName` art, all moved onto `Data/QuiverData.cs`/`QuiverData.json` and mirrored onto
+     `Quiver.cs` — the existing `MinDamage`/`MaxDamage`/`ManaCost`/stat-bonus fields per tier already
+     matched the spec exactly and needed no changes. `Paralyzed for 3 seconds` was already exactly
+     right (`Enemy.Paralyze(int durationFrames = 180)` = 180/60 = 3s, unchanged); `Piercing Shots hit
+     multiple targets` was already right too (`ExpiresOnHit = false`, unchanged). `Shots pass through
+     obstacles` doesn't correspond to anything this engine has — there's no tile/wall collision system
+     for projectiles at all (only the player's position gets clamped to a boss arena's bounds; nothing
+     ever blocks a projectile) — so it's vacuously already true and needed no code, same category as
+     entry 154's "True Range" line.
+
+     `UseAbility()` now loops `Shots` times, firing a symmetric fan where each adjacent pair sits
+     `ArcGapDegrees` apart (`angle = aimAngle + (i - (Shots-1)/2f) * arcGapRad`) — an odd Shots count
+     centers one shot exactly on the aim line, an even count straddles it evenly with no shot dead
+     center. This is a different structure from Bow's Main+Side split (entry 154/155): Quiver has no
+     distinguished "center" shot, so unlike `ArcGapDegrees`'s Bow meaning (each Side shot's own offset
+     from center), here it directly means the gap between adjacent shots in the fan — verified this
+     produces the right total spread (e.g. Tier 0's `Shots=2` → the two shots measured exactly 7° apart
+     from each other, matching "arc gap: 7°" as the full gap between them, not each shot's individual
+     offset). New art: `Content/AbilityItems/Quivers/Projectiles/{0,2,3,4,5,6,7}.png` (Tier 1 has no
+     art of its own and falls back to Tier 0's, confirmed by the user — the same single-gap fallback
+     pattern as Bow's Main projectile art, no ambiguity this time since only one tier was missing).
+     7 new `Content.mgcb` blocks. `Player.cs`'s `EquipHighestTierAbilityItem()` (F4) got a proactive
+     Quiver-specific branch to copy the 5 new fields — applying the entry 45/154 lesson before a bug
+     report this time rather than after.
+
+     Verified via a scripted repro (real save files backed up first; throwaway `Archer`, so
+     `Player.Instance` briefly points at it but nothing persists): confirmed all 8 catalog entries'
+     `Shots`/`ArcGapDegrees`/`ProjectileMagnitude`/`ProjectileDuration`/`ProjectileImageName` (including
+     Tier 1's fallback to Tier 0's art); the starting Worn Quiver read `Shots=2`/`ArcGapDegrees=7` with
+     a non-null `ProjectileImage`; calling `UseAbility()` spent exactly 45 mana and added exactly 2
+     `Projectile`s, both `ExpiresOnHit=False`/`ParalyzesOnHit=True`/`Duration=60`, measured exactly
+     0.12217307 rad (~7°, matching `MathHelper.ToRadians(7)` = 0.12217305) apart from each other;
+     Tier 3 and Tier 6 read `Shots=3`/`Shots=4` straight from the catalog; and F4's
+     `DebugMaxLevelAndEquipTopGear()` correctly equipped the tier-7 Quiver with `Shots=4`,
+     `ArcGapDegrees=7`, and a non-null `ProjectileImage` — confirming the proactive F4 fix works.
+     (One diagnostic line in the test script itself compared each shot's angle against a naively-computed
+     expected aim angle and printed a mismatch — traced to the test's own math, not game code: it
+     compared against a raw `Vector2(1000, 0)` direction instead of running it through the same
+     camera-transform path `Input.GetMouseAimDirection()` actually uses. The shot-to-shot gap
+     measurement, which doesn't depend on that, was exact, and is what actually matters.) Real save
+     files confirmed byte-identical before and after. Clean build and a plain boot-check both passed.
