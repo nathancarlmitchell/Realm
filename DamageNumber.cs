@@ -28,12 +28,22 @@ namespace Realm
         // get the title-style backing (see Player.Hit()) — enemy hit
         // numbers (Enemy.WasShot()) are unaffected, matching the user's
         // request scoped to "the player damage number" specifically.
-        public DamageNumber(Vector2 position, int damage, Color color, bool hasBlackBacking = false)
+        //
+        // prefix: empty for every damage number (unchanged); "+" for an XP
+        // gain (see Enemy.WasShot()'s death branch) so it visibly reads as
+        // a gain rather than a hit sharing the same floating-number visual.
+        public DamageNumber(
+            Vector2 position,
+            int damage,
+            Color color,
+            bool hasBlackBacking = false,
+            string prefix = ""
+        )
         {
             // Small spawn jitter so simultaneous hits (a bow's multiple arrows,
             // an AoE ability) don't render as one illegible stack of digits.
             Position = position + new Vector2(rand.NextFloat(-10, 10), -20);
-            text = damage.ToString();
+            text = prefix + damage;
             baseColor = color;
             this.color = color;
             this.hasBlackBacking = hasBlackBacking;

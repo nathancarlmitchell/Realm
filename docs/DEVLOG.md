@@ -3489,3 +3489,23 @@ date/time for those individually; don't treat their grouping as meaning they all
      camera-transform path `Input.GetMouseAimDirection()` actually uses. The shot-to-shot gap
      measurement, which doesn't depend on that, was exact, and is what actually matters.) Real save
      files confirmed byte-identical before and after. Clean build and a plain boot-check both passed.
+157. **A floating "+XP" number above the player's own head on an enemy kill, matching the look of
+     damage numbers.** `DamageNumber` (already reused for both enemy-hit and player-hit numbers, see
+     entries 22/`Player.Hit()`) gained an optional `prefix` parameter (`""` by default — every existing
+     call site is unaffected) so a number can read as a gain ("+15") instead of a hit ("15") while
+     sharing the exact same class, float-up/fade-out animation, and font. `Enemy.WasShot()`'s death
+     branch — right where `Player.Instance.ExperienceTotal += PointValue;` already runs — now also
+     spawns one `new DamageNumber(Player.Instance.Position, PointValue, Color.Goldenrod, prefix: "+")`.
+     Deliberately spawned at the *player's* position, not the enemy's that just died (the existing hit
+     number already covers that spot) — matching the user's explicit "above the player head" ask.
+     `Color.Goldenrod` reuses the exact color `Overlay.DrawExperience()` already fills the sidebar's XP
+     bar with, so the floating number visibly reads as "that" resource rather than an arbitrary new
+     color.
+
+     Verified via a scripted repro (throwaway `Wizard` positioned away from a throwaway
+     `Enemy.CreateWanderer()`, health forced to 1 via reflection, killed with one `WasShot(9999)` call):
+     confirmed exactly 2 `DamageNumber`s existed afterward — one reading `"9999"` positioned at the
+     enemy's location (the existing hit number, unaffected), and one reading `"+15"` (Wanderer's
+     `PointValue`) positioned at the *player's* location with `Color.Goldenrod` (`R:218 G:165 B:32`);
+     and confirmed `ExperienceTotal` actually increased by 15. Clean build and a plain boot-check both
+     passed.

@@ -279,6 +279,13 @@ namespace Realm
                 Sound.Play(deathSound, 0.4f);
                 IsExpired = true;
                 Player.Instance.ExperienceTotal += PointValue;
+                // Above the player's own head, not the enemy's — an XP gain
+                // is the player's feedback, not a mark on what just died.
+                // Goldenrod matches the sidebar's XP bar fill color
+                // (Overlay.DrawExperience()), so it reads as "that" resource.
+                EntityManager.Add(
+                    new DamageNumber(Player.Instance.Position, PointValue, Color.Goldenrod, prefix: "+")
+                );
                 Particle.SpawnBurst(Position, Color.OrangeRed, count: 14, minSpeed: 2f, maxSpeed: 5f, lifespanTicks: 25, startScale: 0.2f);
 
                 // Spawn loot — SpawnLoot() is virtual, so Boss subclasses
