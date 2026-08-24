@@ -3434,3 +3434,10 @@ date/time for those individually; don't treat their grouping as meaning they all
      save files confirmed byte-identical before and after. Clean build and a plain boot-check (which
      exercises `LoadBowData()`'s real content-loading path unconditionally, regardless of which class
      was last played) both passed with no stderr output.
+155. **Follow-up to entry 154 — Bow's `ArcGapDegrees` widened from 7 to 14 for all 15 tiers**, doubling
+     the Side shots' spread from 14° apart to 28° apart. Pure `Data/BowData.json` data change, no code
+     touched — `ArcGapDegrees` was already used directly as each Side shot's own offset from center
+     (`±ArcGapDegrees`), so raising the value alone widens the fan; confirmed this was the intended
+     reading (as opposed to keeping the same 14° spread and treating the new value as the *total* gap,
+     which would have needed halving it in code) before editing, since the two readings produce
+     opposite in-game results. Clean build and a plain boot-check both passed.

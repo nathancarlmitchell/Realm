@@ -9,7 +9,7 @@
         "SideDamageMax": 25,
         "ProjectileMagnitude": 8.533333,
         "ProjectileDuration": 26,
-        "ArcGapDegrees": 7.0,
+        "ArcGapDegrees": 14.0,
         "ImageName": "Weapons/Bows/0",
         "MainProjectileImageName": "Weapons/Bows/Projectiles/Main/0",
         "SideProjectileImageName": "Weapons/Bows/Projectiles/Side/0"
@@ -24,7 +24,7 @@
         "SideDamageMax": 25,
         "ProjectileMagnitude": 8.533333,
         "ProjectileDuration": 26,
-        "ArcGapDegrees": 7.0,
+        "ArcGapDegrees": 14.0,
         "ImageName": "Weapons/Bows/1",
         "MainProjectileImageName": "Weapons/Bows/Projectiles/Main/0",
         "SideProjectileImageName": "Weapons/Bows/Projectiles/Side/1"
@@ -39,7 +39,7 @@
         "SideDamageMax": 35,
         "ProjectileMagnitude": 8.533333,
         "ProjectileDuration": 26,
-        "ArcGapDegrees": 7.0,
+        "ArcGapDegrees": 14.0,
         "ImageName": "Weapons/Bows/2",
         "MainProjectileImageName": "Weapons/Bows/Projectiles/Main/0",
         "SideProjectileImageName": "Weapons/Bows/Projectiles/Side/2"
@@ -54,7 +54,7 @@
         "SideDamageMax": 40,
         "ProjectileMagnitude": 8.533333,
         "ProjectileDuration": 26,
-        "ArcGapDegrees": 7.0,
+        "ArcGapDegrees": 14.0,
         "ImageName": "Weapons/Bows/3",
         "MainProjectileImageName": "Weapons/Bows/Projectiles/Main/0",
         "SideProjectileImageName": "Weapons/Bows/Projectiles/Side/0"
@@ -69,7 +69,7 @@
         "SideDamageMax": 50,
         "ProjectileMagnitude": 8.533333,
         "ProjectileDuration": 26,
-        "ArcGapDegrees": 7.0,
+        "ArcGapDegrees": 14.0,
         "ImageName": "Weapons/Bows/4",
         "MainProjectileImageName": "Weapons/Bows/Projectiles/Main/0",
         "SideProjectileImageName": "Weapons/Bows/Projectiles/Side/4"
@@ -84,7 +84,7 @@
         "SideDamageMax": 55,
         "ProjectileMagnitude": 8.533333,
         "ProjectileDuration": 26,
-        "ArcGapDegrees": 7.0,
+        "ArcGapDegrees": 14.0,
         "ImageName": "Weapons/Bows/5",
         "MainProjectileImageName": "Weapons/Bows/Projectiles/Main/0",
         "SideProjectileImageName": "Weapons/Bows/Projectiles/Side/5"
@@ -99,7 +99,7 @@
         "SideDamageMax": 65,
         "ProjectileMagnitude": 8.533333,
         "ProjectileDuration": 26,
-        "ArcGapDegrees": 7.0,
+        "ArcGapDegrees": 14.0,
         "ImageName": "Weapons/Bows/6",
         "MainProjectileImageName": "Weapons/Bows/Projectiles/Main/0",
         "SideProjectileImageName": "Weapons/Bows/Projectiles/Side/0"
@@ -114,7 +114,7 @@
         "SideDamageMax": 80,
         "ProjectileMagnitude": 8.533333,
         "ProjectileDuration": 26,
-        "ArcGapDegrees": 7.0,
+        "ArcGapDegrees": 14.0,
         "ImageName": "Weapons/Bows/7",
         "MainProjectileImageName": "Weapons/Bows/Projectiles/Main/7",
         "SideProjectileImageName": "Weapons/Bows/Projectiles/Side/7"
@@ -129,7 +129,7 @@
         "SideDamageMax": 95,
         "ProjectileMagnitude": 8.533333,
         "ProjectileDuration": 26,
-        "ArcGapDegrees": 7.0,
+        "ArcGapDegrees": 14.0,
         "ImageName": "Weapons/Bows/8",
         "MainProjectileImageName": "Weapons/Bows/Projectiles/Main/8",
         "SideProjectileImageName": "Weapons/Bows/Projectiles/Side/8"
@@ -144,7 +144,7 @@
         "SideDamageMax": 100,
         "ProjectileMagnitude": 8.533333,
         "ProjectileDuration": 26,
-        "ArcGapDegrees": 7.0,
+        "ArcGapDegrees": 14.0,
         "ImageName": "Weapons/Bows/9",
         "MainProjectileImageName": "Weapons/Bows/Projectiles/Main/9",
         "SideProjectileImageName": "Weapons/Bows/Projectiles/Side/9"
@@ -159,7 +159,7 @@
         "SideDamageMax": 110,
         "ProjectileMagnitude": 8.533333,
         "ProjectileDuration": 26,
-        "ArcGapDegrees": 7.0,
+        "ArcGapDegrees": 14.0,
         "ImageName": "Weapons/Bows/10",
         "MainProjectileImageName": "Weapons/Bows/Projectiles/Main/10",
         "SideProjectileImageName": "Weapons/Bows/Projectiles/Side/10"
@@ -174,7 +174,7 @@
         "SideDamageMax": 115,
         "ProjectileMagnitude": 8.533333,
         "ProjectileDuration": 26,
-        "ArcGapDegrees": 7.0,
+        "ArcGapDegrees": 14.0,
         "ImageName": "Weapons/Bows/11",
         "MainProjectileImageName": "Weapons/Bows/Projectiles/Main/11",
         "SideProjectileImageName": "Weapons/Bows/Projectiles/Side/11"
@@ -189,7 +189,7 @@
         "SideDamageMax": 125,
         "ProjectileMagnitude": 8.533333,
         "ProjectileDuration": 26,
-        "ArcGapDegrees": 7.0,
+        "ArcGapDegrees": 14.0,
         "ImageName": "Weapons/Bows/12",
         "MainProjectileImageName": "Weapons/Bows/Projectiles/Main/12",
         "SideProjectileImageName": "Weapons/Bows/Projectiles/Side/12"
@@ -204,7 +204,7 @@
         "SideDamageMax": 140,
         "ProjectileMagnitude": 8.533333,
         "ProjectileDuration": 26,
-        "ArcGapDegrees": 7.0,
+        "ArcGapDegrees": 14.0,
         "ImageName": "Weapons/Bows/13",
         "MainProjectileImageName": "Weapons/Bows/Projectiles/Main/13",
         "SideProjectileImageName": "Weapons/Bows/Projectiles/Side/13"
@@ -219,7 +219,7 @@
         "SideDamageMax": 145,
         "ProjectileMagnitude": 8.533333,
         "ProjectileDuration": 26,
-        "ArcGapDegrees": 7.0,
+        "ArcGapDegrees": 14.0,
         "ImageName": "Weapons/Bows/14",
         "MainProjectileImageName": "Weapons/Bows/Projectiles/Main/14",
         "SideProjectileImageName": "Weapons/Bows/Projectiles/Side/14"
