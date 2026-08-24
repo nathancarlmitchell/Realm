@@ -192,6 +192,16 @@ namespace Realm
         private int InCombatDurationFrames =>
             Math.Max(1, (int)(Math.Max(0f, 7f - Vitality * 0.04f) * 60f));
 
+        // Same value as InCombatDurationFrames above, in seconds rather
+        // than frames — for display only (Overlay.cs's hover tooltip,
+        // alongside CombatTrigger). InCombatDurationFrames stays the real
+        // source of truth for the actual timer; this just re-expresses it
+        // in a unit a player reads more easily. Deliberately not floored/
+        // clamped the way InCombatDurationFrames is (that clamp exists so
+        // the *timer* can never get stuck, not because 0.0s is a
+        // meaningless number to show).
+        public float CombatDurationSeconds => Math.Max(0f, 7f - Vitality * 0.04f);
+
         // Called from Hit() with the raw hit (after DamageTakenMultiplier,
         // before Defense) — comparing against the raw hit rather than the
         // Defense-mitigated damage actually taken avoids double-counting

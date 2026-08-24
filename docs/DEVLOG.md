@@ -4134,3 +4134,22 @@ date/time for those individually; don't treat their grouping as meaning they all
      — impossible — if it isn't, making this a clean pass/fail signal rather than a flaky one). Real
      save files confirmed byte-identical before and after. Clean build and a plain boot-check both
      passed.
+176. **Vital Combat's hover tooltip (entry 172) now also shows the Combat Duration value in
+     seconds**, per user request. New `Player.CombatDurationSeconds` (`Math.Max(0f, 7f - Vitality *
+     0.04f)`) alongside the existing frame-counted `InCombatDurationFrames` — recomputed directly
+     from the same formula rather than dividing `InCombatDurationFrames / 60f`, so the display isn't
+     affected by that property's own 1-frame floor (a safety clamp for the actual timer, not a
+     meaningful value to show — `0.0s` reads fine on a tooltip even though the real timer can never
+     literally hit 0 frames). `Overlay.cs`'s tooltip text gained a third line, `"Combat Duration:
+     " + CombatDurationSeconds.ToString("0.0") + "s"`, alongside the existing status/Combat Trigger
+     lines — no repositioning logic needed, since the tooltip's background panel and its
+     already-established anchor-by-measured-width positioning (entry 172's own tooltip-clipping fix)
+     both size themselves off `Art.HudFont.MeasureString()` on the whole (now 3-line) string.
+
+     Verified via a scripted repro: confirmed `CombatDurationSeconds` reads `7.0`/`6.0`/`5.0` at
+     0/25/50 Vitality, matching the "1 second per 25 VIT" spec directly; confirmed it floors at
+     `0.0` (not negative) at an extreme 175 Vitality; rendered `Overlay.DrawSidebar()` to an offscreen
+     PNG with the player forced `InCombat` and the mouse hovering the badge, and visually confirmed
+     all three tooltip lines ("In Combat" / "Combat Trigger: 8" / "Combat Duration: 6.0s") render
+     fully on-screen with no clipping. Real save files confirmed byte-identical before and after.
+     Clean build and a plain boot-check both passed.

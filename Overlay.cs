@@ -446,7 +446,14 @@ namespace Realm
             {
                 string status = Player.Instance.InCombat ? "In Combat" : "Out of Combat";
                 string text =
-                    status + Environment.NewLine + "Combat Trigger: " + Player.Instance.CombatTrigger;
+                    status
+                    + Environment.NewLine
+                    + "Combat Trigger: "
+                    + Player.Instance.CombatTrigger
+                    + Environment.NewLine
+                    + "Combat Duration: "
+                    + Player.Instance.CombatDurationSeconds.ToString("0.0")
+                    + "s";
                 Color textColor = Player.Instance.InCombat ? Color.Gold : Color.White;
 
                 // Anchored so the tooltip's right edge sits just left of the
