@@ -725,3 +725,16 @@ happened at once.
     confirmed a Tome can actually appear across 200 forced tier-0 `AbilityItem` rolls in both
     `Spawn()` and `SpawnGuaranteedLoot()` (statistically airtight given all 4 candidate types share
     equal odds). Real save files confirmed byte-identical before and after.
+52. **The Wand's projectile didn't match its own spec** (18 tiles/sec, 0.5s lifetime, 9 tile range,
+    piercing) — reported as "make sure the wand matches these specs." See
+    [DEVLOG.md](DEVLOG.md) entry 177 for the full writeup. Piercing was already correct (Wand shots
+    already skip `ExpiresOnHit`, same mechanism as Bow). Speed and lifetime weren't: all 15 Wand
+    tiers in `Data/WeaponData.json` shared `ProjectileMagnitude: 12`/`ProjectileDuration: 32`
+    (22.5 tiles/sec over 0.53s, a 12-tile range) instead of the spec's `9.6`/`30` (18 tiles/sec over
+    exactly 0.5s, a clean 9-tile range with no rounding needed, unlike the Staff's own 0.475s spec
+    from an earlier check this session). Fixed by updating all 15 tiers to `9.6`/`30`. Verified via a
+    scripted repro: confirmed the catalog data directly, then fired a real `Weapon.Shoot()` off a
+    Wand-wielding Priest and measured the actual spawned `Projectile`'s velocity magnitude and
+    `Duration`, converting back to tiles/sec and seconds — landed within floating-point rounding of
+    exactly 18/0.5/9, and confirmed `ExpiresOnHit` was already `false`. Real save files confirmed
+    byte-identical before and after.

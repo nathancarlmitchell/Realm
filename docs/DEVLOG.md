@@ -4153,3 +4153,28 @@ date/time for those individually; don't treat their grouping as meaning they all
      all three tooltip lines ("In Combat" / "Combat Trigger: 8" / "Combat Duration: 6.0s") render
      fully on-screen with no clipping. Real save files confirmed byte-identical before and after.
      Clean build and a plain boot-check both passed.
+177. **Fixed the Wand's projectile speed/lifetime/range not matching its own spec** — see
+     [BUGFIXES.md](BUGFIXES.md) entry 52 for the user-facing summary. Requested as "make sure the
+     wand matches these specs" (18 tiles/sec, 0.5s lifetime, 9 tile range, piercing). Piercing was
+     already correct — `Weapon.Shoot()`'s `expiresOnHit = this.Type != WeaponType.Wand && this.Type
+     != WeaponType.Bow` already excludes Wand, so its shots already pass through enemies via
+     `EntityManager`'s `HitBy`-tracking pass-through, same mechanism Bow uses. Speed/lifetime weren't:
+     converted the spec through this project's established 32px/tile, 60 ticks/sec basis (confirmed
+     against the already-correct Staff entries, which use `ProjectileMagnitude: 9.6` for the same 18
+     tiles/sec target) to `ProjectileMagnitude: 9.6`/`ProjectileDuration: 30` — a clean, exact
+     conversion this time (`9.6 * 30 = 288px = 9 tiles` exactly, unlike the Staff's own 0.475s spec,
+     which landed on a genuine half-tick boundary requiring a rounding call). All 15 Wand tiers in
+     `Data/WeaponData.json` had instead shared `ProjectileMagnitude: 12`/`ProjectileDuration: 32`
+     (22.5 tiles/sec, 0.5333s, 12-tile range) — not close to any plausible rounding of the spec, just
+     wrong; fixed via a single `replace_all` edit (confirmed beforehand that the exact `12`/`32` pair
+     appeared nowhere else in the file, e.g. on a Staff or Bow entry, so the blind replace couldn't
+     touch anything else).
+
+     Verified via a scripted repro: confirmed all 15 Wand catalog entries now read
+     `9.6`/`30` directly; equipped a Wand-wielding Priest, called the real `Weapon.Shoot()` (no mocks
+     — `Input.mouse` preset so `Input.GetMouseAimDirection()` resolves to a real nonzero direction),
+     and measured the actual spawned `Projectile`'s `Velocity.Length()`/`Duration`, converting back to
+     tiles/sec and seconds the same way the spec itself was converted — landed within floating-point
+     rounding of exactly 18 tiles/sec, 0.5s, and a 9-tile range, and confirmed `ExpiresOnHit` reads
+     `false` on the real spawned projectile (not just in the source). Real save files confirmed
+     byte-identical before and after. Clean build and a plain boot-check both passed.
