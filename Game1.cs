@@ -150,6 +150,7 @@ namespace Realm
             currentState = new MenuState(this, Graphics.GraphicsDevice, Content);
 
             Weapons = Util.LoadWeaponData();
+            Weapons.AddRange(Util.LoadBowData());
             Armors = Util.LoadArmorData();
             Rings = Util.LoadRingData();
             Spells = Util.LoadSpellData();

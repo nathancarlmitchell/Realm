@@ -37,6 +37,12 @@ namespace Realm
         // e.g. Knight's Shield Slam.
         public bool StunsOnHit = false;
 
+        // Whether this projectile's damage skips the target's Defense
+        // reduction entirely (Enemy.WasShot()'s Armor Piercing path). False
+        // for everything except whatever a class explicitly opts in — e.g.
+        // Bow's Side shots.
+        public bool IgnoresDefense = false;
+
         public Projectile(Vector2 position, Vector2 velocity)
         {
             ID = Guid.NewGuid();

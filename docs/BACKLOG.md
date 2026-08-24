@@ -122,15 +122,6 @@ prioritized or scheduled — the user asked to keep these noted for later rather
   particle effects on the *player* taking damage (deliberately out of scope — only enemy hits/deaths
   were wired up), and any other on-screen moment that could use the same `Particle.SpawnBurst()`
   entry point.
-- **Rework Bow to have independent main/side shots.** Today [Weapon.cs](Weapon.cs)'s `Shoot()` fires
-  three identical `Projectile`s for Bow — one straight down `aimAngle`, plus two "quiver" shots at
-  `aimAngle ± 0.35f` — all three sharing the same `damage`/`ProjectileImage`/`ExpiresOnHit`. The idea:
-  give the main shot and the two side (quiver) shots independent damage values, and separate art for
-  the quiver shots so they read as visually distinct from the main arrow. Would likely need new
-  `WeaponData`/`WeaponData.json` fields (e.g. `SideDamageMin`/`SideDamageMax`, a
-  `SideProjectileImageName`) alongside the existing `DamageMin`/`DamageMax`/`ProjectileImageName`,
-  mirroring how Staff's `Amplitude`/`Frequency` were added this same way — plus matching
-  `Content.mgcb` blocks for whatever new quiver art gets supplied.
 
 ## Completed
 

@@ -402,7 +402,7 @@ namespace Realm
                 if (hit)
                 {
                     enemies[i].HitBy.Add(bullets[j].ID);
-                    enemies[i].WasShot(bullets[j].Damage);
+                    enemies[i].WasShot(bullets[j].Damage, bullets[j].IgnoresDefense);
                     if (bullets[j].ParalyzesOnHit)
                     {
                         enemies[i].Paralyze();

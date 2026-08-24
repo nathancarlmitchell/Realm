@@ -61,6 +61,13 @@ namespace Realm
             "WeaponData.json"
         );
 
+        // Bows live in their own catalog file, separate from
+        // WeaponData.json — see Data/BowData.cs and LoadBowData() below.
+        private static string bowDataLocation = Path.Combine(
+            AppContext.BaseDirectory,
+            "BowData.json"
+        );
+
         private static string armorDataLocation = Path.Combine(
             AppContext.BaseDirectory,
             "ArmorData.json"
@@ -521,6 +528,81 @@ namespace Realm
             }
 
             return weapons;
+        }
+
+        // Bows live in their own catalog file (see Data/BowData.cs) rather
+        // than WeaponData.json — unlike every other weapon type, a Bow
+        // needs two independent damage ranges and two independent
+        // projectile textures (Main/Side), not the single pair WeaponData
+        // has. Returns plain Weapon.WeaponType.Bow entries, meant to be
+        // merged into the same combined Weapons list as LoadWeaponData()'s
+        // result (see Game1.StartGame()) — Weapon.LoadWeapon() and
+        // Player.cs's EquipHighestTierWeapon() both search that one list by
+        // Name, unaware of which file an entry originally came from.
+        public static List<Weapon> LoadBowData()
+        {
+            List<BowData> bowData = [];
+            List<Weapon> bows = [];
+
+            try
+            {
+                using (StreamReader r = new(bowDataLocation))
+                {
+                    Debug.WriteLine(bowDataLocation + ": reading data.");
+                    string json = r.ReadToEnd();
+                    Debug.WriteLine(json);
+                    try
+                    {
+                        bowData = JsonSerializer.Deserialize<List<BowData>>(json);
+                    }
+                    catch (System.Text.Json.JsonException)
+                    {
+                        Debug.WriteLine($"Error loading bow data: {json}");
+                    }
+                }
+
+                for (int i = 0; i < bowData.Count; i++)
+                {
+                    Texture2D bowTexture = Game1.Instance.Content.Load<Texture2D>(
+                        bowData[i].ImageName
+                    );
+
+                    Texture2D mainProjectileTexture = Game1.Instance.Content.Load<Texture2D>(
+                        bowData[i].MainProjectileImageName
+                    );
+
+                    Texture2D sideProjectileTexture = Game1.Instance.Content.Load<Texture2D>(
+                        bowData[i].SideProjectileImageName
+                    );
+
+                    bows.Add(
+                        new Weapon(bowTexture, mainProjectileTexture)
+                        {
+                            Type = Weapon.WeaponType.Bow,
+                            Name = bowData[i].Name,
+                            Description = bowData[i].Description,
+                            Tier = bowData[i].Tier,
+                            DamageMin = bowData[i].MainDamageMin,
+                            DamageMax = bowData[i].MainDamageMax,
+                            ProjectileMagnitude = bowData[i].ProjectileMagnitude,
+                            ProjectileDuration = bowData[i].ProjectileDuration,
+                            ImageName = bowData[i].ImageName,
+                            ProjectileImageName = bowData[i].MainProjectileImageName,
+                            SideDamageMin = bowData[i].SideDamageMin,
+                            SideDamageMax = bowData[i].SideDamageMax,
+                            SideProjectileImage = sideProjectileTexture,
+                            SideProjectileImageName = bowData[i].SideProjectileImageName,
+                            ArcGapDegrees = bowData[i].ArcGapDegrees,
+                        }
+                    );
+                }
+            }
+            catch (System.IO.FileNotFoundException)
+            {
+                Debug.WriteLine(bowDataLocation + ": file not found.");
+            }
+
+            return bows;
         }
 
         public static List<Armor> LoadArmorData()

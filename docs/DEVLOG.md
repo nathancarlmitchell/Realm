@@ -3373,3 +3373,64 @@ date/time for those individually; don't treat their grouping as meaning they all
      and advanced both one tick each, confirming X stayed aligned (41.61687 vs 41.583065) while Y had
      already diverged (6.694053 vs -6.7423573) — proving the weave is real end-to-end, not just in the
      isolated Part 1 test. Clean build and a plain boot-check both passed.
+154. **Bow reworked into independent Main/Side shots, and moved out of WeaponData.json into its own
+     catalog file/loader.** Previously Bow fired three identical `Projectile`s sharing one damage
+     range, one piece of art, and a hardcoded ±0.35 rad spread. Per spec: all 3 shots now pierce
+     (`ExpiresOnHit = false`, reusing the same `HitBy`-tracking pass-through mechanism Wand bolts
+     already used — no new mechanism needed there), the 2 Side shots additionally ignore the target's
+     Defense entirely, Main and Side each get their own damage range and projectile art, and the Side
+     shots' angle is data-driven (`ArcGapDegrees = 7`, each side offset ±7° from the aim line — 14°
+     apart from each other) rather than the old hardcoded constant. `ProjectileMagnitude`/
+     `ProjectileDuration` (8.533333 px/tick / 26 ticks) were derived from the spec's 16 tiles/sec and
+     0.44s lifetime using this session's established 32px/tile, 60-ticks/sec conversion — the 26-tick
+     rounding (from 26.4) puts the real in-engine range about 1.6% under the spec's stated 7.04 tiles,
+     an unavoidable artifact of `ProjectileDuration` being an integer tick count. The spec's separate
+     "True Range: 4.07 tiles" line for the Side shots doesn't correspond to any mechanic this engine
+     has — collision is a plain circle-circle check against the projectile's live position each frame,
+     with no concept of a shot's sideways drift from the aim line vs. a target's hitbox width — so it
+     was treated as descriptive reference info rather than something to implement; the concrete,
+     implementable numbers (speed, duration, angle, piercing, defense-ignore, per-shot damage) are
+     all real data now.
+
+     New `Projectile.IgnoresDefense` (mirrors `StunsOnHit`'s/`SlowsOnHit`'s existing shape) flows
+     through `EntityManager.HandleCollisions()` into a new `Enemy.WasShot(int damage, bool
+     ignoresDefense = false)` overload parameter, which skips the `- Defense` term entirely when set.
+     `Weapon` gained `SideDamageMin`/`SideDamageMax`/`SideProjectileImage`/`SideProjectileImageName`/
+     `ArcGapDegrees`, alongside the existing `DamageMin`/`DamageMax`/`ProjectileImage`/
+     `ProjectileImageName` now read as "Main" for Bow specifically. New `Data/BowData.cs` (a leaner
+     DTO — no `Type` field, since every entry is unambiguously `WeaponType.Bow`) and `Data/BowData.json`
+     (the 15 Bow tiers, moved out of `WeaponData.json` verbatim aside from the field restructuring)
+     are loaded by a new `Util.LoadBowData()`, mirroring `LoadWeaponData()`; `Game1.StartGame()` merges
+     its result into the same combined `Weapons` list (`Weapons.AddRange(Util.LoadBowData())`), so
+     `Weapon.LoadWeapon()`'s by-name search and `Player.cs`'s `EquipHighestTierWeapon()` (F4) both keep
+     working unmodified aside from also copying the 5 new fields — a deliberate fix-it-this-time repeat
+     of entry 45's F4 lesson, done proactively rather than waiting for a bug report.
+
+     Tier art: the user renamed `Content/Weapons/Bows/Shortbow.png` to `0.png` conceptually but hadn't
+     actually done it on disk yet, so the rename was completed here (`git mv`) to match. New
+     `Content/Weapons/Bows/Projectiles/Main/` (art for tiers 0, 7-14 — tiers 1-6 fall back to tier 0's
+     art, per spec) and `.../Side/` (art for tiers 0-2, 4-5, 7-14 — tiers 3 and 6 both fall back all the
+     way to tier 0's art specifically, not their nearer lower neighbor, confirmed with the user directly
+     since the literal "next lowest available" rule and the user's own worked example genuinely
+     disagreed on tier 3/6's result). The fallback is baked directly into each tier's
+     `MainProjectileImageName`/`SideProjectileImageName` in `BowData.json` — no runtime fallback logic
+     needed, same technique as every other weapon type's per-tier art path. 30 new `Content.mgcb`
+     blocks (9 Main + 13 Side + the renamed icon). Side damage was set to a provisional 60% of Main's
+     range per tier (rounded to the nearest 5) as a starting balance point, noted here as tunable —
+     the user asked for the fields to exist, not for specific numbers.
+
+     Verified via a scripted repro (real save files backed up first; throwaway `Archer` instance, so
+     `Player.Instance` briefly points at it but nothing persists): confirmed 15 Bow catalog entries;
+     Shortbow's Main 25-40 / Side 15-25 damage, `ProjectileMagnitude=8.533333`, `ProjectileDuration=26`,
+     `ArcGapDegrees=7`, and a non-null `SideProjectileImage`; `Weapon.Shoot()` added exactly 3
+     `Projectile`s, with the Main one `ExpiresOnHit=False`/`IgnoresDefense=False` and both Side ones
+     `ExpiresOnHit=False`/`IgnoresDefense=True`; the two Side shots' angles measured 0.12217313 rad off
+     Main's (expected `MathHelper.ToRadians(7)` = 0.12217305) with matching speeds; a `Defense=10` test
+     enemy (`CreateBigSnake`) lost exactly 40 HP from 50 raw damage with `ignoresDefense=false` (50-10)
+     and exactly 50 HP with `ignoresDefense=true` (Defense skipped entirely); and F4's
+     `DebugMaxLevelAndEquipTopGear()` on the same throwaway Archer correctly equipped the tier-14 Bow
+     with nonzero `SideDamageMin`/`SideDamageMax`, `ArcGapDegrees=7`, and a non-null
+     `SideProjectileImage` — confirming the proactive F4 fix actually works, not just compiles. Real
+     save files confirmed byte-identical before and after. Clean build and a plain boot-check (which
+     exercises `LoadBowData()`'s real content-loading path unconditionally, regardless of which class
+     was last played) both passed with no stderr output.

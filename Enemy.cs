@@ -261,14 +261,14 @@ namespace Realm
             Velocity += 10 * d / (d.LengthSquared() + 1);
         }
 
-        public void WasShot(int damage)
+        public void WasShot(int damage, bool ignoresDefense = false)
         {
             if (Invulnerable)
                 return;
 
             Debug.WriteLine(damage);
 
-            int actualDamage = Math.Max(0, damage - Defense);
+            int actualDamage = ignoresDefense ? Math.Max(0, damage) : Math.Max(0, damage - Defense);
             health -= actualDamage;
 
             EntityManager.Add(new DamageNumber(Position, actualDamage, Color.Yellow));

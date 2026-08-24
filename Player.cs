@@ -463,6 +463,12 @@ namespace Realm
             Texture2D projectileTexture = Game1.Instance.Content.Load<Texture2D>(
                 best.ProjectileImageName
             );
+            // Bow-only — every other weapon type's SideProjectileImageName
+            // is null, and Content.Load can't take a null asset name.
+            Texture2D sideProjectileTexture =
+                best.SideProjectileImageName != null
+                    ? Game1.Instance.Content.Load<Texture2D>(best.SideProjectileImageName)
+                    : null;
             Weapon copy = new(weaponTexture, projectileTexture)
             {
                 Type = best.Type,
@@ -477,6 +483,11 @@ namespace Realm
                 ProjectileImageName = best.ProjectileImageName,
                 Amplitude = best.Amplitude,
                 Frequency = best.Frequency,
+                SideDamageMin = best.SideDamageMin,
+                SideDamageMax = best.SideDamageMax,
+                SideProjectileImage = sideProjectileTexture,
+                SideProjectileImageName = best.SideProjectileImageName,
+                ArcGapDegrees = best.ArcGapDegrees,
             };
 
             EquipWeapon(copy);
