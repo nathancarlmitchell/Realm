@@ -132,7 +132,15 @@ namespace Realm
 
         public virtual void Shoot()
         {
-            double damgeModifier = (0.5 + Player.Instance.Attack / 50);
+            // 0.5 base multiplier at 0 Attack, +2% (0.02) per point —
+            // Player.Instance.Attack is an int, so this needs an explicit
+            // /50.0 (not /50) or C# evaluates Attack/50 as pure integer
+            // division first, before ever adding the 0.5 — pinning the
+            // multiplier at exactly 0.5 for the entire 0-49 Attack range
+            // and only stepping at each multiple of 50 instead of scaling
+            // smoothly. No Weak/Damaging multiplier — this engine has no
+            // such status effects to hook a 0.5 floor or x1.25 bonus into.
+            double damgeModifier = (0.5 + Player.Instance.Attack / 50.0);
             double damage = rand.Next(DamageMin, DamageMax) * damgeModifier;
 
             var aim = Input.GetMouseAimDirection();

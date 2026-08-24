@@ -672,3 +672,20 @@ happened at once.
     `HealthMax`/`ManaMax` raised so regen never hit the cap and confirmed real Health/Mana gained
     landed within a single unit of the formula's own prediction in both directions (the gap being pure
     integer quantization on the `int Health`/`Mana` fields, not drift).
+49. **Attack's damage multiplier was pinned at 0.5 for the entire 0-49 Attack range, and Defense's
+    10%-damage floor only existed for damage taken by the player, not damage dealt to enemies.** The
+    fifth/sixth "double check the calculation" requests this session (after entries 46-48). See
+    [DEVLOG.md](DEVLOG.md) entry 167 for the full writeup. `Weapon.cs`'s `Shoot()` computed
+    `0.5 + Player.Instance.Attack / 50` — `Attack` is `int`, so `Attack / 50` evaluated as pure integer
+    division before the `0.5` was ever added, making every Attack value 0-49 produce the identical
+    `0.5` multiplier instead of scaling smoothly by 2% per point. Fixed with `/ 50.0`. Separately,
+    `Player.cs`'s `Hit()` already correctly floored damage-to-the-player at 10% of the raw hit
+    (`Math.Max(damage - Defense, damage / 10)`), but `Enemy.cs`'s `WasShot()` (damage the player deals
+    to an enemy) only floored at `0` — a real asymmetry that let a sufficiently defended enemy become
+    effectively untouchable, when the same stat guaranteed the reverse direction could never fully
+    block a hit. Fixed by mirroring `Hit()`'s exact floor into `WasShot()` (skipped when
+    `ignoresDefense` is set, e.g. Bow Side shots). Verified via a scripted repro: pinned weapon damage
+    to a fixed value to eliminate randomness and confirmed the Attack multiplier read exactly
+    0.5/1.0/1.5/2.0 at Attack 0/25/50/75 (previously 0 and 25 gave the identical, wrong 0.5); and
+    reproduced the spec's own worked Defense examples exactly, including a deliberately-over-the-cap
+    case (60 damage vs 90 Defense) that now correctly lands at 6 damage instead of 0.

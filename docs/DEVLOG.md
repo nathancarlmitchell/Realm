@@ -3737,3 +3737,38 @@ date/time for those individually; don't treat their grouping as meaning they all
      both directions, that remaining gap being pure integer-HP/MP quantization at the tick boundary
      (Health/Mana are both `int`), not systematic drift. Real save files confirmed byte-identical
      before and after. Clean build and a plain boot-check both passed.
+167. **Fixed the Attack damage multiplier's integer-division bug, and found a real asymmetry in the
+     Defense damage-reduction cap** — the fifth and sixth stat-calculation double-checks this session
+     (after entries 164/165/166's Dexterity/Speed/Vitality/Wisdom). Unlike those four, ATT/DEF weren't
+     new formula replacements — the existing code already matched the spec's intended shape almost
+     exactly; both bugs here were narrower and more surgical.
+
+     **ATT**: `Weapon.cs`'s `Shoot()` computed `double damgeModifier = (0.5 + Player.Instance.Attack /
+     50)` — `Attack` is `int` and `50` is an int literal, so C# evaluates `Attack / 50` as pure integer
+     division *before* ever adding the `0.5`, pinning the multiplier at exactly `0.5` for the entire
+     `0`-`49` Attack range (every point in there produces the identical, wrong result) and only
+     stepping at each multiple of `50` instead of scaling smoothly by 2% per point as the spec
+     describes. Fixed with a single-character change: `/ 50` → `/ 50.0`, forcing real floating-point
+     division. No Weak/Damaging multiplier — this engine has no such status effects to hook a `0.5`
+     floor or `x1.25` bonus into.
+
+     **DEF**: the spec's cap ("every shot does at least 10% of its damage") was *already correctly
+     implemented* — but only in `Player.cs`'s `Hit()` (damage the player takes), not in `Enemy.cs`'s
+     `WasShot()` (damage the player deals to an enemy), which only floored the reduced damage at `0`.
+     A sufficiently defended enemy could end up effectively untouchable by weak attacks, while the same
+     enemy hitting the player was already correctly guaranteed to always land at least 10% chip
+     damage — a real, one-directional asymmetry in a stat that's supposed to behave identically
+     regardless of whose Defense it is. Fixed by mirroring `Hit()`'s exact floor into `WasShot()`:
+     `Math.Max(damage - Defense, damage / 10)`, applied only when `ignoresDefense` is false (Bow's
+     Side shots still skip Defense — and this floor — entirely, as intended).
+
+     Verified via a scripted repro (throwaway `Wizard`/`Enemy.CreateWanderer()`, real save files backed
+     up first): pinned `DamageMin`/`DamageMax` to a single value (100) so `rand.Next()` always returns
+     exactly 100, eliminating randomness, then fired real shots at Attack `0`/`25`/`50`/`75` and
+     confirmed the implied multiplier read exactly `0.5`/`1.0`/`1.5`/`2.0` — correctly distinguishing
+     `0` from `25` for the first time, where the old code gave both an identical `0.5`. For Defense,
+     reproduced the spec's own three worked examples directly: `60` damage vs `20` Defense lost exactly
+     `40` HP, vs `54` Defense lost exactly `6`, and vs `90` Defense (deliberately over the cap) *still*
+     lost exactly `6` — confirming the floor now holds where the old code would have let it drop to
+     `0`. Real save files confirmed byte-identical before and after. Clean build and a plain boot-check
+     both passed.

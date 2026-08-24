@@ -268,7 +268,15 @@ namespace Realm
 
             Debug.WriteLine(damage);
 
-            int actualDamage = ignoresDefense ? Math.Max(0, damage) : Math.Max(0, damage - Defense);
+            // Defense reduces damage 1-for-1 but caps at 90% reduction — a
+            // shot always deals at least 10% of its raw damage, matching
+            // Player.Hit()'s own damage/10 floor for the reverse direction
+            // (the player's own Defense reducing incoming enemy damage).
+            // Previously only floored at 0, so high enough Defense could
+            // block an attack entirely instead of guaranteeing that 10%.
+            int actualDamage = ignoresDefense
+                ? Math.Max(0, damage)
+                : Math.Max(damage - Defense, damage / 10);
             health -= actualDamage;
 
             if (Player.Instance.ShowEnemyDamageNumbersEnabled)
