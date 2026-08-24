@@ -97,16 +97,28 @@ namespace Realm
             // enemies, and other ground clutter, regardless of the order
             // entities happened to be added in (SpriteSortMode.Deferred draws
             // in submission order, so a projectile spawned after the player
-            // would otherwise paint right over it).
+            // would otherwise paint right over it). A player-anchored
+            // DamageNumber (the player's own damage-taken number, or an XP
+            // gain — see DamageNumber.FollowsPlayer) sits right above the
+            // player's head and would otherwise get the same treatment,
+            // painted over by this same player-on-top rule — drawn in a
+            // third pass instead, after the player, so it's never hidden
+            // behind the sprite it's meant to float over.
             foreach (var entity in entities)
             {
-                if (entity is not Player)
+                if (entity is not Player && !(entity is DamageNumber dn && dn.FollowsPlayer))
                     entity.Draw(spriteBatch);
             }
 
             foreach (var entity in entities)
             {
                 if (entity is Player)
+                    entity.Draw(spriteBatch);
+            }
+
+            foreach (var entity in entities)
+            {
+                if (entity is DamageNumber dn && dn.FollowsPlayer)
                     entity.Draw(spriteBatch);
             }
         }

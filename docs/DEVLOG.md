@@ -3586,3 +3586,27 @@ date/time for those individually; don't treat their grouping as meaning they all
      position (correctly tracking the move, that remaining distance being just their own jitter/float
      offset). Real save files confirmed byte-identical before and after. Clean build and a plain
      boot-check both passed.
+162. **The player's own damage-taken and XP numbers now draw on top of the player sprite instead of
+     underneath it.** `EntityManager.Draw()` has always drawn the Player in its own final pass, after
+     every other entity, specifically so the sprite renders above projectiles/enemies/ground clutter
+     regardless of submission order — but that same rule was silently swallowing the two
+     player-anchored `DamageNumber`s from entries 157/158/161 too, since they're just another `Entity`
+     in the same list and sit right at the player's own position. Whenever the number and the sprite
+     overlapped, the player-drawn-last rule painted the sprite right over the number.
+
+     `DamageNumber`'s previously-private `followsPlayer` field became a public `FollowsPlayer`
+     property — the exact flag from entry 161 that already distinguishes "this number is anchored to
+     the player" from an enemy's own hit/death number — so `EntityManager.Draw()` could single it out.
+     Split the existing two-pass draw (everything else, then Player) into three: everything except
+     Player and `FollowsPlayer` numbers, then Player, then the `FollowsPlayer` numbers last — so they
+     always render above the sprite they float over, the same way the sprite itself always renders
+     above everything beneath it. An enemy's own hit/death number is unaffected, still drawn in the
+     first pass at its normal spot.
+
+     Verified visually (a numeric check alone can't confirm draw order — same reasoning as entry 152's
+     stepper-spacing catch): rendered a throwaway `Wizard` with a large, deliberately zero-offset
+     `FollowsPlayer` `DamageNumber` spawned dead-center on the sprite (so the two would clearly overlap)
+     to a PNG via a lightweight `Camera` (not a real `NexusState`/`RealmState`, which save
+     unconditionally in their constructors) and inspected it directly — the number's leading digit
+     visibly paints over the sprite where they overlap, confirming the new draw order. Real save files
+     confirmed byte-identical before and after. Clean build and a plain boot-check both passed.

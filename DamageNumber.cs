@@ -34,7 +34,11 @@ namespace Realm
         // they walk away, rather than being left behind in empty space. The
         // spawn jitter and the upward float are both preserved as offsets
         // layered on top of the player's current position each tick.
-        private readonly bool followsPlayer;
+        //
+        // Public (not just private) so EntityManager.Draw() can single these
+        // out for its own above-the-player draw pass — see the comment
+        // there for why a player-anchored number needs one.
+        public bool FollowsPlayer { get; }
         private readonly Vector2 spawnOffset;
         private Vector2 floatOffset = Vector2.Zero;
 
@@ -71,7 +75,7 @@ namespace Realm
             // Small spawn jitter so simultaneous hits (a bow's multiple arrows,
             // an AoE ability) don't render as one illegible stack of digits.
             spawnOffset = new Vector2(rand.NextFloat(-10, 10), verticalOffset);
-            this.followsPlayer = followsPlayer;
+            FollowsPlayer = followsPlayer;
             Position = (followsPlayer ? Player.Instance.Position : position) + spawnOffset;
             text = prefix + damage;
             baseColor = color;
@@ -85,7 +89,7 @@ namespace Realm
         public override void Update()
         {
             floatOffset += FloatVelocity;
-            Position = followsPlayer
+            Position = FollowsPlayer
                 ? Player.Instance.Position + spawnOffset + floatOffset
                 : Position + FloatVelocity;
             ticksRemaining--;
