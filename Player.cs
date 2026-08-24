@@ -155,18 +155,18 @@ namespace Realm
         // damage") for the degenerate 0-Defense case, where the 1:1
         // bracket would otherwise give a meaningless trigger of 0.
         //
-        // Excludes EquipmentDefenseBonus — gear shouldn't let a player buy
-        // their way into a higher trigger (and therefore weaker/less-often
-        // regen halving) just by wearing tankier armor; base/level/potion/
-        // temporary Defense still count, matching PermanentDefense's own
-        // "equipment can just be swapped, everything else is earned"
-        // reasoning above, minus PermanentDefense's extra exclusion of
-        // TemporaryDefenseBonus, which the user didn't ask to exclude here.
+        // Reads PermanentDefense (Defense minus both EquipmentDefenseBonus
+        // and TemporaryDefenseBonus, defined above) rather than raw Defense
+        // — neither gear nor a temporary buff should let a player buy or
+        // borrow their way into a higher trigger (and therefore
+        // weaker/less-often regen halving); only base/level/potion Defense,
+        // the parts that were actually earned and don't go away on their
+        // own, count toward it.
         public int CombatTrigger
         {
             get
             {
-                float def = Defense - EquipmentDefenseBonus;
+                float def = PermanentDefense;
                 float trigger;
                 if (def <= 15f)
                     trigger = def;

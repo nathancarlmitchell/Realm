@@ -4075,3 +4075,21 @@ date/time for those individually; don't treat their grouping as meaning they all
      portion specifically is what's being excluded, not some fixed offset; confirmed an equipment
      bonus at or above total Defense still floors at Trigger 1 rather than going negative. Real save
      files confirmed byte-identical before and after. Clean build and a plain boot-check both passed.
+174. **`CombatTrigger` (entries 172/173) now also excludes `TemporaryDefenseBonus`**, per user
+     follow-up. Entry 173 had already excluded `EquipmentDefenseBonus` while deliberately keeping
+     `TemporaryDefenseBonus` (a temporary Defense buff still counted) since only equipment exclusion
+     had been asked for at the time; asked again to exclude it too, and `Defense -
+     EquipmentDefenseBonus - TemporaryDefenseBonus` is exactly what the existing `PermanentDefense`
+     property (used elsewhere by `Overlay.DrawStats()`'s "is this maxed" check) already computes —
+     simplified `CombatTrigger` to read `PermanentDefense` directly instead of hand-repeating the
+     same subtraction a second time.
+
+     Verified via a scripted repro (throwaway `Wizard`, equipment/temporary Defense zeroed first):
+     confirmed a temporary-only buff (65 Defense, 20 from `TemporaryDefenseBonus`) gives the same
+     Trigger 35 as the equivalent equipment-free baseline, not the 45 the full 65 would give;
+     confirmed removing the buff at the same raw 65 jumps back to 45, isolating that the temporary
+     portion specifically drives the difference; confirmed equipment and temporary bonuses excluded
+     together still net out correctly (10 + 10 of each, same Trigger 35 as either alone); confirmed
+     the existing floor-at-1 still holds when a temporary bonus alone would push it negative. Real
+     save files confirmed byte-identical before and after. Clean build and a plain boot-check both
+     passed.
