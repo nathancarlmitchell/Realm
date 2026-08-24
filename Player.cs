@@ -109,6 +109,14 @@ namespace Realm
         private int temporaryHealthMaxBonusFrames;
         private int temporaryManaMaxBonusFrames;
 
+        // A direct multiplier on incoming damage (Hit() below), not a
+        // Defense stat bonus fed through RecalculateStats() like the
+        // Temporary*Bonus fields above — e.g. Knight's Shield Slam sets this
+        // to 0.75 ("you receive 75% damage") for its duration. 1f (no
+        // reduction) outside an active effect.
+        public float DamageTakenMultiplier = 1f;
+        private int damageTakenMultiplierFrames;
+
         // ExperienceTotal is the only XP value actually stored — the sole
         // "how much has this character ever earned" running total,
         // incremented directly on each kill (Enemy.cs) and never reset by a
@@ -415,6 +423,11 @@ namespace Realm
 
         public void Hit(int damage = 25)
         {
+            // Damage Reduction (e.g. Knight's Shield Slam) scales the raw
+            // hit before Defense's own reduction/floor below — the two
+            // stack rather than one replacing the other.
+            damage = (int)(damage * DamageTakenMultiplier);
+
             int damageModified = damage - Defense;
             if (damageModified <= damage / 10)
             {
@@ -747,6 +760,15 @@ namespace Realm
             RecalculateStats();
         }
 
+        // No RecalculateStats() call — DamageTakenMultiplier isn't one of
+        // the stats that formula derives; it's read directly by Hit() below.
+        public void AddTemporaryDamageTakenMultiplier(float multiplier, int durationFrames)
+        {
+            if (damageTakenMultiplierFrames <= 0)
+                DamageTakenMultiplier = multiplier;
+            damageTakenMultiplierFrames = durationFrames;
+        }
+
         public void AddTemporarySpeedBonus(float amount, int durationFrames)
         {
             if (temporarySpeedBonusFrames <= 0)
@@ -847,6 +869,10 @@ namespace Realm
 
             if (expired)
                 RecalculateStats();
+
+            // Not part of RecalculateStats() — ticked down separately.
+            if (damageTakenMultiplierFrames > 0 && --damageTakenMultiplierFrames == 0)
+                DamageTakenMultiplier = 1f;
         }
 
         private void ClampVitals()

@@ -5,8 +5,18 @@ namespace Realm.CharacterClasses
 {
     public class Knight : Player
     {
-        private const int ShieldBuffDefenseAmount = 20;
-        private const int ShieldBuffDurationFrames = 180; // 3 seconds at 60fps
+        // Damage Reduction: "you receive 75% damage for 5 seconds."
+        private const float ShieldDamageReductionMultiplier = 0.75f;
+        private const int ShieldDamageReductionDurationFrames = 300; // 5 seconds at 60fps
+
+        // Shield Slam's own shot stats — independent of whatever Sword is
+        // equipped (previously borrowed Weapon.ProjectileMagnitude/Duration,
+        // which drifted with gear instead of holding the spec's fixed 16
+        // tiles/sec, 0.2s lifetime, 3.2-tile range). 16 tiles/sec * 32px per
+        // tile / 60 ticks/sec = 8.533333 px/tick; 0.2s * 60 ticks/sec = 12
+        // ticks (8.533333 * 12 = 102.4px = 3.2 tiles, consistent).
+        private const float ShieldProjectileMagnitude = 8.533333f;
+        private const int ShieldProjectileDuration = 12;
 
         public Knight()
         {
@@ -116,8 +126,10 @@ namespace Realm.CharacterClasses
         // as Archer's ability, and now the same damage formula too) that
         // stuns whatever it hits (blocks attacks only — unlike Archer's
         // Quiver, which paralyzes and blocks movement only), plus a
-        // temporary Defense buff on the Knight regardless of whether the
-        // shot connects.
+        // temporary Damage Reduction buff on the Knight regardless of
+        // whether the shot connects. The shot itself pierces (hits multiple
+        // targets, same as Bow/Quiver) and uses its own fixed speed/lifetime
+        // rather than the equipped Sword's.
         public override void UseAbility()
         {
             base.UseAbility();
@@ -143,20 +155,23 @@ namespace Realm.CharacterClasses
                 var aim = Input.GetMouseAimDirection();
                 float aimAngle = aim.ToAngle();
 
-                Vector2 vel = Extensions.FromPolar(aimAngle, Weapon.ProjectileMagnitude);
+                Vector2 vel = Extensions.FromPolar(aimAngle, ShieldProjectileMagnitude);
 
                 EntityManager.Add(
                     new Projectile(Player.Instance.Position, vel)
                     {
                         Damage = damage,
-                        Duration = Weapon.ProjectileDuration + 15,
+                        Duration = ShieldProjectileDuration,
                         image = Art.ShieldProjectile,
                         ExpiresOnHit = false,
                         StunsOnHit = true,
                     }
                 );
 
-                AddTemporaryDefenseBonus(ShieldBuffDefenseAmount, ShieldBuffDurationFrames);
+                AddTemporaryDamageTakenMultiplier(
+                    ShieldDamageReductionMultiplier,
+                    ShieldDamageReductionDurationFrames
+                );
             }
             else
             {

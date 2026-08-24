@@ -689,3 +689,18 @@ happened at once.
     0.5/1.0/1.5/2.0 at Attack 0/25/50/75 (previously 0 and 25 gave the identical, wrong 0.5); and
     reproduced the spec's own worked Defense examples exactly, including a deliberately-over-the-cap
     case (60 damage vs 90 Defense) that now correctly lands at 6 damage instead of 0.
+50. **Knight's Shield Slam gave a flat +20 Defense buff instead of the spec's 75% damage-taken
+    reduction, and its shot's range drifted with whatever Sword tier was equipped instead of holding
+    a fixed 3.2 tiles.** Reported as "check the shield ability against these specs." See
+    [DEVLOG.md](DEVLOG.md) entry 169 for the full writeup. `AddTemporaryDefenseBonus(20, 180)` reduced
+    damage 1-for-1 like ordinary Defense (and only for 3s, not the spec's 5s) — a different mechanism
+    entirely from a genuine damage-taken multiplier. New `Player.DamageTakenMultiplier` +
+    `AddTemporaryDamageTakenMultiplier()`, applied directly in `Hit()` before Defense's own reduction,
+    stacking with it rather than replacing it. Separately, the shot used `Weapon.ProjectileMagnitude`/
+    `ProjectileDuration` (every Sword tier is `8`px/tick / `14` ticks) instead of its own fixed values,
+    giving roughly double the spec's intended range regardless of equipped Sword tier. Fixed with
+    Knight-local constants for the spec's own 16 tiles/sec / 0.2s / 3.2-tile numbers. Verified via a
+    scripted repro: confirmed the ability sets the multiplier to exactly `0.75` and spawns a shot with
+    the exact spec'd duration/speed, and confirmed two `Hit(100)` calls (one during the effect, one
+    300 ticks after it expired) differed by exactly `25` HP — the real Defense present in both calls
+    canceled out algebraically, leaving no ambiguity that the multiplier was the only variable.

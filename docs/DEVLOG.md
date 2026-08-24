@@ -3782,3 +3782,41 @@ date/time for those individually; don't treat their grouping as meaning they all
      the Settings > Graphics tab to a PNG, visually confirming "Low Health Threshold" reads "20%"
      cleanly with no spacing regression. Real save files confirmed byte-identical before and after.
      Clean build and a plain boot-check both passed.
+169. **Reworked Knight's Shield Slam to match its spec — a genuine 75% damage-taken multiplier instead
+     of a flat Defense bonus, and its own fixed shot stats instead of borrowing the equipped Sword's.**
+     Stun (`Enemy.Stun(durationFrames: 180)` = 3s) and piercing (`ExpiresOnHit = false`, already
+     shared with Bow/Quiver's `HitBy`-tracking pass-through) were already correct and needed no
+     changes. Two real gaps found:
+     - **Damage Reduction was the wrong mechanism entirely.** The old code called
+       `AddTemporaryDefenseBonus(20, 180)` — a flat +20 Defense stat for 3 seconds, which reduces
+       damage 1-for-1 like any other point of Defense (subject to entry 167's 10%-of-raw floor).
+       The spec wants "you receive 75% damage for 5 seconds" — a direct multiplicative reduction on
+       the raw hit, independent of and stacking with Defense, for a different duration entirely. New
+       `Player.DamageTakenMultiplier` (defaults `1f`) plus `AddTemporaryDamageTakenMultiplier(float,
+       int)`, following the exact same opt-in-temporary-effect shape as the existing
+       `Temporary*Bonus` fields but *not* routed through `RecalculateStats()` (it isn't a stat — it's
+       applied directly in `Player.Hit()`, multiplying the raw incoming `damage` before Defense's own
+       reduction/floor runs). Knight's ability now calls
+       `AddTemporaryDamageTakenMultiplier(0.75f, 300)` (5 seconds).
+     - **The shot borrowed `Weapon.ProjectileMagnitude`/`ProjectileDuration` from whatever Sword was
+       equipped** (`Duration = Weapon.ProjectileDuration + 15`) instead of having its own fixed values
+       — every Sword tier is `8` px/tick / `14` ticks in this game's data, so the ability's actual
+       range drifted to roughly double the spec's intended `3.2` tiles (`8 × 29 = 232px ≈ 7.25 tiles`)
+       regardless of which Sword tier was equipped. New `Knight`-local constants
+       `ShieldProjectileMagnitude` (`8.533333` px/tick, from 16 tiles/sec) and
+       `ShieldProjectileDuration` (`12` ticks, from 0.2s — `8.533333 × 12 = 102.4px = 3.2` tiles,
+       consistent), used directly instead of reading `Weapon`. Kept as plain `Knight.cs` constants
+       rather than new `ShieldData.json` fields (unlike Bow/Quiver's reworks) since this spec gives one
+       flat set of numbers for all tiers, not a per-tier progression — no data-driven scope to add.
+       "Shots pass through obstacles" still doesn't correspond to any mechanic this engine has (same
+       as entries 154/156/165's notes) — nothing to implement.
+
+     Verified via a scripted repro (throwaway `Knight`, so `Player.Instance` briefly points at it but
+     nothing persists): confirmed `UseAbility()` set `DamageTakenMultiplier` to exactly `0.75` and
+     spawned exactly one `Projectile` reading `ExpiresOnHit=False`, `StunsOnHit=True`, `Duration=12`,
+     and a velocity magnitude of exactly `8.533333`; confirmed a real `Hit(100)` while the multiplier
+     was active and a second `Hit(100)` 300 ticks later (after it expired) differed by exactly `25` HP
+     — precisely the 25% reduction, with the fresh Knight's own real starting Defense (`8`, from base
+     + Iron Plate) present and identical in both calls, canceling out algebraically and leaving no
+     ambiguity that the multiplier itself was the only thing that changed. Real save files confirmed
+     byte-identical before and after. Clean build and a plain boot-check both passed.
