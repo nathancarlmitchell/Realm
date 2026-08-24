@@ -3641,3 +3641,42 @@ date/time for those individually; don't treat their grouping as meaning they all
      confirmed all three new rows read correctly and align in the same value column as the other four,
      no overlap. Real save files confirmed byte-identical before and after. Clean build and a plain
      boot-check both passed.
+164. **Fixed the Dexterity-to-attack-speed formula to match the real intended curve, and fixed a real
+     precision bug found while verifying it.** The old formula (`projectileCooldown += ((Dexterity *
+     100) / 150 * 100) / 100`, fire once it reaches a fixed `240`) was pure integer arithmetic that
+     didn't correspond to any documented rate — at 50 DEX it produced 8.25 attacks/sec and at 75 DEX
+     12.5 attacks/sec, versus the intended 5.833 and 8.0. Replaced with a new `Player.AttacksPerSecond`
+     property implementing the real formula directly: `1.5f + 6.5f * (Dexterity / 75f)` — 1.5 A/s at 0
+     DEX, scaling to exactly 8.0 A/s at 75 DEX (matching the Wizard's own `MaxDexterity`). No Berserk
+     multiplier was added — this engine has no Berserk status effect to hook a ×1.25 into; noted here
+     as a spec line that doesn't correspond to any existing mechanic, same category as entry 154's
+     "True Range" and entry 156's "Shots pass through obstacles."
+
+     `projectileCooldown` changed from an `int` compared against a fixed `240` to a `float` accumulator
+     that adds `AttacksPerSecond / 60` each tick (60 ticks/sec) and fires once it reaches `1.0`. Two
+     real bugs were caught and fixed while verifying this, not just replacing the formula outright:
+     - **Precision loss from resetting to `0` instead of subtracting `1`.** A first pass reset the
+       accumulator to exactly `0` on fire, discarding whatever fraction had overshot past `1.0` that
+       tick — at 50 DEX (increment 0.09722/tick, which doesn't evenly divide 1.0) this produced only 54
+       real shots over 600 simulated ticks where the formula calls for ~58.3, a ~7% systematic
+       shortfall that would only compound the longer a player fought. Fixed by subtracting `1f` instead
+       of resetting to `0f`, carrying the leftover fraction into the next cycle — re-verified at exactly
+       58/58.3 (50 DEX) and exactly 80/80 (75 DEX, where the increment divides evenly with no
+       quantization at all).
+     - **Unconditional accumulation while idle.** The original code (and the fix's first pass) added to
+       `projectileCooldown` every tick regardless of whether the player was actually holding the
+       attack button, so cooldown could bank up indefinitely while idle — the first click after any
+       pause fired instantly no matter how long the pause, which isn't "attacks per second" in any
+       real sense, and combined with the subtract-1 fix above would have caused a rapid-fire *burst* of
+       banked shots on the next several ticks instead of one bonus shot. Fixed by moving the
+       accumulation inside the same "is the player trying to fire" check as the fire itself, so
+       cooldown only progresses while actually attacking — no idle banking, no burst risk, and partial
+       progress toward the next shot is still preserved across a brief release/re-press.
+
+     Verified via a scripted repro (throwaway `Wizard`, so `Player.Instance` briefly points at it but
+     nothing persists): confirmed `AttacksPerSecond` reads exactly `1.5`/`5.8333335`/`8` at DEX
+     `0`/`50`/`75`; then, with the mouse simulated as continuously held, ran 600 real ticks (`Update()`
+     calls, not a shortcut) at 50 and 75 DEX and counted actual fired shots via real `Weapon.Shoot()`
+     entity growth — landed at 58 (50 DEX, expected ~58.3) and exactly 80 (75 DEX, expected exactly 80)
+     after the fix, versus 54 and 75 before it. Real save files confirmed byte-identical before and
+     after. Clean build and a plain boot-check both passed.

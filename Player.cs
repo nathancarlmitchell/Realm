@@ -149,6 +149,13 @@ namespace Realm
         // level and was never comparable to a running total).
         public int ExperienceNextLevel => CumulativeExperienceForLevel(Level + 1);
 
+        // Basic-attack rate: 1.5 attacks/sec at 0 Dexterity, scaling up to
+        // 8 attacks/sec at 75 Dexterity (every point past 0 adds ~0.0867).
+        // Drives Update()'s projectileCooldown accumulator below. No Berserk
+        // multiplier — this engine has no Berserk status effect to hook one
+        // into.
+        public float AttacksPerSecond => 1.5f + 6.5f * (Dexterity / 75f);
+
         // See PlayerData.HasBeenPlayed — mirrors it on the live instance so a
         // later SavePlayerData() call doesn't regress it back to false.
         public bool HasBeenPlayed;
@@ -845,8 +852,13 @@ namespace Realm
         private int manaCooldown = 0;
         private int manaCooldownCount = 320;
 
-        private int projectileCooldown = 0;
-        private readonly int projectileCooldownCount = 240;
+        // Float accumulator, not the int-tick-count style the other
+        // cooldowns above use — AttacksPerSecond needs to land on real
+        // fractional values (e.g. 5.833 A/s at 50 Dexterity), which an
+        // integer per-tick increment can't represent without rounding error
+        // compounding over time. Fires once this reaches 1.0 ("one whole
+        // attack accumulated"), then resets to 0.
+        private float projectileCooldown = 0f;
 
         public override void Draw(SpriteBatch spriteBatch)
         {
@@ -1036,14 +1048,26 @@ namespace Realm
 
             // Shoot
             // This may be moved to new Weapon class.
-            projectileCooldown += ((Dexterity * 100) / 150 * 100) / 100;
-            if (
-                (Input.mouse.LeftButton == ButtonState.Pressed || AutoFireEnabled)
-                && projectileCooldown >= projectileCooldownCount
-            )
+            // AttacksPerSecond / 60 is the fraction of one attack completed
+            // this tick (60 ticks/sec, MonoGame's default fixed timestep).
+            // Only accumulates while actually trying to fire — accumulating
+            // unconditionally (the old behavior) let cooldown bank up
+            // indefinitely while idle, so the first click after any pause
+            // fired instantly regardless of DEX, which isn't "attacks per
+            // second" at all. Subtracting 1 (not resetting to 0) on fire
+            // carries the leftover fraction into the next cycle instead of
+            // discarding it — resetting to 0 systematically undercounts real
+            // fire rate whenever 1.0 isn't an exact multiple of the per-tick
+            // increment (confirmed: was firing ~54 times over 600 ticks at
+            // 50 DEX where the formula calls for ~58.3 — a ~7% shortfall).
+            if (Input.mouse.LeftButton == ButtonState.Pressed || AutoFireEnabled)
             {
-                projectileCooldown = 0;
-                Shoot();
+                projectileCooldown += AttacksPerSecond / 60f;
+                if (projectileCooldown >= 1f)
+                {
+                    projectileCooldown -= 1f;
+                    Shoot();
+                }
             }
 
             // Update weapon.

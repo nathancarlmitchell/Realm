@@ -629,3 +629,19 @@ happened at once.
     afterward doesn't fully explain a Level reset on its own). Flagged to the user directly rather
     than guessing or restoring unilaterally, both save states were preserved as backups, and the user
     confirmed the current Level 1 state should stand as-is — no data was altered as a result.
+46. **The player's real basic-attack rate never matched any documented formula, and was measurably
+    slower than even its own broken formula intended.** Reported as "double check the weapon/DEX
+    attack speed calculation" — see [DEVLOG.md](DEVLOG.md) entry 164 for the full formula fix and
+    rationale. Two distinct bugs surfaced specifically while verifying the replacement, both in
+    `Player.cs`'s `Update()`: resetting the fire-rate accumulator to `0` instead of subtracting `1`
+    discarded the overshoot fraction every cycle, undercounting real fire rate by ~7% at 50 Dexterity
+    (confirmed via a 600-tick scripted simulation: 54 real shots fired where the formula calls for
+    ~58.3); and accumulating that cooldown unconditionally, even while the player wasn't holding the
+    attack button, let it bank up indefinitely while idle, so the very first click after any pause
+    fired instantly regardless of Dexterity — not a Bugfixes-worthy issue on its own, but one that
+    would have turned into a rapid-fire burst once the reset-to-`0` bug above was fixed to
+    subtract-`1` instead. Both fixed together: accumulation now only happens while the player is
+    actually trying to fire, and the leftover fraction carries forward via `-= 1f` instead of being
+    discarded. Re-verified via the same 600-tick simulation: exactly 58 shots at 50 Dexterity (vs. the
+    ~58.3 the formula predicts) and exactly 80 at 75 Dexterity (an exact match, since 8 attacks/sec
+    divides the 60-tick second evenly with no rounding at all).
