@@ -17,7 +17,12 @@ handlers both save unconditionally whenever a drag was in progress; constructing
 saves unconditionally the instant `Level` first reaches 20 in a given run — a scripted test that
 loops `LevelUp()` up to a fresh Level 20 for the first time will silently write real
 `PlayerData_{Class}.json`/`InventoryData_{Class}.json`/`BankData.json`/`FameData.json` files for
-whatever class `Player.Instance` currently is), **back up the real save files first**:
+whatever class `Player.Instance` currently is; `Player.Hit()` calls `Kill()` the instant `Health`
+drops to 0 or below, which calls `StateManager.GameOver()`, which resets the died class back to a
+fresh Level 1 via `Util.ResetPlayer()` and then unconditionally saves — a scripted test that sets
+`Health` low/negative directly, or calls `Hit()` with `Health` already at or near 0, can trigger a
+real death save and silently wipe that class's real `ExperienceTotal`/`HighScore`/`HasBeenPlayed`
+progress back to a fresh-character state), **back up the real save files first**:
 `bin/Debug/net8.0-windows/PlayerData_*.json`, `InventoryData_*.json`, `BankData.json`,
 `FameData.json`, `KeyBindingsData.json`. Copy them aside before the test runs, restore after, or
 verify via `diff` that they're unmodified. Don't reason "it'll just re-save the same state it

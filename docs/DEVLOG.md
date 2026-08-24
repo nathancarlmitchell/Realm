@@ -4178,3 +4178,48 @@ date/time for those individually; don't treat their grouping as meaning they all
      rounding of exactly 18 tiles/sec, 0.5s, and a 9-tile range, and confirmed `ExpiresOnHit` reads
      `false` on the real spawned projectile (not just in the source). Real save files confirmed
      byte-identical before and after. Clean build and a plain boot-check both passed.
+178. **Double-checked the health regeneration calculation** — reported as "it feels like the player
+     is gaining health too quickly." No calculation bug found: `HealthRegenPerSecond`'s formula and
+     the `healthCooldown` fractional accumulator (verified correct back in entry 166) both still
+     compute and apply exactly as designed, and Vital Combat's IC halving (entry 172) genuinely does
+     take effect during real ticks. What the report actually traces to is two VIT-driven effects
+     compounding at high Vitality, confirmed directly against the user's own real Level-20 Knight
+     save (60 Vitality): at 60 VIT, OOC regen is `2 + 0.2407*60 = 16.44` HP/sec — a full heal from
+     near-zero in well under a minute standing still — and even sustained IC only roughly halves
+     that to `~9.22` HP/sec. Worse, `CombatDurationSeconds` (`7 - Vitality*0.04`) is *also*
+     VIT-driven in the same direction: at 60 VIT a single qualifying hit only holds IC for `4.6`
+     seconds before automatically reverting to full-speed regen, so unless the player keeps getting
+     hit roughly every 4.6 seconds, most of an actual fight ends up regenerating at close to the
+     full OOC rate rather than the halved one. High Vitality simultaneously raises the regen rate
+     and shrinks how long combat suppresses it — working exactly as each formula was specified
+     individually, but compounding into something that reads as "heals too fast" in practice for a
+     tanky, high-VIT build. No code changed as a result — flagged this compounding effect to the
+     user as a design/tuning question (their call on whether to adjust it) rather than assuming a
+     specific fix, since both formulas already match their own explicit specs.
+
+     Verified via a scripted repro (throwaway `Wizard`, `HealthMax` raised so regen never capped):
+     confirmed the formula at 0/20/60 Vitality against hand-computed values, including the 60-VIT
+     case matching the real Knight save exactly; ran 600 real `Update()` ticks (10 real seconds) OOC
+     and separately with IC continuously refreshed via `RegisterHit()` (reflected directly, not
+     `Hit()`, since `Hit()` also deals real damage that would otherwise corrupt the Health
+     measurement) — actual HP gained landed within ~0.5 HP of the formula's own prediction in both
+     cases (164 vs 164.42 OOC, 92 vs 92.21 continuously-IC), ruling out any double-tick/duplicate-
+     accumulator bug; separately reproduced the exact "single hit, no follow-up" scenario behind the
+     report and confirmed the actual gain (131 HP) matches a hand-computed blend of 4.6s at the IC
+     rate plus the remaining 5.4s at the full OOC rate (131.2 predicted) almost exactly — direct
+     confirmation of the compounding explanation above, not a bug.
+
+     Also surfaced (and now documented in `CLAUDE.md`) a fourth real save-triggering path not
+     previously on the "back up first" list: setting `Health` to 0 (or calling `Hit()` while `Health`
+     is already at/near 0) can drive it negative, triggering `Player.Kill()` ->
+     `StateManager.GameOver()` -> `Util.ResetPlayer()` + an unconditional save — which the test's
+     first draft of its IC-sustaining loop did by accident (re-using `Hit()` to keep re-triggering
+     combat, starting from `Health = 0`), silently resetting the real `PlayerData_Wizard.json`'s
+     `ExperienceTotal`/`HighScore`/`HasBeenPlayed` back to a fresh Level 1 character. Caught via the
+     routine post-test `diff` against the pre-test backup (per the standing rule — this is exactly
+     the case it exists for); restored immediately from that backup and reconfirmed byte-identical
+     across every save file. The test was rewritten to drive `RegisterHit()` directly instead of
+     `Hit()` for the IC-sustaining loop, avoiding the death path entirely. Also worth noting: a real
+     `Realm.exe` the user was actively playing was still running when this task began — testing was
+     paused (confirmed via `AskUserQuestion`) until the user closed it, to avoid two processes
+     contending for the same save files.
