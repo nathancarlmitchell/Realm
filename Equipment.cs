@@ -38,6 +38,13 @@ namespace Realm
         public int VitalityBonus { get; set; }
         public int WisdomBonus { get; set; }
 
+        // % bonus to XP gained while equipped (see Player.
+        // EquipmentXpBonusPercent/Enemy.WasShot()'s death branch). 0 for
+        // every item except Tome so far — kept here rather than on Tome
+        // alone since it's summed live across all four equip slots the same
+        // way every other bonus above already is.
+        public float XpBonusPercent { get; set; }
+
         public override void Update()
         {
             hover = SlotBounds.Intersects(Input.MouseBounds);
@@ -65,6 +72,8 @@ namespace Realm
                 parts.Add($"+{VitalityBonus} Vitality");
             if (WisdomBonus != 0)
                 parts.Add($"+{WisdomBonus} Wisdom");
+            if (XpBonusPercent != 0)
+                parts.Add($"+{XpBonusPercent}% XP");
 
             return parts.Count > 0 ? string.Join(", ", parts) : "No bonuses";
         }
@@ -130,6 +139,8 @@ namespace Realm
             AddInt(DexterityBonus, equipped.DexterityBonus, "Dexterity");
             AddInt(VitalityBonus, equipped.VitalityBonus, "Vitality");
             AddInt(WisdomBonus, equipped.WisdomBonus, "Wisdom");
+            if (XpBonusPercent != 0)
+                lines.Add(($"+{XpBonusPercent}% XP", XpBonusPercent > equipped.XpBonusPercent));
 
             if (lines.Count == 0)
                 lines.Add(("No bonuses", false));

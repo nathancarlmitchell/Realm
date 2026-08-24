@@ -58,6 +58,7 @@ namespace Realm
             Paralyzed,
             Stunned,
             Slow,
+            Healing,
         }
 
         private readonly Dictionary<DebuffType, int> activeDebuffs = new();
@@ -133,6 +134,7 @@ namespace Realm
                 DebuffType.Paralyzed => Art.Paralyzed,
                 DebuffType.Stunned => Art.Stunned,
                 DebuffType.Slow => Art.Slowed,
+                DebuffType.Healing => Art.Healing,
                 _ => null,
             };
 

@@ -117,6 +117,14 @@ namespace Realm
         public float DamageTakenMultiplier = 1f;
         private int damageTakenMultiplierFrames;
 
+        // The Healing status (e.g. a Priest's Tome, "Red Cross Healing") —
+        // adds this flat rate on top of HealthRegenPerSecond above while
+        // active. 0 (no bonus) outside an active effect. Multiple
+        // applications don't stack; see ApplyHealing() below for the
+        // "strongest one overrides" rule.
+        public float HealingAmountPerSecond;
+        private int healingDurationFrames;
+
         // ExperienceTotal is the only XP value actually stored — the sole
         // "how much has this character ever earned" running total,
         // incremented directly on each kill (Enemy.cs) and never reset by a
@@ -173,10 +181,11 @@ namespace Realm
 
         // Health regen rate: 2 HP/sec at 0 Vitality, +0.2407 HP/sec per
         // point past that (linear, no /75 scaling unlike AttacksPerSecond/
-        // TilesPerSecond above). Drives Update()'s healthCooldown
-        // accumulator below. No Healing bonus — this engine has no Healing
-        // status effect to add the +20 HP/sec into.
-        public float HealthRegenPerSecond => 2f + 0.2407f * Vitality;
+        // TilesPerSecond above), plus the Healing status's own rate on top
+        // when active (e.g. a Priest's Tome — see HealingAmountPerSecond/
+        // ApplyHealing() below). Drives Update()'s healthCooldown
+        // accumulator below.
+        public float HealthRegenPerSecond => 2f + 0.2407f * Vitality + HealingAmountPerSecond;
 
         // Mana regen rate: 0.5 MP/sec at 0 Wisdom, +0.12 MP/sec per point
         // past that. Drives Update()'s manaCooldown accumulator below.
@@ -323,6 +332,7 @@ namespace Realm
             Wizard, // 0
             Archer, // 1
             Knight, // 2
+            Priest, // 3
         }
 
         public static Class PlayerClass { get; set; }
@@ -634,6 +644,7 @@ namespace Realm
                 .Instance.Spells.Cast<AbilityItem>()
                 .Concat(Game1.Instance.Quivers)
                 .Concat(Game1.Instance.Shields)
+                .Concat(Game1.Instance.Tomes)
                 .Where(item => CanEquipAbilityItem(item))
                 .OrderByDescending(item => item.Tier)
                 .FirstOrDefault();
@@ -646,6 +657,7 @@ namespace Realm
                 Spell => new Spell(texture),
                 Quiver => new Quiver(texture),
                 Shield => new Shield(texture),
+                Tome => new Tome(texture),
                 _ => null,
             };
             if (copy == null)
@@ -666,6 +678,7 @@ namespace Realm
             copy.MinDamage = best.MinDamage;
             copy.MaxDamage = best.MaxDamage;
             copy.ImageName = best.ImageName;
+            copy.XpBonusPercent = best.XpBonusPercent;
 
             // Quiver-only — its ability shot's own fields, not shared by
             // Spell/Shield. See Data/QuiverData.cs.
@@ -686,6 +699,15 @@ namespace Realm
             {
                 shieldCopy.Shots = shieldBest.Shots;
                 shieldCopy.ArcGapDegrees = shieldBest.ArcGapDegrees;
+            }
+
+            // Tome-only — its Heal/Healing/Range fields. See Data/TomeData.cs.
+            if (copy is Tome tomeCopy && best is Tome tomeBest)
+            {
+                tomeCopy.Range = tomeBest.Range;
+                tomeCopy.HealAmount = tomeBest.HealAmount;
+                tomeCopy.HealingAmountPerSecond = tomeBest.HealingAmountPerSecond;
+                tomeCopy.HealingDurationSeconds = tomeBest.HealingDurationSeconds;
             }
 
             EquipAbilityItem(copy);
@@ -721,6 +743,15 @@ namespace Realm
             + AbilityItem.VitalityBonus;
         protected int EquipmentWisdomBonus =>
             Weapon.WisdomBonus + Armor.WisdomBonus + Ring.WisdomBonus + AbilityItem.WisdomBonus;
+
+        // Public (unlike the bonuses above, which RecalculateStats() folds
+        // into a real stat) — read directly by Enemy.WasShot()'s death
+        // branch to scale XP gained. Only Tome sets this nonzero today.
+        public float EquipmentXpBonusPercent =>
+            Weapon.XpBonusPercent
+            + Armor.XpBonusPercent
+            + Ring.XpBonusPercent
+            + AbilityItem.XpBonusPercent;
 
         // Each stat minus whatever equipment/temporary bonuses are currently
         // folded into it — i.e. the level+potion value alone, matching what
@@ -774,6 +805,38 @@ namespace Realm
             if (damageTakenMultiplierFrames <= 0)
                 DamageTakenMultiplier = multiplier;
             damageTakenMultiplierFrames = durationFrames;
+        }
+
+        // "Multiple Red Cross Healing effects do not stack, with the
+        // strongest one overriding all others" — a weaker application while
+        // a stronger one is still active is ignored entirely (neither the
+        // rate nor the remaining duration changes); a stronger (or equal)
+        // application always takes over, resetting the duration to its own.
+        public void ApplyHealing(float amountPerSecond, int durationFrames)
+        {
+            if (healingDurationFrames > 0 && amountPerSecond < HealingAmountPerSecond)
+                return;
+
+            HealingAmountPerSecond = amountPerSecond;
+            healingDurationFrames = durationFrames;
+
+            // Purely cosmetic — the floating icon above the player, driven by
+            // Entity's own generic debuff-timer/indicator system (which
+            // already ticks down and draws automatically once applied). The
+            // real rate/duration/strongest-wins logic above is Player-only
+            // and stays that way: DebuffType has no room for a magnitude,
+            // only a duration, so it can't be the source of truth here — it
+            // only mirrors the same duration for display, applied in lockstep
+            // with (never instead of) the fields above.
+            ApplyDebuff(DebuffType.Healing, durationFrames);
+        }
+
+        // Instant, flat self-heal — separate from ApplyHealing()'s
+        // over-time rate above (e.g. a Priest's Tome applies both from the
+        // same cast: an immediate chunk plus the HoT).
+        public void Heal(int amount)
+        {
+            Health = Math.Min(Health + amount, HealthMax);
         }
 
         public void AddTemporarySpeedBonus(float amount, int durationFrames)
@@ -880,6 +943,9 @@ namespace Realm
             // Not part of RecalculateStats() — ticked down separately.
             if (damageTakenMultiplierFrames > 0 && --damageTakenMultiplierFrames == 0)
                 DamageTakenMultiplier = 1f;
+
+            if (healingDurationFrames > 0 && --healingDurationFrames == 0)
+                HealingAmountPerSecond = 0f;
         }
 
         private void ClampVitals()

@@ -45,6 +45,22 @@ namespace Realm
         public static int CountWhere<T>(Func<T, bool> predicate)
             where T : Enemy => enemies.OfType<T>().Count(predicate);
 
+        // Direct AoE damage to every live enemy within radius of center —
+        // e.g. Priest's Tome Nova (Priest.cs), which explodes on the
+        // cursor rather than firing a directional projectile. Bypasses the
+        // normal Projectile/HitBy-tracking collision path entirely, so
+        // there's no "already hit this pulse" bookkeeping — each call is
+        // its own independent pulse, which is exactly what a multi-pulse
+        // Nova needs (see NovaPulse.cs for the delayed second pulse).
+        public static void DamageEnemiesInRadius(Vector2 center, float radius, int damage)
+        {
+            foreach (var enemy in enemies)
+            {
+                if (Vector2.DistanceSquared(enemy.Position, center) <= radius * radius)
+                    enemy.WasShot(damage);
+            }
+        }
+
         // Positions only, not the Enemy objects themselves — this is all
         // Overlay's minimap needs, so it doesn't need broader access to the
         // private enemies list.

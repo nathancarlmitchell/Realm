@@ -13,12 +13,16 @@ Before any scripted test that uses the real `Player.Instance` and calls a method
 trigger persistence (`Util.SavePlayerData()`/`SaveInventoryData()`/`SaveBankData()`, or anything
 that calls those internally — `InventorySystem.Update()`/`BankSystem.Update()`'s drag-release
 handlers both save unconditionally whenever a drag was in progress; constructing a real
-`RealmState`/`NexusState`/`BossRealmState` also saves in its constructor), **back up the real save
-files first**: `bin/Debug/net8.0-windows/PlayerData_*.json`, `InventoryData_*.json`,
-`BankData.json`, `FameData.json`, `KeyBindingsData.json`. Copy them aside before the test runs,
-restore after, or verify via `diff` that they're unmodified. Don't reason "it'll just re-save the
-same state it loaded" as a substitute for an actual backup — that only holds if the test truly
-never mutates anything before a persist call fires, and it's easy to get wrong.
+`RealmState`/`NexusState`/`BossRealmState` also saves in its constructor; `Player.LevelUp()` also
+saves unconditionally the instant `Level` first reaches 20 in a given run — a scripted test that
+loops `LevelUp()` up to a fresh Level 20 for the first time will silently write real
+`PlayerData_{Class}.json`/`InventoryData_{Class}.json`/`BankData.json`/`FameData.json` files for
+whatever class `Player.Instance` currently is), **back up the real save files first**:
+`bin/Debug/net8.0-windows/PlayerData_*.json`, `InventoryData_*.json`, `BankData.json`,
+`FameData.json`, `KeyBindingsData.json`. Copy them aside before the test runs, restore after, or
+verify via `diff` that they're unmodified. Don't reason "it'll just re-save the same state it
+loaded" as a substitute for an actual backup — that only holds if the test truly never mutates
+anything before a persist call fires, and it's easy to get wrong.
 
 **Why:** On 2026-08-18, a scripted test cleared the real inventory/bank arrays to isolate fake test
 data, then called a real `Update()` method that saves unconditionally on drag-release — overwriting

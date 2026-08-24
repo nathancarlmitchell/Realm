@@ -26,10 +26,10 @@ namespace Realm
         }
 
         // Tier 0 ability item matching the current class (Spell/Quiver/
-        // Shield) — shown greyed out in an empty slot as a placeholder, same
-        // idea as Weapon.PlaceholderImage. Unlike Weapon/Armor there's no
-        // shared "Type" enum to filter on (each class's ability item is its
-        // own C# subclass), so this checks each catalog's Tier 0 entry
+        // Shield/Tome) — shown greyed out in an empty slot as a placeholder,
+        // same idea as Weapon.PlaceholderImage. Unlike Weapon/Armor there's
+        // no shared "Type" enum to filter on (each class's ability item is
+        // its own C# subclass), so this checks each catalog's Tier 0 entry
         // against Player.CanEquipAbilityItem — the same per-class match
         // already used everywhere else an ability item's class-fit matters.
         private static Texture2D PlaceholderImage =>
@@ -37,6 +37,7 @@ namespace Realm
                 .Instance.Spells.Cast<AbilityItem>()
                 .Concat(Game1.Instance.Quivers)
                 .Concat(Game1.Instance.Shields)
+                .Concat(Game1.Instance.Tomes)
                 .FirstOrDefault(item => item.Tier == 0 && Player.Instance.CanEquipAbilityItem(item))
                 ?.image;
 

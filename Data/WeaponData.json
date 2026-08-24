@@ -9,7 +9,7 @@
         "ProjectileMagnitude": 12,
         "ProjectileDuration": 32,
         "ImageName": "Weapons/Wands/wand",
-        "ProjectileImageName": "Projectiles/red_fire"
+        "ProjectileImageName": "Weapons/Wands/Projectiles/0"
     },
     {
         "Type": 0,
@@ -21,7 +21,7 @@
         "ProjectileMagnitude": 12,
         "ProjectileDuration": 32,
         "ImageName": "Weapons/Wands/1",
-        "ProjectileImageName": "Projectiles/blue_magic"
+        "ProjectileImageName": "Weapons/Wands/Projectiles/1"
     },
     {
         "Type": 0,
@@ -69,7 +69,7 @@
         "ProjectileMagnitude": 12,
         "ProjectileDuration": 32,
         "ImageName": "Weapons/Wands/5",
-        "ProjectileImageName": "Projectiles/purple_magic"
+        "ProjectileImageName": "Weapons/Wands/Projectiles/5"
     },
     {
         "Type": 0,
@@ -81,7 +81,7 @@
         "ProjectileMagnitude": 12,
         "ProjectileDuration": 32,
         "ImageName": "Weapons/Wands/6",
-        "ProjectileImageName": "Projectiles/pink_bolt"
+        "ProjectileImageName": "Weapons/Wands/Projectiles/6"
     },
     {
         "Type": 0,
@@ -93,7 +93,7 @@
         "ProjectileMagnitude": 12,
         "ProjectileDuration": 32,
         "ImageName": "Weapons/Wands/7",
-        "ProjectileImageName": "Projectiles/red_fire"
+        "ProjectileImageName": "Weapons/Wands/Projectiles/7"
     },
     {
         "Type": 0,
@@ -105,7 +105,7 @@
         "ProjectileMagnitude": 12,
         "ProjectileDuration": 32,
         "ImageName": "Weapons/Wands/8",
-        "ProjectileImageName": "Projectiles/green_magic"
+        "ProjectileImageName": "Weapons/Wands/Projectiles/8"
     },
     {
         "Type": 0,
@@ -129,7 +129,7 @@
         "ProjectileMagnitude": 12,
         "ProjectileDuration": 32,
         "ImageName": "Weapons/Wands/10",
-        "ProjectileImageName": "Projectiles/blue_magic"
+        "ProjectileImageName": "Weapons/Wands/Projectiles/10"
     },
     {
         "Type": 0,
@@ -165,7 +165,7 @@
         "ProjectileMagnitude": 12,
         "ProjectileDuration": 32,
         "ImageName": "Weapons/Wands/13",
-        "ProjectileImageName": "Projectiles/evocation_magic"
+        "ProjectileImageName": "Weapons/Wands/Projectiles/13"
     },
     {
         "Type": 0,
@@ -177,7 +177,7 @@
         "ProjectileMagnitude": 12,
         "ProjectileDuration": 32,
         "ImageName": "Weapons/Wands/14",
-        "ProjectileImageName": "Projectiles/retribution_magic"
+        "ProjectileImageName": "Weapons/Wands/Projectiles/14"
     },
 
 

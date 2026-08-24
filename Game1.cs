@@ -100,6 +100,7 @@ namespace Realm
         public List<Spell> Spells { get; set; }
         public List<Quiver> Quivers { get; set; }
         public List<Shield> Shields { get; set; }
+        public List<Tome> Tomes { get; set; }
 
         public Game1()
         {
@@ -156,6 +157,7 @@ namespace Realm
             Spells = Util.LoadSpellData();
             Quivers = Util.LoadQuiverData();
             Shields = Util.LoadShieldData();
+            Tomes = Util.LoadTomeData();
 
             Util.LoadBankData();
             Util.LoadFameData();

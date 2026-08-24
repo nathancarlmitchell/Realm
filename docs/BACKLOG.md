@@ -80,9 +80,9 @@ prioritized or scheduled — the user asked to keep these noted for later rather
   actually be consumed, which nothing does yet). No numbers/scope decided for any of these beyond
   class unlocks' 1,000/3,000 thresholds and the star system's 20,000-base-doubling thresholds; pick
   up one piece at a time rather than all at once, same approach as these first two slices.
-- **A 4th+ character class beyond Wizard/Archer/Knight**, if ever wanted — the extension pattern is
-  now proven three times over (see [DEVLOG.md](DEVLOG.md)
-  entry 31 for Knight, the most recent).
+- **A 5th+ character class beyond Wizard/Archer/Knight/Priest**, if ever wanted — the extension
+  pattern is now proven four times over (see [DEVLOG.md](DEVLOG.md) entry 171 for Priest, the most
+  recent).
 - **Flesh out the ability system.** Currently each class has exactly one `UseAbility()` (Space key)
   with damage/cost modified by the equipped `AbilityItem`. Open-ended — could mean multiple
   abilities per class, an ability hotbar, or more distinct ability behaviors per class rather than

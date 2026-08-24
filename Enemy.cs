@@ -288,7 +288,13 @@ namespace Realm
             {
                 Sound.Play(deathSound, 0.4f);
                 IsExpired = true;
-                Player.Instance.ExperienceTotal += PointValue;
+                // Scaled by any equipped XP-bonus gear (e.g. a Priest's
+                // Tome) — 0% bonus (the default for everything else) leaves
+                // this an exact no-op multiply-by-1.
+                int xpGained = (int)(
+                    PointValue * (1f + Player.Instance.EquipmentXpBonusPercent / 100f)
+                );
+                Player.Instance.ExperienceTotal += xpGained;
                 // Above the player's own head, not the enemy's — an XP gain
                 // is the player's feedback, not a mark on what just died.
                 // Goldenrod matches the sidebar's XP bar fill color
@@ -305,7 +311,7 @@ namespace Realm
                     EntityManager.Add(
                         new DamageNumber(
                             Player.Instance.Position,
-                            PointValue,
+                            xpGained,
                             Color.Goldenrod,
                             prefix: "+",
                             scale: 1.3f,

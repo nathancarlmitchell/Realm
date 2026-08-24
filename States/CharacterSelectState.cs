@@ -59,14 +59,18 @@ namespace Realm.States
         // playtesting data on how fast Fame actually accumulates.
         private const int ArcherFameRequirement = 1000;
         private const int KnightFameRequirement = 3000;
+        private const int PriestFameRequirement = 5000;
 
         private const int PortraitSize = 80;
         private const int BorderPadding = 14;
 
-        // Widened from the original 2-slot value (110) — with a third slot
-        // now sitting dead-center, the old offset left adjacent
-        // portraits/borders (108px wide each) almost touching.
-        private const int SlotOffsetFromCenter = 195;
+        // Four evenly-spaced slots (Wizard/Archer/Knight/Priest), 150px
+        // between adjacent centers — replaces the old 3-slot layout's single
+        // SlotOffsetFromCenter (195, dead-center + two flanking slots), which
+        // has no even-count equivalent. Outer is the two end slots'
+        // distance from center, Inner the two middle slots'.
+        private const int SlotOffsetFromCenterOuter = 225;
+        private const int SlotOffsetFromCenterInner = 75;
         private const int PreviewGap = 10;
 
         private readonly List<Slot> slots;
@@ -109,7 +113,7 @@ namespace Realm.States
                     PlayerClass = Player.Class.Wizard,
                     Portrait = Art.Wizard,
                     PortraitRect = new Rectangle(
-                        CenterWidth - SlotOffsetFromCenter - PortraitSize / 2,
+                        CenterWidth - SlotOffsetFromCenterOuter - PortraitSize / 2,
                         y,
                         PortraitSize,
                         PortraitSize
@@ -121,7 +125,7 @@ namespace Realm.States
                     PlayerClass = Player.Class.Archer,
                     Portrait = Art.Archer,
                     PortraitRect = new Rectangle(
-                        CenterWidth - PortraitSize / 2,
+                        CenterWidth - SlotOffsetFromCenterInner - PortraitSize / 2,
                         y,
                         PortraitSize,
                         PortraitSize
@@ -133,12 +137,24 @@ namespace Realm.States
                     PlayerClass = Player.Class.Knight,
                     Portrait = Art.Knight,
                     PortraitRect = new Rectangle(
-                        CenterWidth + SlotOffsetFromCenter - PortraitSize / 2,
+                        CenterWidth + SlotOffsetFromCenterInner - PortraitSize / 2,
                         y,
                         PortraitSize,
                         PortraitSize
                     ),
                     RequiredFame = KnightFameRequirement,
+                },
+                new Slot
+                {
+                    PlayerClass = Player.Class.Priest,
+                    Portrait = Art.Priest,
+                    PortraitRect = new Rectangle(
+                        CenterWidth + SlotOffsetFromCenterOuter - PortraitSize / 2,
+                        y,
+                        PortraitSize,
+                        PortraitSize
+                    ),
+                    RequiredFame = PriestFameRequirement,
                 },
             ];
 
@@ -668,6 +684,7 @@ namespace Realm.States
                 Player.Class.Wizard => BuildPreviewText(1, 100, 100, 17, 0, 17, 17, 5, 23),
                 Player.Class.Archer => BuildPreviewText(1, 150, 100, 17, 0, 22, 15, 5, 15),
                 Player.Class.Knight => BuildPreviewText(1, 200, 50, 17, 10, 13, 15, 10, 8),
+                Player.Class.Priest => BuildPreviewText(1, 100, 150, 26, 0, 22, 23, 5, 17),
                 _ => string.Empty,
             };
         }

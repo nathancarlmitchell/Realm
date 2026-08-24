@@ -93,6 +93,11 @@ namespace Realm
             "ShieldData.json"
         );
 
+        private static string tomeDataLocation = Path.Combine(
+            AppContext.BaseDirectory,
+            "TomeData.json"
+        );
+
         // Read-only peek at a class's save data, without touching Player.Instance or
         // Player.PlayerClass. Returns null if that class has no save yet.
         public static PlayerData PeekPlayerData(Player.Class playerClass)
@@ -190,6 +195,7 @@ namespace Realm
                     Player.Class.Wizard,
                     Player.Class.Archer,
                     Player.Class.Knight,
+                    Player.Class.Priest,
                 }
             )
             {
@@ -234,6 +240,7 @@ namespace Realm
                 (Player.Class.Wizard, PlayerDataLocation(Player.Class.Wizard)),
                 (Player.Class.Archer, PlayerDataLocation(Player.Class.Archer)),
                 (Player.Class.Knight, PlayerDataLocation(Player.Class.Knight)),
+                (Player.Class.Priest, PlayerDataLocation(Player.Class.Priest)),
             ];
 
             Player.Class? mostRecent = null;
@@ -266,7 +273,8 @@ namespace Realm
         public static bool AnyCharacterHasBeenPlayed() =>
             (PeekPlayerData(Player.Class.Wizard)?.HasBeenPlayed ?? false)
             || (PeekPlayerData(Player.Class.Archer)?.HasBeenPlayed ?? false)
-            || (PeekPlayerData(Player.Class.Knight)?.HasBeenPlayed ?? false);
+            || (PeekPlayerData(Player.Class.Knight)?.HasBeenPlayed ?? false)
+            || (PeekPlayerData(Player.Class.Priest)?.HasBeenPlayed ?? false);
 
         // Constructs the given class at its base stats, discarding whatever the
         // current Player.Instance is — no save is read or applied.
@@ -284,6 +292,9 @@ namespace Realm
                     break;
                 case Player.Class.Knight:
                     _ = new Knight();
+                    break;
+                case Player.Class.Priest:
+                    _ = new Priest();
                     break;
             }
         }
@@ -361,21 +372,24 @@ namespace Realm
                         Player.Instance.EquipRing(new Ring());
                 }
 
-                // Spell/Quiver/Shield are only populated when actually
+                // Spell/Quiver/Shield/Tome are only populated when actually
                 // equipped (see SavePlayerData's `as Spell`/`as Quiver`/
-                // `as Shield` — a blank AbilityItem casts to none of them),
-                // so all three being null unambiguously means "unequipped" —
-                // same signal Weapon/Armor/Ring get from a null Name. Without
-                // this else, ResetPlayer's constructor-equipped default
-                // Tier-0 ability item was never cleared, so it stayed
-                // equipped alongside whatever the player had actually dragged
-                // into inventory — the reported duplicate ability item.
+                // `as Shield`/`as Tome` — a blank AbilityItem casts to none
+                // of them), so all four being null unambiguously means
+                // "unequipped" — same signal Weapon/Armor/Ring get from a
+                // null Name. Without this else, ResetPlayer's
+                // constructor-equipped default Tier-0 ability item was
+                // never cleared, so it stayed equipped alongside whatever
+                // the player had actually dragged into inventory — the
+                // reported duplicate ability item.
                 if (saved.Spell != null && saved.Spell.Name != null)
                     Spell.LoadSpell(saved.Spell.Name);
                 else if (saved.Quiver != null && saved.Quiver.Name != null)
                     Quiver.LoadQuiver(saved.Quiver.Name);
                 else if (saved.Shield != null && saved.Shield.Name != null)
                     Shield.LoadShield(saved.Shield.Name);
+                else if (saved.Tome != null && saved.Tome.Name != null)
+                    Tome.LoadTome(saved.Tome.Name);
                 else
                     Player.Instance.EquipAbilityItem(new AbilityItem());
 
@@ -430,6 +444,7 @@ namespace Realm
                 Spell = Player.Instance.AbilityItem as Spell,
                 Quiver = Player.Instance.AbilityItem as Quiver,
                 Shield = Player.Instance.AbilityItem as Shield,
+                Tome = Player.Instance.AbilityItem as Tome,
                 HealthPotionCharges = Player.Instance.Inventory.HealthPotionCharges,
                 ManaPotionCharges = Player.Instance.Inventory.ManaPotionCharges,
                 PotionAttackBonus = Player.Instance.PotionAttackBonus,
@@ -899,6 +914,69 @@ namespace Realm
             }
 
             return shields;
+        }
+
+        public static List<Tome> LoadTomeData()
+        {
+            List<TomeData> tomeData = [];
+            List<Tome> tomes = [];
+
+            try
+            {
+                using (StreamReader r = new(tomeDataLocation))
+                {
+                    Debug.WriteLine(tomeDataLocation + ": reading data.");
+                    string json = r.ReadToEnd();
+                    Debug.WriteLine(json);
+                    try
+                    {
+                        tomeData = JsonSerializer.Deserialize<List<TomeData>>(json);
+                    }
+                    catch (System.Text.Json.JsonException)
+                    {
+                        Debug.WriteLine($"Error loading tome data: {json}");
+                    }
+                }
+
+                for (int i = 0; i < tomeData.Count; i++)
+                {
+                    Texture2D tomeTexture = Game1.Instance.Content.Load<Texture2D>(
+                        tomeData[i].ImageName
+                    );
+
+                    tomes.Add(
+                        new Tome(tomeTexture)
+                        {
+                            Name = tomeData[i].Name,
+                            Description = tomeData[i].Description,
+                            Tier = tomeData[i].Tier,
+                            MaxHealthBonus = tomeData[i].MaxHealthBonus,
+                            MaxManaBonus = tomeData[i].MaxManaBonus,
+                            AttackBonus = tomeData[i].AttackBonus,
+                            DefenseBonus = tomeData[i].DefenseBonus,
+                            SpeedBonus = tomeData[i].SpeedBonus,
+                            DexterityBonus = tomeData[i].DexterityBonus,
+                            VitalityBonus = tomeData[i].VitalityBonus,
+                            WisdomBonus = tomeData[i].WisdomBonus,
+                            ManaCost = tomeData[i].ManaCost,
+                            MinDamage = tomeData[i].MinDamage,
+                            MaxDamage = tomeData[i].MaxDamage,
+                            ImageName = tomeData[i].ImageName,
+                            XpBonusPercent = tomeData[i].XpBonusPercent,
+                            Range = tomeData[i].Range,
+                            HealAmount = tomeData[i].HealAmount,
+                            HealingAmountPerSecond = tomeData[i].HealingAmountPerSecond,
+                            HealingDurationSeconds = tomeData[i].HealingDurationSeconds,
+                        }
+                    );
+                }
+            }
+            catch (System.IO.FileNotFoundException)
+            {
+                Debug.WriteLine(tomeDataLocation + ": file not found.");
+            }
+
+            return tomes;
         }
 
         public static void SaveInventoryData()

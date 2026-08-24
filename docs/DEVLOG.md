@@ -3844,3 +3844,131 @@ date/time for those individually; don't treat their grouping as meaning they all
      exactly 5 entities; and measured the angular gap between all 4 adjacent pairs of the resulting
      5-shot fan, landing at exactly `0.174533` rad (10°) in every case. Real save files confirmed
      byte-identical before and after. Clean build and a plain boot-check both passed.
+171. **Added Priest, the 4th playable class** — a self-healing, ranged-nova support class using
+     Wand+Robe, unlocked at 5,000 Fame (continuing Archer/Knight's 1,000/3,000 escalation). Follows
+     the exact extension pattern from entries 31/109/etc.: a new `Data/TomeData.cs` DTO +
+     `Data/TomeData.json` 8-tier catalog (values transcribed directly from the user's table) +
+     runtime `Tome : AbilityItem` class with a `LoadTome()` static loader, mirroring `Shield.cs`
+     exactly. Wand (`Weapon.WeaponType.Wand`, 15 tiers) had sat unused since Wizard switched to
+     Staff — explicitly reserved "for a future class" back then — and Robe was already shared with
+     Wizard, so zero new weapon/armor catalog data was needed. Stats (HP/MP/ATT/DEF/SPD/DEX/VIT/WIS
+     initial+per-level) transcribed directly from the user's table; `Priest.RecalculateStats()`'s
+     rates (+1 ATT/lvl, +0.5 DEF/lvl int-truncated, +1 SPD/DEX/VIT/lvl, +2 WIS/lvl) were derived by
+     solving the spec's own "Average at 20" column backwards and verified to reproduce it exactly.
+
+     Per the user's spec (Tomes restore health to self and allies via an instant heal + a separate
+     "Red Cross Healing" HoT that doesn't stack — only the strongest active one applies — plus a
+     cursor-centered AOE damage nova), three scope questions had no clean answer in a single-player
+     engine with no party mechanic and were resolved via `AskUserQuestion` before implementing,
+     all three answered with the recommended option: (1) group healing → **self-only** (the spec's
+     "nearby allies" targeting has nothing to apply to — skipped entirely, not stubbed); (2) the
+     nova's "explodes 2 times for 0.8 seconds" → **two discrete damage pulses spread across 0.8s**,
+     the total tier damage split evenly between them; (3) WisMod scaling (Wisdom boosting Range/
+     Heal/Healing/Damage) → **skipped for now**, shipping flat per-tier table values only, matching
+     that no other ability in this game scales off Wisdom yet — each affected value is already an
+     isolated per-tier `Tome` field, so a future WisMod multiplier is a small additive change later.
+     "Feed Power" and the "Sick" status (both RotMG pet-feeding/negation mechanics with zero
+     corresponding system in this engine) were likewise noted and deliberately not implemented,
+     consistent with this session's running precedent for out-of-scope spec lines.
+
+     New mechanics needed for the first time by any class: `Player.HealingAmountPerSecond` +
+     `healingDurationFrames` (added straight to `HealthRegenPerSecond`, following the exact
+     opt-in-temporary-effect shape as the existing `DamageTakenMultiplier` field, but with
+     "strongest overrides, weaker attempts while a stronger one is active are ignored entirely"
+     semantics instead of DamageTakenMultiplier's "refresh to newest" — matches the spec's explicit
+     non-stacking rule); `Player.Heal(amount)` for the instant flat self-heal; a new
+     `EntityManager.DamageEnemiesInRadius(center, radius, damage)` for the nova's AOE (no existing
+     helper did direct point-blank damage — everything else routed through a `Projectile`/`HitBy`
+     collision pass); a new lightweight `NovaPulse : Entity` (a pure scheduled-action timer with a
+     no-op `Draw()`, since it has no `image`) for the nova's delayed second pulse; and a new shared
+     `Equipment.XpBonusPercent` bonus (Tier 3+ Tomes grant +1% to +8% XP) — added to the base
+     `Equipment` class rather than only `Tome`, keeping every equip slot's "any bonus can theoretically
+     land here" symmetry intact even though only Tome populates it today. `Enemy.WasShot()`'s death
+     branch now scales the XP grant (and its displayed `DamageNumber`) by
+     `Player.Instance.EquipmentXpBonusPercent`, a true no-op multiply-by-1 for every other class's
+     default 0%. Applied the entry 45/154/156/169/170 F4 lesson proactively again, before any bug
+     report this time: `EquipHighestTierAbilityItem()` got a Tome-specific branch copying
+     `Range`/`HealAmount`/`HealingAmountPerSecond`/`HealingDurationSeconds`, plus generic
+     `XpBonusPercent` copying added for all four `AbilityItem` subclasses at once.
+
+     `Player.Class` gained `Priest`, which — as usual — meant sweeping every place that exhaustively
+     enumerates playable classes rather than just the enum: `Util.cs`'s
+     `EraseAllAccountData()`/`DetermineLastPlayedClass()`/`AnyCharacterHasBeenPlayed()`/
+     `ResetPlayer()`, and `CharacterSelectState`'s slot layout (reworked from a single
+     `SlotOffsetFromCenter` dead-center-plus-two-flanking-slots layout, which has no even-count
+     equivalent, into `SlotOffsetFromCenterOuter`/`Inner`, four evenly-150px-spaced slots) and
+     `BuildDefaultPreviewText()`'s switch.
+
+     Verified via a scripted repro (throwaway `Priest`, so `Player.Instance` briefly points at it):
+     confirmed all 8 base stats matched the spec exactly at Level 1 and, after 19 simulated
+     `LevelUp()` calls, matched the "Average at 20" column exactly; confirmed starting equipment
+     (Fire Wand/Cloth Robe/Tier-0 Healing Tome, with the Tome's `HealAmount=0`/
+     `HealingAmountPerSecond=50`/`HealingDurationSeconds=10`/`Range=6.0` matching the table exactly);
+     confirmed `CanEquipAbilityItem` accepts only `Tome` and rejects `Spell`/`Quiver`/`Shield`;
+     equipped the Tier-7 Tome and confirmed `UseAbility()` deducted mana, applied the instant heal,
+     set `HealingAmountPerSecond`, and that `HealthRegenPerSecond` reflected it; confirmed the
+     "strongest wins" rule directly (a weaker `ApplyHealing()` call while a stronger one was active
+     was ignored; a stronger one still overrode); confirmed a kill's XP gain and displayed
+     `DamageNumber` were both scaled by exactly the Tier-7 Tome's 8% bonus; confirmed the nova's
+     first pulse hit an in-range target for exactly `MinDamage/2` while a target sitting where an
+     *unclamped* cast toward a far-away cursor would have landed took no damage (proving the
+     `Range`-based clamp actually engaged, not just that something got hit); manually advanced the
+     scheduled `NovaPulse` 48 ticks and confirmed the second pulse landed on the same in-range target
+     for the total `MinDamage` while the far target still took nothing, and that the pulse
+     self-expired after firing; confirmed F4 (`EquipHighestTierAbilityItem`) equipped the Tier-7
+     Tome with all four Tome-specific fields correctly populated; confirmed `Util.ResetPlayer(Priest)`
+     constructs a real `Priest`; and rendered `CharacterSelectState`'s new 4-slot layout to an
+     offscreen PNG (same technique as entry 118) and visually confirmed all four portraits render
+     with even spacing and no overlap. One test assumption was itself wrong, not the code: Defense
+     was asserted as exactly `0`/`9` at Level 1/20, but the starting Cloth Robe's own `+2
+     DefenseBonus` correctly stacks on top of the level formula (giving `2`/`11`) — confirmed
+     correct by checking `ArmorData.json` directly, not a Priest bug.
+
+     Also surfaced (and documented in `CLAUDE.md`, see that file's own changelog) a save-triggering
+     path not previously on the "back up first" list: `Player.LevelUp()` itself saves unconditionally
+     the instant `Level` first reaches 20, which the scripted repro's `LevelUp()` loop tripped —
+     creating real `PlayerData_Priest.json`/`InventoryData_Priest.json` files (re-saving, but not
+     altering, the real unmodified `BankData.json`/`FameData.json` alongside them). Real save files
+     for every already-played class were confirmed byte-identical to a pre-test backup throughout;
+     the two newly-created Priest files (fabricated Level 20/0 XP test-fixture data, not real
+     progress) were deleted afterward so a real Priest's first playthrough starts genuinely fresh.
+     Clean build and a plain boot-check both passed.
+
+     While staging the commit, found two untracked art assets sitting in `Content/` with no prior
+     mention: dedicated per-tier Wand projectile art for 9 of the 15 tiers
+     (`Content/Weapons/Wands/Projectiles/{0,1,5,6,7,8,10,13,14}.png`, matching the file's own tier
+     numbers directly) and a 16x16 `Content/StatusEffects/healing.png` in the exact format of the
+     existing Paralyzed/Stunned/Slowed status icons. Both fit Priest thematically (Wand is Priest's
+     weapon; "Healing" is exactly the status Tomes apply) but neither was asked for, so flagged via
+     `AskUserQuestion` before wiring either in — confirmed to wire in both. `Data/WeaponData.json`'s
+     9 affected Wand tiers now point `ProjectileImageName` at their own dedicated
+     `Weapons/Wands/Projectiles/{tier}` art instead of the shared generic bolts (`red_fire`,
+     `blue_magic`, `purple_magic`, `pink_bolt`, `green_magic`) they were reusing before (tiers 13/14
+     had actually been pointing at `Projectiles/evocation_magic`/`retribution_magic`, names that
+     matched no real content at all — those two tiers' projectiles were silently broken before this
+     fix). The other 6 Wand tiers (2/3/4/9/11/12) still intentionally share generic art, since no
+     dedicated art exists for them yet. `healing.png` needed a real integration path rather than a
+     drop-in: `Player.HealingAmountPerSecond`/`ApplyHealing()`'s existing magnitude-plus-
+     strongest-wins logic (entry 171, above) has no equivalent in `Entity`'s generic
+     `DebuffType`/`activeDebuffs` dictionary (which only tracks a duration, no magnitude, and simply
+     overwrites on reapply — it was deliberately *not* used for Healing for exactly this reason).
+     Rather than replacing the Player-only fields, added `DebuffType.Healing` (+ `Art.Healing` in the
+     `DebuffIcon()` switch) purely as a cosmetic mirror: `ApplyHealing()` now also calls
+     `ApplyDebuff(DebuffType.Healing, durationFrames)` in lockstep, but only inside the branch that
+     already passed the strongest-wins check — so the floating icon (rendered automatically by
+     `Player`'s existing `UpdateDebuffs()`/`DrawDebuffIndicators()` calls, already wired for the
+     `Slow` debuff) appears exactly when, and for exactly as long as, the real effect is actually
+     active, without becoming the source of truth for it.
+
+     Verified via a second scripted repro: loaded every one of the 15 Wand tiers'
+     `ProjectileImageName` directly via `Content.Load<Texture2D>` and confirmed all 15 succeed
+     (the 9 newly-dedicated tiers, including the two previously-broken ones, and the 6 still-shared
+     tiers); confirmed `Art.Healing` loaded; confirmed a fresh Priest's starting Fire Wand equips
+     without error; confirmed `ApplyHealing()` sets `HasDebuff(DebuffType.Healing)` true; confirmed
+     `Player.Draw()` (which calls `DrawDebuffIndicators()`) renders without throwing now that Healing
+     is a real active debuff backed by real art. First build attempt after adding the
+     `StatusEffects/healing.png` `Content.mgcb` block failed (`mgcb`'s command-line parser choked
+     with "Too many arguments") — traced to a transcription slip copying that block's
+     `/importer`/`/processor`/`/processorParam` lines with a leading backslash instead of forward
+     slash; fixed and rebuilt clean. Real save files confirmed byte-identical before and after. Clean
+     build and a plain boot-check both passed.
