@@ -3772,3 +3772,13 @@ date/time for those individually; don't treat their grouping as meaning they all
      lost exactly `6` — confirming the floor now holds where the old code would have let it drop to
      `0`. Real save files confirmed byte-identical before and after. Clean build and a plain boot-check
      both passed.
+168. **"Low Health Threshold" default changed from 25% to 20%.** `Player.LowHealthThresholdPercent`'s
+     initializer and `GameSettingsData.LowHealthThresholdPercent`'s matching DTO default (both need
+     their own explicit default — the JSON-deserialization-only-overwrites-present-properties reasoning
+     from entry 151's original comment, restated there for anyone landing on this line later) changed
+     from `25` to `20`. Pure data change, no logic touched. Verified via a scripted repro: confirmed a
+     fresh `Player` now defaults to `20`, confirmed deserializing an old-shaped `GameSettingsData.json`
+     missing the key still produces `20` rather than the unstated bare-int default of `0`, and rendered
+     the Settings > Graphics tab to a PNG, visually confirming "Low Health Threshold" reads "20%"
+     cleanly with no spacing regression. Real save files confirmed byte-identical before and after.
+     Clean build and a plain boot-check both passed.

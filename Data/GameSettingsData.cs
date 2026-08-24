@@ -29,13 +29,13 @@ public class GameSettingsData
     // See Player.cs's flash logic and SettingsState.cs's Graphics tab.
     public bool LowHealthIndicatorEnabled { get; set; } = true;
 
-    // 0-100, defaults to 25 — same "give it its own explicit default"
+    // 0-100, defaults to 20 — same "give it its own explicit default"
     // reasoning as LowHealthIndicatorEnabled just above: an old
     // GameSettingsData.json missing this key would otherwise deserialize
     // it at the unstated default (0 for a bare int), which would silently
     // disable the flash/bar entirely (Health < HealthMax * 0% is never
-    // true) instead of leaving it at the intended 25%.
-    public int LowHealthThresholdPercent { get; set; } = 25;
+    // true) instead of leaving it at the intended 20%.
+    public int LowHealthThresholdPercent { get; set; } = 20;
 
     // Defaults to TRUE (on) — same "give it its own explicit default"
     // reasoning as LowHealthIndicatorEnabled above. Gates the floating

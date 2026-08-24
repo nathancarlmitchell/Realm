@@ -213,7 +213,7 @@ namespace Realm
         // a hardcoded 25% (LowHealthThresholdFraction). Adjustable from
         // the Settings > Graphics tab via a +/- stepper (SettingsState.cs's
         // NumericRow), in steps of 5.
-        public int LowHealthThresholdPercent = 25;
+        public int LowHealthThresholdPercent = 20;
 
         // Same account-wide GameSettingsData persistence, defaults to TRUE
         // (same reasoning as LowHealthIndicatorEnabled above — see
