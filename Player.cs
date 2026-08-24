@@ -154,11 +154,19 @@ namespace Realm
         // with a 1-damage minimum ("the combat trigger starts at 1
         // damage") for the degenerate 0-Defense case, where the 1:1
         // bracket would otherwise give a meaningless trigger of 0.
+        //
+        // Excludes EquipmentDefenseBonus — gear shouldn't let a player buy
+        // their way into a higher trigger (and therefore weaker/less-often
+        // regen halving) just by wearing tankier armor; base/level/potion/
+        // temporary Defense still count, matching PermanentDefense's own
+        // "equipment can just be swapped, everything else is earned"
+        // reasoning above, minus PermanentDefense's extra exclusion of
+        // TemporaryDefenseBonus, which the user didn't ask to exclude here.
         public int CombatTrigger
         {
             get
             {
-                float def = Defense;
+                float def = Defense - EquipmentDefenseBonus;
                 float trigger;
                 if (def <= 15f)
                     trigger = def;

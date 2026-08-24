@@ -4053,3 +4053,25 @@ date/time for those individually; don't treat their grouping as meaning they all
      the passing numeric checks alone). Real save files confirmed byte-identical before and after,
      including the account's real `PlayerData_Priest.json`/`InventoryData_Priest.json` created by
      actual play since entry 171. Clean build and a plain boot-check both passed.
+173. **`CombatTrigger` (entry 172) now excludes equipment's Defense contribution**, per user request.
+     `Player.cs`'s `CombatTrigger` read the live `Defense` field directly, which already folds in
+     `EquipmentDefenseBonus` (Weapon/Armor/Ring/AbilityItem combined) alongside base/level/potion/
+     temporary Defense — letting gear alone buy a higher trigger (and therefore less-often regen
+     halving) just by wearing tankier armor, no different from a permanent stat investment. Changed
+     the one line feeding the bracket formula to `Defense - EquipmentDefenseBonus` instead of
+     `Defense` — deliberately narrower than the existing `PermanentDefense` property (entry 109ish,
+     `Defense - EquipmentDefenseBonus - TemporaryDefenseBonus`), which also strips
+     `TemporaryDefenseBonus`; only equipment was asked to be excluded here, so a temporary Defense
+     buff still counts toward the trigger same as before. The existing `Math.Max(1, ...)` floor
+     (entry 172) already covers the case where equipment now exceeds Defense, so no extra clamping
+     was needed.
+
+     Verified via a scripted repro (throwaway `Wizard`, starting gear's own `DefenseBonus` zeroed out
+     first so it wouldn't contaminate the numbers): confirmed 45 Defense with zero equipment gives
+     the same Trigger 35 as before this change; confirmed the key case — 65 Defense with 20 of it
+     from Armor now gives Trigger 35 (the 45 non-equipment portion), not the 45 a same-magnitude
+     hit would've given pre-fix (bracket 3 on the full 65); confirmed the same raw 65 Defense with
+     the Armor bonus removed correctly jumps back to Trigger 45, isolating that the *equipment*
+     portion specifically is what's being excluded, not some fixed offset; confirmed an equipment
+     bonus at or above total Defense still floors at Trigger 1 rather than going negative. Real save
+     files confirmed byte-identical before and after. Clean build and a plain boot-check both passed.
