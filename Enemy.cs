@@ -575,16 +575,26 @@ namespace Realm
         // the outward momentum outright) and direction points straight back
         // at origin, so the leash actually holds instead of just slowing
         // the drift.
+        // anchor: tethers to another Enemy's live Position instead of this
+        // enemy's own spawn point, re-read every frame — otherwise
+        // identical logic. Default null preserves the original
+        // self-tethered behavior for every existing caller. First real use
+        // with a non-null anchor: LittleScorpion.cs ("wanders around close
+        // to the Scorpion Queen" — must follow her, not just its own spawn
+        // spot).
         protected IEnumerable<int> MoveTethered(
             float wanderDistance = 300f,
             float speed = 0.2f,
-            float updateChance = 0.1f
+            float updateChance = 0.1f,
+            Enemy anchor = null
         )
         {
             Vector2 origin = Position;
             float direction = rand.NextFloat(0, MathHelper.TwoPi);
             while (true)
             {
+                Vector2 center = anchor != null ? anchor.Position : origin;
+
                 if (rand.NextDouble() < updateChance)
                 {
                     direction += rand.NextFloat(-MathHelper.PiOver2, MathHelper.PiOver2);
@@ -593,11 +603,11 @@ namespace Realm
 
                 Vector2 candidateVelocity = Velocity + Extensions.FromPolar(direction, speed);
                 if (
-                    Vector2.DistanceSquared(Position + candidateVelocity, origin)
+                    Vector2.DistanceSquared(Position + candidateVelocity, center)
                     > wanderDistance * wanderDistance
                 )
                 {
-                    direction = (origin - Position).ToAngle();
+                    direction = (center - Position).ToAngle();
                     Velocity = Vector2.Zero;
                 }
 

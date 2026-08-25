@@ -4425,3 +4425,62 @@ date/time for those individually; don't treat their grouping as meaning they all
      escorts) while in Beach and nothing while in Forest. A render confirmed both new sprites draw
      correctly. Real save files confirmed byte-identical before and after. Clean build and a plain
      boot-check both passed.
+
+182. **Added Beach's third mini-boss (Scorpion Queen) and third basic enemy (Little Scorpion)**,
+     continuing the same one-at-a-time spec pattern as entries 180-181, but structurally different
+     from both prior pairs: the Queen "does not attack" at all (no `AddAttackBehaviour` calls
+     whatsoever — confirmed via a reflection check on her `attackBehaviours` list, not just by
+     absence of incoming damage), and rather than `EnemySpawner` spawning her escort pack directly
+     (`SpawnBeachedBuccaneerPack()`/`SpawnBanditLeaderPack()`'s shape), the Queen manages her own
+     escort of Little Scorpions internally: 10 spawned immediately in her constructor, then a slow
+     trickle (one every ~5s, not an instant top-up) replacing any that die, via a new
+     `MaintainScorpions()` coroutine. `EnemySpawner.SpawnScorpionQueenPack()` (gated to Beach same as
+     the other two) now just drops the Queen alone — no separate escort loop needed.
+
+     Little Scorpion (HP 10/DEF 0/EXP 2) "wanders around close to the Scorpion Queen" needed a real
+     mechanic, not just flavor text (contrast Bandit's "Protects: Bandit Leader," read as a label
+     only) — `Enemy.MoveTethered()` gained an optional `anchor` parameter so a wander can leash to
+     another live Enemy's current Position instead of just its own spawn point, re-read every frame.
+     Backward-compatible default (`anchor: null`) preserves every existing self-tethered caller
+     (`BeachedBuccaneer`, `SthenoTheSnakeQueen`). Verified this actually tracks a moving anchor (not
+     just approximates it) by spawning a scorpion intentionally far from the Queen and confirming it
+     closes the distance over time — with the old fixed-origin behavior it would have had no reason
+     to move toward her at all. Little Scorpion's single-shot, range-gated attack (Damage 7, Range 8
+     tiles) reuses `ShootIfInRange()` directly; "closest player" is read the same way every other
+     enemy's aim logic already is, since this game has no multiplayer. Not added to
+     `EnemySpawner.BasicEnemyPool` (unlike Pirate/Bandit) — it never appears standalone, only ever
+     spawned by a live Queen to tether to, so `Data/BiomeData.json`'s Beach roster is unchanged this
+     time. New files `Bosses/ScorpionQueen.cs` and `LittleScorpion.cs` (project root, basic-tier,
+     matching `Bandit.cs`'s folder convention).
+
+     Found and fixed a real bug in `MaintainScorpions()` during scripted testing: its "how many
+     scorpions does the Queen have left" count didn't filter out already-dead ones
+     (`!s.IsExpired`), relying on `EntityManager`'s end-of-frame purge to remove them from the list
+     first. In real gameplay that purge always runs before the Queen's coroutine sees stale data
+     again next frame, so the practical impact there is a harmless one-frame lag — but a test that
+     ticks an enemy's `Update()` directly (this project's established scripted-test pattern, see
+     CLAUDE.md) never triggers that purge at all, so the coroutine saw the same 10 "alive" (but
+     actually dead) scorpions forever and never replaced them. Added the missing filter directly in
+     `ScorpionQueen.MaintainScorpions()`'s count so the accounting is correct by construction instead
+     of by incidental call order.
+
+     Also chased down why a first render came back showing only the player sprite, nothing else, no
+     exception anywhere: a freshly-constructed `Enemy` starts fully transparent
+     (`color = Color.Transparent` in its own constructor) and only fades to opaque across its first
+     60 `Update()` ticks — every entity used in this session's earlier scripted renders had already
+     been ticked past that window for other assertions before being rendered, so this never surfaced
+     until a render step used entities that were *only* ever constructed, added, and immediately
+     drawn. Not a bug — working as designed (the same fade-in every enemy gets on a real spawn) — but
+     worth a note here since it cost real debugging time: any future render-confirmation test needs
+     to tick new entities ~60+ times before drawing them, or they'll silently render as invisible
+     with no error to point at why.
+
+     Verified via 21 scripted checks: the Queen's stats and that she has zero attack behaviours;
+     that she spawns with exactly 10 Little Scorpions immediately; that she wanders but stays bounded
+     near her spawn point; Little Scorpion's stats and its range-gated single shot; that a scorpion
+     spawned far from the Queen closes the distance (anchor-based tether); that killing all of the
+     Queen's scorpions is followed by zero immediate respawns and exactly one after the slow
+     interval; and the real `EnemySpawner.Update()` spawning a Scorpion Queen while in Beach and none
+     while in Forest. A render confirmed both new sprites draw correctly once ticked past their
+     spawn fade-in. Real save files confirmed byte-identical before and after. Clean build and a
+     plain boot-check both passed.

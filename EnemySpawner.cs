@@ -111,6 +111,15 @@ namespace Realm
         private const int BanditLeaderPackBanditCount = 4;
         private static int banditLeaderPackCooldownRemaining = BanditLeaderPackInterval;
 
+        // Scorpion Queen as Beach's third mini-boss — same gating as the
+        // other two, offset to yet another interval. Unlike
+        // SpawnBeachedBuccaneerPack()/SpawnBanditLeaderPack() above, this
+        // spawns only the Queen herself — she builds her own escort of 10
+        // Little Scorpions internally (see ScorpionQueen's constructor),
+        // so there's no separate escort loop here.
+        private const int ScorpionQueenPackInterval = 2400; // ~40 seconds at 60fps
+        private static int scorpionQueenPackCooldownRemaining = ScorpionQueenPackInterval;
+
         // Wave/pack spawning: instead of each basic type independently
         // rolling a 1-in-N chance every frame (a steady trickle), a wave of
         // several enemies spawns together every N frames, using the exact
@@ -183,6 +192,17 @@ namespace Realm
                 else
                 {
                     banditLeaderPackCooldownRemaining--;
+                }
+
+                if (scorpionQueenPackCooldownRemaining <= 0)
+                {
+                    if (GetCurrentBiome()?.Name == "Beach")
+                        EntityManager.Add(new Bosses.ScorpionQueen(GetSpawnPosition()));
+                    scorpionQueenPackCooldownRemaining = ScorpionQueenPackInterval;
+                }
+                else
+                {
+                    scorpionQueenPackCooldownRemaining--;
                 }
 
                 // SpriteGod stays its own independent, level-scaling roll —

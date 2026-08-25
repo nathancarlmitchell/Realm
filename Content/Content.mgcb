@@ -1201,6 +1201,30 @@
 /processorParam:TextureFormat=Color
 /build:Biomes/Beach/Bandit Leader.png
 
+#begin Biomes/Beach/Scorpion Queen.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:Biomes/Beach/Scorpion Queen.png
+
+#begin Biomes/Beach/Little Scorpion.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:Biomes/Beach/Little Scorpion.png
+
 #begin Projectiles/white_bolt.png
 /importer:TextureImporter
 /processor:TextureProcessor
