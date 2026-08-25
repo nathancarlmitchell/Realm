@@ -4,6 +4,7 @@ using System.Diagnostics;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using Realm.Data;
 using Realm.States;
 
 namespace Realm
@@ -101,6 +102,7 @@ namespace Realm
         public List<Quiver> Quivers { get; set; }
         public List<Shield> Shields { get; set; }
         public List<Tome> Tomes { get; set; }
+        public List<BiomeData> Biomes { get; set; }
 
         public Game1()
         {
@@ -158,6 +160,7 @@ namespace Realm
             Quivers = Util.LoadQuiverData();
             Shields = Util.LoadShieldData();
             Tomes = Util.LoadTomeData();
+            Biomes = Util.LoadBiomeData();
 
             Util.LoadBankData();
             Util.LoadFameData();

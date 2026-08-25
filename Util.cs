@@ -98,6 +98,11 @@ namespace Realm
             "TomeData.json"
         );
 
+        private static string biomeDataLocation = Path.Combine(
+            AppContext.BaseDirectory,
+            "BiomeData.json"
+        );
+
         // Read-only peek at a class's save data, without touching Player.Instance or
         // Player.PlayerClass. Returns null if that class has no save yet.
         public static PlayerData PeekPlayerData(Player.Class playerClass)
@@ -977,6 +982,38 @@ namespace Realm
             }
 
             return tomes;
+        }
+
+        // No runtime-type mapping step, unlike every Load*Data() above —
+        // BiomeData isn't an equippable Item with its own texture slot,
+        // just plain config, so the deserialized list is used directly.
+        public static List<BiomeData> LoadBiomeData()
+        {
+            List<BiomeData> biomeData = [];
+
+            try
+            {
+                using (StreamReader r = new(biomeDataLocation))
+                {
+                    Debug.WriteLine(biomeDataLocation + ": reading data.");
+                    string json = r.ReadToEnd();
+                    Debug.WriteLine(json);
+                    try
+                    {
+                        biomeData = JsonSerializer.Deserialize<List<BiomeData>>(json);
+                    }
+                    catch (System.Text.Json.JsonException)
+                    {
+                        Debug.WriteLine($"Error loading biome data: {json}");
+                    }
+                }
+            }
+            catch (System.IO.FileNotFoundException)
+            {
+                Debug.WriteLine(biomeDataLocation + ": file not found.");
+            }
+
+            return biomeData;
         }
 
         public static void SaveInventoryData()

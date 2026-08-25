@@ -4223,3 +4223,57 @@ date/time for those individually; don't treat their grouping as meaning they all
      `Realm.exe` the user was actively playing was still running when this task began — testing was
      paused (confirmed via `AskUserQuestion`) until the user closed it, to avoid two processes
      contending for the same save files.
+179. **Added a first, deliberately simple biome system**: concentric distance rings around wherever
+     the player entered the current Realm instance, each with its own ground tint and enemy subset,
+     harder biomes further out. Discussed as an open design question first ("how would we implement
+     a biome system?") — found that `EnemySpawner.Update()` already computes `distanceFromEntry`
+     every frame (previously only used to scale spawn *density*), so biome *selection* by distance
+     turned out to be nearly free to hook in, rather than needing a new mechanic from scratch. The
+     user picked concentric rings over angular/sector-based variety, explicitly asking to "keep it
+     simple" — which also settled how the ground itself gets drawn: `RealmState.Draw()` previously
+     painted one giant tiled rectangle covering the whole world with `Art.Tile`; `DrawBiomeRings()`
+     instead paints several full squares (each biome's own `2 × MaxDistance` side length, centered on
+     `EnemySpawner.EntryPosition`) back-to-front, largest first — each nearer square's opaque draw
+     just overdraws the farther one already there, which is what actually creates the visible rings.
+     No real ring/donut geometry, no tilemap engine, nothing new needed beyond one more loop around
+     the exact same `spriteBatch.Draw()` call already in the file. New `Data/BiomeData.cs` +
+     `Data/BiomeData.json` (`Name`/`MinDistance`/`MaxDistance`/`GroundTileImageName`/`TintR,G,B`/
+     `EnemyNames`) — no separate runtime type the way Weapon/Armor/Tome need (`Data/{X}Data.cs` + a
+     matching `{X}.cs`), since a biome isn't an equippable `Item` with a texture slot, just config,
+     so `Util.LoadBiomeData()` is used directly with no per-entry mapping step. 4 sample biomes
+     shipped (Meadow 0-8000, Forest 8000-20000, Highlands 20000-40000, Blighted Wastes 40000+),
+     roughly mirroring `EnemySpawner.BasicEnemyPool`'s existing level-unlock order (Snake/Slime ->
+     Slime/Seeker -> Seeker/Wanderer -> Wanderer/Brute) — placeholder numbers, easy to retune, same
+     as `BasicEnemyPool`'s own level thresholds already were. Every biome currently points at the
+     same `Art.Tile` texture and is told apart purely by `TintR/G/B` (a plain multiply-tint on
+     `spriteBatch.Draw()`, no new art needed for v1) — the schema already has a per-biome
+     `GroundTileImageName` field ready for real distinct ground art whenever that exists, with zero
+     further code changes needed to wire it in.
+
+     `EnemySpawner.BasicEnemyPool` gained a `name` alongside its existing `(requiredLevel, factory)`
+     pairs, cross-referenced against the current biome's `EnemyNames` — a second, independent gate
+     layered on top of the level requirement, not a replacement for it (a biome can't grant early
+     access to a still-level-locked type; it only narrows an already-unlocked type down to the rings
+     it thematically belongs in). New `GetCurrentBiome()` resolves `Game1.Instance.Biomes` against
+     `distanceFromEntry`, falling back to "no filter" if the catalog somehow doesn't cover a given
+     distance — a data gap shouldn't be able to stop enemies from spawning outright. `RealmState`
+     resolves each biome's texture once in its own constructor (a `List<(BiomeData, Texture2D)>`
+     sorted ascending by `MaxDistance`) rather than re-`Content.Load()`-ing every `Draw()` call, and
+     gates the whole ring system behind the existing `SpawnsRegularEnemies` flag — `BossRealmState`
+     (a small bounded arena, not the open world biomes are meant for) keeps the original single flat
+     tile untouched, same as before biomes existed.
+
+     Verified via a scripted repro: confirmed the catalog loads all 4 biomes in the right order;
+     confirmed `GetCurrentBiome()` resolves correctly at 8 distances spanning every ring and both of
+     its boundaries (`MinDistance` inclusive, exactly at the 8000/20000/40000 edges); confirmed
+     `SpawnWave()` (called directly, at max level so only the biome filter is actually being tested)
+     spawned exclusively Snake/Slime while positioned in Meadow and exclusively Wanderer/Brute while
+     positioned in Blighted Wastes, across 100 calls each — never once producing a PointValue outside
+     that biome's own roster; constructed a real `RealmState` (per `CLAUDE.md`, this saves
+     unconditionally — save files were backed up first and the one real file it touched,
+     `PlayerData_Wizard.json`, was restored and reconfirmed byte-identical afterward) and confirmed
+     it populated exactly 4 biome rings; rendered a real frame with the camera centered exactly on
+     the Meadow/Forest boundary and confirmed the two sides render visibly different pixel colors —
+     the rendered PNG shows a clean vertical seam between a warm brown-tinted Meadow and a
+     darker olive-tinted Forest, exactly where the 8000-unit boundary should fall. Clean build and a
+     plain boot-check both passed.

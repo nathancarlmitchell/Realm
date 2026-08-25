@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Microsoft.Xna.Framework;
 using Realm.States;
 
@@ -17,6 +18,12 @@ namespace Realm
         // player's absolute Position otherwise carries straight over from
         // wherever they were standing in the Nexus itself.
         static Vector2 entryPosition;
+
+        // Read-only outside this class — RealmState's biome ring drawing
+        // centers each ring on this same point, so the ground the player
+        // sees always lines up with the enemy pool GetCurrentBiome() below
+        // is actually drawing from.
+        public static Vector2 EntryPosition => entryPosition;
 
         // Distance-based spawn density: the farther the player wanders from
         // where they entered, the denser spawns get, on top of the existing
@@ -36,14 +43,42 @@ namespace Realm
         // guess, easy to retune. BigSnake is deliberately NOT in this pool
         // — see BigSnakePackInterval/SpawnBigSnakePack below, its own rarer
         // mini-boss-style spawn instead of blending into the regular wave.
-        private static readonly (int requiredLevel, Func<Vector2, Enemy> factory)[] BasicEnemyPool =
+        //
+        // Name is cross-referenced against the current biome's own
+        // BiomeData.EnemyNames (see GetCurrentBiome() below) — a second,
+        // independent gate on top of the level requirement, not a
+        // replacement for it. A biome doesn't grant early access to a
+        // still-level-locked type; it only narrows an already-unlocked
+        // type down to the rings it thematically belongs in.
+        private static readonly (
+            string name,
+            int requiredLevel,
+            Func<Vector2, Enemy> factory
+        )[] BasicEnemyPool =
         [
-            (1, Enemy.CreateSnake),
-            (2, Enemy.CreateSlime),
-            (3, Enemy.CreateSeeker),
-            (6, Enemy.CreateWanderer),
-            (8, Enemy.CreateBrute),
+            ("Snake", 1, Enemy.CreateSnake),
+            ("Slime", 2, Enemy.CreateSlime),
+            ("Seeker", 3, Enemy.CreateSeeker),
+            ("Wanderer", 6, Enemy.CreateWanderer),
+            ("Brute", 8, Enemy.CreateBrute),
         ];
+
+        // The BiomeData ring (Data/BiomeData.json, sorted ascending by
+        // MaxDistance there) whose [MinDistance, MaxDistance) contains the
+        // player's current distance from entryPosition. Falls back to null
+        // (SpawnWave() below then skips the biome filter entirely) if the
+        // catalog doesn't cover this distance at all — a data gap
+        // shouldn't be able to stop enemies from spawning outright.
+        private static Data.BiomeData GetCurrentBiome()
+        {
+            float distanceFromEntry = Vector2.Distance(Player.Instance.Position, entryPosition);
+            foreach (var biome in Game1.Instance.Biomes)
+            {
+                if (distanceFromEntry >= biome.MinDistance && distanceFromEntry < biome.MaxDistance)
+                    return biome;
+            }
+            return null;
+        }
 
         // BigSnake as a mini-boss: much rarer than the regular wave pattern
         // (a fixed, guaranteed-when-it-fires interval instead of the wave
@@ -124,14 +159,20 @@ namespace Realm
 
         // Spawns a small (2-4) pack of enemies clustered around one shared
         // anchor point, drawn from whichever basic types are currently
-        // level-unlocked — reads as a group arriving together rather than
-        // scattered independently around the player.
+        // level-unlocked AND belong to the biome ring the player is
+        // currently standing in (GetCurrentBiome() above) — reads as a
+        // group arriving together rather than scattered independently
+        // around the player.
         private static void SpawnWave()
         {
+            Data.BiomeData biome = GetCurrentBiome();
+
             List<Func<Vector2, Enemy>> unlocked = [];
-            foreach (var (requiredLevel, factory) in BasicEnemyPool)
+            foreach (var (name, requiredLevel, factory) in BasicEnemyPool)
             {
-                if (Player.Instance.Level >= requiredLevel)
+                bool levelUnlocked = Player.Instance.Level >= requiredLevel;
+                bool biomeAllows = biome == null || biome.EnemyNames.Contains(name);
+                if (levelUnlocked && biomeAllows)
                     unlocked.Add(factory);
             }
 

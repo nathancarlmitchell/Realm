@@ -122,6 +122,15 @@ prioritized or scheduled — the user asked to keep these noted for later rather
   particle effects on the *player* taking damage (deliberately out of scope — only enemy hits/deaths
   were wired up), and any other on-screen moment that could use the same `Particle.SpawnBurst()`
   entry point.
+- **Biome system follow-ups.** A first version shipped as concentric distance rings only (see
+  [DEVLOG.md](DEVLOG.md) entry 179) — the user explicitly chose rings over lateral variety to keep
+  v1 simple. Real per-biome ground art (`Data/BiomeData.json`'s `GroundTileImageName` is already
+  wired for it — every biome currently just points at the shared `Art.Tile` texture, told apart only
+  by a color tint) is the most likely next step once that art exists. Other open follow-ups: angular/
+  sector-based variety within a ring (so two players don't always see the same biome at the same
+  distance); biome-biased loot tiers (`ItemSpawner` doesn't read biome at all yet); and retuning the
+  4 sample biomes' distance thresholds/enemy rosters, which were placeholder guesses mirroring
+  `EnemySpawner.BasicEnemyPool`'s existing level order, not derived from real playtesting.
 
 ## Completed
 

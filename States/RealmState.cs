@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using Microsoft.Xna.Framework;
@@ -10,6 +11,19 @@ namespace Realm.States
     public class RealmState : State
     {
         Rectangle targetRectangle;
+
+        // Ground textures for each biome ring (Data/BiomeData.json),
+        // resolved once here rather than re-resolving Content.Load() every
+        // Draw() call — sorted ascending by MaxDistance so DrawBiomeRings()
+        // can just walk it back-to-front (farthest/largest ring painted
+        // first, nearest/smallest painted last on top), the same "just
+        // overdraw the next ring on top" trick that turns a handful of
+        // plain filled squares into concentric rings with no actual
+        // ring/donut geometry needed. Left empty for BossRealmState (see
+        // SpawnsRegularEnemies below) — Draw() falls back to the single
+        // flat Art.Tile background when this is empty, same as before
+        // biomes existed.
+        private readonly List<(Data.BiomeData biome, Texture2D texture)> biomeRings = [];
 
         // Extension points for BossRealmState (a bounded arena instance
         // instead of the open Realm world, and no regular EnemySpawner
@@ -72,7 +86,18 @@ namespace Realm.States
             // — only meaningful for a regular dungeon that actually runs
             // EnemySpawner, not the boss arena.
             if (SpawnsRegularEnemies)
+            {
                 EnemySpawner.SetEntryPosition(Player.Instance.Position);
+
+                // Sorted ascending by MaxDistance regardless of the JSON's
+                // own authoring order — DrawBiomeRings() relies on this
+                // exact order (drawn back-to-front, so it can't assume the
+                // catalog file itself stays sorted).
+                foreach (var biome in Game1.Instance.Biomes.OrderBy(b => b.MaxDistance))
+                {
+                    biomeRings.Add((biome, content.Load<Texture2D>(biome.GroundTileImageName)));
+                }
+            }
 
             // Leaving the Nexus — its fixed portal set no longer applies to
             // the minimap until the player returns (NexusState's
@@ -95,8 +120,13 @@ namespace Realm.States
                 Game1.Camera.GetTransformation()
             );
 
-            // Draw background.
-            spriteBatch.Draw(Art.Tile, new Vector2(32, 32), targetRectangle, Color.White);
+            // Draw background — biome rings if this instance has any
+            // (regular open-world dungeons), the original single flat tile
+            // otherwise (boss arenas, or no biome data configured).
+            if (biomeRings.Count > 0)
+                DrawBiomeRings(spriteBatch);
+            else
+                spriteBatch.Draw(Art.Tile, new Vector2(32, 32), targetRectangle, Color.White);
 
             spriteBatch.End();
 
@@ -162,6 +192,32 @@ namespace Realm.States
             }
 
             spriteBatch.End();
+        }
+
+        // Concentric biome rings, centered on EnemySpawner.EntryPosition —
+        // the exact same point EnemySpawner itself measures distance from
+        // to pick which biome's enemy pool applies (GetCurrentBiome()), so
+        // the ground the player sees always lines up with what can spawn
+        // on it. No real ring/donut geometry: biomeRings is sorted
+        // ascending by MaxDistance, so painting largest-to-smallest just
+        // lets each nearer ring's opaque square overdraw the farther one
+        // underneath it, leaving only the band between two consecutive
+        // MaxDistance values visible for each biome — the same trick as
+        // painting concentric squares in any raster editor.
+        private void DrawBiomeRings(SpriteBatch spriteBatch)
+        {
+            Vector2 entryPos = EnemySpawner.EntryPosition;
+
+            for (int i = biomeRings.Count - 1; i >= 0; i--)
+            {
+                var (biome, texture) = biomeRings[i];
+                float half = biome.MaxDistance;
+                Vector2 topLeft = entryPos - new Vector2(half, half);
+                Rectangle ringRect = new(0, 0, (int)(half * 2f), (int)(half * 2f));
+                Color tint = new(biome.TintR, biome.TintG, biome.TintB);
+
+                spriteBatch.Draw(texture, topLeft, ringRect, tint);
+            }
         }
 
         public override void PostUpdate(GameTime gameTime) { }

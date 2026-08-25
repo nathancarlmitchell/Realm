@@ -1,0 +1,42 @@
+[
+    {
+        "Name": "Meadow",
+        "MinDistance": 0,
+        "MaxDistance": 8000,
+        "GroundTileImageName": "tile",
+        "TintR": 255,
+        "TintG": 255,
+        "TintB": 255,
+        "EnemyNames": ["Snake", "Slime"]
+    },
+    {
+        "Name": "Forest",
+        "MinDistance": 8000,
+        "MaxDistance": 20000,
+        "GroundTileImageName": "tile",
+        "TintR": 150,
+        "TintG": 205,
+        "TintB": 150,
+        "EnemyNames": ["Slime", "Seeker"]
+    },
+    {
+        "Name": "Highlands",
+        "MinDistance": 20000,
+        "MaxDistance": 40000,
+        "GroundTileImageName": "tile",
+        "TintR": 190,
+        "TintG": 190,
+        "TintB": 215,
+        "EnemyNames": ["Seeker", "Wanderer"]
+    },
+    {
+        "Name": "Blighted Wastes",
+        "MinDistance": 40000,
+        "MaxDistance": 1000000,
+        "GroundTileImageName": "tile",
+        "TintR": 205,
+        "TintG": 140,
+        "TintB": 140,
+        "EnemyNames": ["Wanderer", "Brute"]
+    }
+]
