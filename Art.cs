@@ -47,6 +47,9 @@ namespace Realm
         public static Texture2D GreenArrow { get; private set; }
         public static Texture2D PurpleMysticShot { get; private set; }
         public static Texture2D DarkBlueMagic { get; private set; }
+        public static Texture2D GiantCrab { get; private set; }
+        public static Texture2D Beam { get; private set; }
+        public static Texture2D BlueBolt { get; private set; }
         public static Texture2D WhiteBolt { get; private set; }
         public static Texture2D Wizard { get; private set; }
         public static Texture2D Archer { get; private set; }
@@ -253,6 +256,9 @@ namespace Realm
             GreenArrow = content.Load<Texture2D>("Projectiles/Green Arrow");
             PurpleMysticShot = content.Load<Texture2D>("Projectiles/Purple Mystic Shot");
             DarkBlueMagic = content.Load<Texture2D>("Projectiles/Dark Blue Magic");
+            GiantCrab = content.Load<Texture2D>("Biomes/Beach/Giant Crab");
+            Beam = content.Load<Texture2D>("Projectiles/Beam");
+            BlueBolt = content.Load<Texture2D>("Projectiles/Blue Bolt");
             WhiteBolt = content.Load<Texture2D>("Projectiles/white_bolt");
 
             // Weapons.

@@ -126,6 +126,12 @@ namespace Realm
         private const int SandsmanKingPackInterval = 2700; // ~45 seconds at 60fps
         private static int sandsmanKingPackCooldownRemaining = SandsmanKingPackInterval;
 
+        // Giant Crab as Beach's fifth mini-boss — same gating/shape as the
+        // others, but with no escort of its own at all (no "Spawns:" field
+        // in the spec).
+        private const int GiantCrabPackInterval = 3000; // ~50 seconds at 60fps
+        private static int giantCrabPackCooldownRemaining = GiantCrabPackInterval;
+
         // Wave/pack spawning: instead of each basic type independently
         // rolling a 1-in-N chance every frame (a steady trickle), a wave of
         // several enemies spawns together every N frames, using the exact
@@ -220,6 +226,17 @@ namespace Realm
                 else
                 {
                     sandsmanKingPackCooldownRemaining--;
+                }
+
+                if (giantCrabPackCooldownRemaining <= 0)
+                {
+                    if (GetCurrentBiome()?.Name == "Beach")
+                        EntityManager.Add(new Bosses.GiantCrab(GetSpawnPosition()));
+                    giantCrabPackCooldownRemaining = GiantCrabPackInterval;
+                }
+                else
+                {
+                    giantCrabPackCooldownRemaining--;
                 }
 
                 // SpriteGod stays its own independent, level-scaling roll —

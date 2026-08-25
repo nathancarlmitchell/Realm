@@ -4560,3 +4560,83 @@ date/time for those individually; don't treat their grouping as meaning they all
      nothing else) looked like a pre-existing save/load quirk unrelated to this session's changes, not
      something introduced here; flagged to the user rather than silently written off. Clean build and
      a plain boot-check both passed.
+
+184. **Added Beach's fifth mini-boss (Giant Crab)**, continuing the same one-at-a-time spec pattern
+     as entries 180-183. No escort this time (no "Spawns:" field) — a single `Bosses/GiantCrab.cs`.
+
+     `Green Arrow.png`/`Purple Mystic Shot.png`/`Dark Blue Magic.png` turned out to be the last of
+     that mid-session art drop (see entry 183) — Giant Crab's own dedicated `Beam.png`/`Blue Bolt.png`
+     appeared partway through this entry's own work, discovered as untracked files rather than
+     mentioned directly. Initially wired using already-loaded placeholders (`Art.WhiteBolt`/a
+     newly-added `Art.BlueMagic` reading the pre-existing-but-unused `blue_magic.png`) before
+     noticing the real assets sitting untracked; swapped over once found, `Art.BlueMagic` removed
+     again since nothing else used it. Re-verified with a second, narrower render check after the
+     swap rather than the full suite (pure asset-reference change, no logic touched) — worth its own
+     mention since even that narrower check needed two more fixes before the art was actually visible:
+     `Camera.Pos` has to be centered on the enemy *before* any ticking starts (constructing
+     `NexusState` sets it from whatever `Player.Instance.Position` was left over from the save file,
+     nowhere near a freshly-placed test enemy, and every attack coroutine — not just movement — is
+     gated on `Game1.GetWorldBounds()` reading that same `Camera.Pos`), and a spawned projectile needs
+     its own `Update()` ticked individually to actually move — `crab.Update()` only advances the
+     crab's own coroutines, not the projectiles it spawned, which just sit invisibly stacked under
+     its own (much bigger) sprite otherwise. The corrected render matches the spec's "shockwave-like
+     blast" description well: four white bars fanned out from the crab at staggered distances, exactly
+     from the four beam tiers' differing speeds.
+
+     Introduces Aim Tracking — the crab's main attack fires at the player's *predicted* Position
+     (current `Player.Instance.Position` plus current `Player.Instance.Velocity` extrapolated a fixed
+     30 ticks forward, applied once at the exact moment a wave fires, not continuously re-aimed),
+     the first Beach enemy to do this. No specific lookahead value was given in the spec, so 30 ticks
+     is a judgment call. The spec's four "Beam" rows (Damage 1/4/7/11, Speed 2/4/6/8 tiles/sec, Range
+     0.4/1.6/3.6/6.4 tiles) read as one simultaneous 4-projectile volley, not four independent
+     attacks — "a shockwave-like blast... if all four connect" only makes sense as one wave, and
+     Range÷Speed gives a suspiciously clean linear duration progression (0.2s/0.4s/0.6s/0.8s at 60fps
+     → 12/24/36/48 ticks), which is what actually produces the spreading "shockwave" look: all four
+     fire from the same point at the same instant toward the same predicted spot, and the
+     faster/farther-reaching ones simply outlast the slower/shorter ones. `EnemyProjectile.duration`
+     is set explicitly per tier rather than left at its 250-tick default.
+
+     The separate "Blue Bolt" row (Damage 10, Speed 7, Range 12.6) explicitly "will not track your
+     movement" — aimed at the player's real, current Position each shot, the opposite of the beam
+     wave. The two attacks alternate on a timer (`Phase.Beam`/`Phase.BlueBolt`, mirroring
+     `SthenoTheSnakeQueen`'s time-based phase cycling more than the health-threshold style seen in
+     `BeachedBuccaneer`/`LimonTheSpriteGoddess`) — "occasionally... at a frequent pace" gives no
+     explicit phase durations or per-shot cooldowns for either state, so Beam's 8s duration/1.5s
+     volley cooldown and Blue Bolt's 2.5s duration/0.33s shot cooldown are all judgment calls,
+     tunable. "When they spot you, they will chase" implied a real pre-aggro wander state (unlike
+     Pirate/Little Scorpion's always-on range-gated fire) — same one-way `AggroWatcher()` latch as
+     BeachedBuccaneer/SandsmanKing, using Blue Bolt's own Range (12.6 tiles, the single largest
+     number given) as the "spot" trigger since no separate detection range was stated.
+
+     Scripted testing surfaced two more test-only timing traps, worth recording alongside entry 183's
+     (this is now the second mini-boss in a row where the test's own setup — not the enemy's actual
+     logic — was the source of an early failure): (1) `FireBeamWave()` deliberately has no distance
+     gate (each beam's own short duration already limits its reach), which means the very first tick
+     aggro triggers on *also* fires a real wave in that same `Update()` call (`ApplyBehaviours()` sets
+     `hasAggroed` immediately before `ApplyAttackBehaviours()` runs, same tick) — consuming the
+     90-tick volley cooldown before a later, deliberately-staged test ever got to run, and since the
+     wave keeps auto-firing every 90 ticks forever, no fixed number of ticks can reliably land on a
+     freshly-cleared cooldown. Fixed by polling for the *next* wave to actually fire (via a
+     projectile-count change) and setting up the controlled Position/Velocity scenario immediately
+     before it, rather than trying to out-guess the timing with a fixed wait. (2) Checking a cycling
+     phase once after a long fixed wait can catch it after it already cycled all the way back around
+     — a 900-tick wait against a phase that was already partway through its own duration completed a
+     full Beam → Blue Bolt → Beam lap and read back as "still Beam," which looked like a failure to
+     ever switch at all. Fixed by polling every tick and stopping the instant the phase actually
+     flips, rather than checking once at the end of an arbitrary wait.
+
+     Verified via 18 scripted checks: stats; the wander→aggro transition at Spot Range; the beam
+     wave's exact 4-projectile count, damage set `{1,4,7,11}`, and duration set
+     `{12,24,36,48}` ticks; that the wave's aim genuinely tracks the player's predicted position
+     (confirmed against a deliberately large sideways `Velocity`) rather than their current one; the
+     Beam → Blue Bolt phase transition; that Blue Bolt fires with damage 10 and aims at the player's
+     literal current position even under a deliberately huge `Velocity` that a predictive aim would
+     have badly missed with; and the real `EnemySpawner.Update()` spawning a Giant Crab while in
+     Beach and none while in Forest — all stable across 6 repeated runs after the two fixes above. A
+     render confirmed the new sprite draws correctly. Real save files confirmed byte-identical after
+     this round. `PlayerData_Wizard.json` needed restoring again after the later art-swap
+     verification pass, same known equipped-item-ID quirk as entry 183 (see the standing
+     investigation task) — this time double-checked that the surrounding Level/ExperienceTotal/stat
+     values genuinely matched the backup field-by-field before concluding it was the same quirk and
+     not a real regression, rather than trusting the diff's truncated first line. Clean build and a
+     plain boot-check both passed.
