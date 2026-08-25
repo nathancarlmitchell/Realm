@@ -41,6 +41,12 @@ namespace Realm
         public static Texture2D BanditLeader { get; private set; }
         public static Texture2D ScorpionQueen { get; private set; }
         public static Texture2D LittleScorpion { get; private set; }
+        public static Texture2D SandsmanKing { get; private set; }
+        public static Texture2D SandsmanArcher { get; private set; }
+        public static Texture2D SandsmanSorcerer { get; private set; }
+        public static Texture2D GreenArrow { get; private set; }
+        public static Texture2D PurpleMysticShot { get; private set; }
+        public static Texture2D DarkBlueMagic { get; private set; }
         public static Texture2D WhiteBolt { get; private set; }
         public static Texture2D Wizard { get; private set; }
         public static Texture2D Archer { get; private set; }
@@ -241,6 +247,12 @@ namespace Realm
             BanditLeader = content.Load<Texture2D>("Biomes/Beach/Bandit Leader");
             ScorpionQueen = content.Load<Texture2D>("Biomes/Beach/Scorpion Queen");
             LittleScorpion = content.Load<Texture2D>("Biomes/Beach/Little Scorpion");
+            SandsmanKing = content.Load<Texture2D>("Biomes/Beach/Sandsman King");
+            SandsmanArcher = content.Load<Texture2D>("Biomes/Beach/Sandsman Archer");
+            SandsmanSorcerer = content.Load<Texture2D>("Biomes/Beach/Sandsman Sorcerer");
+            GreenArrow = content.Load<Texture2D>("Projectiles/Green Arrow");
+            PurpleMysticShot = content.Load<Texture2D>("Projectiles/Purple Mystic Shot");
+            DarkBlueMagic = content.Load<Texture2D>("Projectiles/Dark Blue Magic");
             WhiteBolt = content.Load<Texture2D>("Projectiles/white_bolt");
 
             // Weapons.

@@ -4484,3 +4484,79 @@ date/time for those individually; don't treat their grouping as meaning they all
      while in Forest. A render confirmed both new sprites draw correctly once ticked past their
      spawn fade-in. Real save files confirmed byte-identical before and after. Clean build and a
      plain boot-check both passed.
+
+183. **Added Beach's fourth mini-boss (Sandsman King) and its two escort types (Sandsman Archer,
+     Sandsman Sorcerer)**, continuing the same one-at-a-time spec pattern as entries 180-182. Full
+     stats/attacks/behavior given directly by the user; this batch also explained the three
+     previously-unwired projectile sprites (`Green Arrow.png`, `Purple Mystic Shot.png`,
+     `Dark Blue Magic.png`) sitting untracked in `Content/Projectiles/` since earlier this session.
+
+     The King introduces a genuinely new shape: a *separate* Trigger Range (10 tiles, gates the
+     wander-vs-chase switch) from Attack Range (8.4 tiles, gates the shot itself) — mirrors
+     BeachedBuccaneer's `WanderThenChase()` one-way aggro latch, renamed `AggroWatcher()`. Since
+     Attack Range < Trigger Range, a player close enough to actually get shot has necessarily already
+     crossed the trigger, so the attack didn't need its own separate aggro check. His two escort
+     types (`Spawns: Sandsman Archer (Max: 2, Cooldown: 10s), Sandsman Sorcerer (Max: 3, Cooldown:
+     8s)`) read as *no* initial burst, unlike ScorpionQueen's explicit "spawns with 10" — both start
+     at 0 and fill in gradually, one per their own stated cooldown, since only Max/Cooldown were
+     given this time. Two near-identical `MaintainArchers()`/`MaintainSorcerers()` coroutines
+     (deliberately not merged into one generic helper — two ~15-line bodies within a single file
+     didn't clear the bar for that abstraction).
+
+     `Enemy.ShootIfInRange()` gained an optional `cooldownFrames` parameter — the King's 10s and the
+     Archer's 1s attack cooldowns are both far from the shared 250-tick(~4.2s) default every existing
+     caller (Pirate, Little Scorpion) relies on, and that field is private, not protected, so a
+     per-call override was the only way to keep using the shared helper instead of hand-duplicating
+     its aim/fire logic a third and fourth time. `cooldownFrames: null` (the default) is a byte-for-
+     byte no-op for every existing caller.
+
+     Sandsman Archer's "orbits around Sandman King firing arrows at any player close to it" reuses
+     the same live-recenter-every-frame technique as `SthenoPet.Orbit()` (Bosses/SthenoPet.cs), written
+     bespoke here rather than promoted to a shared Enemy.cs helper (Stheno's own file isn't being
+     touched this session). Its Attacks block lists Range (11.9 tiles) *larger* than Trigger Range (10
+     tiles) — the reverse of the King's own — but the Archer never has a separate "notice, then react"
+     state (always orbiting, always alert), so Trigger Range has no distinct mechanical role for it;
+     Range alone drives its `ShootIfInRange`. Flagged as an interpretation call, not silently dropped.
+
+     Sandsman Sorcerer's two listed attacks ("wanders aimlessly firing purple... once approached fires
+     a fast and strong short ranged dark blue...") read as the same distance-based
+     closer-range-replaces-farther-range mechanic as Bandit.cs's dagger/ranged split — one shared
+     cooldown, Dark Blue Magic checked first (closer, stronger), falling back to Purple Mystic Shot.
+     No Cooldown was given for either Sorcerer attack (unlike the King/Archer, which both state one
+     explicitly) — falls back to the same 250-tick default Enemy's own Shoot()/Spray()/
+     `ShootIfInRange()` already use elsewhere, flagged as a judgment call. Sorcerer's own "wanders
+     aimlessly" has no stated anchor (unlike Little Scorpion's explicit tie to the Queen), so it uses
+     a self-tethered `MoveTethered()` around its own spawn point. Neither escort was added to
+     `EnemySpawner.BasicEnemyPool` (same reasoning as Little Scorpion) — both only ever appear as the
+     King's own escorts, so `Data/BiomeData.json`'s Beach roster is unchanged again this round.
+
+     Scripted testing surfaced two real timing/robustness gaps — not in the enemies' own logic, but
+     in how the test verified them, worth recording since the same shape will bite the next
+     escort-heavy enemy's test too: (1) an orbiting or wandering enemy's Position keeps moving *during*
+     a fire-range test loop, so a Player.Instance.Position set once before the loop can drift back out
+     of range before the shot lands — fixed by re-anchoring the player's position to the moving
+     enemy's current Position on every iteration instead of once up front; (2) `Game1.GetWorldBounds()`
+     (the on-screen gate `Enemy.Update()` checks before running any attack coroutine at all) is
+     centered on `Camera.Pos`, and `Camera.Pos`'s own setter clamps to a world-edge minimum around
+     (490, 360) — a test enemy spawned near the actual world origin (`Vector2.Zero`, this session's
+     go-to test position through entry 182) can never truly be camera-centered no matter what
+     `Camera.Pos` is explicitly set to, so its on-screen status silently depends on unrelated
+     positioning instead of the camera call that looks like it should control it. Fixed by spawning
+     the test King well away from the origin (`(5000, 5000)`) and explicitly re-centering
+     `Camera.Pos` on him immediately after construction. Both together explained an initially
+     confusing intermittent failure (passed most runs, failed roughly 1 in 3) that had nothing to do
+     with the actual attack logic under test.
+
+     Verified via 34 scripted checks across all three enemies' stats, the King's wander→aggro→attack
+     progression and its own Attack-Range gate, both escort types' gradual no-burst spawn-and-cap
+     behavior, the Archer's orbit (constant radius, changing angle) and range-gated shot, the
+     Sorcerer's dual-range attack escalation, and the real `EnemySpawner.Update()` spawning a
+     Sandsman King while in Beach and none while in Forest — repeated across 8 consecutive runs after
+     the two fixes above to confirm the earlier flakiness was actually gone, not just not-observed
+     once. A render confirmed all three new sprites draw correctly. Real save files were re-verified
+     byte-identical after the test run; one file (`PlayerData_Wizard.json`) differed on first check —
+     only in the equipped Weapon/Armor/Ring/Spell's own instance `ID` GUIDs, not in any level/XP/stat
+     data — and was restored from backup. That specific diff shape (equipped-item IDs regenerating,
+     nothing else) looked like a pre-existing save/load quirk unrelated to this session's changes, not
+     something introduced here; flagged to the user rather than silently written off. Clean build and
+     a plain boot-check both passed.

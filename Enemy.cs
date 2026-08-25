@@ -727,24 +727,38 @@ namespace Realm
         // Shoot()/Spray()/Bomb() all fire regardless of distance. First
         // real use: CreatePirate() below ("fire a single shot towards them
         // if they get close enough").
+        // cooldownFrames: overrides the shared projectileCooldown (250
+        // ticks) with this call's own independent, locally-tracked cooldown
+        // instead — needed the moment a caller's spec states an explicit
+        // Cooldown that isn't 250 (e.g. Sandsman King's 10s / Sandsman
+        // Archer's 1s — see SandsmanKing.cs/SandsmanArcher.cs). Left null,
+        // this is a byte-for-byte no-op for every existing caller (Pirate,
+        // Little Scorpion), which still share Enemy's own private cooldown
+        // field exactly as before.
         protected IEnumerable<int> ShootIfInRange(
             float range,
             int damage,
             float projectileSpeed,
-            Texture2D projectileImage = null
+            Texture2D projectileImage = null,
+            int? cooldownFrames = null
         )
         {
             float rangeSquared = range * range;
+            int localCooldownRemaining = 0;
             while (true)
             {
+                bool ready = cooldownFrames.HasValue
+                    ? localCooldownRemaining <= 0
+                    : projectileCooldownRemaining <= 0;
+
                 var aim = Player.Instance.Position - Position;
-                if (
-                    aim.LengthSquared() > 0
-                    && aim.LengthSquared() <= rangeSquared
-                    && projectileCooldownRemaining <= 0
-                )
+                if (aim.LengthSquared() > 0 && aim.LengthSquared() <= rangeSquared && ready)
                 {
-                    projectileCooldownRemaining = projectileCooldown - (1 * 1);
+                    if (cooldownFrames.HasValue)
+                        localCooldownRemaining = cooldownFrames.Value;
+                    else
+                        projectileCooldownRemaining = projectileCooldown - (1 * 1);
+
                     float aimAngle = aim.ToAngle();
                     float randomSpread = rand.NextFloat(-0.1f, 0.1f) + rand.NextFloat(-0.1f, 0.1f);
                     Vector2 vel = Extensions.FromPolar(aimAngle + randomSpread, projectileSpeed);
@@ -752,8 +766,16 @@ namespace Realm
                         new EnemyProjectile(Position, vel, projectileImage) { Damage = damage }
                     );
                 }
-                if (projectileCooldownRemaining > 0)
+
+                if (cooldownFrames.HasValue)
+                {
+                    if (localCooldownRemaining > 0)
+                        localCooldownRemaining--;
+                }
+                else if (projectileCooldownRemaining > 0)
+                {
                     projectileCooldownRemaining--;
+                }
 
                 yield return 0;
             }

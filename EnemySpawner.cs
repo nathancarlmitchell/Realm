@@ -120,6 +120,12 @@ namespace Realm
         private const int ScorpionQueenPackInterval = 2400; // ~40 seconds at 60fps
         private static int scorpionQueenPackCooldownRemaining = ScorpionQueenPackInterval;
 
+        // Sandsman King as Beach's fourth mini-boss — same gating/shape as
+        // ScorpionQueen above: spawns only the King, who builds his own
+        // Sandsman Archer/Sorcerer escorts internally.
+        private const int SandsmanKingPackInterval = 2700; // ~45 seconds at 60fps
+        private static int sandsmanKingPackCooldownRemaining = SandsmanKingPackInterval;
+
         // Wave/pack spawning: instead of each basic type independently
         // rolling a 1-in-N chance every frame (a steady trickle), a wave of
         // several enemies spawns together every N frames, using the exact
@@ -203,6 +209,17 @@ namespace Realm
                 else
                 {
                     scorpionQueenPackCooldownRemaining--;
+                }
+
+                if (sandsmanKingPackCooldownRemaining <= 0)
+                {
+                    if (GetCurrentBiome()?.Name == "Beach")
+                        EntityManager.Add(new Bosses.SandsmanKing(GetSpawnPosition()));
+                    sandsmanKingPackCooldownRemaining = SandsmanKingPackInterval;
+                }
+                else
+                {
+                    sandsmanKingPackCooldownRemaining--;
                 }
 
                 // SpriteGod stays its own independent, level-scaling roll —
