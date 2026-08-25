@@ -4277,3 +4277,93 @@ date/time for those individually; don't treat their grouping as meaning they all
      the rendered PNG shows a clean vertical seam between a warm brown-tinted Meadow and a
      darker olive-tinted Forest, exactly where the 8000-unit boundary should fall. Clean build and a
      plain boot-check both passed.
+180. **Added Beach — the biome system's (entry 179) first real, art-backed biome — plus its basic
+     enemy (Pirate) and mini-boss (Beached Buccaneer).** The user supplied 16 enemy sprites under
+     `Content/Biomes/Beach/` and asked for Beach to be "the spawn point and easiest in the realm";
+     given the scale of designing stats/behavior for 16 brand-new enemy types from scratch, asked
+     which should be basic-wave vs. mini-boss vs. held back rather than guessing, and the user chose
+     to specify them one at a time, starting with Beached Buccaneer (mini-boss) and Pirate (its
+     basic-wave escort) — full stats/attacks/behavior/taunt dialogue given directly. The other 14
+     sprites remain unwired (see [BACKLOG.md](BACKLOG.md)'s biome follow-ups entry), waiting on the
+     same treatment.
+
+     "Beach... spawn point" reused the biome system's existing 0-8000 ring exactly as Meadow (the
+     placeholder biome from entry 179) had occupied — Beach simply replaces Meadow there, tinted
+     sandy-tan instead of white. Meadow's own `EnemyNames` (`Snake`/`Slime`) had to go somewhere or
+     both types would've become unreachable — `Slime` already appeared in Forest's roster, but
+     `Snake` didn't, so Forest picked it up too (`["Snake", "Slime", "Seeker"]`), keeping every
+     pre-existing enemy type spawnable.
+
+     **Pirate** (`Enemy.CreatePirate()`, `Enemy.cs`) is a plain factory method — no dedicated class,
+     matching Snake's own simplicity (HP 5, PointValue 2, near-identical stats). Its behavior needed
+     one new generic coroutine, `ShootIfInRange()`: every other existing attack coroutine
+     (`Shoot`/`Spray`/`Bomb`) fires unconditionally once its cooldown is ready, but the spec's "fire a
+     single shot... if they get close enough" needed a distance gate none of them have. Added
+     alongside them in `Enemy.cs`'s `#region Attack Behaviors` as a reusable building block, not a
+     Pirate-only one-off.
+
+     **Beached Buccaneer** (`Bosses/BeachedBuccaneer.cs`) is a genuinely new architectural case for
+     this codebase: a tougher `Enemy` that spawns with an escort pack (Snake/BigSnake's exact
+     relationship — see `EnemySpawner.SpawnBigSnakePack()`), but with real bespoke behavior (a
+     health-phase transition, a randomized dual attack, taunt dialogue) too complex to express as a
+     bare factory method composing only the shared generic coroutines the way `CreateBigSnake()`
+     does. Given `AddBehaviour`/`AddAttackBehaviour`/`HealthFraction`/`FlashRed()` are all already
+     `protected` on `Enemy` itself (not `Boss` — confirmed via a dedicated research pass before
+     writing any code), a plain `Enemy` subclass, structured like `LimonTheSpriteGoddess` (a `Boss`)
+     but inheriting `Enemy` directly, was the right fit: no portal/arena (a `Boss` would suppress the
+     normal in-world health bar and expect a `BossRealmState` HUD instead, neither of which this
+     mini-boss wants).
+
+     Mapped onto existing mechanics wherever one already fit, rather than building new systems:
+     "becomes Wooden Shield Armored" -> `Defense += 2`, borrowing the Tier 0 Wooden Shield's own
+     `DefenseBonus` from `Data/ShieldData.json` directly rather than inventing a new number; "red AoE
+     grenades" -> the existing `GrenadeProjectile` class (already fully built, previously unused by
+     anything — its telegraph-then-arm-red visual already *is* "red AoE grenade", no new art or class
+     needed); the AoE's target position clamped to its own Range from the boss, same clamp-to-range
+     pattern as Priest's Tome nova (`CharacterClasses/Priest.cs`); "walks aimlessly... until
+     approached, then chases" -> a one-way latch driving `MoveTethered()`'s and `FollowPlayer()`'s own
+     enumerators directly (calling `.GetEnumerator()` once and stepping whichever is active each
+     tick) rather than running both simultaneously, which would just sum their two `Velocity`
+     contributions instead of switching between them; "with either white bolts or red AoE grenades"
+     -> one shared attack cooldown (the AoE's own stated 2-second `Cooldown` — the projectile attack
+     had no separately-stated one) randomly choosing between the two each time it fires.
+
+     The taunt dialogue needed a genuinely new piece: no floating-text mechanic in this codebase
+     supports a multi-word wrapped sentence anchored to an arbitrary enemy (`DamageNumber`'s
+     `FollowsPlayer` only ever tracks `Player.Instance`, and single damage/XP numbers never needed
+     `Util.WrapText`). New `TauntBubble.cs`, modeled on `DamageNumber`'s live-follow shape but
+     purpose-built — and deliberately does *not* call `Util.DrawTooltip` for its background panel
+     despite the visual similarity, since that helper's `ClampTooltipX` assumes screen-space HUD
+     coordinates and would silently mis-position a bubble rendered in world space. New
+     `Enemy.TauntWhenPlayerNear()` (generic, alongside `ShootIfInRange` above) drives it periodically
+     while a player is in range. All 5 taunt lines plus the 50%-health enrage line are the user's own
+     text, reproduced verbatim, typos and dialect spelling included — not "corrected," since there
+     was no way to tell an intentional pirate-speak misspelling from an actual typo, and the user's
+     exact words were what got sent.
+
+     `EnemySpawner.SpawnBeachedBuccaneerPack()` mirrors `SpawnBigSnakePack()`'s exact shape (interval,
+     escort count, anchor+offset clustering) but — unlike BigSnake, which fires regardless of
+     location — is gated behind `GetCurrentBiome()?.Name == "Beach"` in `Update()`, since a beach
+     pirate showing up in the middle of Blighted Wastes would be jarring. `Data/Content.mgcb`/`Art.cs`
+     register the two new sprites under their real location, `Biomes/Beach/` (not `Enemies/`, which
+     is where every prior enemy's art has lived — the user's own folder choice), plus
+     `Projectiles/white_bolt.png`, which existed unbuilt on disk since the very start of this session
+     (visible in git status from turn one) but had never been wired into `Content.mgcb`/`Art.cs`
+     until now.
+
+     Verified via a scripted repro: confirmed Beach's catalog entry occupies the old Meadow slot with
+     exactly `["Pirate"]` as its roster, and that Forest's roster now includes `Snake`; confirmed 100
+     `SpawnWave()` calls at Beach's entry point produced only Pirate (`PointValue` 2), never anything
+     else; confirmed Pirate's stats and that it genuinely doesn't fire while the player is far away
+     but does once in range; confirmed Beached Buccaneer's stats, that it doesn't attack pre-aggro,
+     that aggro+an attack (bolt or grenade) both fire once the player closes to range, that a taunt
+     bubble spawns, and that `WasShot()` down past 50% health raises `Defense` from 2 to 4 and fires
+     the enrage taunt; confirmed the real `EnemySpawner.Update()` (not the private spawn method
+     directly, which would have bypassed the very gate under test) spawns a Buccaneer+Pirates while
+     the player is in Beach and nothing at all while in Forest. An offscreen render caught the
+     `FollowPlayer()` `NaN` bug above (entry/[BUGFIXES.md](BUGFIXES.md) entry 53) — the render came
+     back completely blank, which numeric assertions alone hadn't caught, since `IsExpired` was still
+     `false` and every stat check still passed on a `NaN`-positioned entity. After that fix, a
+     second render confirmed both sprites and a real taunt line rendering correctly together. Real
+     save files confirmed byte-identical before and after. Clean build and a plain boot-check both
+     passed.

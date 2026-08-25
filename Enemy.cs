@@ -510,7 +510,19 @@ namespace Realm
         {
             while (true)
             {
-                Velocity += (Player.Instance.Position - Position).ScaleTo(acceleration);
+                // ScaleTo() divides by the vector's own Length() — a zero
+                // vector (enemy and player at the exact same Position, down
+                // to the float) would divide by zero and permanently poison
+                // Velocity/Position with NaN from that tick on. Found via
+                // BeachedBuccaneer.cs's scripted test spawning an enemy
+                // directly on top of the player; not reachable through
+                // normal movement/spawning, but a one-line guard costs
+                // nothing for every other FollowPlayer() user (Seeker,
+                // Brute, Limon) since it's a no-op unless the vector is
+                // already exactly zero.
+                Vector2 toPlayer = Player.Instance.Position - Position;
+                if (toPlayer != Vector2.Zero)
+                    Velocity += toPlayer.ScaleTo(acceleration);
                 yield return 0;
             }
         }
@@ -685,6 +697,77 @@ namespace Realm
             }
         }
 
+        // Same shared projectileCooldown/aim-at-player shape as Shoot()
+        // above, but only actually fires while the player is within range —
+        // Shoot()/Spray()/Bomb() all fire regardless of distance. First
+        // real use: CreatePirate() below ("fire a single shot towards them
+        // if they get close enough").
+        protected IEnumerable<int> ShootIfInRange(
+            float range,
+            int damage,
+            float projectileSpeed,
+            Texture2D projectileImage = null
+        )
+        {
+            float rangeSquared = range * range;
+            while (true)
+            {
+                var aim = Player.Instance.Position - Position;
+                if (
+                    aim.LengthSquared() > 0
+                    && aim.LengthSquared() <= rangeSquared
+                    && projectileCooldownRemaining <= 0
+                )
+                {
+                    projectileCooldownRemaining = projectileCooldown - (1 * 1);
+                    float aimAngle = aim.ToAngle();
+                    float randomSpread = rand.NextFloat(-0.1f, 0.1f) + rand.NextFloat(-0.1f, 0.1f);
+                    Vector2 vel = Extensions.FromPolar(aimAngle + randomSpread, projectileSpeed);
+                    EntityManager.Add(
+                        new EnemyProjectile(Position, vel, projectileImage) { Damage = damage }
+                    );
+                }
+                if (projectileCooldownRemaining > 0)
+                    projectileCooldownRemaining--;
+
+                yield return 0;
+            }
+        }
+
+        // Non-damaging flavor behavior — a random line from taunts floats
+        // above this enemy (see TauntBubble.cs) once every intervalFrames,
+        // while the player is within range. Added via AddBehaviour (not
+        // AddAttackBehaviour), same as movement — talking isn't blocked by
+        // Stunned the way a real attack is. First real use:
+        // BeachedBuccaneer.cs.
+        protected IEnumerable<int> TauntWhenPlayerNear(
+            float range,
+            string[] taunts,
+            int intervalFrames = 300
+        )
+        {
+            float rangeSquared = range * range;
+            int cooldownRemaining = 0;
+            while (true)
+            {
+                if (cooldownRemaining <= 0)
+                {
+                    if (Vector2.DistanceSquared(Player.Instance.Position, Position) <= rangeSquared)
+                    {
+                        string taunt = taunts[rand.Next(taunts.Length)];
+                        EntityManager.Add(new TauntBubble(this, taunt));
+                        cooldownRemaining = intervalFrames;
+                    }
+                }
+                else
+                {
+                    cooldownRemaining--;
+                }
+
+                yield return 0;
+            }
+        }
+
         #endregion
 
         #region Enemy Types
@@ -805,6 +888,30 @@ namespace Realm
 
             enemy.AddBehaviour(enemy.MoveSnake());
             enemy.AddAttackBehaviour(enemy.Shoot(3));
+
+            return enemy;
+        }
+
+        // Beach biome's basic wave enemy — same "easiest tier" positioning
+        // as Snake (near-identical HP/PointValue), just with different
+        // movement/attack behavior: chases the player outright (FollowPlayer)
+        // rather than Snake's weaving dash, and only fires while the player
+        // is within Range (ShootIfInRange, not the unconditional Shoot()).
+        // Also the escort enemy BeachedBuccaneer.cs's mini-boss pack spawns
+        // alongside it, same relationship as Snake/CreateBigSnake.
+        public static Enemy CreatePirate(Vector2 position)
+        {
+            var enemy = new Enemy(Art.Pirate, position)
+            {
+                health = 5,
+                healthMax = 5,
+                PointValue = 2,
+            };
+
+            enemy.AddBehaviour(enemy.FollowPlayer(0.2f));
+            enemy.AddAttackBehaviour(
+                enemy.ShootIfInRange(range: 2.4f * 32f, damage: 4, projectileSpeed: 4f)
+            );
 
             return enemy;
         }

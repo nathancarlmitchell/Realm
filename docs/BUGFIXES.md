@@ -738,3 +738,18 @@ happened at once.
     `Duration`, converting back to tiles/sec and seconds — landed within floating-point rounding of
     exactly 18/0.5/9, and confirmed `ExpiresOnHit` was already `false`. Real save files confirmed
     byte-identical before and after.
+53. **`Enemy.FollowPlayer()` could freeze an enemy's position at `NaN` forever** if it and the player
+    ever landed on the exact same `Position` — found while scripting a test for the new Beached
+    Buccaneer mini-boss (entry 180), not reported by the user. See [DEVLOG.md](DEVLOG.md) entry 180
+    for the full writeup. `ScaleTo()` divides by the vector's own `Length()`; a zero vector (enemy
+    and player exactly coincident) divides by zero, and the resulting `NaN` propagates into `Velocity`
+    then `Position` on that tick and every one after. Not reachable through ordinary spawning/movement
+    (exact floating-point coincidence essentially never happens in real play) but shared by every enemy
+    using `FollowPlayer()` — Seeker, Brute, Limon, and now Beached Buccaneer. Fixed with a one-line
+    guard skipping the `ScaleTo()` call when the vector is already zero, a no-op for every other caller
+    since none of them ever hit that case. Verified via the same scripted repro that surfaced it:
+    confirmed a `BeachedBuccaneer` spawned exactly on the player's position no longer produces `NaN`
+    `Position` after being ticked, and a follow-up offscreen render confirmed both its sprite and a
+    nearby Pirate's render correctly (this was also the render pass that had been coming back
+    completely blank before the fix — the guard was the actual cause, not a camera/z-order issue as
+    first suspected).

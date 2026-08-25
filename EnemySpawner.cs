@@ -61,6 +61,7 @@ namespace Realm
             ("Seeker", 3, Enemy.CreateSeeker),
             ("Wanderer", 6, Enemy.CreateWanderer),
             ("Brute", 8, Enemy.CreateBrute),
+            ("Pirate", 1, Enemy.CreatePirate),
         ];
 
         // The BiomeData ring (Data/BiomeData.json, sorted ascending by
@@ -90,6 +91,17 @@ namespace Realm
         private const int BigSnakePackInterval = 1800; // ~30 seconds at 60fps
         private const int BigSnakePackSnakeCount = 4;
         private static int bigSnakePackCooldownRemaining = BigSnakePackInterval;
+
+        // Beached Buccaneer as Beach's own mini-boss: same pack-spawn shape
+        // as BigSnake above (a fixed interval, always arrives with an
+        // escort rather than blending into the regular wave), but — unlike
+        // BigSnake, which fires regardless of location — gated to only
+        // spawn while the player is actually standing in the Beach biome,
+        // since a beach pirate showing up in the middle of Blighted Wastes
+        // would be jarring. See GetCurrentBiome() above.
+        private const int BeachedBuccaneerPackInterval = 1800; // ~30 seconds at 60fps
+        private const int BeachedBuccaneerPackPirateCount = 4;
+        private static int beachedBuccaneerPackCooldownRemaining = BeachedBuccaneerPackInterval;
 
         // Wave/pack spawning: instead of each basic type independently
         // rolling a 1-in-N chance every frame (a steady trickle), a wave of
@@ -141,6 +153,17 @@ namespace Realm
                 else
                 {
                     bigSnakePackCooldownRemaining--;
+                }
+
+                if (beachedBuccaneerPackCooldownRemaining <= 0)
+                {
+                    if (GetCurrentBiome()?.Name == "Beach")
+                        SpawnBeachedBuccaneerPack();
+                    beachedBuccaneerPackCooldownRemaining = BeachedBuccaneerPackInterval;
+                }
+                else
+                {
+                    beachedBuccaneerPackCooldownRemaining--;
                 }
 
                 // SpriteGod stays its own independent, level-scaling roll —
@@ -202,6 +225,24 @@ namespace Realm
             {
                 Vector2 offset = new(rand.Next(-80, 81), rand.Next(-80, 81));
                 EntityManager.Add(Enemy.CreateSnake(anchor + offset));
+            }
+        }
+
+        // One Beached Buccaneer plus a cluster of ordinary Pirates around
+        // the same anchor point — same clustering technique as
+        // SpawnBigSnakePack() above. BeachedBuccaneer is a dedicated class
+        // (Bosses/BeachedBuccaneer.cs), not a bare Enemy.CreateX() factory
+        // like CreateBigSnake, so this constructs it directly instead of
+        // going through a Func<Vector2, Enemy> reference.
+        private static void SpawnBeachedBuccaneerPack()
+        {
+            Vector2 anchor = GetSpawnPosition();
+            EntityManager.Add(new Bosses.BeachedBuccaneer(anchor));
+
+            for (int i = 0; i < BeachedBuccaneerPackPirateCount; i++)
+            {
+                Vector2 offset = new(rand.Next(-80, 81), rand.Next(-80, 81));
+                EntityManager.Add(Enemy.CreatePirate(anchor + offset));
             }
         }
 
