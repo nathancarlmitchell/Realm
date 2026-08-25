@@ -4367,3 +4367,61 @@ date/time for those individually; don't treat their grouping as meaning they all
      second render confirmed both sprites and a real taunt line rendering correctly together. Real
      save files confirmed byte-identical before and after. Clean build and a plain boot-check both
      passed.
+
+## 2026-08-25
+
+181. **Added Beach's second basic enemy (Bandit) and second mini-boss (Bandit Leader)**, continuing
+     the same one-at-a-time spec-and-implement pattern as entry 180. Full stats/attacks/behavior/
+     taunt dialogue given directly by the user.
+
+     Bandit (HP 50/DEF 1/EXP 5) reads its two listed attacks as one shared-cooldown mechanic rather
+     than two independent attacks: a shorter-range dagger stab (3.6 tiles, +1 damage) that replaces
+     the longer-range shot (6 tiles) once the player closes distance, matching the spec's explicit
+     "they only use it when you get close." Uses the existing `FollowPlayer()` coroutine — the
+     "will not track your movement" flavor text describes the game's existing straight-line,
+     non-homing projectiles rather than a new mechanic. "Protects: Bandit Leader" is read as a
+     pack-relationship label (matching Pirate/Beached Buccaneer's existing pattern) rather than a
+     distinct bodyguard AI. New file `Bandit.cs` at the project root (not `Bosses/`) — a deliberate
+     folder distinction from the mini-boss-tier dedicated-subclass files, since this one is
+     basic-tier.
+
+     Bandit Leader (HP 280/DEF 2/EXP 88) reads its two listed attacks as genuinely concurrent (own
+     independent cooldowns) rather than Beached Buccaneer's mutually-exclusive random choice — a
+     deliberate re-reading based on the differing phrasing ("attacking... [and] throwing" vs. "with
+     either X or Y"). Its "runs away... when low on health" behavior needed a new reusable
+     coroutine, `Enemy.FleePlayer()` — a mirror image of the existing `FollowPlayer()`, same
+     zero-vector guard, just accelerating away instead of toward. No percentage was given for "low
+     on health," so 25% was chosen (lower than Beached Buccaneer's spec'd 50% enrage point, since
+     fleeing is a more drastic response than a temporary buff) — flagged as a tunable constant, not
+     a spec'd value. Its AoE grenade throw reuses the pre-existing, previously-unused
+     `GrenadeProjectile` class, same as Beached Buccaneer's. The "Catch!" taunt fires on only 35% of
+     throws (not every one) to avoid reading as spam over a sustained fight — also tunable. Neither
+     enemy's projectile art was specified this time (unlike Beached Buccaneer's explicit
+     `white_bolt.png`), so both reuse the already-loaded `Art.SwordSlash` as a thematic fit — flagged
+     to the user rather than assumed silently correct.
+
+     New reusable `Enemy` coroutines added alongside `FleePlayer()`: `ShootIfInRange()` (a
+     distance-gated single shot, unlike the unconditional `Shoot`/`Spray`/`Bomb`) and
+     `TauntWhenPlayerNear()`'s sibling usage confirmed still generic enough for a second consumer.
+     New dedicated-subclass file `Bosses/BanditLeader.cs`, mirroring `BeachedBuccaneer.cs`'s shape
+     (bespoke instance state — a one-time flee latch, its own AoE cooldown — that doesn't fit the
+     generic coroutines alone). `EnemySpawner.SpawnBanditLeaderPack()` mirrors
+     `SpawnBeachedBuccaneerPack()`'s shape, gated the same way behind `GetCurrentBiome()?.Name ==
+     "Beach"`. `Data/BiomeData.json`'s Beach roster now reads `["Pirate", "Bandit"]`.
+     `Content.mgcb`/`Art.cs` register both sprites under `Biomes/Beach/`.
+
+     Found and fixed a real crash bug during scripted testing: see
+     [BUGFIXES.md](BUGFIXES.md)'s SpriteFont-glyph entry — a literal Unicode ellipsis in Bandit
+     Leader's flee taunt would have thrown an uncaught `ArgumentException` and crashed the entire
+     game the instant a real player triggered it. Fixed the specific string and added a
+     general-purpose `TauntBubble.SanitizeForFont()` defensive sanitizer for all future taunt text.
+
+     Verified via 25 scripted checks: Beach's roster reflects both enemies; Bandit's stats and its
+     dual-range attack (dagger damage at close range, lower damage at mid range, no fire beyond
+     range); Bandit Leader's stats, that it chases while healthy and flees once at/below 25% health,
+     that the flee taunt fires, that the sanitizer neutralizes unsupported characters without
+     throwing, that its AoE grenades fire with the right damage and the "Catch!" taunt appears over
+     repeated throws; and the real `EnemySpawner.Update()` spawning a Bandit Leader pack (with Bandit
+     escorts) while in Beach and nothing while in Forest. A render confirmed both new sprites draw
+     correctly. Real save files confirmed byte-identical before and after. Clean build and a plain
+     boot-check both passed.

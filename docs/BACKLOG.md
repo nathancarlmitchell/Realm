@@ -125,19 +125,19 @@ prioritized or scheduled — the user asked to keep these noted for later rather
 - **Biome system follow-ups.** A first version shipped as concentric distance rings only (see
   [DEVLOG.md](DEVLOG.md) entry 179) — the user explicitly chose rings over lateral variety to keep
   v1 simple. Beach (the innermost ring, replacing the original placeholder "Meadow") now has real
-  enemy art and its own basic enemy (Pirate) plus mini-boss (Beached Buccaneer) — see entry 180.
-  Real per-biome *ground* art is still the open item (`Data/BiomeData.json`'s `GroundTileImageName`
-  is wired for it — every biome, Beach included, still just points at the shared `Art.Tile` texture,
-  told apart only by a color tint). Other open follow-ups: the other 14 Beach sprites the user
-  supplied (Little Blue/Green/Pink Jelly, Little Scorpion, Sand Devil, Bandit, Bandit Leader,
-  Piratess, Scorpion Queen, Sandsman King/Archer/Sorcerer, Giant Crab, Greedy Crab) are still
-  unwired, waiting on the user to specify each one's stats/behavior/tier the same way they did for
-  Beached Buccaneer/Pirate; angular/sector-based variety within a ring (so two players don't always
-  see the same biome at the same distance); biome-biased loot tiers (`ItemSpawner` doesn't read
-  biome at all yet); Forest/Highlands/Blighted Wastes have no mini-boss of their own yet, unlike
-  Beach; and retuning the 4 biomes' distance thresholds/enemy rosters, which were placeholder
-  guesses mirroring `EnemySpawner.BasicEnemyPool`'s existing level order, not derived from real
-  playtesting.
+  enemy art and two basic enemy/mini-boss pairs: Pirate + Beached Buccaneer (entry 180), and
+  Bandit + Bandit Leader (entry 181). Real per-biome *ground* art is still the open item
+  (`Data/BiomeData.json`'s `GroundTileImageName` is wired for it — every biome, Beach included,
+  still just points at the shared `Art.Tile` texture, told apart only by a color tint). Other open
+  follow-ups: the other 12 Beach sprites the user supplied (Little Blue/Green/Pink Jelly, Little
+  Scorpion, Sand Devil, Piratess, Scorpion Queen, Sandsman King/Archer/Sorcerer, Giant Crab, Greedy
+  Crab) are still unwired, waiting on the user to specify each one's stats/behavior/tier the same
+  way they did for the first two pairs; angular/sector-based variety within a ring (so two players
+  don't always see the same biome at the same distance); biome-biased loot tiers (`ItemSpawner`
+  doesn't read biome at all yet); Forest/Highlands/Blighted Wastes have no mini-boss of their own
+  yet, unlike Beach; and retuning the 4 biomes' distance thresholds/enemy rosters, which were
+  placeholder guesses mirroring `EnemySpawner.BasicEnemyPool`'s existing level order, not derived
+  from real playtesting.
 
 ## Completed
 

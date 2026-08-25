@@ -753,3 +753,23 @@ happened at once.
     nearby Pirate's render correctly (this was also the render pass that had been coming back
     completely blank before the fix — the guard was the actual cause, not a camera/z-order issue as
     first suspected).
+
+54. **Any enemy taunt line containing "smart" typography (curly quotes, an em/en dash, a Unicode
+    ellipsis) would crash the entire game the instant it tried to render** — found while scripting a
+    test for the new Bandit Leader mini-boss (entry 181), not reported by the user; never reachable
+    in prior taunts (Beached Buccaneer's, checked directly and confirmed clean) purely by luck of
+    which characters got typed. `SpriteFont.MeasureString()`/`DrawString()` both throw
+    `System.ArgumentException` on any character outside the font's glyph set, and neither
+    `TauntBubble`'s constructor (which calls `MeasureString` via `Util.WrapText`) nor its `Draw()`
+    (which calls both again directly) had any handling for it — there is no exception handling
+    anywhere in the real game loop to catch a throw like this, so it would have taken down the whole
+    process. The immediate trigger was a literal Unicode ellipsis ("…") in Bandit Leader's flee
+    taunt, copied verbatim from the user's own spec text; `Art.HudFont` has no glyph for it. Fixed
+    two ways: replaced that specific character with "..." (three ASCII periods) directly in
+    `BanditLeader.cs`, and added a general-purpose `TauntBubble.SanitizeForFont()` sanitizer applied
+    to all taunt text going forward — maps common smart-typography characters (curly quotes,
+    em/en dashes, ellipsis) to their closest ASCII equivalent, then strips any remaining character
+    the font still can't render via `SpriteFont.Characters.Contains()`, as a last-resort safety net
+    rather than trusting every future hand-written taunt to stay ASCII-only. Verified via a
+    dedicated scripted check constructing a `TauntBubble` with curly quotes and an ellipsis and
+    confirming both the constructor and a full `Draw()` call complete without throwing.

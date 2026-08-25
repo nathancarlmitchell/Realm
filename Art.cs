@@ -37,6 +37,8 @@ namespace Realm
         public static Texture2D BigSnake { get; private set; }
         public static Texture2D Pirate { get; private set; }
         public static Texture2D BeachedBuccaneer { get; private set; }
+        public static Texture2D Bandit { get; private set; }
+        public static Texture2D BanditLeader { get; private set; }
         public static Texture2D WhiteBolt { get; private set; }
         public static Texture2D Wizard { get; private set; }
         public static Texture2D Archer { get; private set; }
@@ -233,6 +235,8 @@ namespace Realm
             BigSnake = content.Load<Texture2D>("Enemies/big_snake");
             Pirate = content.Load<Texture2D>("Biomes/Beach/Pirate");
             BeachedBuccaneer = content.Load<Texture2D>("Biomes/Beach/Beached Buccaneer");
+            Bandit = content.Load<Texture2D>("Biomes/Beach/Bandit");
+            BanditLeader = content.Load<Texture2D>("Biomes/Beach/Bandit Leader");
             WhiteBolt = content.Load<Texture2D>("Projectiles/white_bolt");
 
             // Weapons.

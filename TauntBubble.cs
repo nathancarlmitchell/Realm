@@ -1,3 +1,4 @@
+using System.Text;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 
@@ -31,8 +32,39 @@ namespace Realm
             this.speaker = speaker;
             this.lifespanTicks = lifespanTicks;
             ticksRemaining = lifespanTicks;
-            wrappedText = Util.WrapText(Art.HudFont, text, MaxLineWidth);
+            wrappedText = Util.WrapText(Art.HudFont, SanitizeForFont(text), MaxLineWidth);
             Position = speaker.Position - new Vector2(0, VerticalOffset);
+        }
+
+        // Taunt text comes from hand-written dialogue, which routinely
+        // includes "smart" typography (curly quotes, em/en dashes, an
+        // ellipsis character) that Art.HudFont's SpriteFont has no glyph
+        // for — MeasureString()/DrawString() both throw ArgumentException
+        // on a single unresolvable character, which crashes the whole
+        // game the instant this bubble tries to render (found via a real
+        // "…" in one of BanditLeader.cs's own taunts). Common cases are
+        // mapped to a close ASCII equivalent so the wording still reads
+        // naturally; anything left over that the font still doesn't
+        // support is stripped outright — a last-resort safety net for
+        // whatever character neither this list nor the original author
+        // anticipated, rather than risking a crash on it.
+        private static string SanitizeForFont(string text)
+        {
+            text = text.Replace('‘', '\'') // left single quote
+                .Replace('’', '\'') // right single quote
+                .Replace('“', '"') // left double quote
+                .Replace('”', '"') // right double quote
+                .Replace("…", "...") // ellipsis
+                .Replace('–', '-') // en dash
+                .Replace('—', '-'); // em dash
+
+            var builder = new StringBuilder(text.Length);
+            foreach (char c in text)
+            {
+                if (Art.HudFont.Characters.Contains(c))
+                    builder.Append(c);
+            }
+            return builder.ToString();
         }
 
         public override void Update()

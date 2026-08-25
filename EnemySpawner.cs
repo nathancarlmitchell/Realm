@@ -62,6 +62,7 @@ namespace Realm
             ("Wanderer", 6, Enemy.CreateWanderer),
             ("Brute", 8, Enemy.CreateBrute),
             ("Pirate", 1, Enemy.CreatePirate),
+            ("Bandit", 1, position => new Bandit(position)),
         ];
 
         // The BiomeData ring (Data/BiomeData.json, sorted ascending by
@@ -102,6 +103,13 @@ namespace Realm
         private const int BeachedBuccaneerPackInterval = 1800; // ~30 seconds at 60fps
         private const int BeachedBuccaneerPackPirateCount = 4;
         private static int beachedBuccaneerPackCooldownRemaining = BeachedBuccaneerPackInterval;
+
+        // Bandit Leader as Beach's second mini-boss — same shape/gating as
+        // BeachedBuccaneerPack above, offset to a different interval so
+        // the two don't always arrive on exactly the same tick.
+        private const int BanditLeaderPackInterval = 2100; // ~35 seconds at 60fps
+        private const int BanditLeaderPackBanditCount = 4;
+        private static int banditLeaderPackCooldownRemaining = BanditLeaderPackInterval;
 
         // Wave/pack spawning: instead of each basic type independently
         // rolling a 1-in-N chance every frame (a steady trickle), a wave of
@@ -164,6 +172,17 @@ namespace Realm
                 else
                 {
                     beachedBuccaneerPackCooldownRemaining--;
+                }
+
+                if (banditLeaderPackCooldownRemaining <= 0)
+                {
+                    if (GetCurrentBiome()?.Name == "Beach")
+                        SpawnBanditLeaderPack();
+                    banditLeaderPackCooldownRemaining = BanditLeaderPackInterval;
+                }
+                else
+                {
+                    banditLeaderPackCooldownRemaining--;
                 }
 
                 // SpriteGod stays its own independent, level-scaling roll —
@@ -243,6 +262,23 @@ namespace Realm
             {
                 Vector2 offset = new(rand.Next(-80, 81), rand.Next(-80, 81));
                 EntityManager.Add(Enemy.CreatePirate(anchor + offset));
+            }
+        }
+
+        // One Bandit Leader plus a cluster of ordinary Bandits — same
+        // shape as SpawnBeachedBuccaneerPack() above. Both BanditLeader and
+        // Bandit are dedicated classes (Bosses/BanditLeader.cs, Bandit.cs),
+        // not bare Enemy.CreateX() factories, so both are constructed
+        // directly.
+        private static void SpawnBanditLeaderPack()
+        {
+            Vector2 anchor = GetSpawnPosition();
+            EntityManager.Add(new Bosses.BanditLeader(anchor));
+
+            for (int i = 0; i < BanditLeaderPackBanditCount; i++)
+            {
+                Vector2 offset = new(rand.Next(-80, 81), rand.Next(-80, 81));
+                EntityManager.Add(new Bandit(anchor + offset));
             }
         }
 

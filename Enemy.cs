@@ -527,6 +527,21 @@ namespace Realm
             }
         }
 
+        // Mirror image of FollowPlayer() above — same zero-vector guard,
+        // same shape, just accelerating away from the player instead of
+        // toward them. First real use: BanditLeader.cs ("Runs away from
+        // players when low on health").
+        protected IEnumerable<int> FleePlayer(float acceleration = 0.5f)
+        {
+            while (true)
+            {
+                Vector2 awayFromPlayer = Position - Player.Instance.Position;
+                if (awayFromPlayer != Vector2.Zero)
+                    Velocity += awayFromPlayer.ScaleTo(acceleration);
+                yield return 0;
+            }
+        }
+
         protected IEnumerable<int> MoveSnake(float speed = 0.2f)
         {
             float direction = rand.NextFloat(0, MathHelper.TwoPi);
