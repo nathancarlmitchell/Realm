@@ -5172,3 +5172,23 @@ date/time for those individually; don't treat their grouping as meaning they all
      above the old hard cap, and the potion gate correctly tracks the permanent value rather than
      being fooled by gear. Clean build, plain boot-check, and a full real-save-file diff all passed
      with zero differences.
+
+197. **Show HP/MP equipment bonuses in parentheses next to the bar numbers** — e.g. "615 / 615
+     (+40)" — a direct follow-up to entry 196's fix letting equipment push `HealthMax`/`ManaMax`
+     past their cap, so that bonus is now visible rather than silently folded into the total.
+     `Player.EquipmentMaxHealthBonus`/`EquipmentMaxManaBonus` were `protected` (only meant for each
+     class's own `RecalculateStats()` to read) — widened to `public`, same precedent as
+     `EquipmentXpBonusPercent` just above them (also public, also read by code outside `Player`).
+     `Overlay.DrawHealthSection()`/`DrawManaSection()` append `" (+" + bonus + ")"` to the numbers
+     string whenever that bonus is nonzero, before handing the whole thing to `DrawBarText()` — the
+     suffix becomes part of the same centered block rather than a separately-positioned element, so
+     "615 / 615 (+40)" centers as one unit exactly like the format the user asked for.
+     Verified by rendering `Overlay.DrawSidebar()` for the real, currently-loaded live Wizard
+     character (safe — nothing in this render path writes anything) to an offscreen `RenderTarget2D`:
+     that real character happened to already be sitting at exactly `HealthMax 615 (+40 equipment)`
+     from entry 196's own testing, an exact match for the user's own example — the output PNG
+     confirmed "HP 615 / 615 (+40)" and "MP 398 / 398 (+115)" both render correctly, gold (full)
+     as expected from entry 195's coloring rule, with the bonus suffix cleanly inside the bar. No
+     temp code was added to `Game1.cs` beyond the render call itself, fully reverted after (`git
+     diff --stat Game1.cs` clean), scratch PNG deleted, clean build, plain boot-check, and a full
+     real-save-file diff all passed with zero differences.

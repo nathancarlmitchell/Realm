@@ -465,14 +465,12 @@ namespace Realm
 
             Color numbersColor =
                 Player.Instance.Health >= Player.Instance.HealthMax ? Color.Gold : Color.White;
+            string numbers = Player.Instance.Health + " / " + Player.Instance.HealthMax;
+            if (Player.Instance.EquipmentMaxHealthBonus > 0)
+                numbers += " (+" + Player.Instance.EquipmentMaxHealthBonus + ")";
+
             Rectangle barRect = new(x, HpBarY, 100 * SidebarBarScale, SidebarBarHeight);
-            DrawBarText(
-                spriteBatch,
-                barRect,
-                "HP",
-                Player.Instance.Health + " / " + Player.Instance.HealthMax,
-                numbersColor
-            );
+            DrawBarText(spriteBatch, barRect, "HP", numbers, numbersColor);
         }
 
         // Vital Combat's two HUD indicators, both anchored to the HP bar
@@ -592,14 +590,12 @@ namespace Realm
 
             Color numbersColor =
                 Player.Instance.Mana >= Player.Instance.ManaMax ? Color.Gold : Color.White;
+            string numbers = Player.Instance.Mana + " / " + Player.Instance.ManaMax;
+            if (Player.Instance.EquipmentMaxManaBonus > 0)
+                numbers += " (+" + Player.Instance.EquipmentMaxManaBonus + ")";
+
             Rectangle barRect = new(x, MpBarY, 100 * SidebarBarScale, SidebarBarHeight);
-            DrawBarText(
-                spriteBatch,
-                barRect,
-                "MP",
-                Player.Instance.Mana + " / " + Player.Instance.ManaMax,
-                numbersColor
-            );
+            DrawBarText(spriteBatch, barRect, "MP", numbers, numbersColor);
         }
 
         // Grouped right after Mana since it's mana-cost based — resolved via

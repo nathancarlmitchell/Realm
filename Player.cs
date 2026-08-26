@@ -926,13 +926,17 @@ namespace Realm
         // live from Weapon/Armor/Ring/AbilityItem rather than tracked
         // separately, so there's no accumulator to keep in sync (and nothing
         // to double-count when the same gear gets re-equipped, e.g. on
-        // save/reload).
-        protected int EquipmentMaxHealthBonus =>
+        // save/reload). Public (unlike the bonuses below, which
+        // RecalculateStats() folds straight into HealthMax/ManaMax) — read
+        // directly by Overlay.DrawHealthSection()/DrawManaSection() to show
+        // the "(+N)" next to the bar numbers, same reasoning as
+        // EquipmentXpBonusPercent below.
+        public int EquipmentMaxHealthBonus =>
             Weapon.MaxHealthBonus
             + Armor.MaxHealthBonus
             + Ring.MaxHealthBonus
             + AbilityItem.MaxHealthBonus;
-        protected int EquipmentMaxManaBonus =>
+        public int EquipmentMaxManaBonus =>
             Weapon.MaxManaBonus + Armor.MaxManaBonus + Ring.MaxManaBonus + AbilityItem.MaxManaBonus;
         protected int EquipmentAttackBonus =>
             Weapon.AttackBonus + Armor.AttackBonus + Ring.AttackBonus + AbilityItem.AttackBonus;
