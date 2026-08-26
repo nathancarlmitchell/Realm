@@ -4,13 +4,15 @@ using Realm;
 
 namespace Realm.Bosses
 {
-    // Beach's fifth mini-boss — same "dedicated Enemy subclass, no portal/
-    // arena" shape as the other four, but with no escort of its own
-    // (no "Spawns:" field in the spec). Introduces Aim Tracking: its main
-    // attack fires at the player's *predicted* position (current Position
-    // + current Velocity extrapolated forward), not their current one — the
-    // player's own counter-play is deliberately changing direction right as
-    // it fires so the volley lands where they used to be headed.
+    // A regular Beach wave enemy (EnemySpawner.BasicEnemyPool) — no longer a
+    // dedicated mini-boss spawn; Beached Buccaneer is now the only Beach
+    // mini-boss. Its own dedicated class rather than a bare Enemy.CreateX()
+    // factory for its bespoke phase-cycling attack state; has no escort of
+    // its own (no "Spawns:" field in the spec). Introduces Aim Tracking: its
+    // main attack fires at the player's *predicted* position (current
+    // Position + current Velocity extrapolated forward), not their current
+    // one — the player's own counter-play is deliberately changing direction
+    // right as it fires so the volley lands where they used to be headed.
     class GiantCrab : Enemy
     {
         private enum Phase
@@ -75,6 +77,9 @@ namespace Realm.Bosses
             healthMax = 300;
             Defense = 2;
             PointValue = 86;
+            DropPool = BeachDropPool;
+            DropChances = BeachDropChances;
+            DropTierRanges = BeachDropTierRanges;
 
             AddBehaviour(AggroWatcher());
             AddBehaviour(PhaseTimer());

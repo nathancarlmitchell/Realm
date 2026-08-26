@@ -52,6 +52,9 @@ namespace Realm
             healthMax = 100;
             Defense = 1;
             PointValue = 8;
+            DropPool = BeachDropPool;
+            DropChances = BeachDropChances;
+            DropTierRanges = BeachDropTierRanges;
 
             AddBehaviour(PhaseWatcher());
             AddAttackBehaviour(SpinnerAttack());

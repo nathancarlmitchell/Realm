@@ -42,6 +42,9 @@ namespace Realm
             healthMax = 30;
             Defense = 0;
             PointValue = 6;
+            DropPool = BeachDropPool;
+            DropChances = BeachDropChances;
+            DropTierRanges = BeachDropTierRanges;
 
             AddBehaviour(Orbit());
             AddAttackBehaviour(

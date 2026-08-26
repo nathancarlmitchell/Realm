@@ -7,8 +7,11 @@ namespace Realm
     // deliberately not part of EnemySpawner.BasicEnemyPool, unlike
     // Pirate/Bandit, since "wanders close to the Scorpion Queen" only makes
     // sense with a live Queen to tether to; it never appears standalone.
-    // Basic-tier (project root, matching Bandit.cs), not mini-boss-tier
-    // (Bosses/), despite always arriving alongside a mini-boss.
+    // Lives at the project root (matching Bandit.cs) even though
+    // ScorpionQueen itself lives under Bosses/ — that's a file-organization
+    // holdover from when ScorpionQueen was Beach's own mini-boss; she's now
+    // a regular Beach wave enemy like everything else (Beached Buccaneer is
+    // the only Beach mini-boss), but her escort mechanic is unchanged.
     class LittleScorpion : Enemy
     {
         public ScorpionQueen Owner { get; }
@@ -32,6 +35,9 @@ namespace Realm
             healthMax = 10;
             Defense = 0;
             PointValue = 2;
+            DropPool = BeachDropPool;
+            DropChances = BeachDropChances;
+            DropTierRanges = BeachDropTierRanges;
 
             AddBehaviour(
                 MoveTethered(wanderDistance: WanderDistance, speed: WanderSpeed, anchor: owner)

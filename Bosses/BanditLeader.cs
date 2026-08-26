@@ -5,15 +5,14 @@ using Realm;
 
 namespace Realm.Bosses
 {
-    // Beach's second mini-boss — same "not a full Boss subclass" shape as
-    // BeachedBuccaneer (no portal/arena, spawns with an escort pack — see
-    // EnemySpawner.SpawnBanditLeaderPack()). Its own dedicated class
-    // (rather than a bare Enemy.CreateX() factory) for the same reason as
-    // BeachedBuccaneer: bespoke instance state (a one-time flee trigger,
-    // its own AoE cooldown) that doesn't fit the generic reusable
-    // coroutines alone. The main projectile attack DOES fit one of those
-    // generics (ShootIfInRange), reused directly rather than
-    // hand-duplicated.
+    // A regular Beach wave enemy (EnemySpawner.BasicEnemyPool) — no longer
+    // a dedicated mini-boss/escort-pack spawn; Beached Buccaneer is now the
+    // only Beach mini-boss. Its own dedicated class (rather than a bare
+    // Enemy.CreateX() factory) since it needs bespoke instance state (a
+    // one-time flee trigger, its own AoE cooldown) that doesn't fit the
+    // generic reusable coroutines alone. The main projectile attack DOES
+    // fit one of those generics (ShootIfInRange), reused directly rather
+    // than hand-duplicated.
     class BanditLeader : Enemy
     {
         private static readonly Random rand = new();
@@ -48,6 +47,9 @@ namespace Realm.Bosses
             healthMax = 280;
             Defense = 2;
             PointValue = 88;
+            DropPool = BeachDropPool;
+            DropChances = BeachDropChances;
+            DropTierRanges = BeachDropTierRanges;
 
             AddBehaviour(FleeWatcher());
             AddAttackBehaviour(

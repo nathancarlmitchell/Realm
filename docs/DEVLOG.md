@@ -5662,3 +5662,52 @@ date/time for those individually; don't treat their grouping as meaning they all
      enemy's distance stayed exactly unchanged (1337.67 before and after). Reverted the temp code
      (`git diff --stat Game1.cs` clean), deleted the scratch log, ran a final clean build + plain
      boot-check, and confirmed all real save files byte-identical to a pre-test backup.
+
+213. **Reclassified four of Beach's five mini-bosses to regular enemies, and gave every Beach enemy
+     its own drop-rate table.** Two requests in one turn.
+     Reclassification: Bandit Leader, Scorpion Queen, Sandsman King, and Giant Crab each had their
+     own dedicated fixed-interval pack-spawn machinery in `EnemySpawner.cs` (a `*PackInterval`
+     constant, a `*PackCooldownRemaining` field, and either a spawn method — `SpawnBanditLeaderPack()`
+     spawning it plus a Bandit escort — or a direct `EntityManager.Add(new Bosses.X(...))` call in
+     `Update()`), separate from and in addition to `SpawnWave()`'s regular biome-filtered roll. All of
+     that was removed for these four — they're now plain entries in `BasicEnemyPool`
+     (`("Bandit Leader", position => new Bosses.BanditLeader(position))` etc.), gated only by Beach's
+     own `EnemyNames` list (`Data/BiomeData.json`, now `["Pirate", "Bandit", "Piratess", "Sand
+     Devil", "Bandit Leader", "Scorpion Queen", "Sandsman King", "Giant Crab"]`) like every other
+     basic wave enemy. Beached Buccaneer is now the only Beach mini-boss — its own
+     `SpawnBeachedBuccaneerPack()`/`BeachedBuccaneerPackInterval` were left untouched. Each
+     reclassified type's own bespoke behavior when it spawns (Scorpion Queen's internal escort of 10
+     Little Scorpions, Sandsman King's own Archer/Sorcerer escorts) is unaffected — only how often and
+     by what mechanism `EnemySpawner` decides to spawn it changed, not what happens once it exists.
+     Updated each of the four classes' own header comments (previously "Beach's second/third/
+     fourth/fifth mini-boss") to describe them as regular `BasicEnemyPool` members instead, and
+     `LittleScorpion.cs`'s comment (previously "despite always arriving alongside a mini-boss") to
+     match, since Little Scorpion's own escort relationship to Scorpion Queen is unaffected by her
+     reclassification. Left the historical entries 180-184/`BACKLOG.md`'s prior wording as a record of
+     what shipped at the time, but updated `BACKLOG.md`'s still-live biome-follow-ups note directly,
+     since it was asserting a currently-false fact ("five mini-bosses") rather than a historical one.
+     Drop rates: added a shared `Enemy.BeachDropPool`/`BeachDropChances`/`BeachDropTierRanges` (three
+     `protected static readonly` fields on the `Enemy` base class, so every Beach subclass — however
+     many files/namespaces they're spread across — reads the exact same table with no duplication) and
+     set all three on every Beach enemy's constructor: Pirate (via `CreatePirate()`'s object
+     initializer), Bandit, Piratess, Sand Devil, the three Little Jellies, Little Scorpion, Sandsman
+     Archer, Sandsman Sorcerer (the escort types — "adjust the drop rates for the beach" reads as every
+     enemy that appears there, not just the ones eligible for the regular wave roll), Beached
+     Buccaneer, and the four just-reclassified types. `DropPool` excludes `StatPotion` entirely (no
+     stat potions ever); `DropChances` sets Weapon/Armor to a flat 5%, Ring/AbilityItem to 2.5%, and
+     HealthManaPotion to 5% — bypassing the normal `PointValue`-scaled base chance entirely, so a
+     tough Beach enemy (e.g. Sandsman King, `PointValue` 86) drops at the exact same rate as a weak one
+     (e.g. Piratess, `PointValue` 2); `DropTierRanges` caps Weapon/Armor to tier 1-3 and Ring/
+     AbilityItem to tier 1 only, also bypassing the normal player-tier-relative formula.
+     Verified via a temporary `Game1.StartGame()` test: confirmed via reflection that `BasicEnemyPool`
+     now lists all four reclassified names, that their four `*PackInterval` fields and
+     `SpawnBanditLeaderPack()` no longer exist, and that `SpawnBeachedBuccaneerPack()`/
+     `BeachedBuccaneerPackInterval` still do; constructed one instance of every Beach enemy type (12
+     total) and reflectively confirmed each one's `DropPool`/`DropChances`/`DropTierRanges` match the
+     shared table exactly; ran `ItemSpawner.Spawn()` 3000 times with a real Bandit's own drop tables
+     and tallied the resulting loot bags — weapon 4.67%, armor 5.03%, ring 2.5%, ability item 2.3%,
+     HP/MP potion 5.33% (all within statistical noise of their 5%/5%/2.5%/2.5%/5% targets), zero tier
+     violations across every dropped Weapon/Armor/Ring/AbilityItem, and exactly 0 stat potions across
+     all 3000 trials. Reverted the temp code (`git diff --stat Game1.cs` clean), deleted the scratch
+     log, ran a final clean build + plain boot-check, and confirmed all real save files byte-identical
+     to a pre-test backup.

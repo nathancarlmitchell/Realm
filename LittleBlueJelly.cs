@@ -35,6 +35,9 @@ namespace Realm
             healthMax = 70;
             Defense = 0;
             PointValue = 8;
+            DropPool = BeachDropPool;
+            DropChances = BeachDropChances;
+            DropTierRanges = BeachDropTierRanges;
 
             AddBehaviour(MoveTethered(wanderDistance: WanderDistance, speed: WanderSpeed));
             AddAttackBehaviour(

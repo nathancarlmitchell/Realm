@@ -5,13 +5,15 @@ using Realm;
 
 namespace Realm.Bosses
 {
-    // Beach's fourth mini-boss — same "dedicated Enemy subclass, no portal/
-    // arena" shape as BeachedBuccaneer/BanditLeader/ScorpionQueen. Unlike
-    // ScorpionQueen (one escort type, spawned as an instant burst), the King
-    // has two independent escort types, each with its own Max/Cooldown and
-    // no initial burst — both start at 0 and populate gradually over their
-    // own stated cooldown, since the spec never says "spawns with N" the
-    // way ScorpionQueen's did.
+    // A regular Beach wave enemy (EnemySpawner.BasicEnemyPool) — no longer a
+    // dedicated mini-boss spawn; Beached Buccaneer is now the only Beach
+    // mini-boss. Its own dedicated class since, like ScorpionQueen, it
+    // manages its own escorts whenever it spawns — but unlike ScorpionQueen
+    // (one escort type, spawned as an instant burst), the King has two
+    // independent escort types, each with its own Max/Cooldown and no
+    // initial burst — both start at 0 and populate gradually over their own
+    // stated cooldown, since the spec never says "spawns with N" the way
+    // ScorpionQueen's did.
     class SandsmanKing : Enemy
     {
         // "Wanders aimlessly until it spots a player" — same one-way
@@ -44,6 +46,9 @@ namespace Realm.Bosses
             healthMax = 270;
             Defense = 2;
             PointValue = 86;
+            DropPool = BeachDropPool;
+            DropChances = BeachDropChances;
+            DropTierRanges = BeachDropTierRanges;
 
             AddBehaviour(AggroWatcher());
             AddAttackBehaviour(

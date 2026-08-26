@@ -135,20 +135,27 @@ prioritized or scheduled — the user asked to keep these noted for later rather
   entry point.
 - **Biome system follow-ups.** A first version shipped as concentric distance rings only (see
   [DEVLOG.md](DEVLOG.md) entry 179) — the user explicitly chose rings over lateral variety to keep
-  v1 simple. Beach (the innermost ring, replacing the original placeholder "Meadow") now has real
-  enemy art and five mini-bosses: Pirate + Beached Buccaneer (entry 180), Bandit + Bandit Leader
-  (entry 181), Little Scorpion + Scorpion Queen (entry 182), Sandsman Archer/Sorcerer + Sandsman King
-  (entry 183), and Giant Crab (entry 184, no escort of its own) — plus five regular enemies with no
-  mini-boss tie at all: Little Blue/Green/Pink Jelly, Piratess, and Sand Devil (entry 185). Only
-  Greedy Crab, of the original 16-sprite art drop, remains unwired. Real per-biome *ground* art is
-  still the open item (`Data/BiomeData.json`'s `GroundTileImageName` is wired for it — every biome,
-  Beach included, still just points at the shared `Art.Tile` texture, told apart only by a color
-  tint). Other open follow-ups: Greedy Crab waiting on the user to specify its
-  stats/behavior/tier; angular/sector-based variety within a ring (so two players don't always see
-  the same biome at the same distance); biome-biased loot tiers (`ItemSpawner` doesn't read biome at
-  all yet); Forest/Highlands/Blighted Wastes have no mini-boss of their own yet, unlike Beach; and
-  retuning the 4 biomes' distance thresholds/enemy rosters, which were placeholder guesses mirroring
-  `EnemySpawner.BasicEnemyPool`'s existing level order, not derived from real playtesting.
+  v1 simple. Beach (the innermost ring, replacing the original placeholder "Meadow") originally
+  shipped with real enemy art and five mini-bosses (Pirate + Beached Buccaneer, entry 180; Bandit +
+  Bandit Leader, entry 181; Little Scorpion + Scorpion Queen, entry 182; Sandsman Archer/Sorcerer +
+  Sandsman King, entry 183; Giant Crab, entry 184) alongside five regular enemies (Little
+  Blue/Green/Pink Jelly, Piratess, Sand Devil, entry 185) — later reclassified (entry 213) so
+  Beached Buccaneer is the only Beach mini-boss left; Bandit Leader/Scorpion Queen/Sandsman
+  King/Giant Crab are now regular `BasicEnemyPool` members like everything else, though each still
+  runs its own bespoke escort behavior when it spawns. That same entry also gave every Beach enemy
+  its own drop-rate table (`Enemy.BeachDropPool`/`BeachDropChances`/`BeachDropTierRanges`) — Beach no
+  longer needs "biome-biased loot tiers" as an open item, though the underlying mechanism is still a
+  per-enemy override, not `ItemSpawner` reading biome directly; another biome wanting the same
+  treatment means giving its own enemies a similar table, not a generic biome-aware knob in
+  `ItemSpawner` itself. Only Greedy Crab, of the original 16-sprite art drop, remains unwired. Real
+  per-biome *ground* art is still the open item (`Data/BiomeData.json`'s `GroundTileImageName` is
+  wired for it — every biome, Beach included, still just points at the shared `Art.Tile` texture,
+  told apart only by a color tint). Other open follow-ups: Greedy Crab waiting on the user to specify
+  its stats/behavior/tier; angular/sector-based variety within a ring (so two players don't always
+  see the same biome at the same distance); Forest/Highlands/Blighted Wastes have no mini-boss of
+  their own at all, unlike Beach's one remaining one; and retuning the 4 biomes' distance
+  thresholds/enemy rosters, which were placeholder guesses mirroring `EnemySpawner.BasicEnemyPool`'s
+  existing level order, not derived from real playtesting.
 
 ## Completed
 

@@ -54,6 +54,9 @@ namespace Realm
             healthMax = 88;
             Defense = 0;
             PointValue = 18;
+            DropPool = BeachDropPool;
+            DropChances = BeachDropChances;
+            DropTierRanges = BeachDropTierRanges;
 
             AddBehaviour(MoveTethered(wanderDistance: WanderDistance, speed: WanderSpeed));
             AddAttackBehaviour(SorcererAttack());

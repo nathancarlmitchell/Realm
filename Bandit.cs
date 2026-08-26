@@ -43,6 +43,9 @@ namespace Realm
             healthMax = 50;
             Defense = 1;
             PointValue = 5;
+            DropPool = BeachDropPool;
+            DropChances = BeachDropChances;
+            DropTierRanges = BeachDropTierRanges;
 
             AddBehaviour(FollowPlayer(0.2f));
             AddAttackBehaviour(BanditAttack());

@@ -44,6 +44,14 @@ namespace Realm
         // BigSnake is deliberately NOT in this pool — see
         // BigSnakePackInterval/SpawnBigSnakePack below, its own rarer
         // mini-boss-style spawn instead of blending into the regular wave.
+        // Bandit Leader/Scorpion Queen/Sandsman King/Giant Crab WERE their
+        // own dedicated mini-boss pack-spawns the same way, but are now
+        // folded in here as regular wave members instead — Beached
+        // Buccaneer (still its own pack-spawn below) is the only Beach
+        // mini-boss left. Each still runs whatever bespoke behavior its own
+        // class defines when it spawns (e.g. Scorpion Queen still builds her
+        // own escort of Little Scorpions) — only how often/how it gets
+        // spawned changed, not what it does once it exists.
         //
         // Name is cross-referenced against the current biome's own
         // BiomeData.EnemyNames (see GetCurrentBiome() below), which narrows
@@ -60,6 +68,10 @@ namespace Realm
             ("Bandit", position => new Bandit(position)),
             ("Piratess", position => new Piratess(position)),
             ("Sand Devil", position => new SandDevil(position)),
+            ("Bandit Leader", position => new Bosses.BanditLeader(position)),
+            ("Scorpion Queen", position => new Bosses.ScorpionQueen(position)),
+            ("Sandsman King", position => new Bosses.SandsmanKing(position)),
+            ("Giant Crab", position => new Bosses.GiantCrab(position)),
         ];
 
         // The BiomeData ring (Data/BiomeData.json, sorted ascending by
@@ -100,34 +112,6 @@ namespace Realm
         private const int BeachedBuccaneerPackInterval = 1800; // ~30 seconds at 60fps
         private const int BeachedBuccaneerPackPirateCount = 4;
         private static int beachedBuccaneerPackCooldownRemaining = BeachedBuccaneerPackInterval;
-
-        // Bandit Leader as Beach's second mini-boss — same shape/gating as
-        // BeachedBuccaneerPack above, offset to a different interval so
-        // the two don't always arrive on exactly the same tick.
-        private const int BanditLeaderPackInterval = 2100; // ~35 seconds at 60fps
-        private const int BanditLeaderPackBanditCount = 4;
-        private static int banditLeaderPackCooldownRemaining = BanditLeaderPackInterval;
-
-        // Scorpion Queen as Beach's third mini-boss — same gating as the
-        // other two, offset to yet another interval. Unlike
-        // SpawnBeachedBuccaneerPack()/SpawnBanditLeaderPack() above, this
-        // spawns only the Queen herself — she builds her own escort of 10
-        // Little Scorpions internally (see ScorpionQueen's constructor),
-        // so there's no separate escort loop here.
-        private const int ScorpionQueenPackInterval = 2400; // ~40 seconds at 60fps
-        private static int scorpionQueenPackCooldownRemaining = ScorpionQueenPackInterval;
-
-        // Sandsman King as Beach's fourth mini-boss — same gating/shape as
-        // ScorpionQueen above: spawns only the King, who builds his own
-        // Sandsman Archer/Sorcerer escorts internally.
-        private const int SandsmanKingPackInterval = 2700; // ~45 seconds at 60fps
-        private static int sandsmanKingPackCooldownRemaining = SandsmanKingPackInterval;
-
-        // Giant Crab as Beach's fifth mini-boss — same gating/shape as the
-        // others, but with no escort of its own at all (no "Spawns:" field
-        // in the spec).
-        private const int GiantCrabPackInterval = 3000; // ~50 seconds at 60fps
-        private static int giantCrabPackCooldownRemaining = GiantCrabPackInterval;
 
         // The three Little Jellies each spawn as their own same-type
         // cluster ("spawns in groups of 2-7... Mean 5, Std. Deviation 1") —
@@ -211,50 +195,6 @@ namespace Realm
                 else
                 {
                     beachedBuccaneerPackCooldownRemaining--;
-                }
-
-                if (banditLeaderPackCooldownRemaining <= 0)
-                {
-                    if (GetCurrentBiome()?.Name == "Beach")
-                        SpawnBanditLeaderPack();
-                    banditLeaderPackCooldownRemaining = BanditLeaderPackInterval;
-                }
-                else
-                {
-                    banditLeaderPackCooldownRemaining--;
-                }
-
-                if (scorpionQueenPackCooldownRemaining <= 0)
-                {
-                    if (GetCurrentBiome()?.Name == "Beach")
-                        EntityManager.Add(new Bosses.ScorpionQueen(GetSpawnPosition()));
-                    scorpionQueenPackCooldownRemaining = ScorpionQueenPackInterval;
-                }
-                else
-                {
-                    scorpionQueenPackCooldownRemaining--;
-                }
-
-                if (sandsmanKingPackCooldownRemaining <= 0)
-                {
-                    if (GetCurrentBiome()?.Name == "Beach")
-                        EntityManager.Add(new Bosses.SandsmanKing(GetSpawnPosition()));
-                    sandsmanKingPackCooldownRemaining = SandsmanKingPackInterval;
-                }
-                else
-                {
-                    sandsmanKingPackCooldownRemaining--;
-                }
-
-                if (giantCrabPackCooldownRemaining <= 0)
-                {
-                    if (GetCurrentBiome()?.Name == "Beach")
-                        EntityManager.Add(new Bosses.GiantCrab(GetSpawnPosition()));
-                    giantCrabPackCooldownRemaining = GiantCrabPackInterval;
-                }
-                else
-                {
-                    giantCrabPackCooldownRemaining--;
                 }
 
                 if (littleBlueJellyPackCooldownRemaining <= 0)
@@ -362,23 +302,6 @@ namespace Realm
             {
                 Vector2 offset = new(rand.Next(-80, 81), rand.Next(-80, 81));
                 EntityManager.Add(Enemy.CreatePirate(anchor + offset));
-            }
-        }
-
-        // One Bandit Leader plus a cluster of ordinary Bandits — same
-        // shape as SpawnBeachedBuccaneerPack() above. Both BanditLeader and
-        // Bandit are dedicated classes (Bosses/BanditLeader.cs, Bandit.cs),
-        // not bare Enemy.CreateX() factories, so both are constructed
-        // directly.
-        private static void SpawnBanditLeaderPack()
-        {
-            Vector2 anchor = GetSpawnPosition();
-            EntityManager.Add(new Bosses.BanditLeader(anchor));
-
-            for (int i = 0; i < BanditLeaderPackBanditCount; i++)
-            {
-                Vector2 offset = new(rand.Next(-80, 81), rand.Next(-80, 81));
-                EntityManager.Add(new Bandit(anchor + offset));
             }
         }
 

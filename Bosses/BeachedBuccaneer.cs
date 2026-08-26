@@ -55,6 +55,9 @@ namespace Realm.Bosses
             healthMax = 500;
             Defense = 2;
             PointValue = 60;
+            DropPool = BeachDropPool;
+            DropChances = BeachDropChances;
+            DropTierRanges = BeachDropTierRanges;
 
             AddBehaviour(WanderThenChase());
             AddAttackBehaviour(BuccaneerAttack());

@@ -470,6 +470,45 @@ namespace Realm
         // doesn't use HealthManaPotion at all.
         protected Dictionary<ItemSpawner.LootCategory, float> DropChances = new();
 
+        // Shared drop-rate override for every Beach-biome enemy (Pirate,
+        // Bandit, Piratess, Sand Devil, their mini-boss/escort variants, and
+        // the three Little Jellies) — one table instead of each enemy
+        // duplicating it, so retuning Beach's loot only means editing this
+        // once. No stat potions at all (StatPotion excluded from the pool
+        // entirely — DropChances/DropTierRanges entries for a category that
+        // never rolls would be meaningless); Weapon/Armor at 5% from tier
+        // 1-3; Ring/AbilityItem at 2.5% from tier 1 only; HP/MP potions at
+        // 5%. static readonly since it's the same table for every instance,
+        // not per-enemy state.
+        protected static readonly ItemSpawner.LootCategory BeachDropPool =
+            ItemSpawner.LootCategory.Weapon
+            | ItemSpawner.LootCategory.Armor
+            | ItemSpawner.LootCategory.Ring
+            | ItemSpawner.LootCategory.AbilityItem
+            | ItemSpawner.LootCategory.HealthManaPotion;
+
+        protected static readonly Dictionary<ItemSpawner.LootCategory, float> BeachDropChances =
+            new()
+            {
+                [ItemSpawner.LootCategory.Weapon] = 0.05f,
+                [ItemSpawner.LootCategory.Armor] = 0.05f,
+                [ItemSpawner.LootCategory.Ring] = 0.025f,
+                [ItemSpawner.LootCategory.AbilityItem] = 0.025f,
+                [ItemSpawner.LootCategory.HealthManaPotion] = 0.05f,
+            };
+
+        protected static readonly Dictionary<
+            ItemSpawner.LootCategory,
+            (int Min, int Max)
+        > BeachDropTierRanges =
+            new()
+            {
+                [ItemSpawner.LootCategory.Weapon] = (1, 3),
+                [ItemSpawner.LootCategory.Armor] = (1, 3),
+                [ItemSpawner.LootCategory.Ring] = (1, 1),
+                [ItemSpawner.LootCategory.AbilityItem] = (1, 1),
+            };
+
         protected void AddBehaviour(IEnumerable<int> behaviour)
         {
             behaviours.Add(behaviour.GetEnumerator());
@@ -1064,6 +1103,9 @@ namespace Realm
                 health = 5,
                 healthMax = 5,
                 PointValue = 2,
+                DropPool = BeachDropPool,
+                DropChances = BeachDropChances,
+                DropTierRanges = BeachDropTierRanges,
             };
 
             enemy.AddBehaviour(enemy.FollowPlayer(0.2f));

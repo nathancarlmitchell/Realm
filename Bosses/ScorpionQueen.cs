@@ -5,14 +5,14 @@ using Realm;
 
 namespace Realm.Bosses
 {
-    // Beach's third mini-boss — same "dedicated Enemy subclass, no portal/
-    // arena" shape as BeachedBuccaneer/BanditLeader. Unlike those two,
-    // EnemySpawner.SpawnScorpionQueenPack() drops only her — she manages her
-    // own escort of Little Scorpions internally (an immediate burst of 10 on
-    // spawn, then a slow trickle to replace losses), rather than
-    // EnemySpawner spawning a separate escort pack alongside her the way it
-    // does for the other two mini-bosses. She has no attack of her own at
-    // all — "Does not attack" is explicit in the spec.
+    // A regular Beach wave enemy (EnemySpawner.BasicEnemyPool) — no longer a
+    // dedicated mini-boss spawn; Beached Buccaneer is now the only Beach
+    // mini-boss. Its own dedicated class (rather than a bare Enemy.CreateX()
+    // factory) since she manages her own escort of Little Scorpions
+    // internally (an immediate burst of 10 on spawn, then a slow trickle to
+    // replace losses) whenever she spawns, regardless of how EnemySpawner
+    // picked her. She has no attack of her own at all — "Does not attack" is
+    // explicit in the spec.
     class ScorpionQueen : Enemy
     {
         private static readonly Random rand = new();
@@ -38,6 +38,9 @@ namespace Realm.Bosses
             healthMax = 100;
             Defense = 0;
             PointValue = 40;
+            DropPool = BeachDropPool;
+            DropChances = BeachDropChances;
+            DropTierRanges = BeachDropTierRanges;
 
             AddBehaviour(MoveTethered(wanderDistance: WanderDistance, speed: WanderSpeed));
             AddBehaviour(MaintainScorpions());
