@@ -4839,3 +4839,28 @@ date/time for those individually; don't treat their grouping as meaning they all
      only differences were the same already-flagged equipped-item-ID quirk (see entry 183's standing
      investigation task) plus the new `BonusFame` key defaulting to 0 — confirmed field-by-field
      rather than assumed. Clean build and a plain boot-check both passed.
+
+187. **Wired in the pre-existing `Content/Overlay/Fame Icon.png` asset** next to the account-wide
+     Fame text on the main menu — the asset sat untracked in the repo with nothing referencing it
+     until now. Added its `Content.mgcb` build block (copied from the adjacent `Overlay/unmute.png`
+     entry's importer/processor settings) and a `Art.FameIcon` texture field. Of three candidate
+     "Fame text" locations in the codebase (`Overlay.DrawFame()`, `GameOverState`'s "Fame Earned"
+     line, `CharacterSelectState`'s locked-class tooltip), chose `Overlay.DrawFame()` — the one
+     method literally named for this — as a judgment call rather than asking, given the low-risk,
+     single-obvious-answer nature of the task. That method's only caller, `MenuState.Draw()`, had
+     `Overlay.DrawFame(spriteBatch);` commented out with no explanation; re-enabled it, since the
+     icon would otherwise render nowhere. `DrawFame()` now measures the icon+text pair as one unit
+     and centers that combined width, rather than centering just the text as before.
+     Doing so surfaced a real, previously-invisible bug: the method's vertical position used a
+     hardcoded `y = (128/Scale) + 48` offset that didn't account for `Art.TitleFont`'s actual
+     rendered height, so the "Fame: N" line rendered overlapping the middle of the large "Realm"
+     title letters the instant it was ever drawn — almost certainly the reason this call was
+     disabled in the first place, though no comment recorded why. Fixed by deriving the offset from
+     `Art.TitleFont.MeasureString("Realm").Y` instead, giving correct clearance regardless of the
+     title font's actual size. Verified via a temporary `Game1.StartGame()` render test (drew
+     `Overlay.DrawTitle`+`DrawFame` to an offscreen `RenderTarget2D` with `FameSystem.Fame`
+     temporarily set to 4200, saved to a scratch PNG, inspected visually, restored `FameSystem.Fame`
+     in a `finally` block) — confirmed the icon and text sit side-by-side, vertically centered on
+     each other, fully clear of the title. Temp code fully reverted (`git diff --stat Game1.cs`
+     clean) and the scratch PNG deleted. Clean build, plain minimized boot-check, and a full
+     real-save-file diff against a pre-change backup all passed with zero differences.

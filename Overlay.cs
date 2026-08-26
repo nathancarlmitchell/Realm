@@ -32,15 +32,39 @@ namespace Realm
 
         // Account-level total, shared across every class — unlike Score/Hi
         // Score below, which belong to whichever class is currently loaded.
+        private const int FameIconSize = 24;
+        private const int FameIconTextGap = 6;
+
         public static void DrawFame(SpriteBatch spriteBatch)
         {
             SpriteFont font = Art.HudFont;
             string text = "Fame: " + FameSystem.Fame;
+            Vector2 textSize = font.MeasureString(text);
 
-            int x = (int)((Game1.ScreenWidth / 2) - (font.MeasureString(text).X / 2));
-            int y = (128 / Game1.Scale) + 48;
+            // Icon + text centered as one unit — centering just the text
+            // (like before the icon existed) would leave the pair looking
+            // off-center, shifted right by roughly half the icon's width.
+            float totalWidth = FameIconSize + FameIconTextGap + textSize.X;
+            int startX = (int)((Game1.ScreenWidth / 2) - (totalWidth / 2));
 
-            spriteBatch.DrawString(font, text, new Vector2(x, y), Color.White);
+            // Below the title's own actual measured height, not a fixed
+            // +48 offset — DrawTitle()'s "Realm" is drawn at TitleFont
+            // scale, tall enough that a flat +48 sat this line overlapping
+            // the title's own letters instead of clearing them (this is
+            // almost certainly why the call to this method was commented
+            // out in MenuState.cs before now).
+            int y = (128 / Game1.Scale) + (int)Art.TitleFont.MeasureString("Realm").Y + 16;
+
+            Rectangle iconRect = new(
+                startX,
+                y + (int)((textSize.Y - FameIconSize) / 2f),
+                FameIconSize,
+                FameIconSize
+            );
+            spriteBatch.Draw(Art.FameIcon, iconRect, Color.White);
+
+            int textX = startX + FameIconSize + FameIconTextGap;
+            spriteBatch.DrawString(font, text, new Vector2(textX, y), Color.White);
         }
 
         public static void DrawScore(SpriteBatch spriteBatch)
