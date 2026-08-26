@@ -1413,6 +1413,64 @@ namespace Realm
         }
 
         // Same background-panel technique as the single-string overload
+        // above, but colors each line by what it actually contains rather
+        // than drawing the whole tooltip in one flat color — white for plain
+        // text (name/description), green for a stat bonus line ("+N Stat" or
+        // "No bonuses"), red for a damage line, blue for a mana cost line.
+        // Used by each equip slot's own hover tooltip (Weapon/Armor/Ring/
+        // AbilityItem.DrawTooltip()), which composes a single TooltipText()
+        // string; the inventory/bank comparison tooltip below uses its own
+        // List<(Text,Better)> shape instead (a different, unrelated
+        // highlight-if-better color scheme, left as-is).
+        public static void DrawCategorizedTooltip(
+            SpriteBatch spriteBatch,
+            SpriteFont font,
+            string text,
+            Vector2 position
+        )
+        {
+            string[] lines = text.Replace("\r\n", "\n").Split('\n');
+
+            Color Classify(string line)
+            {
+                if (line.StartsWith('+') || line == "No bonuses")
+                    return Color.Green;
+                if (line.StartsWith("Damage:") || line.StartsWith("Side Damage:"))
+                    return Color.Red;
+                if (line.EndsWith("Mana Cost"))
+                    return Color.Blue;
+                return Color.White;
+            }
+
+            const int padding = 4;
+            float width = 0f;
+            foreach (string line in lines)
+                width = Math.Max(width, font.MeasureString(line).X);
+            float height = lines.Length * font.LineSpacing;
+
+            position.X = ClampTooltipX(position.X, width);
+
+            Rectangle background = new(
+                (int)(position.X - padding),
+                (int)(position.Y - padding),
+                (int)(width + (padding * 2)),
+                (int)(height + (padding * 2))
+            );
+            spriteBatch.Draw(Art.HealthBar, background, Color.WhiteSmoke * 0.75f);
+
+            for (int i = 0; i < lines.Length; i++)
+            {
+                DrawOutlinedText(
+                    spriteBatch,
+                    font,
+                    lines[i],
+                    position + new Vector2(0, i * font.LineSpacing),
+                    Classify(lines[i])
+                );
+            }
+        }
+
+        // Same background-panel technique as the single-string overload
         // above, but draws each line with its own color instead of one flat
         // string/color — used for the inventory/bank hover tooltip so a
         // stat line that beats the currently equipped item can be

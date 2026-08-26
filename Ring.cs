@@ -93,12 +93,11 @@ namespace Realm
 
             int textY = (int)(Art.RetroFont.MeasureString(text).Y / 2);
 
-            Util.DrawTooltip(
+            Util.DrawCategorizedTooltip(
                 spriteBatch,
                 Art.RetroFont,
                 text,
-                new Vector2(x, y - image.Height - textY),
-                Color.Red
+                new Vector2(x, y - image.Height - textY)
             );
         }
     }

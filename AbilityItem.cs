@@ -72,12 +72,11 @@ namespace Realm
 
             int textY = (int)(Art.RetroFont.MeasureString(text).Y / 2);
 
-            Util.DrawTooltip(
+            Util.DrawCategorizedTooltip(
                 spriteBatch,
                 Art.RetroFont,
                 text,
-                new Vector2(x, y - image.Height - textY),
-                Color.Red
+                new Vector2(x, y - image.Height - textY)
             );
         }
 
@@ -94,7 +93,11 @@ namespace Realm
             if (ManaCost != 0)
                 parts.Add($"{ManaCost} Mana Cost");
 
-            return parts.Count > 0 ? Environment.NewLine + string.Join(", ", parts) : "";
+            // Each part on its own line (not comma-joined) — Damage and Mana
+            // Cost get different tooltip colors (see Util.
+            // DrawCategorizedTooltip), which only works if they're separate
+            // lines rather than sharing one.
+            return parts.Count > 0 ? Environment.NewLine + string.Join(Environment.NewLine, parts) : "";
         }
 
         public override List<(string Text, bool Better)> ComparisonLines(Equipment equipped)

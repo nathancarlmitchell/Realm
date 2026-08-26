@@ -5364,3 +5364,33 @@ date/time for those individually; don't treat their grouping as meaning they all
      remaining matches there and exactly six files left with `Art.HudFont` (all of them the
      deliberately out-of-scope ones the user chose to exclude). Clean build, plain boot-check, and a
      full real-save-file diff all passed with zero differences.
+
+203. **Colored the equip-slot hover tooltip by content type**: white for name/description, green for
+     stat bonus lines, red for damage, blue for mana cost — replacing the flat single-color (Red)
+     tooltip entry 202 left in place when it swapped the font. Scoped specifically to the four equip
+     slots' own hover tooltip (`Weapon`/`Armor`/`Ring`/`AbilityItem.DrawTooltip(SpriteBatch)`, built
+     from each item's `TooltipText()` string) — the separate inventory/bank "compare to what's
+     equipped" tooltip (`ComparisonLines()`, `List<(Text,Better)>`) keeps its existing red/dark-green
+     upgrade-highlight scheme untouched, since that's a different feature (is this an upgrade?) with
+     its own already-meaningful color code, not a content-category scheme, and the user's request
+     didn't ask to touch it.
+     Added `Util.DrawCategorizedTooltip()`: splits the composed tooltip string into lines (normalizing
+     `Environment.NewLine`/bare `\n` — `TooltipText()` mixes both, `Environment.NewLine` joining
+     sections and `Util.WrapText()`'s own bare `\n` inside a wrapped description) and classifies each
+     line by simple content rules — starts with `+` or is exactly "No bonuses" → green; starts with
+     "Damage:" or "Side Damage:" → red; ends with "Mana Cost" → blue; anything else → white — then
+     draws each with `Util.DrawOutlinedText()` at its own color. Found and fixed one real formatting
+     bug this surfaced: `AbilityItem.AbilitySummary()` joined "Damage: X - Y" and "N Mana Cost" onto
+     one comma-separated line, which can't be given two different colors — changed the join separator
+     from `", "` to `Environment.NewLine` so they're independently colorable lines, matching how every
+     other section was already one-line-per-concept.
+     Verified via a temporary `Game1.StartGame()` test forcing each equip slot's hover on (via
+     reflection — `hover` is `protected`) and rendering its real tooltip to an offscreen
+     `RenderTarget2D`: confirmed a Weapon tooltip shows white name/description with a red Damage line;
+     confirmed an AbilityItem tooltip — the richest case, exercising all four categories in one
+     tooltip — shows white name/description, a green "+40 MaxHealth, +40 MaxMana, +7 Wisdom" bonus
+     line, a red "Damage: 115 - 220" line, and a blue "60 Mana Cost" line, each correctly separated
+     onto its own line and colored; and confirmed an Armor tooltip shows white name/description with
+     a green bonus line. Temp code fully reverted (`git diff --stat Game1.cs` clean), scratch PNGs
+     deleted, clean build, plain boot-check, and a full real-save-file diff all passed with zero
+     differences.
