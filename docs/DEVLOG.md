@@ -4904,3 +4904,29 @@ date/time for those individually; don't treat their grouping as meaning they all
      pre-test backup afterward, verified byte-identical. Temp code fully reverted (`git diff --stat
      Game1.cs` clean), scratch log deleted, clean build, and a plain boot-check all passed, with
      every real save file confirmed unchanged from backup at the end.
+
+189. **Fixed the level-up XP formula overshooting by 100 XP per level from Level 2 onward** — the
+     user supplied the authoritative spec table (XP-to-next-level starting at 50, +100 per level:
+     50/150/250/.../1850 for Levels 2-20, cumulative 18,050 by Level 20) and asked for it to be
+     checked against `Player.ExperienceRequiredForLevel()`. The implemented formula,
+     `level == 1 ? 50 : 50 + (level * 2 * 50)`, reduces to `50 + 100*level` for Level 2+ — exactly
+     100 XP too much per transition, compounding to 19,850 cumulative XP by Level 20 instead of
+     18,050. This is the same "18050 vs 19850" mismatch flagged (but deliberately left alone,
+     assumed to be intentional divergence from a RotMG-style spec) during entry 186's Fame rework —
+     turned out to be this bug all along, not an intentional difference in tuning. Fixed to
+     `(100 * level) - 50`, which naturally produces 50 at level 1 with no special case needed (the
+     old code's special-casing of Level 1 down to 50, instead of the general formula's otherwise-150,
+     was working around this same off-by-100 error one level early). Verified via a temporary
+     `Game1.StartGame()` test checking `Player.CumulativeExperienceForLevel(level)` for all 20 levels
+     against the user's exact spec numbers — all 20 passed exactly, including the Level 20 total
+     (18,050). Pure static-function fix with no `Player.Instance` mutation involved, so no save-file
+     risk in the test itself; still backed up and re-verified all real save files as byte-identical
+     afterward per the standing rule. Clean build and a plain boot-check both passed. Downstream
+     effect worth noting: the Fame system's Level-20 XP-rate boundary (`BaseFameRateBeforeLevel20`/
+     `AfterLevel20` in `Player.cs`) reads `CumulativeExperienceForLevel(20)` live rather than a
+     hardcoded number, so it automatically now uses the correct 18,050 threshold too — no separate
+     fix needed there. Existing saved characters' `Level` field isn't retroactively recomputed (it's
+     stored, not derived), so nothing about this changes on load; only the going-forward pace of
+     leveling changes, and any character already sitting on more `ExperienceTotal` than the new,
+     lower next-level threshold requires will simply level up on their very next kill instead of
+     needing more grinding first.

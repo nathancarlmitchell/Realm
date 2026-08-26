@@ -234,11 +234,13 @@ namespace Realm
         public int ExperienceTotal;
         public int HighScore;
 
-        // The special-cased 50 for Level 1 (rather than the general
-        // formula's 150) matches this game's original tuning — going from
-        // Level 1 to 2 has always been cheaper than every level after it.
-        private static int ExperienceRequiredForLevel(int level) =>
-            level == 1 ? 50 : 50 + (level * 2 * 50);
+        // Starts at 50 for Level 1->2 and increases by 100 per level up
+        // (100*level - 50 naturally gives 50 at level 1, so no special case
+        // is needed there). Previously 50 + (level*2*50), which overshot by
+        // exactly 100 XP per level from Level 2 onward — 1,800 XP too much
+        // by the time a character reached Level 20 (19,850 instead of
+        // 18,050 cumulative).
+        private static int ExperienceRequiredForLevel(int level) => (100 * level) - 50;
 
         // Cumulative ExperienceTotal needed to REACH a given level (0 for
         // Level 1, the starting point). Sums each level's own requirement
