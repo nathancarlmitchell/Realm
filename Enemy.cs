@@ -534,15 +534,41 @@ namespace Realm
 
         #region Movement Behaviors
 
-        // Disabled — enemies using this behaviour (Seeker, Brute, Limon,
-        // etc. via AddBehaviour(enemy.FollowPlayer(...)) in their factories)
-        // no longer accelerate toward the player regardless of position.
-        // Left as a no-op coroutine rather than removed so every call site
-        // that adds it as a behaviour still compiles unchanged.
+        // Radius (from the enemy's own Position) within which FollowPlayer()
+        // below actually gives chase, instead of chasing from anywhere on
+        // the map regardless of distance. Measured as the half-diagonal of
+        // the visible gameplay viewport (GameplayViewportWidth/Height — the
+        // sidebar-excluded play area, not the full window) — center-to-
+        // corner, not center-to-edge, so nothing already visible anywhere
+        // on screen fails to aggro — then padded 10% ("slightly larger than
+        // the screen") so it also catches enemies just off-screen rather
+        // than only ones already in view. AggroRadiusSquared avoids a sqrt
+        // every tick for every chasing enemy (LengthSquared() vs it,
+        // instead of Length() vs AggroRadius).
+        private static readonly float AggroRadius =
+            Vector2.Distance(
+                Vector2.Zero,
+                new Vector2(Game1.GameplayViewportWidth / 2f, Game1.GameplayViewportHeight / 2f)
+            ) * 1.1f;
+        private static readonly float AggroRadiusSquared = AggroRadius * AggroRadius;
+
         protected IEnumerable<int> FollowPlayer(float acceleration = 0.5f)
         {
             while (true)
             {
+                // ScaleTo() divides by the vector's own Length() — a zero
+                // vector (enemy and player at the exact same Position, down
+                // to the float) would divide by zero and permanently poison
+                // Velocity/Position with NaN from that tick on. Found via
+                // BeachedBuccaneer.cs's scripted test spawning an enemy
+                // directly on top of the player; not reachable through
+                // normal movement/spawning, but a one-line guard costs
+                // nothing for every other FollowPlayer() user (Seeker,
+                // Brute, Limon) since it's a no-op unless the vector is
+                // already exactly zero.
+                Vector2 toPlayer = Player.Instance.Position - Position;
+                if (toPlayer != Vector2.Zero && toPlayer.LengthSquared() <= AggroRadiusSquared)
+                    Velocity += toPlayer.ScaleTo(acceleration);
                 yield return 0;
             }
         }

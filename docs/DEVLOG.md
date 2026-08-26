@@ -5640,3 +5640,25 @@ date/time for those individually; don't treat their grouping as meaning they all
      Reverted the temp code (`git diff --stat Game1.cs` clean), deleted the scratch log, ran a final
      clean build + plain boot-check, and confirmed all real save files byte-identical to a pre-test
      backup.
+
+212. **Revised entry 211's "no chasing" change to an aggro-radius gate instead of removing chasing
+     outright**, per direct follow-up feedback: enemies should still follow the player, just only
+     once within a certain radius. `Enemy.FollowPlayer()` is no longer a no-op — restored its
+     original body (accelerate toward `Player.Instance.Position`, with the existing zero-vector
+     guard) but now only when `toPlayer.LengthSquared() <= AggroRadiusSquared`.
+     `AggroRadius` is "slightly larger than the screen size" per the request: the half-diagonal
+     (center-to-corner, not center-to-edge, so nothing already visible anywhere on screen fails to
+     aggro) of `Game1.GameplayViewportWidth`/`GameplayViewportHeight` — the sidebar-excluded visible
+     play area, not the full 1280x720 window — padded ×1.1. At the current 980x720 viewport that's
+     ≈608 half-diagonal → ≈669 aggro radius. Both `AggroRadius` and its squared form are `static
+     readonly` fields computed once, so the per-tick check is a cheap `LengthSquared()` comparison
+     with no sqrt.
+     Verified via a temporary `Game1.StartGame()` test: read `AggroRadius` via reflection (668.83,
+     matching the hand-computed expectation), then spawned one Seeker at half that distance from the
+     player and another at double that distance, and ran 120 `EntityManager.Update()` ticks (enemies
+     have a 60-frame spawn-in delay — `timeUntilStart` — before behaviours apply at all, so the first
+     attempt at only 60 ticks showed neither enemy moving; bumping to 120 fixed the false negative).
+     The inside-radius enemy closed distance to the player (334 → 264 units); the outside-radius
+     enemy's distance stayed exactly unchanged (1337.67 before and after). Reverted the temp code
+     (`git diff --stat Game1.cs` clean), deleted the scratch log, ran a final clean build + plain
+     boot-check, and confirmed all real save files byte-identical to a pre-test backup.
