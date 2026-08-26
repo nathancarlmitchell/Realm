@@ -27,6 +27,15 @@ namespace Realm
         // every enemy unless a factory/subclass sets it explicitly.
         public int Defense { get; protected set; } = 0;
 
+        // What fraction of the XP needed for the player's next level this
+        // enemy's PointValue can be capped to (see WasShot() below) — 0.1
+        // (10%) for every normal enemy. The spec calls out a 20% cap for
+        // "quest monsters," but no such concept exists anywhere in this
+        // codebase yet (every enemy today is authored the same way) — left
+        // as an overridable field rather than building a whole quest-monster
+        // system just to set one number.
+        protected float NextLevelXpCapFraction = 0.1f;
+
         private List<IEnumerator<int>> behaviours = new List<IEnumerator<int>>();
         private List<IEnumerator<int>> attackBehaviours = new List<IEnumerator<int>>();
 
@@ -288,11 +297,30 @@ namespace Realm
             {
                 Sound.Play(deathSound, 0.4f);
                 IsExpired = true;
+                // PointValue is this enemy's own specified base XP (the
+                // spec's "base XP value, a parameter found in the game
+                // XML") — capped at NextLevelXpCapFraction of the XP needed
+                // for the player's next level before any multiplier is
+                // applied, matching the source spec's own worked example
+                // (a low-level player killing a high-value enemy gets only
+                // a fraction of it; a multiplier can still push the final
+                // total back above what the cap alone would allow). Applies
+                // the same way at Level 20, where "next level" is a
+                // theoretical 21 that's never actually reachable — the cap
+                // still meaningfully limits farming a high-PointValue enemy
+                // at the level cap.
+                int xpNeededForNextLevel =
+                    Player.Instance.ExperienceNextLevel
+                    - Player.CumulativeExperienceForLevel(Player.Instance.Level);
+                int cappedBaseXp = Math.Min(
+                    PointValue,
+                    (int)(xpNeededForNextLevel * NextLevelXpCapFraction)
+                );
                 // Scaled by any equipped XP-bonus gear (e.g. a Priest's
                 // Tome) — 0% bonus (the default for everything else) leaves
                 // this an exact no-op multiply-by-1.
                 int xpGained = (int)(
-                    PointValue * (1f + Player.Instance.EquipmentXpBonusPercent / 100f)
+                    cappedBaseXp * (1f + Player.Instance.EquipmentXpBonusPercent / 100f)
                 );
                 Player.Instance.ExperienceTotal += xpGained;
                 // Above the player's own head, not the enemy's — an XP gain
@@ -302,11 +330,17 @@ namespace Realm
                 // Bigger, longer-lived, and spawned further above the
                 // player's head than a plain damage number (-45 vs the
                 // default -20) so it reads as a distinct, more prominent
-                // event rather than blending in with hit numbers. Gated on
-                // ShowXpDropsEnabled (Settings > Graphics, on by default) —
-                // ExperienceTotal above is unconditional either way, this
-                // only controls the floating number's visibility.
-                if (Player.Instance.ShowXpDropsEnabled)
+                // event rather than blending in with hit numbers.
+                // ExperienceTotal above is unconditional either way, only
+                // the floating number's visibility is gated — below Level
+                // 20 by ShowXpDropsEnabled (Settings > Graphics, on by
+                // default), and from Level 20 onward by AlwaysShowExpEnabled
+                // instead (off by default — "the icon... disappears" at 20,
+                // reactivated by that separate setting).
+                bool showXpIcon = Player.Instance.Level < 20
+                    ? Player.Instance.ShowXpDropsEnabled
+                    : Player.Instance.AlwaysShowExpEnabled;
+                if (showXpIcon)
                 {
                     EntityManager.Add(
                         new DamageNumber(

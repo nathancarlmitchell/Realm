@@ -237,17 +237,11 @@ namespace Realm.States
             // Update high score.
             if (Player.Instance.ExperienceTotal > Player.Instance.HighScore)
             {
-                int starsBefore = Player.ComputeStars(
-                    Player.Instance.HasReachedLevel20,
-                    Player.Instance.HighScore
-                );
+                int starsBefore = Player.ComputeStars(Player.Instance.HighScore);
 
                 Player.Instance.HighScore = Player.Instance.ExperienceTotal;
 
-                int starsAfter = Player.ComputeStars(
-                    Player.Instance.HasReachedLevel20,
-                    Player.Instance.HighScore
-                );
+                int starsAfter = Player.ComputeStars(Player.Instance.HighScore);
 
                 // Persisted immediately when crossing a star threshold —
                 // same reasoning as Player.LevelUp()'s Star 1 save, so a

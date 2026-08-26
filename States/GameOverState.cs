@@ -14,6 +14,7 @@ namespace Realm.States
         private readonly SpriteFont titleFont;
 
         private int score;
+        private int fameEarned;
 
         public GameOverState(Game1 game, GraphicsDevice graphicsDevice, ContentManager content)
             : base()
@@ -27,9 +28,14 @@ namespace Realm.States
 
             score = Player.Instance.ExperienceTotal;
 
-            // Salvage this run's Score into the account-level Fame total
-            // before it's wiped by the reset below.
-            FameSystem.AddFame(score);
+            // Fame earned on death is Base Fame (the automatic XP-to-fame
+            // conversion accrued throughout this life) plus Bonus Fame
+            // (achievements — none exist yet, so this is currently always
+            // 0), not a straight 1:1 copy of Score. Salvaged into the
+            // account-level Fame total before both are wiped by the reset
+            // below.
+            fameEarned = Player.Instance.BaseFame + Player.Instance.BonusFame;
+            FameSystem.AddFame(fameEarned);
 
             var newGameButton = new Button() { Text = "New Game" };
             newGameButton.Click += NewGameButton_Click;
@@ -82,7 +88,7 @@ namespace Realm.States
             spriteBatch.DrawString(titleFont, text, new Vector2(x - 4, y + 4), Color.Black * 0.5f);
             spriteBatch.DrawString(titleFont, text, new Vector2(x, y), color);
 
-            string fameText = "Fame Earned: " + score;
+            string fameText = "Fame Earned: " + fameEarned;
             int fameY = y + (int)titleFont.MeasureString(text).Y;
             int fameX = (int)(CenterWidth - (titleFont.MeasureString(fameText).X / 2));
 

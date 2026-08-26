@@ -177,6 +177,13 @@ namespace Realm.States
                 new SettingsRow
                 {
                     Kind = RowKind.Toggle,
+                    Label = "Always Show EXP",
+                    GetBool = () => Player.Instance.AlwaysShowExpEnabled,
+                    SetBool = v => Player.Instance.AlwaysShowExpEnabled = v,
+                },
+                new SettingsRow
+                {
+                    Kind = RowKind.Toggle,
                     Label = "Show Player Damage Numbers",
                     GetBool = () => Player.Instance.ShowPlayerDamageNumbersEnabled,
                     SetBool = v => Player.Instance.ShowPlayerDamageNumbersEnabled = v,

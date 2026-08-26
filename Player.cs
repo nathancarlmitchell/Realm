@@ -260,6 +260,54 @@ namespace Realm
         // level and was never comparable to a running total).
         public int ExperienceNextLevel => CumulativeExperienceForLevel(Level + 1);
 
+        // Fame conversion rate changes once a character's cumulative XP
+        // crosses the Level 20 threshold — computed live from
+        // CumulativeExperienceForLevel(20) rather than a hardcoded XP
+        // number, so it always matches whatever this engine's own leveling
+        // curve says "Level 20" actually costs, instead of silently
+        // drifting from it if that curve is ever retuned.
+        private const int BaseFameRateBeforeLevel20 = 900; // 1 fame per 900 XP
+        private const int BaseFameRateAfterLevel20 = 2000; // 1 fame per 2000 XP
+
+        // Static + pure (same shape as ComputeStars below) so it works
+        // identically against a live Player.Instance.ExperienceTotal or a
+        // peeked PlayerData's saved value — e.g. Util.DeleteCharacterData
+        // has no live Player instance to read from.
+        public static int ComputeBaseFame(int experienceTotal)
+        {
+            int level20Threshold = CumulativeExperienceForLevel(20);
+            if (experienceTotal <= level20Threshold)
+                return experienceTotal / BaseFameRateBeforeLevel20;
+
+            int beforeFame = level20Threshold / BaseFameRateBeforeLevel20;
+            int afterFame = (experienceTotal - level20Threshold) / BaseFameRateAfterLevel20;
+            return beforeFame + afterFame;
+        }
+
+        // "Base fame" — automatically converted from this character's own
+        // cumulative XP throughout its life, at the rate above. Not a
+        // separately-tracked/persisted field: it's purely a function of
+        // ExperienceTotal (already persisted), so there's nothing to fall
+        // out of sync.
+        public int BaseFame => ComputeBaseFame(ExperienceTotal);
+
+        // "Bonus fame, obtained from certain achievements during a
+        // character's life" — no specific achievement grants this yet (none
+        // exist in this codebase today), so this is infrastructure only: a
+        // plain per-life counter starting at 0, persisted so it survives a
+        // save/reload mid-run, but NOT preserved across death/delete
+        // (unlike HighScore/HasReachedLevel20) — same one-life-only
+        // treatment as ExperienceTotal itself, since it's meant to be
+        // consumed into permanent account Fame at the moment of death, not
+        // carried forward.
+        public int BonusFame;
+
+        public void AddBonusFame(int amount)
+        {
+            if (amount > 0)
+                BonusFame += amount;
+        }
+
         // Basic-attack rate: 1.5 attacks/sec at 0 Dexterity, scaling up to
         // 8 attacks/sec at 75 Dexterity (every point past 0 adds ~0.0867).
         // Drives Update()'s projectileCooldown accumulator below. No Berserk
@@ -341,6 +389,16 @@ namespace Realm
         // Settings > Graphics tab.
         public bool ShowXpDropsEnabled = true;
 
+        // Same account-wide GameSettingsData persistence, but defaults to
+        // FALSE — "one can also reactivate this XP icon after level 20
+        // under Video Settings: Always Show EXP." Below Level 20,
+        // ShowXpDropsEnabled above is still what gates the floating "+XP"
+        // number; from Level 20 onward, this setting takes over instead
+        // (Enemy.WasShot()'s death branch), since the icon otherwise
+        // disappears once ShowXpDropsEnabled stops mattering. Toggled from
+        // the Settings > Graphics tab.
+        public bool AlwaysShowExpEnabled = false;
+
         // Same account-wide GameSettingsData persistence, defaults to TRUE
         // (same reasoning as ShowXpDropsEnabled above). Gates the player's
         // own "I took damage" number (Player.Hit()) — separate from
@@ -389,40 +447,43 @@ namespace Realm
 
         // Set once this class first reaches the level cap (20) and never
         // cleared again — same permanent-through-death/delete treatment as
-        // HighScore (see DeleteCharacterData/GameOverState), since this is
-        // the Star 1 unlock condition for the Character Select star rating
-        // (see ComputeStars() below). Level itself resets to 1 on
-        // death/delete, so this needs its own persisted flag rather than
-        // checking Level directly.
+        // HighScore (see DeleteCharacterData/GameOverState). No longer feeds
+        // ComputeStars() below (Class Quests are Fame-based now, not gated
+        // on reaching 20), but still drives the Level-20 XP-icon switch
+        // (Enemy.WasShot()). Level itself resets to 1 on death/delete, so
+        // this needs its own persisted flag rather than checking Level
+        // directly.
         public bool HasReachedLevel20;
 
-        // Star 1 is HasReachedLevel20; each star beyond that needs HighScore
-        // (permanent best-ever run Score, also survives death/delete) to
-        // clear an exponentially rising bar. Public/static — shared by
-        // CharacterSelectState (display) and RealmState (detecting a
-        // threshold crossing to persist immediately, see UpdateHighScore()
-        // below) rather than living only in the UI. Takes the two raw
-        // inputs rather than a Player object so it works the same whether
-        // the source is the live instance or a peeked save for a class
-        // that isn't currently loaded.
-        private const int Star2ScoreRequirement = 20000;
-        private const int StarScoreMultiplier = 2;
+        // "Class Quests" — five tiers, attained purely by cumulative Fame
+        // earned during a character's lifetime (no Level-20 gate, unlike the
+        // star system this replaced). Fed by ComputeBaseFame(HighScore) —
+        // HighScore is the permanent best-ever ExperienceTotal (survives
+        // death/delete), and Base Fame is a monotonic function of XP, so
+        // "the most Base Fame this character ever displayed" is exactly
+        // ComputeBaseFame(HighScore), with no separate persisted star count
+        // needed. Public/static — shared by CharacterSelectState (display,
+        // permanent record) and RealmState (detecting a threshold crossing
+        // to persist immediately, see UpdateHighScore() below) rather than
+        // living only in the UI.
+        //
+        // Note this means a character can now earn Star 1 (20 Fame, ≈18,000
+        // XP under the current leveling curve) slightly before actually
+        // reaching Level 20 (≈19,850 XP) — a deliberate reading of "gaining
+        // certain amounts of Fame during your character's lifetime", not an
+        // oversight.
+        public static readonly int[] ClassQuestFameThresholds = { 20, 500, 1500, 5000, 15000 };
         public const int MaxStars = 5;
 
-        public static int ComputeStars(bool hasReachedLevel20, int highScore)
+        public static int ComputeStars(int highScore)
         {
-            if (!hasReachedLevel20)
-                return 0;
-
-            int stars = 1;
-            int requirement = Star2ScoreRequirement;
-            for (int star = 2; star <= MaxStars; star++)
+            int fame = ComputeBaseFame(highScore);
+            int stars = 0;
+            for (int i = 0; i < ClassQuestFameThresholds.Length; i++)
             {
-                if (highScore < requirement)
+                if (fame < ClassQuestFameThresholds[i])
                     break;
-
-                stars = star;
-                requirement *= StarScoreMultiplier;
+                stars = i + 1;
             }
 
             return stars;

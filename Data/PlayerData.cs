@@ -25,6 +25,11 @@ public class PlayerData
     // CumulativeExperienceForLevel), so there's nothing left to persist for
     // them.
     public int ExperienceTotal { get; set; }
+
+    // Per-life-only, same as ExperienceTotal — NOT preserved across
+    // death/delete (unlike HighScore/HasReachedLevel20 below). See
+    // Player.BonusFame's own doc comment.
+    public int BonusFame { get; set; }
     public int HighScore { get; set; }
 
     // True once this character has actually been played (selected and

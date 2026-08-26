@@ -4734,3 +4734,108 @@ date/time for those individually; don't treat their grouping as meaning they all
      mid-test again. A render confirmed all five new sprites draw correctly together. Real save files
      confirmed byte-identical before and after (no restore needed this round). Clean build and a plain
      boot-check both passed.
+
+186. **Reworked the Fame system**: Base Fame now accrues automatically from a character's own
+     cumulative XP throughout its life (previously Fame was a single flat account-wide `int` that
+     only ever changed via a 1:1 conversion of `ExperienceTotal` at death/delete — see
+     `FameSystem.cs`, `States/GameOverState.cs`, `Util.DeleteCharacterData()`). Went through
+     `EnterPlanMode`/`ExitPlanMode` given the size (7 files, several real design decisions) — first
+     surfaced two scope questions before planning: whether the existing 5-star rating (`Player.
+     ComputeStars`, `HighScore`-doubling-based, entry 81) should be replaced by the new spec's
+     Fame-based "Class Quests" or kept as a separate second tracker (user chose: replace), and how
+     much of the spec's wider XP-formula rework (HP/10 base-XP fallback, next-level %-caps,
+     Exaltations, XP Boosters, dungeon-wide modifiers) to build now (user chose: the core Fame
+     rework plus the next-level XP cap, not Exaltations/Boosters/dungeon modifiers — none of those
+     three exist anywhere in this codebase, and each is its own separate, much larger system).
+
+     `Player.ComputeBaseFame(int experienceTotal)` (new, static + pure, same shape as `ComputeStars`)
+     converts XP to Fame at 1-per-900 before Level 20's XP threshold, 1-per-2000 after — the
+     boundary is computed live from the existing `CumulativeExperienceForLevel(20)` (19,850 XP under
+     this engine's own leveling curve) rather than the spec's literal "18050," since this game's
+     `ExperienceRequiredForLevel` formula was never RotMG's and hardcoding either number risked the
+     two silently drifting apart if the curve is ever retuned. `Player.BaseFame` is a plain derived
+     property (`ComputeBaseFame(ExperienceTotal)`) — not a separately-persisted field, since it's a
+     pure function of already-persisted state, same reasoning as `ExperienceNextLevel`. New
+     `Player.BonusFame` (persisted, `PlayerData.BonusFame`) is real infrastructure with nothing
+     plugged into it yet — "obtained from certain achievements" per the spec, but no such achievement
+     exists in this codebase today, so it's a plain per-life counter (`AddBonusFame()`) sitting at 0
+     until something calls it.
+
+     `ComputeStars` (renamed in spirit to "Class Quests," same method name) dropped its
+     `hasReachedLevel20` gate entirely and now thresholds `ComputeBaseFame(highScore)` against
+     `{20, 500, 1500, 5000, 15000}` instead of `HighScore` doubling from 20,000. Reusing `HighScore`
+     (not live `ExperienceTotal`) is what keeps stars permanent across death — `HighScore` already
+     survives death/delete, and Base Fame is monotonic in XP, so "the most Base Fame ever displayed"
+     is exactly `ComputeBaseFame(HighScore)`, no new persisted star count needed. **Real behavior
+     change, flagged directly**: since Star 1's threshold (20 Fame ≈ 18,000 XP) now lands slightly
+     *before* the actual Level 20 XP threshold (19,850) under this curve, a character can earn Star 1
+     without ever reaching the level cap — a deliberate reading of "gaining certain amounts of Fame
+     during your character's lifetime," not an oversight. Every existing save's displayed star count
+     recomputes automatically the moment this ships (no migration needed, `ComputeStars` was always
+     a pure function with no separately-stored count).
+
+     `Enemy.WasShot()`'s XP award gained a cap step before any multiplier: `PointValue` (this
+     engine's own "specified base XP value, a parameter found in the game XML," per the spec's own
+     wording) is capped to `NextLevelXpCapFraction` (new protected field, 0.1 for every enemy today)
+     of the XP needed for the player's *next* level, matching the spec's own worked example
+     precisely (cap first, multiplier after — a multiplier can still push the final total back above
+     what the cap alone allows). Applies the same way at Level 20 itself, where "next level" is a
+     theoretical 21 that's never reachable — the cap still meaningfully limits farming a
+     high-`PointValue` enemy at the level cap. **Real balance change, flagged directly**: a Level 1
+     character killing a Giant Crab (`PointValue` 86) used to net the full 86 XP; it's now capped to
+     10% of the ~50 XP needed for Level 2, i.e. 5 XP — first-pass, needs a real playtest. The spec's
+     HP/10 base-XP fallback formula wasn't implemented: every enemy in this codebase already has an
+     explicit `PointValue`, so that branch would be unreachable dead code for all current content —
+     it's a fallback for a future enemy authored with no `PointValue` at all, which isn't how any
+     enemy here is built today. The spec's 20%-cap "quest monster" variant has no concept to hang off
+     of either (no quest-monster system exists) — left as an overridable field rather than building a
+     whole taxonomy just to set one number.
+
+     "The icon... disappears" at Level 20, "reactivate[d]... under Video Settings: Always Show EXP" —
+     new `Player.AlwaysShowExpEnabled` (defaults off, same account-wide `GameSettingsData`
+     persistence shape as every other Graphics toggle), gating the floating "+XP" `DamageNumber`
+     instead of `ShowXpDropsEnabled` once `Level >= 20`; below 20, `ShowXpDropsEnabled` still gates
+     it exactly as before. New "Always Show EXP" row in `SettingsState.cs`'s Graphics tab, right
+     after the existing "Show XP Drops" row, identical `SettingsRow` shape.
+
+     `Overlay.DrawExperience()`'s `Level >= 20` branch — previously just `"Experience: {total}"` with
+     an always-full bar — now shows `"Class Quest: {currentFame} / {nextThreshold} Fame"` (or
+     "(Complete)" past the 5th tier) with the bar filling 0-100% within the *current* Class Quest
+     tier, the same "progress within the current bracket" shape the `Level < 20` branch's XP bar
+     already used. Deliberately reads live `ExperienceTotal` (this run's actively-growing Base Fame),
+     not the permanent `HighScore` Character Select's stars use — the HUD should reflect what this
+     specific run is building toward right now, not the character's all-time best.
+
+     Verified via 29 scripted checks, none needing a camera/render setup this time (`WasShot()` isn't
+     gated by on-screen status the way attack coroutines are, so this was mostly pure-function and
+     direct-mutation testing): `ComputeBaseFame` at values straddling the Level-20 XP boundary against
+     hand-derived expected fame; `ComputeStars`/Class Quest thresholds at fame values straddling all
+     5 tiers (via an `XpForFame()` test helper inverting the piecewise formula, since a naive
+     `fame*900` only holds below the 22-fame boundary); the XP cap at Level 1 (capped to 5) and
+     Level 15 (uncapped, full 100) against hand-computed expectations; all 4 combinations of the
+     Level-20 icon-gate switch (initially 2 false failures traced to a confound — `WasShot()` also
+     spawns a *separate* "you dealt damage" `DamageNumber` gated on a different, untouched setting,
+     which a raw before/after `DamageNumber` count couldn't tell apart from the XP one; fixed by
+     disabling that other setting for the block); that a real `SettingsState`'s Graphics tab actually
+     contains the new row and that its `GetBool`/`SetBool` delegates correctly read/write
+     `AlwaysShowExpEnabled`; the fame-earned-on-death formula; `BonusFame` round-tripping through a
+     real `Util.SavePlayerData()`/`LoadOrCreatePlayer()` cycle; and a render of the reworked
+     `Overlay.DrawExperience()` at Level 20 confirming the new text/bar fill render correctly
+     together (called directly via reflection rather than the full `DrawSidebar()`, which also draws
+     unrelated equipment/inventory sections needing more cold-start setup than this test provided).
+     Deliberately did **not** construct a real `GameOverState` anywhere in this test — its
+     constructor unconditionally resets `Player.Instance` to a fresh Level-1 character and saves,
+     which would have actually "killed" whichever real class was currently loaded; the fame-earned
+     formula was verified directly against `Player.Instance.BaseFame`/`BonusFame` instead. Every
+     `Player.Instance` field this test touched (`Level`, `ExperienceTotal`, `BonusFame`, `HighScore`,
+     and three settings toggles) was snapshotted up front and restored in a `finally` block
+     regardless of outcome, then re-saved to disk — a stronger guarantee than previous sessions' tests
+     (which only ever reverted temp *code*, relying on the end-of-session save-file diff as the sole
+     safety net for *state*). Real save files were re-verified after: `GameSettingsData.json` and
+     `PlayerData_Wizard.json` both differed from the pre-test backup, but both differences turned out
+     benign on inspection — `GameSettingsData.json`'s new `AlwaysShowExpEnabled` key is the intended
+     schema addition (found the same file also had `AutoFireEnabled` unexpectedly flipped true,
+     unrelated to anything touched this session, corrected by hand), and `PlayerData_Wizard.json`'s
+     only differences were the same already-flagged equipped-item-ID quirk (see entry 183's standing
+     investigation task) plus the new `BonusFame` key defaulting to 0 — confirmed field-by-field
+     rather than assumed. Clean build and a plain boot-check both passed.

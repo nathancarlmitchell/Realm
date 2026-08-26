@@ -71,15 +71,26 @@ prioritized or scheduled — the user asked to keep these noted for later rather
 - **Multiple rooms/floors** instead of one open world area — locked doors needing a key drop, a
   portal to the next floor.
 - **What Fame should unlock — remaining pieces.** Class unlocks (see
-  [DEVLOG.md](DEVLOG.md) entry 80) and the per-class star
-  rating (entry 81, technically a separate progression metric from Fame, not spent from it) are
-  done. The user's full vision is larger: cosmetic skins, additional bank storage slots, alternate
-  starting gear tiers for a fresh run (Tier 0 by default today), an unlock that raises all stats to
-  max, and eventually a proper shop where Fame is spent directly on specific items (as opposed to
-  class unlocks, which just check the account's cumulative total — spending would need Fame to
-  actually be consumed, which nothing does yet). No numbers/scope decided for any of these beyond
-  class unlocks' 1,000/3,000 thresholds and the star system's 20,000-base-doubling thresholds; pick
-  up one piece at a time rather than all at once, same approach as these first two slices.
+  [DEVLOG.md](DEVLOG.md) entry 80) are done. The per-class star rating (entry 81) is **no longer a
+  separate metric from Fame** — the Fame rework (entry 186) redefined it to run on Fame thresholds
+  directly (`Player.ComputeStars`, "Class Quests"), replacing the old `HighScore`-doubling basis.
+  The user's full vision for Fame-as-currency is still larger than what exists: cosmetic skins,
+  additional bank storage slots, alternate starting gear tiers for a fresh run (Tier 0 by default
+  today), an unlock that raises all stats to max, and eventually a proper shop where Fame is spent
+  directly on specific items (as opposed to class unlocks, which just check the account's cumulative
+  total — spending would need Fame to actually be consumed, which nothing does yet — entry 186 only
+  adds *earning* Fame faster/differently, not spending it). No numbers/scope decided for any of
+  these beyond class unlocks' 1,000/3,000 thresholds and the Class Quest system's 20/500/1500/5000/
+  15000 Fame thresholds; pick up one piece at a time rather than all at once, same approach as these
+  first slices.
+- **Fame/XP rework follow-ups, deliberately left out of entry 186's scope.** The user's own Fame
+  rework spec also described a wider XP-formula overhaul this pass didn't build: Exaltations (a
+  stat-based bonus, "+5% XP for every 8 stat Exaltations"), a consumable XP Booster item, and
+  dungeon-wide XP modifiers (events/dungeon modifiers affecting the whole instance) — none of these
+  three systems exist anywhere in this codebase today, and each would be its own substantial
+  addition (a new per-class Exaltation-tracking mechanic, a new consumable item type, a new
+  dungeon-modifier system) rather than a tweak to something already there. The next-level XP cap
+  (10%/20%) from the same spec *was* implemented (`Enemy.NextLevelXpCapFraction`).
 - **A 5th+ character class beyond Wizard/Archer/Knight/Priest**, if ever wanted — the extension
   pattern is now proven four times over (see [DEVLOG.md](DEVLOG.md) entry 171 for Priest, the most
   recent).

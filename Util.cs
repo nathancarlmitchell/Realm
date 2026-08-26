@@ -137,12 +137,16 @@ namespace Realm
             int highScore = existing?.HighScore ?? 0;
             bool hasReachedLevel20 = existing?.HasReachedLevel20 ?? false;
 
-            // Whatever Score this character had built up is about to be wiped
-            // either way (file deleted outright, or reset back to defaults
-            // below) — salvage it into the account-level Fame total before
-            // that happens. Unlike HighScore, Score isn't otherwise preserved
-            // by a delete, so there's no double-counting risk here.
-            FameSystem.AddFame(existing?.ExperienceTotal ?? 0);
+            // Whatever Base Fame + Bonus Fame this character had built up is
+            // about to be wiped either way (file deleted outright, or reset
+            // back to defaults below) — salvage it into the account-level
+            // Fame total before that happens, same conversion GameOverState
+            // applies on an actual death. Unlike HighScore, neither of these
+            // is otherwise preserved by a delete, so there's no
+            // double-counting risk here.
+            FameSystem.AddFame(
+                Player.ComputeBaseFame(existing?.ExperienceTotal ?? 0) + (existing?.BonusFame ?? 0)
+            );
             SaveFameData();
 
             string inventoryPath = InventoryDataLocation(playerClass);
@@ -322,6 +326,7 @@ namespace Realm
                 Player.Instance.Name = saved.Name;
                 Player.Instance.Description = saved.Description;
                 Player.Instance.ExperienceTotal = saved.ExperienceTotal;
+                Player.Instance.BonusFame = saved.BonusFame;
                 Player.Instance.HighScore = saved.HighScore;
                 Player.Instance.HasBeenPlayed = saved.HasBeenPlayed;
                 Player.Instance.HasReachedLevel20 = saved.HasReachedLevel20;
@@ -439,6 +444,7 @@ namespace Realm
                 Speed = Player.Instance.Speed,
                 Dexterity = Player.Instance.Dexterity,
                 ExperienceTotal = Player.Instance.ExperienceTotal,
+                BonusFame = Player.Instance.BonusFame,
                 HighScore = Player.Instance.HighScore,
                 HasBeenPlayed = Player.Instance.HasBeenPlayed,
                 HasReachedLevel20 = Player.Instance.HasReachedLevel20,
@@ -1244,6 +1250,7 @@ namespace Realm
                 LowHealthIndicatorEnabled = Player.Instance.LowHealthIndicatorEnabled,
                 LowHealthThresholdPercent = Player.Instance.LowHealthThresholdPercent,
                 ShowXpDropsEnabled = Player.Instance.ShowXpDropsEnabled,
+                AlwaysShowExpEnabled = Player.Instance.AlwaysShowExpEnabled,
                 ShowPlayerDamageNumbersEnabled = Player.Instance.ShowPlayerDamageNumbersEnabled,
                 ShowEnemyDamageNumbersEnabled = Player.Instance.ShowEnemyDamageNumbersEnabled,
                 ShowHitParticlesEnabled = Player.Instance.ShowHitParticlesEnabled,
@@ -1273,6 +1280,7 @@ namespace Realm
                 Player.Instance.LowHealthIndicatorEnabled = data.LowHealthIndicatorEnabled;
                 Player.Instance.LowHealthThresholdPercent = data.LowHealthThresholdPercent;
                 Player.Instance.ShowXpDropsEnabled = data.ShowXpDropsEnabled;
+                Player.Instance.AlwaysShowExpEnabled = data.AlwaysShowExpEnabled;
                 Player.Instance.ShowPlayerDamageNumbersEnabled = data.ShowPlayerDamageNumbersEnabled;
                 Player.Instance.ShowEnemyDamageNumbersEnabled = data.ShowEnemyDamageNumbersEnabled;
                 Player.Instance.ShowHitParticlesEnabled = data.ShowHitParticlesEnabled;

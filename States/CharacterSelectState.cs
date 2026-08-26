@@ -274,10 +274,7 @@ namespace Realm.States
                 // permanent record shown either way (see Slot.Stars), unlike
                 // HasSave/delete, which only matter for a playable slot.
                 PlayerData saved = Util.PeekPlayerData(slot.PlayerClass);
-                slot.Stars = Player.ComputeStars(
-                    saved?.HasReachedLevel20 ?? false,
-                    saved?.HighScore ?? 0
-                );
+                slot.Stars = Player.ComputeStars(saved?.HighScore ?? 0);
 
                 if (slot.IsLocked)
                 {

@@ -301,36 +301,68 @@ namespace Realm
             int x = Game1.SidebarX + SidebarPadding;
             int y = 160;
 
-            string expString =
-                Player.Instance.Level < 20
-                    ? "Exp: "
-                        + Player.Instance.ExperienceTotal
-                        + " / "
-                        + Player.Instance.ExperienceNextLevel
-                    : "Experience: " + Player.Instance.ExperienceTotal;
+            string expString;
+            int normalisedFill;
+
+            if (Player.Instance.Level < 20)
+            {
+                expString =
+                    "Exp: " + Player.Instance.ExperienceTotal + " / " + Player.Instance.ExperienceNextLevel;
+
+                // The bar fills 0-100% within just the current level (empty
+                // right at the start of a level, full right before the next
+                // one) — unlike expString above, which shows the cumulative
+                // total and never resets. XpIntoLevel/xpNeededForLevel are
+                // ExperienceTotal/ExperienceNextLevel with the current
+                // level's own starting threshold subtracted from both, so
+                // the ratio reads as "progress since I hit this level"
+                // instead of "progress since I hit Level 1". Clamped to
+                // 100 — a single large XP gain can briefly put
+                // ExperienceTotal past the current ExperienceNextLevel for
+                // the one frame before Update()'s own level-up check
+                // catches up, which would otherwise draw the fill past the
+                // bar's own background for that frame.
+                int levelStartXp = Player.CumulativeExperienceForLevel(Player.Instance.Level);
+                int xpIntoLevel = Player.Instance.ExperienceTotal - levelStartXp;
+                int xpNeededForLevel = Player.Instance.ExperienceNextLevel - levelStartXp;
+                normalisedFill = Math.Min(100, (xpIntoLevel * 100 / xpNeededForLevel * 100) / 100);
+            }
+            else
+            {
+                // "Once the character reaches level 20, their base fame and
+                // class quest progress will be displayed instead [of XP
+                // progress to the next level]." Uses the live
+                // ExperienceTotal (this run's own currently-growing Base
+                // Fame) rather than HighScore — unlike Character Select's
+                // permanent star display, this HUD panel should reflect
+                // what this run is actively building toward right now.
+                int stars = Player.ComputeStars(Player.Instance.ExperienceTotal);
+                int currentFame = Player.Instance.BaseFame;
+
+                if (stars >= Player.MaxStars)
+                {
+                    expString = "Class Quest: " + currentFame + " Fame (Complete)";
+                    normalisedFill = 100;
+                }
+                else
+                {
+                    int nextThreshold = Player.ClassQuestFameThresholds[stars];
+                    int previousThreshold =
+                        stars == 0 ? 0 : Player.ClassQuestFameThresholds[stars - 1];
+                    expString = "Class Quest: " + currentFame + " / " + nextThreshold + " Fame";
+
+                    int fameIntoTier = currentFame - previousThreshold;
+                    int fameNeededForTier = nextThreshold - previousThreshold;
+                    normalisedFill = Math.Min(
+                        100,
+                        (fameIntoTier * 100 / fameNeededForTier * 100) / 100
+                    );
+                }
+            }
+
             spriteBatch.DrawString(Art.HudFont, expString, new Vector2(x, y), Color.White);
 
-            // The bar fills 0-100% within just the current level (empty
-            // right at the start of a level, full right before the next
-            // one) — unlike expString above, which shows the cumulative
-            // total and never resets. XpIntoLevel/xpNeededForLevel are
-            // ExperienceTotal/ExperienceNextLevel with the current level's
-            // own starting threshold subtracted from both, so the ratio
-            // reads as "progress since I hit this level" instead of
-            // "progress since I hit Level 1". Clamped to 100 — a single
-            // large XP gain can briefly put ExperienceTotal past the
-            // current ExperienceNextLevel for the one frame before
-            // Update()'s own level-up check catches up, which would
-            // otherwise draw the fill past the bar's own background for
-            // that frame.
-            int levelStartXp = Player.CumulativeExperienceForLevel(Player.Instance.Level);
-            int xpIntoLevel = Player.Instance.ExperienceTotal - levelStartXp;
-            int xpNeededForLevel = Player.Instance.ExperienceNextLevel - levelStartXp;
-            int normalisedExp = Math.Min(100, (xpIntoLevel * 100 / xpNeededForLevel * 100) / 100);
-            Rectangle goldRect =
-                Player.Instance.Level < 20
-                    ? new(0, 0, normalisedExp * SidebarBarScale, SidebarBarHeight)
-                    : new(0, 0, 100 * SidebarBarScale, SidebarBarHeight);
+            Rectangle goldRect = new(0, 0, normalisedFill * SidebarBarScale, SidebarBarHeight);
             Rectangle blackRect = new(0, 0, 100 * SidebarBarScale, SidebarBarHeight);
 
             Vector2 barPos = new(x, y + 20);

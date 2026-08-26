@@ -43,6 +43,13 @@ public class GameSettingsData
     // SettingsState.cs's Graphics tab.
     public bool ShowXpDropsEnabled { get; set; } = true;
 
+    // Defaults to false (off) — unlike the toggles above, false IS the
+    // correct fallback for an old settings file missing this key, so no
+    // explicit `= true` is needed here. Gates the same floating "+XP"
+    // number as ShowXpDropsEnabled above, but only once the player reaches
+    // Level 20 (see Enemy.WasShot()). See SettingsState.cs's Graphics tab.
+    public bool AlwaysShowExpEnabled { get; set; }
+
     // Defaults to TRUE (on) — same "give it its own explicit default"
     // reasoning as LowHealthIndicatorEnabled above. Gates the player's own
     // "I took damage" number (Player.Hit()). See SettingsState.cs's
