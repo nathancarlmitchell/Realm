@@ -1512,13 +1512,6 @@
 /processorParam:TextureFormat=Compressed
 /build:Fonts/RetroFontLarge.spritefont
 
-#begin Fonts/RetroFontButton.spritefont
-/importer:FontDescriptionImporter
-/processor:FontDescriptionProcessor
-/processorParam:PremultiplyAlpha=True
-/processorParam:TextureFormat=Compressed
-/build:Fonts/RetroFontButton.spritefont
-
 #begin health_potion.png
 /importer:TextureImporter
 /processor:TextureProcessor

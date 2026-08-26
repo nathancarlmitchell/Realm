@@ -5535,3 +5535,15 @@ date/time for those individually; don't treat their grouping as meaning they all
      visible black outline and legible letterform detail (no more solid-black blob), at a visibly
      larger, easier-to-read size. Clean build, plain boot-check, and a full real-save-file diff all
      passed with zero differences.
+
+207. **Made every button use the same font as Settings' own buttons**, per direct feedback that the
+     dedicated 18pt `Art.RetroFontButton` from entry 206 should instead match Settings' Back/Reset
+     buttons, which already draw at `Art.RetroFont` (14pt) via `Button`'s explicit-font constructor.
+     Changed `Button()`'s and `Button(Texture2D)`'s default `font` field from `Art.RetroFontButton`
+     to `Art.RetroFont` — the third constructor (`Button(Texture2D, SpriteFont)`, Settings' own) was
+     already on `Art.RetroFont` and needed no change. This left `Art.RetroFontButton` with zero
+     remaining consumers, so it was removed outright the same way `Art.DamageFont` was in entry
+     201/202: deleted `Content/Fonts/RetroFontButton.spritefont`, its `Content.mgcb` build block, and
+     the `Art.RetroFontButton` field/load line. Verified via `dotnet build` (0 errors) and a plain
+     minimized boot-check; all real save files confirmed byte-identical to a pre-test backup
+     afterward.

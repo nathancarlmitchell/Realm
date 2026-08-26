@@ -49,10 +49,14 @@ namespace Realm.Controls
         // low-contrast. Callers that explicitly set PenColor afterward
         // (e.g. the Erase All Data / confirm buttons' Red/DarkRed) are
         // unaffected — this only changes what "didn't set one" means.
+        //
+        // font uses Art.RetroFont — the same font/size Settings' own
+        // Back/Reset buttons already use via the explicit-font constructor
+        // below — so every button in the game matches.
         public Button()
         {
             texture = Art.ButtonTexture;
-            font = Art.RetroFontButton;
+            font = Art.RetroFont;
             scale = Game1.Scale;
             PenColor = Color.White;
         }
@@ -60,7 +64,7 @@ namespace Realm.Controls
         public Button(Texture2D _texture)
         {
             texture = _texture;
-            font = Art.RetroFontButton;
+            font = Art.RetroFont;
             scale = Game1.Scale;
             PenColor = Color.White;
         }
