@@ -156,6 +156,40 @@ prioritized or scheduled — the user asked to keep these noted for later rather
   their own at all, unlike Beach's one remaining one; and retuning the 4 biomes' distance
   thresholds/enemy rosters, which were placeholder guesses mirroring `EnemySpawner.BasicEnemyPool`'s
   existing level order, not derived from real playtesting.
+- **Change tier and item name text color.** Flagged for a future pass; no specific colors decided
+  yet. Today's tier/name text color is whatever each draw site already sets directly (e.g.
+  `Util.DrawTooltip`'s categorized tooltip-line colors from entry 203, `Overlay`'s stat-line colors,
+  each item's own `Color` field where one exists) — needs a decision on which specific text (item
+  name specifically vs. its tier indicator, and where each currently renders — equipment tooltips,
+  inventory/bank slots, loot bag popup) should change and to what, before implementing.
+- **Update loot bag inventory display background.** Flagged for a future pass; no specific look
+  decided yet. The loot bag popup's current background is whatever `LootBag.cs`/`InventorySystem.cs`
+  draw today — needs a decision on the actual desired appearance before implementing.
+- **Finalize font settings and main menu graphics.** A polish/tuning pass on the retro-font rollout
+  (entries 195-213) and the title screen background (entries 209-210) — flagged as not yet
+  considered "done," but without specific complaints yet beyond what's already been addressed
+  (blurry upscaling, black-on-black buttons, button font mismatch). Needs the user to point out what
+  specifically still looks off once they've spent more time looking at it in actual play.
+- **Playtest the Beach biome.** Follow-up to entry 213's mini-boss reclassification and drop-rate
+  retune — those changes were verified mechanically (reflection checks, a 3000-trial drop-rate
+  simulation) but not yet played by a human. Needs an actual playthrough to confirm the reclassified
+  Bandit Leader/Scorpion Queen/Sandsman King/Giant Crab feel right blended into the regular wave
+  (rather than as dedicated encounters), and that the new flat 5%/2.5% drop rates feel right in
+  practice rather than just matching their target percentages statistically.
+- **Sand Devil bug: circle phase, and spawning directly on the player.** Reported during play, not
+  yet root-caused or fixed. Two symptoms, possibly related: (1) something wrong during the Circle
+  phase specifically (`SandDevil.cs`'s `PhaseWatcher()`) — one candidate worth checking first: the
+  phase transition (`currentPhase = Phase.Circle; circleAngle = (Position -
+  Player.Instance.Position).ToAngle();`) computes its starting angle from the Sand Devil's position
+  at that instant, then immediately snaps `Position` to `Player.Instance.Position +
+  Extensions.FromPolar(circleAngle, CircleRadius)` every tick from then on — a hard teleport onto a
+  fixed 96px ring around the player's *current* position the moment Circle begins, not a smooth
+  transition from wherever it actually was chasing from, which could read as an abrupt/wrong jump;
+  (2) a Sand Devil (or its Circle-phase ring) ending up exactly on the player's own position, which
+  `EnemySpawner.GetSpawnPosition()`'s 250-unit `minSpawnDistance` should prevent at initial spawn —
+  worth checking whether the bug is actually about the Circle-phase snap-to-ring above landing too
+  close/exactly on the player mid-fight, rather than the initial spawn itself. Needs reproduction and
+  a real fix, not a guess — this is a lead for whoever picks it up, not a diagnosis.
 
 ## Completed
 
