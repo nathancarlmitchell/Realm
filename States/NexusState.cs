@@ -134,6 +134,9 @@ namespace Realm.States
             Player.Instance.Inventory.DrawDragGhost(spriteBatch);
             BankSystem.DrawDragGhost(spriteBatch);
 
+            // Draw Fame, top-left — same corner Score/Hi Score used to occupy.
+            Overlay.DrawFame(spriteBatch);
+
             if (Game1._Debug)
             {
                 Overlay.DrawDebug(spriteBatch);

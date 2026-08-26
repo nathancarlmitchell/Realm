@@ -181,6 +181,9 @@ namespace Realm.States
 
             Player.Instance.Inventory.DrawDragGhost(spriteBatch);
 
+            // Draw Fame, top-left — same corner Score/Hi Score used to occupy.
+            Overlay.DrawFame(spriteBatch);
+
             DrawBossHud(spriteBatch);
 
             if (Game1._Debug)

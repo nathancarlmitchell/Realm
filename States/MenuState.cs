@@ -59,7 +59,6 @@ namespace Realm.States
 
             // Draw title.
             Overlay.DrawTitle(spriteBatch);
-            Overlay.DrawFame(spriteBatch);
 
             // Draw menu.
             menu.Draw(gameTime, spriteBatch);

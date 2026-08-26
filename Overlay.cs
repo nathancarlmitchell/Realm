@@ -30,9 +30,15 @@ namespace Realm
             spriteBatch.DrawString(font, text, new Vector2(x, y), Color.DarkMagenta);
         }
 
-        // Account-level total, shared across every class.
+        // Account-level total, shared across every class. Drawn top-left in
+        // the Nexus/a dungeon, the same corner Score/Hi Score used to occupy
+        // before entry 193 removed them — not on the title screen (entry 187
+        // put it there originally, centered under the title; moved here
+        // instead so it's visible during actual play, not just at the menu).
         private const int FameIconSize = 24;
         private const int FameIconTextGap = 6;
+        private const int FameOverlayX = 32;
+        private const int FameOverlayY = 64;
 
         public static void DrawFame(SpriteBatch spriteBatch)
         {
@@ -40,30 +46,16 @@ namespace Realm
             string text = "Fame: " + FameSystem.Fame;
             Vector2 textSize = font.MeasureString(text);
 
-            // Icon + text centered as one unit — centering just the text
-            // (like before the icon existed) would leave the pair looking
-            // off-center, shifted right by roughly half the icon's width.
-            float totalWidth = FameIconSize + FameIconTextGap + textSize.X;
-            int startX = (int)((Game1.ScreenWidth / 2) - (totalWidth / 2));
-
-            // Below the title's own actual measured height, not a fixed
-            // +48 offset — DrawTitle()'s "Realm" is drawn at TitleFont
-            // scale, tall enough that a flat +48 sat this line overlapping
-            // the title's own letters instead of clearing them (this is
-            // almost certainly why the call to this method was commented
-            // out in MenuState.cs before now).
-            int y = (128 / Game1.Scale) + (int)Art.TitleFont.MeasureString("Realm").Y + 16;
-
             Rectangle iconRect = new(
-                startX,
-                y + (int)((textSize.Y - FameIconSize) / 2f),
+                FameOverlayX,
+                FameOverlayY + (int)((textSize.Y - FameIconSize) / 2f),
                 FameIconSize,
                 FameIconSize
             );
             spriteBatch.Draw(Art.FameIcon, iconRect, Color.White);
 
-            int textX = startX + FameIconSize + FameIconTextGap;
-            spriteBatch.DrawString(font, text, new Vector2(textX, y), Color.White);
+            int textX = FameOverlayX + FameIconSize + FameIconTextGap;
+            spriteBatch.DrawString(font, text, new Vector2(textX, FameOverlayY), Color.White);
         }
 
         // Sidebar layout. All sections are stacked top-to-bottom at a fixed

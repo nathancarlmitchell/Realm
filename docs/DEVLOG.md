@@ -5071,3 +5071,24 @@ date/time for those individually; don't treat their grouping as meaning they all
      instead of `sed` for every substitution in this change, so no cleanup pass was needed here. Temp
      code fully reverted (`git diff --stat Game1.cs` clean), scratch PNG deleted, clean build, plain
      boot-check, and a full real-save-file diff all passed with zero differences.
+
+194. **Moved the account-wide Fame display off the title screen and into the top-left gameplay
+     corner** (the Nexus and dungeons) — where Score/Hi Score used to sit before entry 193 removed
+     them — per direct user request. `Overlay.DrawFame()` (entry 187: centered under the "Realm"
+     title, `MenuState`'s only caller) was rewritten to draw at a fixed top-left position
+     (`FameOverlayX`/`Y` = 32/64, matching Score's old top line) instead of centering itself under
+     `DrawTitle()`'s measured width/height — the centering math and its `Game1.ScreenWidth`/
+     `Art.TitleFont` dependencies are gone entirely, since a fixed-position corner element doesn't
+     need them. Removed the call from `MenuState.Draw()`; added it to `NexusState.Draw()` and
+     `RealmState.Draw()` (the exact two places `Overlay.DrawScore()` used to be called from before
+     entry 193 deleted it) — `BossRealmState` needed no separate change, since it inherits
+     `RealmState.Draw()` wholesale rather than overriding it.
+     Verified via a temporary `Game1.StartGame()` test rendering two real, independent scenarios to
+     offscreen `RenderTarget2D`s: `MenuState`'s actual `Draw()` (confirming the title screen shows
+     only "Realm" and the four menu buttons, no Fame text anywhere) and `Overlay.DrawFame()` called
+     alone (confirming "Fame: 0" plus its icon render cleanly at the new top-left position, matching
+     Score's old footprint, with no clipping). Also checked by hand that nothing else already occupies
+     that corner — the minimap sits top-right (`Game1.SidebarX`-anchored) and the F3 debug overlay
+     starts at y=256, well clear of Fame's y=64. Temp code fully reverted (`git diff --stat Game1.cs`
+     clean), scratch PNGs deleted, clean build, plain boot-check, and a full real-save-file diff all
+     passed with zero differences.
