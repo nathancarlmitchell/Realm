@@ -391,7 +391,7 @@ namespace Realm
             int y = Player.Instance.Inventory.Bounds.Bottom + 20;
 
             string dungeonName = pendingConfirmation.DisplayName;
-            spriteBatch.DrawString(Art.RetroFont, dungeonName, new Vector2(x, y), Color.White);
+            Util.DrawOutlinedText(spriteBatch, Art.RetroFont, dungeonName, new Vector2(x, y), Color.White);
             int labelHeight = (int)Art.RetroFont.MeasureString(dungeonName).Y;
 
             Button button = ConfirmButton;
@@ -401,8 +401,7 @@ namespace Realm
 
             string hint = $"or press [{KeyBindings.Get(KeyBindings.Action.ConfirmPortalEntry)}]";
             Vector2 hintPos = new(x, button.Position.Y + button.Rectangle.Height + 6);
-            spriteBatch.DrawString(Art.RetroFont, hint, hintPos + Vector2.One, Color.Black * 0.6f);
-            spriteBatch.DrawString(Art.RetroFont, hint, hintPos, Color.White);
+            Util.DrawOutlinedText(spriteBatch, Art.RetroFont, hint, hintPos, Color.White);
         }
 
         public void Draw(SpriteBatch spriteBatch, GameTime gameTime)
@@ -423,13 +422,7 @@ namespace Realm
                     position.Y + (RenderedHeight / 2) + 4
                 );
 
-                spriteBatch.DrawString(
-                    Art.RetroFont,
-                    label,
-                    labelPos + Vector2.One,
-                    Color.Black * 0.6f
-                );
-                spriteBatch.DrawString(Art.RetroFont, label, labelPos, Color.White);
+                Util.DrawOutlinedText(spriteBatch, Art.RetroFont, label, labelPos, Color.White);
             }
         }
     }

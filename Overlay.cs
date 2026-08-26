@@ -9,25 +9,26 @@ namespace Realm
 {
     public static class Overlay
     {
+        // How much to scale Art.RetroFont's own 14pt size up to read as a
+        // title — RetroFont replaced Art.TitleFont (96pt Arial) here, and a
+        // pixel font needs a real scale factor rather than a bigger point
+        // size to stay crisp. Also used by BossRealmState's boss-announcement
+        // banner, which shares this same "big pixel-font title" look.
+        public const float TitleScale = 6f;
+
         public static void DrawTitle(SpriteBatch spriteBatch)
         {
-            // Draw title.
-            SpriteFont font = Art.TitleFont;
+            SpriteFont font = Art.RetroFont;
             string text = "Realm";
+            Vector2 size = font.MeasureString(text) * TitleScale;
 
-            int x = (int)((Game1.ScreenWidth / 2) - (font.MeasureString(text).X / 2));
+            int x = (int)((Game1.ScreenWidth / 2) - (size.X / 2));
             int y = 128 / Game1.Scale;
 
-            // Draw text shadow.
-            spriteBatch.DrawString(
-                font,
-                text,
-                new Vector2(x - 4, y + 4),
-                Color.DarkOrange * (1.0f - 0.25f)
-            );
-
-            // Draw text.
-            spriteBatch.DrawString(font, text, new Vector2(x, y), Color.DarkMagenta);
+            // Fill color preserved from the old Arial title (DarkMagenta) —
+            // only the font and the shadow-style secondary color changed, to
+            // a plain black outline matching every other piece of text now.
+            Util.DrawOutlinedText(spriteBatch, font, text, new Vector2(x, y), Color.DarkMagenta, TitleScale);
         }
 
         // Account-level total, shared across every class. Drawn top-left in

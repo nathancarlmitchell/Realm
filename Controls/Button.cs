@@ -45,7 +45,7 @@ namespace Realm.Controls
         public Button()
         {
             texture = Art.ButtonTexture;
-            font = Art.HudFont;
+            font = Art.RetroFont;
             scale = Game1.Scale;
             PenColor = Color.Black;
         }
@@ -53,7 +53,7 @@ namespace Realm.Controls
         public Button(Texture2D _texture)
         {
             texture = _texture;
-            font = Art.HudFont;
+            font = Art.RetroFont;
             scale = Game1.Scale;
             PenColor = Color.Black;
         }
@@ -88,7 +88,7 @@ namespace Realm.Controls
                 var x = (Rectangle.X + (Rectangle.Width / 2)) - (font.MeasureString(Text).X / 2);
                 var y = (Rectangle.Y + (Rectangle.Height / 2)) - (font.MeasureString(Text).Y / 2);
 
-                spriteBatch.DrawString(font, Text, new Vector2(x, y), PenColor);
+                Util.DrawOutlinedText(spriteBatch, font, Text, new Vector2(x, y), PenColor);
             }
         }
 

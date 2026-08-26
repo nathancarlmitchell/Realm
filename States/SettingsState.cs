@@ -291,13 +291,13 @@ namespace Realm.States
             // time.
             float widestLabel = 0f;
             foreach (var action in KeyBindings.AllActions)
-                widestLabel = Math.Max(widestLabel, Art.SettingsFont.MeasureString(KeyBindings.DisplayName(action)).X);
+                widestLabel = Math.Max(widestLabel, Art.RetroFont.MeasureString(KeyBindings.DisplayName(action)).X);
             foreach (var row in gameplayRows)
-                widestLabel = Math.Max(widestLabel, Art.SettingsFont.MeasureString(row.Label).X);
+                widestLabel = Math.Max(widestLabel, Art.RetroFont.MeasureString(row.Label).X);
             foreach (var row in graphicsRows)
-                widestLabel = Math.Max(widestLabel, Art.SettingsFont.MeasureString(row.Label).X);
+                widestLabel = Math.Max(widestLabel, Art.RetroFont.MeasureString(row.Label).X);
             foreach (var row in audioRows)
-                widestLabel = Math.Max(widestLabel, Art.SettingsFont.MeasureString(row.Label).X);
+                widestLabel = Math.Max(widestLabel, Art.RetroFont.MeasureString(row.Label).X);
 
             labelX = CenterWidth - 160;
             valueX = labelX + (int)widestLabel + 24;
@@ -313,7 +313,7 @@ namespace Realm.States
 
             for (int i = 0; i < rows.Count; i++)
             {
-                Vector2 rowSize = Art.SettingsFont.MeasureString("A");
+                Vector2 rowSize = Art.RetroFont.MeasureString("A");
                 rows[i].Rect = new Rectangle(
                     labelX,
                     rowsTop + i * RowHeight,
@@ -333,12 +333,12 @@ namespace Realm.States
 
             float totalTabWidth = TabGap * (tabs.Count - 1);
             foreach (var tab in tabs)
-                totalTabWidth += Art.SettingsFont.MeasureString(tab.Label).X + TabPaddingX * 2;
+                totalTabWidth += Art.RetroFont.MeasureString(tab.Label).X + TabPaddingX * 2;
 
             int tabX = CenterWidth - (int)(totalTabWidth / 2);
             foreach (var tab in tabs)
             {
-                int tabWidth = (int)Art.SettingsFont.MeasureString(tab.Label).X + TabPaddingX * 2;
+                int tabWidth = (int)Art.RetroFont.MeasureString(tab.Label).X + TabPaddingX * 2;
                 tab.Rect = new Rectangle(tabX, tabBarY, tabWidth, TabHeight);
                 tabX += tabWidth + TabGap;
             }
@@ -349,11 +349,11 @@ namespace Realm.States
             int tallestRowCount = Math.Max(rows.Count, audioRows.Count);
             int buttonsY = rowsTop + tallestRowCount * RowHeight + 30;
 
-            backButton = new Button(Art.ButtonTexture, Art.SettingsFont) { Text = "Back" };
+            backButton = new Button(Art.ButtonTexture, Art.RetroFont) { Text = "Back" };
             backButton.Click += (sender, e) => Game1.Instance.ChangeState(returnState);
             backButton.Position = new Vector2(CenterWidth - backButton.Rectangle.Width - 10, buttonsY);
 
-            resetButton = new Button(Art.ButtonTexture, Art.SettingsFont) { Text = "Reset to Defaults" };
+            resetButton = new Button(Art.ButtonTexture, Art.RetroFont) { Text = "Reset to Defaults" };
             resetButton.Click += (sender, e) =>
             {
                 KeyBindings.ResetToDefaults();
@@ -367,7 +367,7 @@ namespace Realm.States
         // fixed column/row height every other tab uses.
         private void LayoutRows(List<SettingsRow> tabRows)
         {
-            int rowHeightPx = (int)Art.SettingsFont.MeasureString("A").Y + 6;
+            int rowHeightPx = (int)Art.RetroFont.MeasureString("A").Y + 6;
             for (int i = 0; i < tabRows.Count; i++)
             {
                 int rowY = rowsTop + i * RowHeight;
@@ -425,9 +425,16 @@ namespace Realm.States
                 if (row.Kind == RowKind.Toggle)
                 {
                     Color toggleColor = row.Hover ? Color.Gold : Color.White;
-                    spriteBatch.DrawString(Art.SettingsFont, row.Label, new Vector2(labelX, row.Rect.Y), toggleColor);
-                    spriteBatch.DrawString(
-                        Art.SettingsFont,
+                    Util.DrawOutlinedText(
+                        spriteBatch,
+                        Art.RetroFont,
+                        row.Label,
+                        new Vector2(labelX, row.Rect.Y),
+                        toggleColor
+                    );
+                    Util.DrawOutlinedText(
+                        spriteBatch,
+                        Art.RetroFont,
                         row.GetBool() ? "ON" : "OFF",
                         new Vector2(valueX, row.Rect.Y),
                         toggleColor
@@ -435,29 +442,38 @@ namespace Realm.States
                 }
                 else
                 {
-                    spriteBatch.DrawString(Art.SettingsFont, row.Label, new Vector2(labelX, row.Rect.Y), Color.White);
+                    Util.DrawOutlinedText(
+                        spriteBatch,
+                        Art.RetroFont,
+                        row.Label,
+                        new Vector2(labelX, row.Rect.Y),
+                        Color.White
+                    );
 
                     Color decColor = row.DecrementHover ? Color.Gold : Color.White;
-                    spriteBatch.DrawString(
-                        Art.SettingsFont,
+                    Util.DrawOutlinedText(
+                        spriteBatch,
+                        Art.RetroFont,
                         "-",
                         new Vector2(row.DecrementRect.X, row.Rect.Y),
                         decColor
                     );
 
                     string valueText = $"{row.GetInt()}%";
-                    Vector2 valueTextSize = Art.SettingsFont.MeasureString(valueText);
+                    Vector2 valueTextSize = Art.RetroFont.MeasureString(valueText);
                     float valueCenterX = (row.DecrementRect.Right + row.IncrementRect.X) / 2f;
-                    spriteBatch.DrawString(
-                        Art.SettingsFont,
+                    Util.DrawOutlinedText(
+                        spriteBatch,
+                        Art.RetroFont,
                         valueText,
                         new Vector2(valueCenterX - valueTextSize.X / 2f, row.Rect.Y),
                         Color.White
                     );
 
                     Color incColor = row.IncrementHover ? Color.Gold : Color.White;
-                    spriteBatch.DrawString(
-                        Art.SettingsFont,
+                    Util.DrawOutlinedText(
+                        spriteBatch,
+                        Art.RetroFont,
                         "+",
                         new Vector2(row.IncrementRect.X, row.Rect.Y),
                         incColor
@@ -542,9 +558,10 @@ namespace Realm.States
             spriteBatch.Begin();
 
             string title = "Settings";
-            Vector2 titleSize = Art.SettingsFont.MeasureString(title);
-            spriteBatch.DrawString(
-                Art.SettingsFont,
+            Vector2 titleSize = Art.RetroFont.MeasureString(title);
+            Util.DrawOutlinedText(
+                spriteBatch,
+                Art.RetroFont,
                 title,
                 new Vector2(CenterWidth - titleSize.X / 2, tabBarY - 40),
                 Color.White
@@ -555,12 +572,12 @@ namespace Realm.States
                 bool active = tab.Tab == currentTab;
                 Color color = (active || tab.Hover) ? Color.Gold : Color.White;
 
-                Vector2 labelSize = Art.SettingsFont.MeasureString(tab.Label);
+                Vector2 labelSize = Art.RetroFont.MeasureString(tab.Label);
                 Vector2 labelPos = new(
                     tab.Rect.X + (tab.Rect.Width - labelSize.X) / 2,
                     tab.Rect.Y + (tab.Rect.Height - labelSize.Y) / 2
                 );
-                spriteBatch.DrawString(Art.SettingsFont, tab.Label, labelPos, color);
+                Util.DrawOutlinedText(spriteBatch, Art.RetroFont, tab.Label, labelPos, color);
 
                 // Persistent underline for whichever tab is actually
                 // active, independent of hover — hover alone (shared with
@@ -588,8 +605,8 @@ namespace Realm.States
                                 ? "Press any key or mouse button... (Esc to cancel)"
                                 : KeyBindings.Get(row.Action).ToString();
 
-                        spriteBatch.DrawString(Art.SettingsFont, label, new Vector2(labelX, row.Rect.Y), color);
-                        spriteBatch.DrawString(Art.SettingsFont, value, new Vector2(valueX, row.Rect.Y), color);
+                        Util.DrawOutlinedText(spriteBatch, Art.RetroFont, label, new Vector2(labelX, row.Rect.Y), color);
+                        Util.DrawOutlinedText(spriteBatch, Art.RetroFont, value, new Vector2(valueX, row.Rect.Y), color);
                     }
                     break;
 

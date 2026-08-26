@@ -5440,3 +5440,65 @@ date/time for those individually; don't treat their grouping as meaning they all
      bonus, mana cost) render gold regardless of their underlying category, proving the override rule
      works independent of content type. Clean build, plain boot-check, and a full real-save-file diff
      all passed with zero differences.
+
+205. **Made Jersey10 the base font essentially everywhere**: added the missing black outline to
+     Portal/boss text, then extended the retro font to Character Select, every menu button, the
+     Settings screen, and the title screen (including the boss-fight announcement banner, which
+     shares the title's exact look) — closing out almost every exclusion from entry 202's scope
+     question in one pass, per five explicit follow-up requests plus a new blanket rule: "all text
+     should have a black outline unless specified."
+     Portal/boss outline: `Portal.cs`'s dungeon-name label, entry-confirmation hint, and each
+     portal's floating label all used a manual single-offset colored shadow (the same style
+     `CharacterSelectState`'s old `DrawShadowedText` used) rather than a true outline — replaced
+     with `Util.DrawOutlinedText()`, dropping the separate shadow-color draw entirely.
+     `BossRealmState.cs`'s boss-name label got the same treatment (it had no shadow/outline at all
+     before).
+     Character Select: swapped `Art.HudFont` → `Art.RetroFont` throughout, and fixed
+     `DrawShadowedText()` (its local helper — kept the name rather than touching its ten call sites)
+     to call `Util.DrawOutlinedText()` internally instead of drawing its own offset shadow, upgrading
+     every caller to a full outline in one change; the two remaining raw `spriteBatch.DrawString`
+     calls (the "Select a Character" subtitle and each class's name label) were converted directly.
+     Buttons: `Controls/Button.cs`'s three constructors' default font changed from `Art.HudFont` to
+     `Art.RetroFont` (the third, explicit-font overload used only by Settings' Back/Reset buttons,
+     was untouched — it already takes whatever font its caller passes), and `Button.Draw()` now
+     calls `Util.DrawOutlinedText()` instead of a plain `DrawString` — this alone covers every button
+     in the game (Main Menu, Character Select's Back/Erase, Game Over's three buttons) except
+     Settings', which passes its own font explicitly.
+     Settings: swapped `Art.SettingsFont` → `Art.RetroFont` throughout `SettingsState.cs` (font sizes
+     happened to already match — both 14pt) and converted every one of its ~10 `DrawString` call
+     sites (tab labels, key-binding rows, toggle/slider rows, the "Settings" title) to
+     `Util.DrawOutlinedText()`, preserving each row's existing Gold-on-hover/White logic.
+     `Art.SettingsFont` itself now has zero remaining consumers, but — unlike `Art.DamageFont` in
+     entry 202 — was left in place rather than deleted, since removing an asset wasn't part of this
+     request and it costs nothing to leave loaded.
+     Title screen: `Overlay.DrawTitle()` (the "Realm" logo) swapped `Art.TitleFont` (96pt Arial) for
+     `Art.RetroFont` (14pt) drawn at a new `Overlay.TitleScale` (6x) — a pixel font needs a real
+     `scale` multiplier rather than a bigger point size to stay crisp, and `Util.DrawOutlinedText()`
+     already scales its outline offset by that same factor, so the outline automatically thickens
+     proportionally instead of looking too thin at 6x. Fill color (DarkMagenta) preserved; the old
+     DarkOrange offset-shadow became a plain black outline, per this request's own new blanket rule.
+     `BossRealmState.cs`'s boss-announcement banner shared this exact `Art.TitleFont`-based look, so
+     it moved to `Art.RetroFont` + `Overlay.TitleScale` too — its existing "shrink to fit the
+     viewport" logic (previously capping at native scale 1.0) now caps at `TitleScale` instead, so a
+     short boss name still gets the full title-sized treatment while a long multi-word one scales
+     down further to fit, exactly as before. `Art.TitleFont` keeps one real remaining consumer
+     (`GameOverState.cs`'s "Score"/"Fame Earned" text) — not requested this round, so left untouched
+     and the asset was not removed.
+     Verified via a temporary `Game1.StartGame()` test rendering five scenarios to offscreen
+     `RenderTarget2D`s (careful this time to only wrap `Begin()`/`End()` around raw draw calls, not
+     around `State.Draw()` methods that already manage their own — an early attempt crashed with
+     "Begin cannot be called again until End has been called" until this was fixed): a real
+     `MenuState.Draw()` confirmed "Realm" renders large, crisp, and outlined with no overflow, and
+     all four menu buttons render correctly; a real `CharacterSelectState.Draw()` confirmed class
+     names, "Stars: -----", and both the "Back" and "Erase All Data" buttons render correctly with
+     colors preserved; a real `SettingsState.Draw()` confirmed the tab bar, key-binding rows, and
+     both buttons render correctly with the active tab's Gold highlight intact; and a direct
+     `Util.DrawOutlinedText()` call at both a long multi-word test boss name and a short one
+     confirmed the announcement banner's fit-to-viewport math actually produces a smaller scale for
+     the long name (3.14) and the full `TitleScale` cap (6.0) for the short one, both rendering
+     correctly outlined. A real `Portal()` constructed and drawn directly came back blank — portals
+     draw in world space and this test's plain `SpriteBatch.Begin()` has no camera transform, a
+     test-harness limitation (not a rendering bug) already flagged the same way in entry 204, so this
+     specific check remains unverified by render and relies on the font/outline pattern already being
+     proven correct everywhere else. Clean build, plain boot-check, and a full real-save-file diff all
+     passed with zero differences.

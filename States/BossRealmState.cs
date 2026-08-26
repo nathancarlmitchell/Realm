@@ -111,36 +111,27 @@ namespace Realm.States
                         ? 1f
                         : announcementFramesRemaining / (float)announcementFadeFrames;
 
-                // Art.TitleFont is sized for the one-word Main Menu title —
-                // a multi-word boss name at scale 1 overflows the gameplay
-                // viewport on both sides, so scale it down to fit within a
-                // comfortable margin instead of drawing at native size.
-                Vector2 rawSize = Art.TitleFont.MeasureString(bossAnnouncementName);
-                float scale = Math.Min(1f, (Game1.GameplayViewportWidth - 80) / rawSize.X);
+                // Overlay.TitleScale (Art.RetroFont's "title-sized" scale,
+                // shared with the main menu's own "Realm" title) is sized
+                // for a one-word title — a multi-word boss name at that
+                // scale can overflow the gameplay viewport on both sides,
+                // so scale it down further to fit within a comfortable
+                // margin whenever it would.
+                Vector2 rawSize = Art.RetroFont.MeasureString(bossAnnouncementName);
+                float scale = Math.Min(
+                    Overlay.TitleScale,
+                    (Game1.GameplayViewportWidth - 80) / rawSize.X
+                );
                 Vector2 size = rawSize * scale;
                 Vector2 pos = new(centerX - size.X / 2, 120);
 
-                spriteBatch.DrawString(
-                    Art.TitleFont,
-                    bossAnnouncementName,
-                    pos + new Vector2(-4, 4) * scale,
-                    Color.DarkOrange * (0.75f * alpha),
-                    0f,
-                    Vector2.Zero,
-                    scale,
-                    SpriteEffects.None,
-                    0f
-                );
-                spriteBatch.DrawString(
-                    Art.TitleFont,
+                Util.DrawOutlinedText(
+                    spriteBatch,
+                    Art.RetroFont,
                     bossAnnouncementName,
                     pos,
                     Color.DarkMagenta * alpha,
-                    0f,
-                    Vector2.Zero,
-                    scale,
-                    SpriteEffects.None,
-                    0f
+                    scale
                 );
             }
 
@@ -150,7 +141,8 @@ namespace Realm.States
             const int barY = 20;
 
             Vector2 nameSize = Art.RetroFont.MeasureString(boss.Name);
-            spriteBatch.DrawString(
+            Util.DrawOutlinedText(
+                spriteBatch,
                 Art.RetroFont,
                 boss.Name,
                 new Vector2(centerX - nameSize.X / 2, barY - nameSize.Y - 2),

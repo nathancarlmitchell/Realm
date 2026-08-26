@@ -327,8 +327,8 @@ namespace Realm.States
         // text always agree on position.
         private void UpdateDeleteControls(Slot slot)
         {
-            Vector2 labelSize = Art.HudFont.MeasureString(slot.PlayerClass.ToString());
-            Vector2 starsSize = Art.HudFont.MeasureString(BuildStarsText(slot.Stars));
+            Vector2 labelSize = Art.RetroFont.MeasureString(slot.PlayerClass.ToString());
+            Vector2 starsSize = Art.RetroFont.MeasureString(BuildStarsText(slot.Stars));
             int rowY = (int)(slot.BorderRect.Bottom + 8 + labelSize.Y + 4 + starsSize.Y + 4);
 
             if (slot.ConfirmingDelete)
@@ -337,9 +337,9 @@ namespace Realm.States
                 const string yesText = "Yes";
                 const string noText = "No";
 
-                Vector2 confirmSize = Art.HudFont.MeasureString(confirmText);
-                Vector2 yesSize = Art.HudFont.MeasureString(yesText);
-                Vector2 noSize = Art.HudFont.MeasureString(noText);
+                Vector2 confirmSize = Art.RetroFont.MeasureString(confirmText);
+                Vector2 yesSize = Art.RetroFont.MeasureString(yesText);
+                Vector2 noSize = Art.RetroFont.MeasureString(noText);
 
                 float rowWidth = confirmSize.X + yesSize.X + 8 + noSize.X;
                 float startX = slot.PortraitRect.Center.X - rowWidth / 2;
@@ -372,7 +372,7 @@ namespace Realm.States
             else if (slot.HasSave)
             {
                 const string deleteText = "Delete";
-                Vector2 deleteSize = Art.HudFont.MeasureString(deleteText);
+                Vector2 deleteSize = Art.RetroFont.MeasureString(deleteText);
                 slot.DeleteRect = new Rectangle(
                     (int)(slot.PortraitRect.Center.X - deleteSize.X / 2),
                     rowY,
@@ -452,9 +452,10 @@ namespace Realm.States
             if (!anyHover)
             {
                 string subtitle = "Select a Character";
-                Vector2 subtitleSize = Art.HudFont.MeasureString(subtitle);
-                spriteBatch.DrawString(
-                    Art.HudFont,
+                Vector2 subtitleSize = Art.RetroFont.MeasureString(subtitle);
+                Util.DrawOutlinedText(
+                    spriteBatch,
+                    Art.RetroFont,
                     subtitle,
                     new Vector2(CenterWidth - subtitleSize.X / 2, 128 / Game1.Scale),
                     Color.White
@@ -474,9 +475,10 @@ namespace Realm.States
                 string label = slot.IsLocked
                     ? slot.PlayerClass.ToString() + " (Locked)"
                     : slot.PlayerClass.ToString();
-                Vector2 labelSize = Art.HudFont.MeasureString(label);
-                spriteBatch.DrawString(
-                    Art.HudFont,
+                Vector2 labelSize = Art.RetroFont.MeasureString(label);
+                Util.DrawOutlinedText(
+                    spriteBatch,
+                    Art.RetroFont,
                     label,
                     new Vector2(
                         slot.PortraitRect.Center.X - labelSize.X / 2,
@@ -489,7 +491,7 @@ namespace Realm.States
                 // already been earned, not something tied to whether the
                 // class happens to be selectable right now.
                 string starsText = BuildStarsText(slot.Stars);
-                Vector2 starsSize = Art.HudFont.MeasureString(starsText);
+                Vector2 starsSize = Art.RetroFont.MeasureString(starsText);
                 DrawShadowedText(
                     spriteBatch,
                     starsText,
@@ -582,7 +584,7 @@ namespace Realm.States
                     ? "This will permanently erase EVERY character,\nunlock, Fame total, high score, and star.\nThis cannot be undone."
                     : "Are you absolutely sure?\nThis is your last chance to back out.";
 
-            Vector2 messageSize = Art.HudFont.MeasureString(message);
+            Vector2 messageSize = Art.RetroFont.MeasureString(message);
             DrawShadowedText(
                 spriteBatch,
                 message,
@@ -625,19 +627,19 @@ namespace Realm.States
             // portrait, then Fame, then Highest Fame on top.
             float bottom = slot.BorderRect.Top - PreviewGap;
 
-            Vector2 statsSize = Art.HudFont.MeasureString(statsText);
+            Vector2 statsSize = Art.RetroFont.MeasureString(statsText);
             Vector2 statsPos = new(
                 slot.PortraitRect.Center.X - statsSize.X / 2,
                 bottom - statsSize.Y
             );
 
-            Vector2 fameSize = Art.HudFont.MeasureString(fameText);
+            Vector2 fameSize = Art.RetroFont.MeasureString(fameText);
             Vector2 famePos = new(
                 slot.PortraitRect.Center.X - fameSize.X / 2,
                 statsPos.Y - fameSize.Y
             );
 
-            Vector2 highestFameSize = Art.HudFont.MeasureString(highestFameText);
+            Vector2 highestFameSize = Art.RetroFont.MeasureString(highestFameText);
             Vector2 highestFamePos = new(
                 slot.PortraitRect.Center.X - highestFameSize.X / 2,
                 famePos.Y - highestFameSize.Y
@@ -657,7 +659,7 @@ namespace Realm.States
                 $"Requires {RequiredStarsPerUnlock} Stars in {slot.PreviousClass}\n"
                 + $"(You have {slot.PreviousClassStars})";
 
-            Vector2 size = Art.HudFont.MeasureString(text);
+            Vector2 size = Art.RetroFont.MeasureString(text);
             Vector2 pos = new(
                 slot.PortraitRect.Center.X - size.X / 2,
                 slot.BorderRect.Top - PreviewGap - size.Y
@@ -666,6 +668,11 @@ namespace Realm.States
             DrawShadowedText(spriteBatch, text, pos, Color.OrangeRed);
         }
 
+        // Despite the name (kept as-is rather than touching every one of
+        // this method's call sites), this now draws a full black outline
+        // via Util.DrawOutlinedText rather than a single offset shadow —
+        // matching the "all text gets a black outline" treatment used
+        // everywhere else now.
         private static void DrawShadowedText(
             SpriteBatch spriteBatch,
             string text,
@@ -673,8 +680,7 @@ namespace Realm.States
             Color color
         )
         {
-            spriteBatch.DrawString(Art.HudFont, text, pos + new Vector2(1, 1), Color.Black * 0.6f);
-            spriteBatch.DrawString(Art.HudFont, text, pos, color);
+            Util.DrawOutlinedText(spriteBatch, Art.RetroFont, text, pos, color);
         }
 
         private static string BuildPreviewText(
