@@ -42,20 +42,27 @@ namespace Realm.Controls
 
         #region Methods
 
+        // PenColor defaults to White (not Black) — Button.Draw() now
+        // outlines button text in black (Util.DrawOutlinedText), and a
+        // black fill on a black outline renders as one undifferentiated
+        // blob with none of the letterforms' own detail visible, not just
+        // low-contrast. Callers that explicitly set PenColor afterward
+        // (e.g. the Erase All Data / confirm buttons' Red/DarkRed) are
+        // unaffected — this only changes what "didn't set one" means.
         public Button()
         {
             texture = Art.ButtonTexture;
-            font = Art.RetroFont;
+            font = Art.RetroFontButton;
             scale = Game1.Scale;
-            PenColor = Color.Black;
+            PenColor = Color.White;
         }
 
         public Button(Texture2D _texture)
         {
             texture = _texture;
-            font = Art.RetroFont;
+            font = Art.RetroFontButton;
             scale = Game1.Scale;
-            PenColor = Color.Black;
+            PenColor = Color.White;
         }
 
         public Button(Texture2D _texture, SpriteFont _font)
@@ -63,7 +70,7 @@ namespace Realm.Controls
             texture = _texture;
             font = _font;
             scale = Game1.Scale;
-            PenColor = Color.Black;
+            PenColor = Color.White;
         }
 
         public void Pressed()

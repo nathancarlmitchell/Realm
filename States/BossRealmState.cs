@@ -111,13 +111,16 @@ namespace Realm.States
                         ? 1f
                         : announcementFramesRemaining / (float)announcementFadeFrames;
 
-                // Overlay.TitleScale (Art.RetroFont's "title-sized" scale,
-                // shared with the main menu's own "Realm" title) is sized
-                // for a one-word title — a multi-word boss name at that
-                // scale can overflow the gameplay viewport on both sides,
-                // so scale it down further to fit within a comfortable
-                // margin whenever it would.
-                Vector2 rawSize = Art.RetroFont.MeasureString(bossAnnouncementName);
+                // Art.RetroFontLarge (shared with the main menu's own
+                // "Realm" title — see Overlay.TitleScale) is baked at the
+                // intended native title size, so Overlay.TitleScale (1) is
+                // the ceiling here, never a stretch-up factor. A multi-word
+                // boss name can still overflow the gameplay viewport at
+                // that native size, so this scales it down further to fit
+                // within a comfortable margin whenever it would — shrinking
+                // a large baked font stays crisp, unlike the blur stretching
+                // RetroFont's much smaller size up used to cause here.
+                Vector2 rawSize = Art.RetroFontLarge.MeasureString(bossAnnouncementName);
                 float scale = Math.Min(
                     Overlay.TitleScale,
                     (Game1.GameplayViewportWidth - 80) / rawSize.X
@@ -127,7 +130,7 @@ namespace Realm.States
 
                 Util.DrawOutlinedText(
                     spriteBatch,
-                    Art.RetroFont,
+                    Art.RetroFontLarge,
                     bossAnnouncementName,
                     pos,
                     Color.DarkMagenta * alpha,

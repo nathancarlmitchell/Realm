@@ -5502,3 +5502,36 @@ date/time for those individually; don't treat their grouping as meaning they all
      specific check remains unverified by render and relies on the font/outline pattern already being
      proven correct everywhere else. Clean build, plain boot-check, and a full real-save-file diff all
      passed with zero differences.
+
+206. **Fixed blurry title/boss-announcement text and hard-to-read black-on-black button text**,
+     both flagged directly after entry 205 shipped. Root cause of the blur: entry 205 drew
+     `Art.RetroFont` (baked at a small native 14pt) stretched 6x via `SpriteBatch.DrawString`'s
+     `scale` parameter — a small rasterized glyph bitmap has no lossless way to get bigger, and the
+     default linear sampler smears it on upscale. Root cause of the button issue: `Button.Draw()`
+     started outlining text in black (entry 205) without also checking `PenColor`'s own default,
+     which was still `Color.Black` — a black outline under black fill renders as one undifferentiated
+     blob, hiding the pixel font's own letterform detail rather than merely being low-contrast.
+     For the blur: added two more baked-at-native-size Jersey10 assets rather than any runtime
+     scaling trick — `Art.RetroFontLarge` (84pt, matching the old 14pt-at-6x target size) for
+     `Overlay.DrawTitle()` and `BossRealmState`'s boss-announcement banner, and `Art.RetroFontButton`
+     (18pt vs `RetroFont`'s 14pt, "slightly larger" per the second request) for
+     `Controls/Button.cs`. `Overlay.TitleScale` changed meaning from "stretch small font 6x" to "cap
+     at native size, shrink below 1 if needed" (redefined `1f` instead of `6f`) — downscaling a large
+     baked bitmap loses fine detail gracefully, the opposite problem from upscaling a small one, so
+     `BossRealmState`'s existing "shrink a long boss name to fit the viewport" logic needed no
+     structural change, just the new font and cap value.
+     For the buttons: changed all three of `Button`'s constructors' default `PenColor` from
+     `Color.Black` to `Color.White` — callers that already set `PenColor` explicitly afterward (the
+     Erase All Data/confirm buttons' Red/DarkRed) are unaffected, since this only changes what "the
+     caller didn't set one" now means.
+     Verified via a temporary `Game1.StartGame()` test rendering a real `MenuState.Draw()` and a
+     direct boss-announcement draw (both long and short test names) to offscreen `RenderTarget2D`s,
+     then inspecting 3x-zoomed crops: confirmed "Realm" and "Slime" (drawn at `RetroFontLarge`'s
+     native scale, no stretching at all) both show hard, fully crisp pixel edges with zero softness —
+     a direct, visible contrast against entry 205's noticeably blurred version of the same text —
+     and confirmed the long boss name (downscaled to ~3.14x smaller than native, since it would
+     otherwise overflow the viewport) stayed equally crisp, proving shrinking doesn't reintroduce the
+     problem upscaling did. Also confirmed the menu buttons now show white fill with a clearly
+     visible black outline and legible letterform detail (no more solid-black blob), at a visibly
+     larger, easier-to-read size. Clean build, plain boot-check, and a full real-save-file diff all
+     passed with zero differences.

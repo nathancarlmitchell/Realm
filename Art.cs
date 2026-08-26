@@ -127,16 +127,39 @@ namespace Realm
 
         // Jersey10 (SIL Open Font License), a bundled pixel-style TrueType
         // file rather than an installed system font family like every font
-        // above. Originally added just for the sidebar bars, then promoted
-        // to the base font for the whole in-game HUD, tooltips, and damage
-        // numbers/XP drops (menus, buttons, Character Select, taunt
-        // bubbles, and portal/boss labels deliberately kept HudFont/their
-        // own fonts — out of scope per the user's own chosen boundary).
-        // Chosen for the bars via a side-by-side render comparison against
-        // four other free pixel/retro fonts; DamageFont (previously used
-        // for damage numbers) was retired as redundant once this replaced
-        // it there too.
+        // above. Originally added just for the sidebar bars, now the base
+        // font for the in-game HUD, tooltips, damage numbers/XP drops,
+        // Character Select, every menu button, Settings, and (via
+        // RetroFontLarge/RetroFontButton below) the title screen and
+        // boss-announcement banner — only TauntBubble.cs's enemy speech
+        // bubbles still use HudFont. Chosen via a side-by-side render
+        // comparison against four other free pixel/retro fonts; DamageFont
+        // (previously used for damage numbers) had zero remaining consumers
+        // once this replaced it and was deleted outright, while SettingsFont
+        // (previously Settings' own font) was left loaded but unused rather
+        // than removed, since deleting it wasn't itself requested.
         public static SpriteFont RetroFont { get; private set; }
+
+        // Same Jersey10 file as RetroFont, baked at a much larger native
+        // point size (84pt vs 14pt) instead of relying on RetroFont's own
+        // small glyph bitmap stretched up via SpriteBatch's scale parameter
+        // — stretching a small rasterized font blurs badly under the
+        // default linear sampler, since there's no such thing as scaling a
+        // bitmap up losslessly. Used by Overlay.DrawTitle() ("Realm") and
+        // BossRealmState's boss-announcement banner, both of which only
+        // ever draw at native size or SMALLER (shrunk to fit a long boss
+        // name) — downscaling a large bitmap loses fine detail gracefully,
+        // unlike upscaling a small one.
+        public static SpriteFont RetroFontLarge { get; private set; }
+
+        // Same Jersey10 file again, baked slightly larger than RetroFont
+        // (18pt vs 14pt) specifically for button text — RetroFont's own
+        // 14pt (tuned for the sidebar bars/tooltips) read as hard to read
+        // on buttons; scaling it up at draw time would hit the same
+        // blur problem RetroFontLarge exists to avoid, so this gets its own
+        // dedicated, modestly-larger native size instead. Used only by
+        // Controls/Button.cs.
+        public static SpriteFont RetroFontButton { get; private set; }
 
         // Weapons.
         public static Texture2D Wand { get; private set; }
@@ -310,6 +333,8 @@ namespace Realm
             TitleFont = content.Load<SpriteFont>("Fonts/TitleFont");
             SettingsFont = content.Load<SpriteFont>("Fonts/SettingsFont");
             RetroFont = content.Load<SpriteFont>("Fonts/RetroFont");
+            RetroFontLarge = content.Load<SpriteFont>("Fonts/RetroFontLarge");
+            RetroFontButton = content.Load<SpriteFont>("Fonts/RetroFontButton");
         }
 
         // Hard-edged filled circle, diameter x diameter, opaque white

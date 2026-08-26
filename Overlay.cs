@@ -9,16 +9,20 @@ namespace Realm
 {
     public static class Overlay
     {
-        // How much to scale Art.RetroFont's own 14pt size up to read as a
-        // title — RetroFont replaced Art.TitleFont (96pt Arial) here, and a
-        // pixel font needs a real scale factor rather than a bigger point
-        // size to stay crisp. Also used by BossRealmState's boss-announcement
-        // banner, which shares this same "big pixel-font title" look.
-        public const float TitleScale = 6f;
+        // The title (and BossRealmState's boss-announcement banner, which
+        // shares this same "big pixel-font title" look) always draws
+        // Art.RetroFontLarge at this scale or smaller, never larger —
+        // RetroFontLarge is already baked at the intended native title
+        // size, so 1 means "full size" here, not a stretch-up factor the
+        // way it briefly was when this drew the much smaller RetroFont
+        // scaled 6x (blurred badly — stretching a small rasterized glyph
+        // bitmap has no lossless answer, unlike shrinking a large one,
+        // which is what BossRealmState still does for a long boss name).
+        public const float TitleScale = 1f;
 
         public static void DrawTitle(SpriteBatch spriteBatch)
         {
-            SpriteFont font = Art.RetroFont;
+            SpriteFont font = Art.RetroFontLarge;
             string text = "Realm";
             Vector2 size = font.MeasureString(text) * TitleScale;
 
