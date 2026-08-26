@@ -5547,3 +5547,15 @@ date/time for those individually; don't treat their grouping as meaning they all
      the `Art.RetroFontButton` field/load line. Verified via `dotnet build` (0 errors) and a plain
      minimized boot-check; all real save files confirmed byte-identical to a pre-test backup
      afterward.
+
+208. **Switched the title/boss-announcement font from Jersey10 back to Press Start 2P, and
+     uppercased the title text.** `Content/Fonts/RetroFontLarge.spritefont`'s `<FontName>` now
+     points at `PressStart2P-Regular.ttf` (re-added to `Content/Fonts/`) instead of
+     `Jersey10-Regular.ttf` — Press Start 2P had been one of the five candidates compared side by
+     side back in entry 201/202 before Jersey10 won for the HUD/tooltip base font, and is now used
+     again here specifically for the large title/boss-name banner while Jersey10 stays the base font
+     everywhere else (`Art.RetroFont`/`Overlay.DrawTitle()`'s own comment, sidebar bars, tooltips,
+     buttons). `Overlay.DrawTitle()`'s displayed string changed from `"Realm"` to `"REALM"`. No
+     `Content.mgcb` change needed — the build block for `RetroFontLarge.spritefont` doesn't name a
+     `.ttf` directly, only the `.spritefont` asset. Verified `dotnet build` still succeeds with the
+     font swapped.

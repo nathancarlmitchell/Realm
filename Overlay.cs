@@ -23,7 +23,7 @@ namespace Realm
         public static void DrawTitle(SpriteBatch spriteBatch)
         {
             SpriteFont font = Art.RetroFontLarge;
-            string text = "Realm";
+            string text = "REALM";
             Vector2 size = font.MeasureString(text) * TitleScale;
 
             int x = (int)((Game1.ScreenWidth / 2) - (size.X / 2));
@@ -32,7 +32,14 @@ namespace Realm
             // Fill color preserved from the old Arial title (DarkMagenta) —
             // only the font and the shadow-style secondary color changed, to
             // a plain black outline matching every other piece of text now.
-            Util.DrawOutlinedText(spriteBatch, font, text, new Vector2(x, y), Color.DarkMagenta, TitleScale);
+            Util.DrawOutlinedText(
+                spriteBatch,
+                font,
+                text,
+                new Vector2(x, y),
+                Color.DarkMagenta,
+                TitleScale
+            );
         }
 
         // Account-level total, shared across every class. Drawn top-left in
@@ -60,7 +67,13 @@ namespace Realm
             spriteBatch.Draw(Art.FameIcon, iconRect, Color.White);
 
             int textX = FameOverlayX + FameIconSize + FameIconTextGap;
-            Util.DrawOutlinedText(spriteBatch, font, text, new Vector2(textX, FameOverlayY), Color.White);
+            Util.DrawOutlinedText(
+                spriteBatch,
+                font,
+                text,
+                new Vector2(textX, FameOverlayY),
+                Color.White
+            );
         }
 
         // Sidebar layout. All sections are stacked top-to-bottom at a fixed
@@ -111,7 +124,10 @@ namespace Realm
                 spriteBatch,
                 font,
                 label,
-                new Vector2(barRect.X + BarTextPadding, barRect.Y + (barRect.Height - labelSize.Y) / 2f),
+                new Vector2(
+                    barRect.X + BarTextPadding,
+                    barRect.Y + (barRect.Height - labelSize.Y) / 2f
+                ),
                 Color.White
             );
 
@@ -245,10 +261,28 @@ namespace Realm
             // just as its own separate segment here instead of appended
             // into the value string. Omitted entirely when zero, matching
             // the bars' same "only show it if it's actually nonzero" rule.
-            void DrawStatLine(string label, string value, int rowY, Color color, float equipBonus = 0)
+            void DrawStatLine(
+                string label,
+                string value,
+                int rowY,
+                Color color,
+                float equipBonus = 0
+            )
             {
-                Util.DrawOutlinedText(spriteBatch, Art.RetroFont, label, new Vector2(x, rowY), color);
-                Util.DrawOutlinedText(spriteBatch, Art.RetroFont, value, new Vector2(valueX, rowY), color);
+                Util.DrawOutlinedText(
+                    spriteBatch,
+                    Art.RetroFont,
+                    label,
+                    new Vector2(x, rowY),
+                    color
+                );
+                Util.DrawOutlinedText(
+                    spriteBatch,
+                    Art.RetroFont,
+                    value,
+                    new Vector2(valueX, rowY),
+                    color
+                );
 
                 if (equipBonus != 0)
                 {
@@ -387,7 +421,8 @@ namespace Realm
             if (Player.Instance.Level < 20)
             {
                 label = "XP";
-                numbers = Player.Instance.ExperienceTotal + " / " + Player.Instance.ExperienceNextLevel;
+                numbers =
+                    Player.Instance.ExperienceTotal + " / " + Player.Instance.ExperienceNextLevel;
 
                 // The bar fills 0-100% within just the current level (empty
                 // right at the start of a level, full right before the next
@@ -442,7 +477,12 @@ namespace Realm
                 }
             }
 
-            Rectangle goldRect = new(0, 0, normalisedFill * SidebarBarWidth / 100, SidebarBarHeight);
+            Rectangle goldRect = new(
+                0,
+                0,
+                normalisedFill * SidebarBarWidth / 100,
+                SidebarBarHeight
+            );
             Rectangle blackRect = new(0, 0, SidebarBarWidth, SidebarBarHeight);
 
             Vector2 barPos = new(x, XpBarY);
@@ -479,7 +519,12 @@ namespace Realm
 
             int normalisedHealth =
                 (Player.Instance.Health * 100 / Player.Instance.HealthMax * 100) / 100;
-            Rectangle greenRect = new(0, 0, normalisedHealth * SidebarBarWidth / 100, SidebarBarHeight);
+            Rectangle greenRect = new(
+                0,
+                0,
+                normalisedHealth * SidebarBarWidth / 100,
+                SidebarBarHeight
+            );
             Rectangle redRect = new(0, 0, SidebarBarWidth, SidebarBarHeight);
 
             Vector2 barPos = new(x, HpBarY);
@@ -536,12 +581,7 @@ namespace Realm
 
             if (Player.Instance.InCombat && Player.Instance.ShowCombatIndicatorEnabled)
             {
-                Rectangle barRect = new(
-                    x,
-                    HpBarY,
-                    SidebarBarWidth,
-                    SidebarBarHeight
-                );
+                Rectangle barRect = new(x, HpBarY, SidebarBarWidth, SidebarBarHeight);
                 DrawBorder(spriteBatch, barRect, Color.Yellow, CombatBorderThickness);
             }
 
@@ -573,15 +613,28 @@ namespace Realm
             }
         }
 
-        private static void DrawBorder(SpriteBatch spriteBatch, Rectangle rect, Color color, int thickness)
+        private static void DrawBorder(
+            SpriteBatch spriteBatch,
+            Rectangle rect,
+            Color color,
+            int thickness
+        )
         {
-            spriteBatch.Draw(Art.HealthBar, new Rectangle(rect.X, rect.Y, rect.Width, thickness), color);
+            spriteBatch.Draw(
+                Art.HealthBar,
+                new Rectangle(rect.X, rect.Y, rect.Width, thickness),
+                color
+            );
             spriteBatch.Draw(
                 Art.HealthBar,
                 new Rectangle(rect.X, rect.Bottom - thickness, rect.Width, thickness),
                 color
             );
-            spriteBatch.Draw(Art.HealthBar, new Rectangle(rect.X, rect.Y, thickness, rect.Height), color);
+            spriteBatch.Draw(
+                Art.HealthBar,
+                new Rectangle(rect.X, rect.Y, thickness, rect.Height),
+                color
+            );
             spriteBatch.Draw(
                 Art.HealthBar,
                 new Rectangle(rect.Right - thickness, rect.Y, thickness, rect.Height),
@@ -594,7 +647,12 @@ namespace Realm
             int x = Game1.SidebarX + SidebarPadding;
 
             int normalisedMana = (Player.Instance.Mana * 100 / Player.Instance.ManaMax * 100) / 100;
-            Rectangle blueRect = new(0, 0, normalisedMana * SidebarBarWidth / 100, SidebarBarHeight);
+            Rectangle blueRect = new(
+                0,
+                0,
+                normalisedMana * SidebarBarWidth / 100,
+                SidebarBarHeight
+            );
             Rectangle blackRect = new(0, 0, SidebarBarWidth, SidebarBarHeight);
 
             Vector2 barPos = new(x, MpBarY);
@@ -671,7 +729,13 @@ namespace Realm
                 Player.Instance.Mana >= Player.Instance.AbilityCost
                     ? "Ability: Ready (Cost: " + Player.Instance.AbilityCost + ")"
                     : "Ability: " + Player.Instance.Mana + " / " + Player.Instance.AbilityCost;
-            Util.DrawOutlinedText(spriteBatch, Art.RetroFont, abilityString, new Vector2(x, y), color);
+            Util.DrawOutlinedText(
+                spriteBatch,
+                Art.RetroFont,
+                abilityString,
+                new Vector2(x, y),
+                color
+            );
 
             // Clamped since Mana can exceed AbilityCost, unlike Health/Mana
             // which are capped at their Max.
@@ -679,7 +743,12 @@ namespace Realm
                 100,
                 (Player.Instance.Mana * 100 / Player.Instance.AbilityCost * 100) / 100
             );
-            Rectangle cyanRect = new(0, 0, normalisedAbility * SidebarBarWidth / 100, abilityBarHeight);
+            Rectangle cyanRect = new(
+                0,
+                0,
+                normalisedAbility * SidebarBarWidth / 100,
+                abilityBarHeight
+            );
             Rectangle blackRect = new(0, 0, SidebarBarWidth, abilityBarHeight);
 
             Vector2 barPos = new(x, y + 20);
@@ -795,7 +864,13 @@ namespace Realm
             for (int i = 0; i < potionBonusLines.Length; i++)
             {
                 pos = new Vector2(x, y + 72 + (i * 16));
-                Util.DrawOutlinedText(spriteBatch, Art.RetroFont, potionBonusLines[i], pos, Color.White);
+                Util.DrawOutlinedText(
+                    spriteBatch,
+                    Art.RetroFont,
+                    potionBonusLines[i],
+                    pos,
+                    Color.White
+                );
             }
         }
 

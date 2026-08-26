@@ -18,7 +18,7 @@ with.
     long boss name needs to fit, which stays crisp — downscaling loses
     detail gracefully, upscaling doesn't) fixes that.
     -->
-    <FontName>Jersey10-Regular.ttf</FontName>
+    <FontName>PressStart2P-Regular.ttf</FontName>
 
     <!--
     Size is a float value, measured in points. Modify this value to change
