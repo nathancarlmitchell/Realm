@@ -4864,3 +4864,43 @@ date/time for those individually; don't treat their grouping as meaning they all
      each other, fully clear of the title. Temp code fully reverted (`git diff --stat Game1.cs`
      clean) and the scratch PNG deleted. Clean build, plain minimized boot-check, and a full
      real-save-file diff against a pre-change backup all passed with zero differences.
+
+188. **Fixed a Slow debuff surviving player death onto the next character**, reported directly by
+     the user after testing entry 187's neighborhood of the code (dying while Slowed left the
+     freshly-reset character Slowed too). Root cause: `EntityManager.cs`'s enemy-projectile/player
+     collision handler (`HandleCollisions()`) called `Player.Instance.Hit(...)` and then, on the very
+     next line, `Player.Instance.Slow()` for a `SlowsOnHit` projectile — re-reading the static
+     `Player.Instance` singleton fresh both times instead of caching it once. A lethal `Hit()` call
+     runs its entire death pipeline *synchronously* before returning control (`Hit()` -> `Kill()` ->
+     `StateManager.GameOver()` -> `GameOverState`'s constructor -> `Util.ResetPlayer()`, which
+     constructs a brand-new `Wizard()`/`Archer()`/`Knight()`/`Priest()` and reassigns
+     `Player.Instance` to it right there in the base `Player()` constructor). So by the time the
+     `Slow()` line ran, `Player.Instance` was already the new character, not the one the projectile
+     actually hit — applying a debuff meant to die with the old life onto the new one instead. Fixed
+     in `EntityManager.cs` by caching `Player.Instance` into a local (`hitPlayer`) before calling
+     `Hit()`, then gating the `Slow()` call on `Player.Instance == hitPlayer` — true only if that hit
+     didn't kill (and therefore didn't replace) the player. This was the only call site of
+     `Player.Instance.Hit(` anywhere in the codebase, and the only place a post-`Hit()` effect
+     (`SlowsOnHit`) could run into this ordering hazard; no other incoming-debuff path exists yet
+     (only outgoing `StunsOnHit`, which never targets the player).
+     Investigated first whether the death pipeline itself (`Kill()` -> `Util.ResetPlayer()`,
+     entry point for every death) actually clears buffs/debuffs, since the user's original ask was
+     phrased that way — traced it thoroughly (every `Temporary*Bonus` field, `DamageTakenMultiplier`,
+     `HealingAmountPerSecond`, and `Entity`'s generic `activeDebuffs` dictionary are all per-instance,
+     none `static`, and `ResetPlayer()` discards the whole `Player` object rather than mutating
+     fields on it) and confirmed that path was already correct — a fresh character genuinely can't
+     inherit instance-level state from a discarded one. The actual bug was narrower and timing-based:
+     a debuff being *applied* in the same tick the kill happens, after `Player.Instance` had already
+     been swapped out from under the call.
+     Verified via a temporary `Game1.StartGame()` test reproducing the exact scenario against the
+     real `Player.Instance` (backed up all real save files first, per this project's standing rule):
+     applied `Slow()` directly, spawned a lethal (`Damage = 999999`) `SlowsOnHit` `EnemyProjectile`
+     at the player's exact position, and drove one real `EntityManager.Update()` tick — the same
+     collision path real gameplay uses. Confirmed `HasDebuff(Slow)` was `true` immediately before the
+     hit and `false` on the resulting fresh Level 1 character afterward. The test's real death did
+     genuinely reset and re-save the live Wizard's `PlayerData_Wizard.json` (expected — this was an
+     actual, intentional kill of whatever real class was loaded, the same already-flagged
+     equipped-item-ID-regeneration quirk from entries 183/186 appeared here too) — restored from the
+     pre-test backup afterward, verified byte-identical. Temp code fully reverted (`git diff --stat
+     Game1.cs` clean), scratch log deleted, clean build, and a plain boot-check all passed, with
+     every real save file confirmed unchanged from backup at the end.

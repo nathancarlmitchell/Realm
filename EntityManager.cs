@@ -454,10 +454,18 @@ namespace Realm
                     && IsColliding(Player.Instance, enemiesProjectiles[i])
                 )
                 {
-                    Player.Instance.Hit(enemiesProjectiles[i].Damage);
-                    if (enemiesProjectiles[i].SlowsOnHit)
+                    // Cached before Hit() runs: a killing hit synchronously
+                    // replaces Player.Instance with a brand-new character
+                    // (Hit() -> Kill() -> StateManager.GameOver() ->
+                    // GameOverState's constructor -> Util.ResetPlayer()), so
+                    // re-reading Player.Instance below would apply Slow to
+                    // the character that just spawned in, not the one that
+                    // died holding this projectile's hit.
+                    Player hitPlayer = Player.Instance;
+                    hitPlayer.Hit(enemiesProjectiles[i].Damage);
+                    if (enemiesProjectiles[i].SlowsOnHit && Player.Instance == hitPlayer)
                     {
-                        Player.Instance.Slow();
+                        hitPlayer.Slow();
                     }
                     // Marked regardless of ExpiresOnHit below, so a
                     // non-expiring projectile (e.g. GrenadeProjectile) can
