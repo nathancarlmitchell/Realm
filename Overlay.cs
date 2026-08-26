@@ -30,8 +30,7 @@ namespace Realm
             spriteBatch.DrawString(font, text, new Vector2(x, y), Color.DarkMagenta);
         }
 
-        // Account-level total, shared across every class — unlike Score/Hi
-        // Score below, which belong to whichever class is currently loaded.
+        // Account-level total, shared across every class.
         private const int FameIconSize = 24;
         private const int FameIconTextGap = 6;
 
@@ -65,28 +64,6 @@ namespace Realm
 
             int textX = startX + FameIconSize + FameIconTextGap;
             spriteBatch.DrawString(font, text, new Vector2(textX, y), Color.White);
-        }
-
-        public static void DrawScore(SpriteBatch spriteBatch)
-        {
-            // Draw Score.
-            var color = Color.Black;
-            if (Player.Instance.ExperienceTotal >= Player.Instance.HighScore)
-            {
-                color = Color.Yellow;
-            }
-            spriteBatch.DrawString(
-                Art.HudFont,
-                "Score: " + Player.Instance.ExperienceTotal,
-                new Vector2(32, 64),
-                color
-            );
-            spriteBatch.DrawString(
-                Art.HudFont,
-                "Hi Score: " + Player.Instance.HighScore,
-                new Vector2(32, 92),
-                color
-            );
         }
 
         // Sidebar layout. All sections are stacked top-to-bottom at a fixed

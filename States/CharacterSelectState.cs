@@ -613,11 +613,16 @@ namespace Realm.States
                     )
                     : BuildDefaultPreviewText(slot.PlayerClass);
 
-            string scoreText = $"Score: {saved?.ExperienceTotal ?? 0}";
-            string highScoreText = $"Hi-Score: {saved?.HighScore ?? 0}";
+            // This class's own Base Fame — the same per-life XP-derived
+            // value the Class Quest tiers/stars are based on (see
+            // Player.ComputeBaseFame/ComputeStars) — not the account-wide
+            // FameSystem.Fame shown at the top of the menu, which is shared
+            // across every class.
+            string fameText = $"Fame: {Player.ComputeBaseFame(saved?.ExperienceTotal ?? 0)}";
+            string highestFameText = $"Highest Fame: {Player.ComputeBaseFame(saved?.HighScore ?? 0)}";
 
             // Stack bottom-up from just above the portrait: stats block closest to the
-            // portrait, then score, then high score on top.
+            // portrait, then Fame, then Highest Fame on top.
             float bottom = slot.BorderRect.Top - PreviewGap;
 
             Vector2 statsSize = Art.HudFont.MeasureString(statsText);
@@ -626,21 +631,21 @@ namespace Realm.States
                 bottom - statsSize.Y
             );
 
-            Vector2 scoreSize = Art.HudFont.MeasureString(scoreText);
-            Vector2 scorePos = new(
-                slot.PortraitRect.Center.X - scoreSize.X / 2,
-                statsPos.Y - scoreSize.Y
+            Vector2 fameSize = Art.HudFont.MeasureString(fameText);
+            Vector2 famePos = new(
+                slot.PortraitRect.Center.X - fameSize.X / 2,
+                statsPos.Y - fameSize.Y
             );
 
-            Vector2 highScoreSize = Art.HudFont.MeasureString(highScoreText);
-            Vector2 highScorePos = new(
-                slot.PortraitRect.Center.X - highScoreSize.X / 2,
-                scorePos.Y - highScoreSize.Y
+            Vector2 highestFameSize = Art.HudFont.MeasureString(highestFameText);
+            Vector2 highestFamePos = new(
+                slot.PortraitRect.Center.X - highestFameSize.X / 2,
+                famePos.Y - highestFameSize.Y
             );
 
             DrawShadowedText(spriteBatch, statsText, statsPos, Color.Red);
-            DrawShadowedText(spriteBatch, scoreText, scorePos, Color.Gold);
-            DrawShadowedText(spriteBatch, highScoreText, highScorePos, Color.LightBlue);
+            DrawShadowedText(spriteBatch, fameText, famePos, Color.Gold);
+            DrawShadowedText(spriteBatch, highestFameText, highestFamePos, Color.LightBlue);
         }
 
         // Shown instead of DrawPreview() while hovering a locked slot — how

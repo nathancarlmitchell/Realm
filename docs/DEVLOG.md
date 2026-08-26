@@ -5041,3 +5041,33 @@ date/time for those individually; don't treat their grouping as meaning they all
      (`core.autocrlf=true`): plain `sed -i` on Windows/git-bash normalizes to LF as a side effect of
      writing the file back out, even when the substitution itself has nothing to do with line endings.
      Clean build, plain boot-check, and a full real-save-file diff all passed with zero differences.
+
+193. **Removed Score/Hi Score from the top-left gameplay overlay, and replaced Score/Hi-Score with
+     Fame/Highest Fame on the Character Select preview** — requested directly by the user as
+     "no longer needed," now that entries 186/190 built a whole Fame-based progression system
+     (Base Fame, Class Quests, the unlock chain) on top of the same underlying `ExperienceTotal`/
+     `HighScore` numbers Score/Hi-Score were just raw-printing. Deleted `Overlay.DrawScore()`
+     entirely (it only ever drew "Score: {ExperienceTotal}" / "Hi Score: {HighScore}" at a fixed
+     top-left position) along with its two call sites, `NexusState.Draw()` and `RealmState.Draw()` —
+     the only two places it was ever called. On `CharacterSelectState.cs`'s hover preview
+     (`DrawPreview()`), replaced the `scoreText`/`highScoreText` local variables (and their "Score: "/
+     "Hi-Score: " labels) with `fameText`/`highestFameText`, now reading `Player.ComputeBaseFame
+     (ExperienceTotal)` / `ComputeBaseFame(HighScore)` instead of the raw XP numbers directly —
+     deliberately this class's own per-life Base Fame (the same value Class Quests/stars are based
+     on), not the account-wide `FameSystem.Fame` already shown at the top of the menu (entry 187),
+     which is a different, shared-across-every-class number. The underlying `HighScore`/
+     `ExperienceTotal` fields themselves are untouched — still the real persisted/live values feeding
+     `ComputeStars()`/the unlock chain/the erase-all-data warning text; only what gets displayed and
+     how changed.
+     Verified with a temporary `Game1.StartGame()` test rendering `CharacterSelectState`'s real
+     `DrawPreview()` (via reflection, since it's private) for the Wizard slot to an offscreen
+     `RenderTarget2D`, using the actual real save data — confirmed the output PNG shows "Fame: 1500"
+     and "Highest Fame: 1500" (the real Wizard character's current numbers, itself a nice
+     confirmation that entry 192's new F4 debug key had already been used for real) with no
+     overlapping or clipped text, replacing where "Score:"/"Hi-Score:" used to render. Build
+     succeeding at all (with `DrawScore()` fully deleted) already confirmed no orphaned call sites
+     remained beyond the two removed. Ran into the same `sed`-strips-CRLF hazard flagged in entry 192
+     again in an earlier draft of this fix — this time avoided it entirely by using the Edit tool
+     instead of `sed` for every substitution in this change, so no cleanup pass was needed here. Temp
+     code fully reverted (`git diff --stat Game1.cs` clean), scratch PNG deleted, clean build, plain
+     boot-check, and a full real-save-file diff all passed with zero differences.

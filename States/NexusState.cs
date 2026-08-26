@@ -134,9 +134,6 @@ namespace Realm.States
             Player.Instance.Inventory.DrawDragGhost(spriteBatch);
             BankSystem.DrawDragGhost(spriteBatch);
 
-            // Draw score.
-            Overlay.DrawScore(spriteBatch);
-
             if (Game1._Debug)
             {
                 Overlay.DrawDebug(spriteBatch);

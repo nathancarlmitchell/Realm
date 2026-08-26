@@ -181,9 +181,6 @@ namespace Realm.States
 
             Player.Instance.Inventory.DrawDragGhost(spriteBatch);
 
-            // Draw score.
-            Overlay.DrawScore(spriteBatch);
-
             DrawBossHud(spriteBatch);
 
             if (Game1._Debug)
