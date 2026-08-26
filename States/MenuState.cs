@@ -12,6 +12,18 @@ namespace Realm.States
         private readonly List<Button> buttons;
         private readonly Menu menu;
 
+        // Background fades in from 0 up to this cap rather than snapping
+        // straight to a static opacity — a plain fade over
+        // BackgroundFadeDurationSeconds. Tracked here (not inside
+        // Background itself) since MenuState is sometimes reused across a
+        // trip to Settings and back (StateManager.OpenSettings passes this
+        // same instance as the return state) — the fade should only ever
+        // play once per instance, not replay every time this screen is
+        // shown again.
+        private const float BackgroundMaxOpacity = 0.5f;
+        private const float BackgroundFadeDurationSeconds = 2f;
+        private float backgroundFadeTimer;
+
         public MenuState(Game1 game, GraphicsDevice graphicsDevice, ContentManager content)
             : base()
         {
@@ -58,7 +70,10 @@ namespace Realm.States
             spriteBatch.Begin();
 
             // Draw background.
-            Background.Draw(spriteBatch);
+            float backgroundOpacity =
+                BackgroundMaxOpacity
+                * Math.Min(backgroundFadeTimer / BackgroundFadeDurationSeconds, 1f);
+            Background.Draw(spriteBatch, backgroundOpacity);
 
             // Draw title.
             Overlay.DrawTitle(spriteBatch);
@@ -73,6 +88,8 @@ namespace Realm.States
 
         public override void Update(GameTime gameTime)
         {
+            backgroundFadeTimer += (float)gameTime.ElapsedGameTime.TotalSeconds;
+
             foreach (var button in buttons)
             {
                 button.Update(gameTime);

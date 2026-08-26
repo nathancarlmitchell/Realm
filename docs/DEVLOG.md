@@ -5576,3 +5576,27 @@ date/time for those individually; don't treat their grouping as meaning they all
      darkening overlay. Reverted the temp code (`git diff --stat Game1.cs` clean), deleted the
      scratch PNG/log, ran a final clean build + plain boot-check, and confirmed all real save files
      byte-identical to a pre-test backup.
+
+210. **Zoomed the title screen background out and made it fade in.** `Background.Draw()` gained a
+     `ZoomOutFactor` (0.8) multiplied onto entry 209's cover-scale — the previous 1.0 cover-scale
+     cropped the shorter axis to exactly fill the window, hiding part of the actual artwork; at 0.8x
+     the whole image is visible instead, letterboxed on both axes rather than cropped on one. Also
+     added an `opacity` parameter (default `1f`, multiplying the draw color's alpha) so callers can
+     fade it rather than only ever drawing fully-opaque-or-nothing.
+     `MenuState` now tracks its own `backgroundFadeTimer` (incremented each `Update()` by
+     `gameTime.ElapsedGameTime.TotalSeconds`) and passes `Background.Draw()` an opacity that ramps
+     linearly from 0 up to a `BackgroundMaxOpacity` of 0.5 over `BackgroundFadeDurationSeconds` (2s).
+     The timer lives on `MenuState`, not inside `Background` itself, since `StateManager.OpenSettings`
+     reuses the same `MenuState` instance as the Settings screen's return target — a static/shared
+     timer would either not reset (fine) or double-fade if naively reset on every `Draw()` call
+     (wrong); an instance field means the fade plays exactly once per time the title screen is
+     actually (re)constructed, which is what "slowly fades in" should mean for a screen the player
+     can navigate back to.
+     Verified via a temporary `Game1.StartGame()` test driving a real `MenuState` through repeated
+     small `Update()` steps to simulate 0s/1s/2s of elapsed time, rendering each to an offscreen
+     `RenderTarget2D` and inspecting the PNGs: 0s is fully black (background invisible), 1s shows the
+     background at roughly a quarter strength mid-fade, and 2s+ shows it capped at the full 0.5
+     opacity — confirming both the zoom-out (full artwork now visible, letterboxed) and the fade ramp
+     work as intended. Reverted the temp code (`git diff --stat Game1.cs` clean), deleted the scratch
+     PNGs/log, ran a final clean build + plain boot-check, and confirmed all real save files
+     byte-identical to a pre-test backup.
