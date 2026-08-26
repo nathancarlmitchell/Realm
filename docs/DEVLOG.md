@@ -5559,3 +5559,20 @@ date/time for those individually; don't treat their grouping as meaning they all
      `Content.mgcb` change needed — the build block for `RetroFontLarge.spritefont` doesn't name a
      `.ttf` directly, only the `.spritefont` asset. Verified `dotnet build` still succeeds with the
      font swapped.
+
+209. **Wired the existing `background.jpg` (a pixel-art wizard illustration) into the title screen.**
+     `Art.Background`/`Background.cs` already loaded this asset but had zero callers anywhere —
+     gameplay states (Nexus/Realm) draw a tiled `Art.Tile` instead, so this was dead code. Rewrote
+     `Background.Draw()` to cover-scale (like CSS `background-size: cover`) rather than draw at
+     native size: scales up by whichever axis (width/height) needs it more to fill the window, then
+     centers and crops the overflow on the other axis, since the image's own 768x512 aspect ratio
+     doesn't match the window's 1280x720 and stretching to fill exactly would visibly distort the
+     pixel art. Called from `MenuState.Draw()`, right before `Overlay.DrawTitle()`, so it sits behind
+     both the title text and the menu buttons.
+     Verified via a temporary `Game1.StartGame()` test constructing a real `MenuState` and rendering
+     its `Draw()` to an offscreen `RenderTarget2D`, saved as a PNG and visually inspected: the
+     background fills the full window with no visible distortion or letterboxing, and both "REALM"
+     and the four menu buttons remain fully legible over it with no readability issues requiring a
+     darkening overlay. Reverted the temp code (`git diff --stat Game1.cs` clean), deleted the
+     scratch PNG/log, ran a final clean build + plain boot-check, and confirmed all real save files
+     byte-identical to a pre-test backup.

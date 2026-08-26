@@ -18,10 +18,27 @@ namespace Realm
             backgroundTexture = Art.Background;
         }
 
+        // Cover-scaled (like CSS background-size: cover) rather than
+        // stretched — backgroundTexture's own aspect ratio (768x512) isn't
+        // the window's (1280x720), and stretching to fill exactly would
+        // visibly distort the pixel art. Scales up by whichever axis needs
+        // it more, then centers, cropping the overflow on the other axis.
         public static void Draw(SpriteBatch spriteBatch)
         {
-            // Draw background.
-            spriteBatch.Draw(backgroundTexture, new Vector2(0, 0), Color.White);
+            float scale = Math.Max(
+                (float)Game1.ScreenWidth / backgroundTexture.Width,
+                (float)Game1.ScreenHeight / backgroundTexture.Height
+            );
+            int drawWidth = (int)(backgroundTexture.Width * scale);
+            int drawHeight = (int)(backgroundTexture.Height * scale);
+            int x = (Game1.ScreenWidth - drawWidth) / 2;
+            int y = (Game1.ScreenHeight - drawHeight) / 2;
+
+            spriteBatch.Draw(
+                backgroundTexture,
+                new Rectangle(x, y, drawWidth, drawHeight),
+                Color.White
+            );
         }
     }
 }

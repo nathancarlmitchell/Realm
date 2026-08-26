@@ -57,6 +57,9 @@ namespace Realm.States
         {
             spriteBatch.Begin();
 
+            // Draw background.
+            Background.Draw(spriteBatch);
+
             // Draw title.
             Overlay.DrawTitle(spriteBatch);
 
