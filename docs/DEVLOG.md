@@ -5130,3 +5130,45 @@ date/time for those individually; don't treat their grouping as meaning they all
      sword-badge/combat-border repositioning look correct with no overlap. Temp code fully reverted
      (`git diff --stat Game1.cs` clean), scratch PNGs deleted, clean build, plain boot-check, and a
      full real-save-file diff all passed with zero differences.
+
+196. **Let equipment (and temporary buffs) push HealthMax/ManaMax above MaxHealth/MaxMana**, per
+     direct user request. Investigating turned up a real, previously dead-code bug: `Player.cs`
+     already defined `EquipmentMaxHealthBonus`/`EquipmentMaxManaBonus` (summed from Weapon/Armor/
+     Ring/AbilityItem, same shape as every other `EquipmentXBonus`) and `TemporaryHealthMaxBonus`/
+     `TemporaryManaMaxBonus` (with full tick-down/expiry infrastructure already wired into
+     `UpdateTemporaryBonuses()`), but not one of the four classes' `RecalculateStats()` formulas
+     (`Wizard.cs`/`Archer.cs`/`Knight.cs`/`Priest.cs`) actually added either into `HealthMax`/
+     `ManaMax` — unlike every other stat (Attack/Defense/Vitality/Wisdom/Speed/Dexterity), which
+     already summed base+level+Potion+Equipment+Temporary. `HealthMax`/`ManaMax` were the one pair
+     silently stuck at base+level+Potion only, so gear with a `MaxHealthBonus`/`MaxManaBonus` field
+     (real items exist — Ring of Minor Defense +5, Quiver/Shield/Spell/Tome's higher tiers up to +40)
+     had zero effect on them. Added the missing `+ EquipmentMaxHealthBonus + TemporaryHealthMaxBonus`/
+     `+ EquipmentMaxManaBonus + TemporaryManaMaxBonus` terms to all four classes' formulas.
+     Since every other stat already had this same equipment/temporary-inclusive shape, they'd also
+     already needed (and had) a `PermanentX` counterpart (`PermanentAttack`, etc. — base+level+Potion
+     only, excluding gear/temporary) for two purposes: `Overlay.DrawStats()`'s "is this maxed"
+     highlight, and (more load-bearingly) `InventorySystem.UsePotionEffect()`'s stat-potion gating,
+     which correctly checks `PermanentAttack >= MaxAttack` rather than raw `Attack`, so a temporarily
+     gear-boosted stat can't block a potion that would still raise the real, permanent value.
+     HealthMax/ManaMax had never needed this split before (nothing else fed into them), so there was
+     no `PermanentHealthMax`/`PermanentManaMax` — and `UsePotionEffect()`'s "Life Potion"/"ManaMax
+     Potion" cases checked raw `HealthMax`/`ManaMax` directly. Wiring in equipment/temporary bonuses
+     without also fixing this would have made those two potions start getting incorrectly blocked
+     the instant any equipped item's `MaxHealthBonus`/`MaxManaBonus` alone pushed the raw value past
+     the cap — added `Player.PermanentHealthMax`/`PermanentManaMax` (identical shape to the other six)
+     and switched both `UsePotionEffect()` cases to check those instead, matching every other stat
+     potion's existing pattern. Updated the doc comment above the `PermanentX` properties, which
+     explicitly said at the time it was written that HealthMax/ManaMax "already only count" Potion
+     bonuses — no longer true.
+     Verified via a temporary `Game1.StartGame()` test using a throwaway `Wizard()` (never touching
+     real save data): confirmed a fresh Level 1 character's `PermanentHealthMax` exactly equals
+     `HealthMax` (no gear bonus yet); confirmed `DebugMaxLevelAndEquipTopGear()`'s top-tier gear
+     brought `HealthMax` above its no-gear `PermanentHealthMax` value while `PermanentHealthMax`
+     itself stayed under `MaxHealth`; confirmed a Life Potion succeeds in that state (previously would
+     have needed to check the still-correct condition); and — the definitive check — used Life
+     Potions in a loop until `PermanentHealthMax` reached exactly `MaxHealth` (700), confirming the
+     *next* potion is correctly blocked at that point even though raw `HealthMax` sat at 740 (700 +
+     the ~40 equipment bonus), proving both halves at once: equipment genuinely pushes the live stat
+     above the old hard cap, and the potion gate correctly tracks the permanent value rather than
+     being fooled by gear. Clean build, plain boot-check, and a full real-save-file diff all passed
+     with zero differences.

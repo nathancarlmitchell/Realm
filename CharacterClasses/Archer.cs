@@ -95,8 +95,18 @@ namespace Realm.CharacterClasses
                 + EquipmentDexterityBonus
                 + TemporaryDexterityBonus;
 
-            HealthMax = baseHealth + ((Level - 1) * 25) + PotionHealthMaxBonus;
-            ManaMax = baseMana + ((Level - 1) * 5) + PotionManaMaxBonus;
+            HealthMax =
+                baseHealth
+                + ((Level - 1) * 25)
+                + PotionHealthMaxBonus
+                + EquipmentMaxHealthBonus
+                + TemporaryHealthMaxBonus;
+            ManaMax =
+                baseMana
+                + ((Level - 1) * 5)
+                + PotionManaMaxBonus
+                + EquipmentMaxManaBonus
+                + TemporaryManaMaxBonus;
         }
 
         public override void LevelUp()

@@ -285,13 +285,13 @@ namespace Realm
                     return true;
 
                 case "Life Potion":
-                    if (Player.Instance.HealthMax >= Player.Instance.MaxHealth)
+                    if (Player.Instance.PermanentHealthMax >= Player.Instance.MaxHealth)
                         return false;
                     Potion.Use(Potions.Life);
                     return true;
 
                 case "ManaMax Potion":
-                    if (Player.Instance.ManaMax >= Player.Instance.MaxMana)
+                    if (Player.Instance.PermanentManaMax >= Player.Instance.MaxMana)
                         return false;
                     Potion.Use(Potions.ManaMax);
                     return true;

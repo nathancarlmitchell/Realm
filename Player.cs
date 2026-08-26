@@ -963,16 +963,18 @@ namespace Realm
             + AbilityItem.XpBonusPercent;
 
         // Each stat minus whatever equipment/temporary bonuses are currently
-        // folded into it — i.e. the level+potion value alone, matching what
-        // HealthMax/ManaMax already only count (see PotionHealthMaxBonus
-        // above). "Permanent" since that's exactly what distinguishes these
-        // two excluded sources from the level/potion value: equipment can be
-        // unequipped and a temporary bonus expires on its own, but level-ups
-        // and potions never go away. Used by Overlay.DrawStats() to decide
-        // whether to highlight a stat as "maxed": gear or a timed buff
-        // pushing the displayed number above MaxAttack etc. shouldn't count
-        // as actually being maxed. (Can't call these "BaseX" — Vitality
-        // already has a same-named field for its level-1 starting value.)
+        // folded into it — i.e. the level+potion value alone. "Permanent"
+        // since that's exactly what distinguishes these two excluded sources
+        // from the level/potion value: equipment can be unequipped and a
+        // temporary bonus expires on its own, but level-ups and potions
+        // never go away. Used by Overlay.DrawStats() to decide whether to
+        // highlight a stat as "maxed", and by InventorySystem's stat-potion
+        // gating, to decide whether a potion would actually do anything:
+        // gear or a timed buff pushing the displayed number above MaxAttack
+        // etc. shouldn't count as actually being maxed, and shouldn't block
+        // a potion that would otherwise still raise the permanent value.
+        // (Can't call these "BaseX" — Vitality already has a same-named
+        // field for its level-1 starting value.)
         public int PermanentAttack => Attack - EquipmentAttackBonus - TemporaryAttackBonus;
         public int PermanentDefense => Defense - EquipmentDefenseBonus - TemporaryDefenseBonus;
         public float PermanentSpeed => Speed - EquipmentSpeedBonus - TemporarySpeedBonus;
@@ -980,6 +982,15 @@ namespace Realm
             Dexterity - EquipmentDexterityBonus - TemporaryDexterityBonus;
         public int PermanentVitality => Vitality - EquipmentVitalityBonus - TemporaryVitalityBonus;
         public int PermanentWisdom => Wisdom - EquipmentWisdomBonus - TemporaryWisdomBonus;
+
+        // HealthMax/ManaMax used to be the one pair of "stats" with no
+        // equipment/temporary component at all (see PotionHealthMaxBonus
+        // above) — now that equipment/temporary bonuses can push them past
+        // MaxHealth/MaxMana too, matching every other stat, they need this
+        // same Permanent split for the same two reasons as above.
+        public int PermanentHealthMax =>
+            HealthMax - EquipmentMaxHealthBonus - TemporaryHealthMaxBonus;
+        public int PermanentManaMax => ManaMax - EquipmentMaxManaBonus - TemporaryManaMaxBonus;
 
         // Recomputes every derived stat from this class's base-at-current-level
         // formula, plus permanent potion bonuses, plus whatever's currently
