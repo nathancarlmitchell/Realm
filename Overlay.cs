@@ -509,19 +509,23 @@ namespace Realm
             DrawBarText(spriteBatch, barRect, "HP", numbers, numbersColor);
         }
 
-        // Vital Combat's two HUD indicators, both anchored to the HP bar
-        // (HpBarY) just above: a yellow outline around the HP bar itself
-        // while InCombat (gated behind ShowCombatIndicatorEnabled), and a
-        // small sword badge at the sidebar's right edge, vertically centered
-        // on the HP bar, that "lights up" (gold vs dim gray) unconditionally
-        // — per the design doc's own wording, only the border is behind the
-        // setting. Placeholder shape (a plain tinted square via
+        // Vital Combat's two HUD indicators: a yellow outline around the HP
+        // bar itself while InCombat (gated behind ShowCombatIndicatorEnabled,
+        // anchored to HpBarY like before), and a small sword badge that
+        // "lights up" (gold vs dim gray) unconditionally — per the design
+        // doc's own wording, only the border is behind the setting. The
+        // badge sits just below the minimap, right-aligned to the minimap's
+        // own right edge, rather than at the HP bar's right edge — entry
+        // 198 widened every bar to the sidebar's full padded width, which
+        // left the badge sitting on top of the HP bar's own corner instead
+        // of in open space. Placeholder shape (a plain tinted square via
         // Art.HealthBar, same solid-color-rectangle technique DrawTooltip
         // already uses) until real icon art exists; swapping in real art
         // later is a one-line change to a spriteBatch.Draw call, nothing
         // structural.
         private const int CombatIconSize = 20;
         private const int CombatBorderThickness = 2;
+        private const int CombatIconY = MinimapPadding + MinimapSize + MinimapPadding;
 
         private static void DrawCombatIndicator(SpriteBatch spriteBatch)
         {
@@ -539,8 +543,8 @@ namespace Realm
             }
 
             Rectangle iconRect = new(
-                Game1.SidebarX + Game1.SidebarWidth - SidebarPadding - CombatIconSize,
-                HpBarY + (SidebarBarHeight - CombatIconSize) / 2,
+                Game1.SidebarX + Game1.SidebarWidth - MinimapPadding - CombatIconSize,
+                CombatIconY,
                 CombatIconSize,
                 CombatIconSize
             );
@@ -561,16 +565,15 @@ namespace Realm
                     + "s";
                 Color textColor = Player.Instance.InCombat ? Color.Gold : Color.White;
 
-                // Anchored so the tooltip's right edge sits just left of the
-                // icon (which itself sits at the sidebar's own right edge) —
-                // guarantees on-screen placement without relying on
-                // Util.DrawTooltip's own ClampTooltipX to rescue a
-                // right-edge overflow, since the icon is already about as
-                // far right as anything in the sidebar gets.
+                // Anchored below-left of the icon now, rather than above it
+                // — with the icon moved up under the minimap, an
+                // above-anchored tooltip would overlap the minimap itself;
+                // there's open space below the icon instead, well clear of
+                // the Fame/HP/MP bars further down.
                 Vector2 textSize = Art.HudFont.MeasureString(text);
                 Vector2 tooltipPos = new(
                     iconRect.X - textSize.X - 10,
-                    iconRect.Y - textSize.Y - 10
+                    iconRect.Bottom + 10
                 );
                 Util.DrawTooltip(spriteBatch, Art.HudFont, text, tooltipPos, textColor);
             }

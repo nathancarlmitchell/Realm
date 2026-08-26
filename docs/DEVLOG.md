@@ -5231,3 +5231,19 @@ date/time for those individually; don't treat their grouping as meaning they all
      this request and still reads fine, but worth a follow-up if it turns out to bother the user in
      practice. Temp code fully reverted (`git diff --stat Game1.cs` clean), scratch PNGs deleted,
      clean build, plain boot-check, and a full real-save-file diff all passed with zero differences.
+
+199. **Fixed the Vital Combat sword-badge/HP-bar overlap flagged in entry 198**, moving the badge to
+     sit just below the minimap (right-aligned to the minimap's own right edge) instead of at the HP
+     bar's right edge — the previous position only worked because the HP bar used to stop short of
+     the sidebar's right edge; entry 198 widened every bar to fill that space, leaving the badge
+     sitting on top of the bar's corner. New `CombatIconY` constant derives from the existing
+     `MinimapPadding`/`MinimapSize` constants (`MinimapPadding + MinimapSize + MinimapPadding`) rather
+     than a fresh literal, so the badge stays correctly placed if the minimap's own size ever changes.
+     The badge's hover tooltip was anchored above-left of the icon before — with the icon now sitting
+     right under the minimap, an above-anchored tooltip would itself overlap the minimap, so it's now
+     anchored below-left instead, where there's open space clear down to the Fame/HP/MP bars.
+     Verified by rendering `Overlay.DrawSidebar()` for the real, currently-loaded live Wizard
+     character to an offscreen `RenderTarget2D` — confirmed the badge now sits cleanly below the
+     minimap with no overlap on the HP bar or its text. Temp code fully reverted (`git diff --stat
+     Game1.cs` clean), scratch PNG deleted, clean build, plain boot-check, and a full real-save-file
+     diff all passed with zero differences.
