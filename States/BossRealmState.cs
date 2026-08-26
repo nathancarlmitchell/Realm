@@ -149,9 +149,9 @@ namespace Realm.States
             int barX = centerX - barWidth / 2;
             const int barY = 20;
 
-            Vector2 nameSize = Art.HudFont.MeasureString(boss.Name);
+            Vector2 nameSize = Art.RetroFont.MeasureString(boss.Name);
             spriteBatch.DrawString(
-                Art.HudFont,
+                Art.RetroFont,
                 boss.Name,
                 new Vector2(centerX - nameSize.X / 2, barY - nameSize.Y - 2),
                 Color.White

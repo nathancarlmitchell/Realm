@@ -183,7 +183,7 @@ namespace Realm
         private static Portal pendingConfirmation;
 
         // Lazily constructed (not a field initializer) — Button's own
-        // constructor reads Art.ButtonTexture/Art.HudFont immediately, and
+        // constructor reads Art.ButtonTexture/Art.RetroFont immediately, and
         // this being `static` on Portal means it could otherwise run before
         // Art.Load() has populated those, capturing null permanently (same
         // hazard Destination.PortalArt() above works around).
@@ -391,8 +391,8 @@ namespace Realm
             int y = Player.Instance.Inventory.Bounds.Bottom + 20;
 
             string dungeonName = pendingConfirmation.DisplayName;
-            spriteBatch.DrawString(Art.HudFont, dungeonName, new Vector2(x, y), Color.White);
-            int labelHeight = (int)Art.HudFont.MeasureString(dungeonName).Y;
+            spriteBatch.DrawString(Art.RetroFont, dungeonName, new Vector2(x, y), Color.White);
+            int labelHeight = (int)Art.RetroFont.MeasureString(dungeonName).Y;
 
             Button button = ConfirmButton;
             button.Position = new Vector2(x, y + labelHeight + 6);
@@ -401,8 +401,8 @@ namespace Realm
 
             string hint = $"or press [{KeyBindings.Get(KeyBindings.Action.ConfirmPortalEntry)}]";
             Vector2 hintPos = new(x, button.Position.Y + button.Rectangle.Height + 6);
-            spriteBatch.DrawString(Art.HudFont, hint, hintPos + Vector2.One, Color.Black * 0.6f);
-            spriteBatch.DrawString(Art.HudFont, hint, hintPos, Color.White);
+            spriteBatch.DrawString(Art.RetroFont, hint, hintPos + Vector2.One, Color.Black * 0.6f);
+            spriteBatch.DrawString(Art.RetroFont, hint, hintPos, Color.White);
         }
 
         public void Draw(SpriteBatch spriteBatch, GameTime gameTime)
@@ -417,19 +417,19 @@ namespace Realm
             string label = DisplayName;
             if (!string.IsNullOrEmpty(label))
             {
-                Vector2 size = Art.HudFont.MeasureString(label);
+                Vector2 size = Art.RetroFont.MeasureString(label);
                 Vector2 labelPos = new(
                     position.X - (size.X / 2),
                     position.Y + (RenderedHeight / 2) + 4
                 );
 
                 spriteBatch.DrawString(
-                    Art.HudFont,
+                    Art.RetroFont,
                     label,
                     labelPos + Vector2.One,
                     Color.Black * 0.6f
                 );
-                spriteBatch.DrawString(Art.HudFont, label, labelPos, Color.White);
+                spriteBatch.DrawString(Art.RetroFont, label, labelPos, Color.White);
             }
         }
     }

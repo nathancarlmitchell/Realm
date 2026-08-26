@@ -233,10 +233,29 @@ namespace Realm
             // particular label happens to be.
             float valueX = x + Art.RetroFont.MeasureString("Level:").X + 4;
 
-            void DrawStatLine(string label, string value, int rowY, Color color)
+            // equipBonus: this stat's own gear contribution (Player.
+            // EquipmentXBonus), shown as a gold "+N" to the right of the
+            // value — same "call out the gear-only piece in gold" idea as
+            // the HP/MP bars' "(+N)" (see DrawHealthSection/DrawManaSection),
+            // just as its own separate segment here instead of appended
+            // into the value string. Omitted entirely when zero, matching
+            // the bars' same "only show it if it's actually nonzero" rule.
+            void DrawStatLine(string label, string value, int rowY, Color color, float equipBonus = 0)
             {
                 Util.DrawOutlinedText(spriteBatch, Art.RetroFont, label, new Vector2(x, rowY), color);
                 Util.DrawOutlinedText(spriteBatch, Art.RetroFont, value, new Vector2(valueX, rowY), color);
+
+                if (equipBonus != 0)
+                {
+                    Vector2 valueSize = Art.RetroFont.MeasureString(value);
+                    Util.DrawOutlinedText(
+                        spriteBatch,
+                        Art.RetroFont,
+                        "+" + equipBonus,
+                        new Vector2(valueX + valueSize.X + 8, rowY),
+                        Color.Gold
+                    );
+                }
             }
 
             DrawStatLine("Level:", Player.Instance.Level.ToString(), y, Color.Red);
@@ -252,7 +271,8 @@ namespace Realm
                     + Player.Instance.MaxAttack
                     + ")",
                 y + 16,
-                color
+                color,
+                Player.Instance.EquipmentAttackBonus
             );
 
             color =
@@ -268,7 +288,8 @@ namespace Realm
                     + Player.Instance.MaxDefense
                     + ")",
                 y + 32,
-                color
+                color,
+                Player.Instance.EquipmentDefenseBonus
             );
 
             color =
@@ -282,7 +303,8 @@ namespace Realm
                     + Player.Instance.MaxSpeed
                     + ")",
                 y + 48,
-                color
+                color,
+                Player.Instance.EquipmentSpeedBonus
             );
 
             color =
@@ -298,7 +320,8 @@ namespace Realm
                     + Player.Instance.MaxDexterity
                     + ")",
                 y + 64,
-                color
+                color,
+                Player.Instance.EquipmentDexterityBonus
             );
 
             color =
@@ -314,7 +337,8 @@ namespace Realm
                     + Player.Instance.MaxVitality
                     + ")",
                 y + 80,
-                color
+                color,
+                Player.Instance.EquipmentVitalityBonus
             );
 
             color =
@@ -328,7 +352,8 @@ namespace Realm
                     + Player.Instance.MaxWisdom
                     + ")",
                 y + 96,
-                color
+                color,
+                Player.Instance.EquipmentWisdomBonus
             );
 
             // Sits in the gap between the stat block (ends at y+96) and

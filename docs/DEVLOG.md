@@ -5394,3 +5394,49 @@ date/time for those individually; don't treat their grouping as meaning they all
      a green bonus line. Temp code fully reverted (`git diff --stat Game1.cs` clean), scratch PNGs
      deleted, clean build, plain boot-check, and a full real-save-file diff all passed with zero
      differences.
+
+204. **Three more direct follow-ups**: extended the retro font to Portal/boss-name text, added a gold
+     equipment-bonus "+N" to the HUD stat lines, and brought the bank/inventory comparison tooltip's
+     colors in line with entry 203's scheme.
+     Portal/boss text: swapped `Art.HudFont` → `Art.RetroFont` in `Portal.cs` (dungeon-name label,
+     the entry-confirmation hint, and each dropped portal's own floating label) and
+     `States/BossRealmState.cs` (the boss name above its health bar) — explicitly excluded from
+     entry 202's scope at the time, now brought in. Colors and the existing drop-shadow rendering
+     style (a separate offset black copy, not `Util.DrawOutlinedText`'s full outline) were left
+     exactly as they were, per this request's own "preserve colors for now" — only the font changed.
+     HUD stat bonus: `Overlay.DrawStats()`'s local `DrawStatLine()` gained an optional `equipBonus`
+     parameter — when nonzero, draws "+N" in gold immediately to the right of the stat's existing
+     value text, same "call out the gear-only contribution in gold" idea as the HP/MP bars' "(+N)"
+     from entry 197, just as its own separate segment rather than appended into the value string.
+     Wired to each of the six stat lines' own `Player.EquipmentXBonus` (ATT/DEF/SPD/DEX/VIT/WIS) —
+     widened those from `protected` to `public` in `Player.cs`, same precedent as
+     `EquipmentMaxHealthBonus`/`EquipmentMaxManaBonus` in entry 196. "Level:" has no equipment-bonus
+     concept, so it keeps the parameter's `0` default (nothing drawn).
+     Bank/inventory tooltip colors: extracted `DrawCategorizedTooltip()`'s line classifier into a
+     shared private `Util.ClassifyTooltipLine()`, then reworked the `List<(Text,Better)>` overload of
+     `Util.DrawTooltip()` (the one `Equipment.ComparisonLines()` feeds, used by
+     `BankSystem`/`InventorySystem`/`LootBag`'s hover tooltips) to use it for each line's base color
+     instead of a flat `textColor` parameter — with `Color.Gold` overriding that whenever `Better` is
+     true, a deliberate design choice (not explicitly requested, but a natural extension of the
+     session's existing "gold = a gear-related callout" language) so an item beating what's equipped
+     still reads as a distinct, unmistakable signal regardless of which category color the line would
+     otherwise get, rather than reusing green (already the stat-bonus category color, which would
+     have made "this is an upgrade" and "this is a normal stat line" visually indistinguishable). This
+     dropped the now-unused `textColor`/`betterColor` parameters entirely — updated all three real
+     callers (`BankSystem.cs`/`InventorySystem.cs`/`LootBag.cs`) to the new 4-argument shape, and also
+     changed their separate plain-string fallback tooltip (a bare item name for non-equipment items
+     like potions) from flat Red to White, matching the categorized scheme's own "plain text" default.
+     Verified via a temporary `Game1.StartGame()` test rendering three scenarios to offscreen
+     `RenderTarget2D`s: the real sidebar's stat block, confirming gold "+N" appears next to
+     ATT/DEF/DEX/VIT/WIS (each matching that stat's actual equipped gear bonus) with SPD correctly
+     showing no "+N" (no equipped item grants a Speed bonus) and no overlap with the existing
+     "(x / y)" text; a real `Portal()` constructed and drawn directly (came back blank — the portal's
+     `Position` is in world space and this test's `SpriteBatch.Begin()` has no camera transform, a
+     test-harness limitation rather than a rendering bug, so this specific check was inconclusive and
+     relies instead on the font already being proven correct in dozens of other contexts this
+     session); and `Util.DrawTooltip()`'s list overload called directly with a representative 6-line
+     set (name, description, a non-better bonus, a better bonus, non-better damage, better mana cost)
+     — confirmed white/white/green/red render correctly by category and both "better" lines (defense
+     bonus, mana cost) render gold regardless of their underlying category, proving the override rule
+     works independent of content type. Clean build, plain boot-check, and a full real-save-file diff
+     all passed with zero differences.

@@ -1412,16 +1412,27 @@ namespace Realm
             DrawOutlinedText(spriteBatch, font, text, position, textColor);
         }
 
+        // Colors a single tooltip line by what it actually contains — white
+        // for plain text (name/description), green for a stat bonus line
+        // ("+N Stat" or "No bonuses"), red for a damage line, blue for a
+        // mana cost line. Shared by both tooltip renderers below so the two
+        // never drift apart on what counts as which category.
+        private static Color ClassifyTooltipLine(string line)
+        {
+            if (line.StartsWith('+') || line == "No bonuses")
+                return Color.Green;
+            if (line.StartsWith("Damage:") || line.StartsWith("Side Damage:"))
+                return Color.Red;
+            if (line.EndsWith("Mana Cost"))
+                return Color.Blue;
+            return Color.White;
+        }
+
         // Same background-panel technique as the single-string overload
-        // above, but colors each line by what it actually contains rather
-        // than drawing the whole tooltip in one flat color — white for plain
-        // text (name/description), green for a stat bonus line ("+N Stat" or
-        // "No bonuses"), red for a damage line, blue for a mana cost line.
-        // Used by each equip slot's own hover tooltip (Weapon/Armor/Ring/
-        // AbilityItem.DrawTooltip()), which composes a single TooltipText()
-        // string; the inventory/bank comparison tooltip below uses its own
-        // List<(Text,Better)> shape instead (a different, unrelated
-        // highlight-if-better color scheme, left as-is).
+        // above, but colors each line by ClassifyTooltipLine() rather than
+        // drawing the whole tooltip in one flat color. Used by each equip
+        // slot's own hover tooltip (Weapon/Armor/Ring/AbilityItem.
+        // DrawTooltip()), which composes a single TooltipText() string.
         public static void DrawCategorizedTooltip(
             SpriteBatch spriteBatch,
             SpriteFont font,
@@ -1430,17 +1441,6 @@ namespace Realm
         )
         {
             string[] lines = text.Replace("\r\n", "\n").Split('\n');
-
-            Color Classify(string line)
-            {
-                if (line.StartsWith('+') || line == "No bonuses")
-                    return Color.Green;
-                if (line.StartsWith("Damage:") || line.StartsWith("Side Damage:"))
-                    return Color.Red;
-                if (line.EndsWith("Mana Cost"))
-                    return Color.Blue;
-                return Color.White;
-            }
 
             const int padding = 4;
             float width = 0f;
@@ -1465,24 +1465,27 @@ namespace Realm
                     font,
                     lines[i],
                     position + new Vector2(0, i * font.LineSpacing),
-                    Classify(lines[i])
+                    ClassifyTooltipLine(lines[i])
                 );
             }
         }
 
         // Same background-panel technique as the single-string overload
         // above, but draws each line with its own color instead of one flat
-        // string/color — used for the inventory/bank hover tooltip so a
-        // stat line that beats the currently equipped item can be
-        // highlighted (see Equipment.ComparisonLines()) without recoloring
-        // the whole tooltip.
+        // string/color — used for the inventory/bank hover tooltip
+        // (Equipment.ComparisonLines()). Each line's base color comes from
+        // the same ClassifyTooltipLine() rules DrawCategorizedTooltip uses
+        // (so the two tooltips agree on what a stat-bonus/damage/mana-cost
+        // line looks like), with Gold overriding that whenever the line
+        // beats the currently equipped item — a distinct "this is an
+        // upgrade" signal that stays visible regardless of the line's own
+        // category color, rather than the old flat red-default/dark-green-
+        // if-better scheme.
         public static void DrawTooltip(
             SpriteBatch spriteBatch,
             SpriteFont font,
             List<(string Text, bool Better)> lines,
-            Vector2 position,
-            Color textColor,
-            Color betterColor
+            Vector2 position
         )
         {
             const int padding = 4;
@@ -1504,7 +1507,7 @@ namespace Realm
 
             for (int i = 0; i < lines.Count; i++)
             {
-                Color color = lines[i].Better ? betterColor : textColor;
+                Color color = lines[i].Better ? Color.Gold : ClassifyTooltipLine(lines[i].Text);
                 DrawOutlinedText(
                     spriteBatch,
                     font,

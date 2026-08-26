@@ -254,9 +254,7 @@ namespace Realm
                             spriteBatch,
                             Art.RetroFont,
                             lines,
-                            new Vector2(hoveredX - textX, hoveredY - hovered.image.Height - textY),
-                            Color.Red,
-                            Color.DarkGreen
+                            new Vector2(hoveredX - textX, hoveredY - hovered.image.Height - textY)
                         );
                     }
                     else
@@ -270,7 +268,7 @@ namespace Realm
                             Art.RetroFont,
                             text,
                             new Vector2(hoveredX - textX, hoveredY - hovered.image.Height - textY),
-                            Color.Red
+                            Color.White
                         );
                     }
                 }

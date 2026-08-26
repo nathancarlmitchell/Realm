@@ -942,9 +942,7 @@ namespace Realm
                             spriteBatch,
                             Art.RetroFont,
                             lines,
-                            new Vector2(posX, posY - (record.InventoryItem.image.Height * 2) - textY),
-                            Color.Red,
-                            Color.DarkGreen
+                            new Vector2(posX, posY - (record.InventoryItem.image.Height * 2) - textY)
                         );
                     }
                     else
@@ -957,7 +955,7 @@ namespace Realm
                             Art.RetroFont,
                             text,
                             new Vector2(posX, posY - (record.InventoryItem.image.Height * 2) - textY),
-                            Color.Red
+                            Color.White
                         );
                     }
                 }

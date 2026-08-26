@@ -937,23 +937,26 @@ namespace Realm
             + AbilityItem.MaxHealthBonus;
         public int EquipmentMaxManaBonus =>
             Weapon.MaxManaBonus + Armor.MaxManaBonus + Ring.MaxManaBonus + AbilityItem.MaxManaBonus;
-        protected int EquipmentAttackBonus =>
+        // Public (same reasoning as EquipmentMaxHealthBonus/EquipmentMaxManaBonus
+        // above) — read directly by Overlay.DrawStats() to show each stat's
+        // gear contribution as a gold "+N" next to it.
+        public int EquipmentAttackBonus =>
             Weapon.AttackBonus + Armor.AttackBonus + Ring.AttackBonus + AbilityItem.AttackBonus;
-        protected int EquipmentDefenseBonus =>
+        public int EquipmentDefenseBonus =>
             Weapon.DefenseBonus + Armor.DefenseBonus + Ring.DefenseBonus + AbilityItem.DefenseBonus;
-        protected float EquipmentSpeedBonus =>
+        public float EquipmentSpeedBonus =>
             Weapon.SpeedBonus + Armor.SpeedBonus + Ring.SpeedBonus + AbilityItem.SpeedBonus;
-        protected int EquipmentDexterityBonus =>
+        public int EquipmentDexterityBonus =>
             Weapon.DexterityBonus
             + Armor.DexterityBonus
             + Ring.DexterityBonus
             + AbilityItem.DexterityBonus;
-        protected int EquipmentVitalityBonus =>
+        public int EquipmentVitalityBonus =>
             Weapon.VitalityBonus
             + Armor.VitalityBonus
             + Ring.VitalityBonus
             + AbilityItem.VitalityBonus;
-        protected int EquipmentWisdomBonus =>
+        public int EquipmentWisdomBonus =>
             Weapon.WisdomBonus + Armor.WisdomBonus + Ring.WisdomBonus + AbilityItem.WisdomBonus;
 
         // Public (unlike the bonuses above, which RecalculateStats() folds
