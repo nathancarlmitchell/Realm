@@ -5192,3 +5192,42 @@ date/time for those individually; don't treat their grouping as meaning they all
      temp code was added to `Game1.cs` beyond the render call itself, fully reverted after (`git
      diff --stat Game1.cs` clean), scratch PNG deleted, clean build, plain boot-check, and a full
      real-save-file diff all passed with zero differences.
+
+198. **Repositioned Fame/HP/MP to sit directly above the Ability bar, widened every sidebar bar to
+     match the sidebar's left/right padding, and made the bar text bold with a thin outline** — three
+     more direct HUD polish requests. Introduced `AbilityY` (the Ability section's position, formerly
+     an unnamed `352` literal) as the new anchor and derived `MpBarY`/`HpBarY`/`XpBarY` backward from
+     it (`AbilityY - gap - height`, chained), replacing their old forward derivation from a `160`
+     starting point right below the stat block — the three bars now sit flush against Ability with
+     the same tight `SidebarBarGap` used between themselves, leaving the stat block's own position
+     untouched above (a real, visible gap now sits between the stat block and the bars, an accepted
+     side effect of moving the bars down rather than the stats down). Replaced the old fixed
+     `100 * SidebarBarScale` (200px) bar width with `SidebarBarWidth = Game1.SidebarWidth -
+     (SidebarPadding * 2)` (260px) — computed as a compile-time constant since `Game1.SidebarWidth`
+     is itself `const` — applied to every bar's background/fill rectangle and text-positioning rect
+     across Fame/XP, HP, MP, and Ability (its readiness bar and its "no ability equipped" empty
+     placeholder), so the right edge now sits exactly `SidebarPadding` from the sidebar's own right
+     edge, matching the left side. Fill-percentage math changed from `percent * SidebarBarScale`
+     (implicitly 2px/percent) to `percent * SidebarBarWidth / 100`, so fill width scales with the new
+     bar width automatically rather than needing its own separate constant.
+     For bold text, reused `Art.DamageFont` (already Bold Arial, built in entry 114 for floating
+     combat damage numbers) in `DrawBarText()` instead of the sidebar's usual `Art.HudFont` — no new content
+     asset needed. For the outline, added `DrawOutlinedText()`: draws the string at 8 surrounding
+     1px offsets in black underneath the real colored draw, a true fully-surrounding outline rather
+     than `DrawShadowedText`'s existing single bottom-right drop-shadow technique (which wouldn't
+     read as an "outline" from every angle). Scoped to just the bar text (`DrawBarText`, used by
+     Fame/XP/HP/MP) per the request's own wording — Ability's own separate `DrawString` call, the
+     stat block, and everything else keep their existing plain `HudFont` rendering.
+     Verified by rendering the real, currently-loaded live Wizard character's `Overlay.DrawSidebar()`
+     to an offscreen `RenderTarget2D` (safe, no writes) and visually inspecting a 3x-zoomed crop:
+     confirmed Fame/HP/MP now sit directly above "Ability Ready (Cost 90)" with no gap beyond the
+     usual tight `SidebarBarGap`; confirmed all three bars (plus Ability's) extend to the sidebar's
+     right edge with a margin visually matching the left side; and confirmed the label/number text
+     ("Fame", "HP 615 / 615 (+40)", "MP 398 / 398 (+115)") renders visibly bolder and fully outlined
+     in black on all sides, not just a corner shadow. Noted one minor, unrequested side effect: the
+     Vital Combat sword-badge icon (entry 172, right-anchored to the sidebar's edge) now
+     sits slightly on top of the HP bar's own right edge instead of in the open margin that used to
+     exist there, since that margin is what got widened away — left alone since it wasn't part of
+     this request and still reads fine, but worth a follow-up if it turns out to bother the user in
+     practice. Temp code fully reverted (`git diff --stat Game1.cs` clean), scratch PNGs deleted,
+     clean build, plain boot-check, and a full real-save-file diff all passed with zero differences.

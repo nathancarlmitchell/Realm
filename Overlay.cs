@@ -60,29 +60,61 @@ namespace Realm
 
         // Sidebar layout. All sections are stacked top-to-bottom at a fixed
         // x, in this order: stats, XP, health, mana, ability, equipment,
-        // inventory. Bars are half the scale/height of the old gameplay-area
-        // versions (which were sized for a much wider strip) so they fit the
-        // narrower sidebar with margin on both sides.
+        // inventory.
         private const int SidebarPadding = 20;
-        private const int SidebarBarScale = 2;
         private const int SidebarBarHeight = 24;
 
-        // XP/HP/MP bars stack directly against each other (label and numbers
-        // draw inside the bar itself now, so there's no separate text row
-        // above each one to space out) — only a small gap between bars,
-        // rather than the old fixed 64px per section. Ability/Equipment/
-        // Inventory below keep their own existing positions untouched.
-        private const int XpBarY = 160;
+        // Every bar spans the sidebar's full width minus matching left/right
+        // padding, rather than a fixed pixel width that only used the left
+        // margin — Game1.SidebarWidth is itself a const, so this stays a
+        // compile-time constant too.
+        private const int SidebarBarWidth = Game1.SidebarWidth - (SidebarPadding * 2);
+
+        // Fame/XP, HP, and MP stack directly against each other (label and
+        // numbers draw inside the bar itself, so there's no separate text
+        // row above each one to space out) with only a small gap between
+        // them, positioned to sit immediately above the Ability bar
+        // (AbilityY) rather than immediately below the stat block above —
+        // derived backward from AbilityY so they always end up flush against
+        // it regardless of where Ability itself ever moves to.
+        private const int AbilityY = 352;
         private const int SidebarBarGap = 6;
-        private const int HpBarY = XpBarY + SidebarBarHeight + SidebarBarGap;
-        private const int MpBarY = HpBarY + SidebarBarHeight + SidebarBarGap;
+        private const int MpBarY = AbilityY - SidebarBarGap - SidebarBarHeight;
+        private const int HpBarY = MpBarY - SidebarBarGap - SidebarBarHeight;
+        private const int XpBarY = HpBarY - SidebarBarGap - SidebarBarHeight;
 
         private const int BarTextPadding = 6;
+
+        // A thin, fully-surrounding 1px black outline (not just a
+        // bottom-right drop shadow like DrawShadowedText elsewhere) — drawn
+        // as 8 offset copies underneath the real text, cheap enough at this
+        // scale and text length not to bother batching further.
+        private static readonly Vector2[] OutlineOffsets =
+        {
+            new(-1, -1), new(0, -1), new(1, -1),
+            new(-1, 0), new(1, 0),
+            new(-1, 1), new(0, 1), new(1, 1),
+        };
+
+        private static void DrawOutlinedText(
+            SpriteBatch spriteBatch,
+            SpriteFont font,
+            string text,
+            Vector2 pos,
+            Color color
+        )
+        {
+            foreach (Vector2 offset in OutlineOffsets)
+                spriteBatch.DrawString(font, text, pos + offset, Color.Black);
+            spriteBatch.DrawString(font, text, pos, color);
+        }
 
         // Draws a bar's label left-aligned and its numbers center-aligned,
         // both vertically centered within the bar itself — the shared shape
         // every XP/HP/MP/Fame bar below now uses instead of a separate text
-        // row above the bar.
+        // row above the bar. Uses Art.DamageFont (bold, unlike the sidebar's
+        // usual HudFont) plus a thin outline so the text stays readable
+        // sitting directly on top of a busy-colored bar fill.
         private static void DrawBarText(
             SpriteBatch spriteBatch,
             Rectangle barRect,
@@ -91,17 +123,21 @@ namespace Realm
             Color numbersColor
         )
         {
-            Vector2 labelSize = Art.HudFont.MeasureString(label);
-            spriteBatch.DrawString(
-                Art.HudFont,
+            SpriteFont font = Art.DamageFont;
+
+            Vector2 labelSize = font.MeasureString(label);
+            DrawOutlinedText(
+                spriteBatch,
+                font,
                 label,
                 new Vector2(barRect.X + BarTextPadding, barRect.Y + (barRect.Height - labelSize.Y) / 2f),
                 Color.White
             );
 
-            Vector2 numbersSize = Art.HudFont.MeasureString(numbers);
-            spriteBatch.DrawString(
-                Art.HudFont,
+            Vector2 numbersSize = font.MeasureString(numbers);
+            DrawOutlinedText(
+                spriteBatch,
+                font,
                 numbers,
                 new Vector2(
                     barRect.X + (barRect.Width - numbersSize.X) / 2f,
@@ -399,8 +435,8 @@ namespace Realm
                 }
             }
 
-            Rectangle goldRect = new(0, 0, normalisedFill * SidebarBarScale, SidebarBarHeight);
-            Rectangle blackRect = new(0, 0, 100 * SidebarBarScale, SidebarBarHeight);
+            Rectangle goldRect = new(0, 0, normalisedFill * SidebarBarWidth / 100, SidebarBarHeight);
+            Rectangle blackRect = new(0, 0, SidebarBarWidth, SidebarBarHeight);
 
             Vector2 barPos = new(x, XpBarY);
             spriteBatch.Draw(
@@ -426,7 +462,7 @@ namespace Realm
                 0
             );
 
-            Rectangle barRect = new(x, XpBarY, 100 * SidebarBarScale, SidebarBarHeight);
+            Rectangle barRect = new(x, XpBarY, SidebarBarWidth, SidebarBarHeight);
             DrawBarText(spriteBatch, barRect, label, numbers, Color.White);
         }
 
@@ -436,8 +472,8 @@ namespace Realm
 
             int normalisedHealth =
                 (Player.Instance.Health * 100 / Player.Instance.HealthMax * 100) / 100;
-            Rectangle greenRect = new(0, 0, normalisedHealth * SidebarBarScale, SidebarBarHeight);
-            Rectangle redRect = new(0, 0, 100 * SidebarBarScale, SidebarBarHeight);
+            Rectangle greenRect = new(0, 0, normalisedHealth * SidebarBarWidth / 100, SidebarBarHeight);
+            Rectangle redRect = new(0, 0, SidebarBarWidth, SidebarBarHeight);
 
             Vector2 barPos = new(x, HpBarY);
             spriteBatch.Draw(
@@ -469,7 +505,7 @@ namespace Realm
             if (Player.Instance.EquipmentMaxHealthBonus > 0)
                 numbers += " (+" + Player.Instance.EquipmentMaxHealthBonus + ")";
 
-            Rectangle barRect = new(x, HpBarY, 100 * SidebarBarScale, SidebarBarHeight);
+            Rectangle barRect = new(x, HpBarY, SidebarBarWidth, SidebarBarHeight);
             DrawBarText(spriteBatch, barRect, "HP", numbers, numbersColor);
         }
 
@@ -496,7 +532,7 @@ namespace Realm
                 Rectangle barRect = new(
                     x,
                     HpBarY,
-                    100 * SidebarBarScale,
+                    SidebarBarWidth,
                     SidebarBarHeight
                 );
                 DrawBorder(spriteBatch, barRect, Color.Yellow, CombatBorderThickness);
@@ -561,8 +597,8 @@ namespace Realm
             int x = Game1.SidebarX + SidebarPadding;
 
             int normalisedMana = (Player.Instance.Mana * 100 / Player.Instance.ManaMax * 100) / 100;
-            Rectangle blueRect = new(0, 0, normalisedMana * SidebarBarScale, SidebarBarHeight);
-            Rectangle blackRect = new(0, 0, 100 * SidebarBarScale, SidebarBarHeight);
+            Rectangle blueRect = new(0, 0, normalisedMana * SidebarBarWidth / 100, SidebarBarHeight);
+            Rectangle blackRect = new(0, 0, SidebarBarWidth, SidebarBarHeight);
 
             Vector2 barPos = new(x, MpBarY);
             spriteBatch.Draw(
@@ -594,7 +630,7 @@ namespace Realm
             if (Player.Instance.EquipmentMaxManaBonus > 0)
                 numbers += " (+" + Player.Instance.EquipmentMaxManaBonus + ")";
 
-            Rectangle barRect = new(x, MpBarY, 100 * SidebarBarScale, SidebarBarHeight);
+            Rectangle barRect = new(x, MpBarY, SidebarBarWidth, SidebarBarHeight);
             DrawBarText(spriteBatch, barRect, "MP", numbers, numbersColor);
         }
 
@@ -605,7 +641,7 @@ namespace Realm
         private static void DrawAbilitySection(SpriteBatch spriteBatch)
         {
             int x = Game1.SidebarX + SidebarPadding;
-            int y = 352;
+            int y = AbilityY;
             int abilityBarHeight = SidebarBarHeight / 2;
 
             // No ability item equipped means there's nothing to ready up for
@@ -615,7 +651,7 @@ namespace Realm
             // ready/charging state that doesn't actually apply.
             if (!Player.Instance.AbilityItem.IsEquipped)
             {
-                Rectangle emptyRect = new(0, 0, 100 * SidebarBarScale, abilityBarHeight);
+                Rectangle emptyRect = new(0, 0, SidebarBarWidth, abilityBarHeight);
                 spriteBatch.Draw(
                     Art.HealthBar,
                     new Vector2(x, y + 20),
@@ -646,8 +682,8 @@ namespace Realm
                 100,
                 (Player.Instance.Mana * 100 / Player.Instance.AbilityCost * 100) / 100
             );
-            Rectangle cyanRect = new(0, 0, normalisedAbility * SidebarBarScale, abilityBarHeight);
-            Rectangle blackRect = new(0, 0, 100 * SidebarBarScale, abilityBarHeight);
+            Rectangle cyanRect = new(0, 0, normalisedAbility * SidebarBarWidth / 100, abilityBarHeight);
+            Rectangle blackRect = new(0, 0, SidebarBarWidth, abilityBarHeight);
 
             Vector2 barPos = new(x, y + 20);
             spriteBatch.Draw(
