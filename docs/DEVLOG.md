@@ -5247,3 +5247,33 @@ date/time for those individually; don't treat their grouping as meaning they all
      minimap with no overlap on the HP bar or its text. Temp code fully reverted (`git diff --stat
      Game1.cs` clean), scratch PNG deleted, clean build, plain boot-check, and a full real-save-file
      diff all passed with zero differences.
+
+200. **Added a "retro video game" font for the Fame/XP/HP/MP bar text**, per direct user request.
+     Every existing font in this project (`HudFont`/`TitleFont`/`DamageFont`/`SettingsFont`)
+     references an installed system font family (Arial) — no genuine pixel/8-bit font was available
+     on the system (checked the full installed font list; closest candidate, "OCR A Extended," reads
+     as robotic/OCR rather than retro-game), so this needed a real font file. Asked the user how to
+     source one rather than guessing or downloading without asking, per this project's own
+     file-download rule; user chose to have one downloaded. Fetched `PressStart2P-Regular.ttf`
+     directly from Google Fonts' official `google/fonts` GitHub repo (SIL Open Font License, free to
+     bundle) and added it to `Content/Fonts/` alongside a new `RetroFont.spritefont` — unlike every
+     other font here, its `<FontName>` points at the bundled `.ttf` file sitting next to it rather
+     than a system family name, which MonoGame's `FontDescriptionImporter` supports directly. New
+     `Content.mgcb` block (same importer/processor shape as the other four fonts) and `Art.RetroFont`
+     field/load line. Scoped to exactly where the request applies: `Overlay.DrawBarText()` (Fame/XP/
+     HP/MP bar label+numbers, entries 195/198) now uses `Art.RetroFont` instead of `Art.DamageFont` —
+     everything else (stats block, Ability's own text, tooltips, menus) keeps its existing font
+     untouched.
+     First attempt used 10pt (chosen since Press Start 2P's design is much wider/taller per point
+     than Arial, so straight reuse of DamageFont's 14pt would have been far too large) — a render
+     test caught real overlap between the left-aligned label and the center-aligned numbers (e.g.
+     "MP398" running together) at that size, since Press Start 2P's glyphs are still wide enough at
+     10pt to eat into the gap `DrawBarText`'s existing layout math assumed. Dropped to 8pt, re-rendered,
+     and confirmed clean separation with no overlap on any of the three bars. Verified by rendering
+     `Overlay.DrawSidebar()` for the real, currently-loaded live Wizard character to an offscreen
+     `RenderTarget2D` and visually inspecting a 3x-zoomed crop both before and after the size fix —
+     final render confirmed all three bars read clearly in the new pixel font with proper label/number
+     spacing, the existing bold-via-font-choice + black outline (entry 198) still applying correctly
+     on top of it, and no regressions elsewhere in the sidebar. Temp code fully reverted (`git diff
+     --stat Game1.cs` clean), scratch PNGs deleted, clean build, plain boot-check, and a full
+     real-save-file diff all passed with zero differences.

@@ -112,9 +112,10 @@ namespace Realm
         // Draws a bar's label left-aligned and its numbers center-aligned,
         // both vertically centered within the bar itself — the shared shape
         // every XP/HP/MP/Fame bar below now uses instead of a separate text
-        // row above the bar. Uses Art.DamageFont (bold, unlike the sidebar's
-        // usual HudFont) plus a thin outline so the text stays readable
-        // sitting directly on top of a busy-colored bar fill.
+        // row above the bar. Uses Art.RetroFont (a bundled pixel-style font,
+        // for a "retro video game" HUD look — see Art.cs) plus a thin
+        // outline so the text stays readable sitting directly on top of a
+        // busy-colored bar fill.
         private static void DrawBarText(
             SpriteBatch spriteBatch,
             Rectangle barRect,
@@ -123,7 +124,7 @@ namespace Realm
             Color numbersColor
         )
         {
-            SpriteFont font = Art.DamageFont;
+            SpriteFont font = Art.RetroFont;
 
             Vector2 labelSize = font.MeasureString(label);
             DrawOutlinedText(

@@ -130,6 +130,12 @@ namespace Realm
         // small HUD-scale font that's tuned for compact in-game overlays.
         public static SpriteFont SettingsFont { get; private set; }
 
+        // Press Start 2P (SIL Open Font License), a bundled pixel-style
+        // TrueType file rather than an installed system font family like
+        // every font above — used where a "retro video game" look was asked
+        // for specifically (Overlay.DrawBarText's Fame/XP/HP/MP bar text).
+        public static SpriteFont RetroFont { get; private set; }
+
         // Weapons.
         public static Texture2D Wand { get; private set; }
 
@@ -301,6 +307,7 @@ namespace Realm
             TitleFont = content.Load<SpriteFont>("Fonts/TitleFont");
             DamageFont = content.Load<SpriteFont>("Fonts/DamageFont");
             SettingsFont = content.Load<SpriteFont>("Fonts/SettingsFont");
+            RetroFont = content.Load<SpriteFont>("Fonts/RetroFont");
         }
 
         // Hard-edged filled circle, diameter x diameter, opaque white
