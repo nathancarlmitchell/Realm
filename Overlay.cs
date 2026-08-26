@@ -67,6 +67,50 @@ namespace Realm
         private const int SidebarBarScale = 2;
         private const int SidebarBarHeight = 24;
 
+        // XP/HP/MP bars stack directly against each other (label and numbers
+        // draw inside the bar itself now, so there's no separate text row
+        // above each one to space out) — only a small gap between bars,
+        // rather than the old fixed 64px per section. Ability/Equipment/
+        // Inventory below keep their own existing positions untouched.
+        private const int XpBarY = 160;
+        private const int SidebarBarGap = 6;
+        private const int HpBarY = XpBarY + SidebarBarHeight + SidebarBarGap;
+        private const int MpBarY = HpBarY + SidebarBarHeight + SidebarBarGap;
+
+        private const int BarTextPadding = 6;
+
+        // Draws a bar's label left-aligned and its numbers center-aligned,
+        // both vertically centered within the bar itself — the shared shape
+        // every XP/HP/MP/Fame bar below now uses instead of a separate text
+        // row above the bar.
+        private static void DrawBarText(
+            SpriteBatch spriteBatch,
+            Rectangle barRect,
+            string label,
+            string numbers,
+            Color numbersColor
+        )
+        {
+            Vector2 labelSize = Art.HudFont.MeasureString(label);
+            spriteBatch.DrawString(
+                Art.HudFont,
+                label,
+                new Vector2(barRect.X + BarTextPadding, barRect.Y + (barRect.Height - labelSize.Y) / 2f),
+                Color.White
+            );
+
+            Vector2 numbersSize = Art.HudFont.MeasureString(numbers);
+            spriteBatch.DrawString(
+                Art.HudFont,
+                numbers,
+                new Vector2(
+                    barRect.X + (barRect.Width - numbersSize.X) / 2f,
+                    barRect.Y + (barRect.Height - numbersSize.Y) / 2f
+                ),
+                numbersColor
+            );
+        }
+
         // Draws the sidebar panel background plus every HUD section, in the
         // order the user asked for. Replaces what used to be four separate
         // calls (DrawStats/DrawHealth/DrawEquipment/DrawInventory) from each
@@ -292,19 +336,19 @@ namespace Realm
         private static void DrawExperience(SpriteBatch spriteBatch)
         {
             int x = Game1.SidebarX + SidebarPadding;
-            int y = 160;
 
-            string expString;
+            string label;
+            string numbers;
             int normalisedFill;
 
             if (Player.Instance.Level < 20)
             {
-                expString =
-                    "Exp: " + Player.Instance.ExperienceTotal + " / " + Player.Instance.ExperienceNextLevel;
+                label = "XP";
+                numbers = Player.Instance.ExperienceTotal + " / " + Player.Instance.ExperienceNextLevel;
 
                 // The bar fills 0-100% within just the current level (empty
                 // right at the start of a level, full right before the next
-                // one) — unlike expString above, which shows the cumulative
+                // one) — unlike numbers above, which shows the cumulative
                 // total and never resets. XpIntoLevel/xpNeededForLevel are
                 // ExperienceTotal/ExperienceNextLevel with the current
                 // level's own starting threshold subtracted from both, so
@@ -332,9 +376,11 @@ namespace Realm
                 int stars = Player.ComputeStars(Player.Instance.ExperienceTotal);
                 int currentFame = Player.Instance.BaseFame;
 
+                label = "Fame";
+
                 if (stars >= Player.MaxStars)
                 {
-                    expString = "Class Quest: " + currentFame + " Fame (Complete)";
+                    numbers = currentFame + " (Complete)";
                     normalisedFill = 100;
                 }
                 else
@@ -342,7 +388,7 @@ namespace Realm
                     int nextThreshold = Player.ClassQuestFameThresholds[stars];
                     int previousThreshold =
                         stars == 0 ? 0 : Player.ClassQuestFameThresholds[stars - 1];
-                    expString = "Class Quest: " + currentFame + " / " + nextThreshold + " Fame";
+                    numbers = currentFame + " / " + nextThreshold;
 
                     int fameIntoTier = currentFame - previousThreshold;
                     int fameNeededForTier = nextThreshold - previousThreshold;
@@ -353,12 +399,10 @@ namespace Realm
                 }
             }
 
-            spriteBatch.DrawString(Art.HudFont, expString, new Vector2(x, y), Color.White);
-
             Rectangle goldRect = new(0, 0, normalisedFill * SidebarBarScale, SidebarBarHeight);
             Rectangle blackRect = new(0, 0, 100 * SidebarBarScale, SidebarBarHeight);
 
-            Vector2 barPos = new(x, y + 20);
+            Vector2 barPos = new(x, XpBarY);
             spriteBatch.Draw(
                 Art.HealthBar,
                 barPos,
@@ -381,30 +425,21 @@ namespace Realm
                 0,
                 0
             );
+
+            Rectangle barRect = new(x, XpBarY, 100 * SidebarBarScale, SidebarBarHeight);
+            DrawBarText(spriteBatch, barRect, label, numbers, Color.White);
         }
 
         private static void DrawHealthSection(SpriteBatch spriteBatch)
         {
             int x = Game1.SidebarX + SidebarPadding;
-            int y = 224;
-
-            Color color =
-                Player.Instance.HealthMax >= Player.Instance.MaxHealth
-                    ? Color.LimeGreen
-                    : Color.White;
-            spriteBatch.DrawString(
-                Art.HudFont,
-                "HP: " + Player.Instance.Health + " / " + Player.Instance.HealthMax,
-                new Vector2(x, y),
-                color
-            );
 
             int normalisedHealth =
                 (Player.Instance.Health * 100 / Player.Instance.HealthMax * 100) / 100;
             Rectangle greenRect = new(0, 0, normalisedHealth * SidebarBarScale, SidebarBarHeight);
             Rectangle redRect = new(0, 0, 100 * SidebarBarScale, SidebarBarHeight);
 
-            Vector2 barPos = new(x, y + 20);
+            Vector2 barPos = new(x, HpBarY);
             spriteBatch.Draw(
                 Art.HealthBar,
                 barPos,
@@ -427,31 +462,42 @@ namespace Realm
                 0,
                 0
             );
+
+            Color numbersColor =
+                Player.Instance.Health >= Player.Instance.HealthMax ? Color.Gold : Color.White;
+            Rectangle barRect = new(x, HpBarY, 100 * SidebarBarScale, SidebarBarHeight);
+            DrawBarText(
+                spriteBatch,
+                barRect,
+                "HP",
+                Player.Instance.Health + " / " + Player.Instance.HealthMax,
+                numbersColor
+            );
         }
 
-        // Vital Combat's two HUD indicators, both anchored to the HP
-        // section (y=224) just above: a yellow outline around the HP bar
-        // itself while InCombat (gated behind ShowCombatIndicatorEnabled),
-        // and a small sword badge at the right edge of the HP label row
-        // that "lights up" (gold vs dim gray) unconditionally — per the
-        // design doc's own wording, only the border is behind the setting.
-        // Placeholder shape (a plain tinted square via Art.HealthBar, same
-        // solid-color-rectangle technique DrawTooltip already uses) until
-        // real icon art exists; swapping in real art later is a one-line
-        // change to a spriteBatch.Draw call, nothing structural.
+        // Vital Combat's two HUD indicators, both anchored to the HP bar
+        // (HpBarY) just above: a yellow outline around the HP bar itself
+        // while InCombat (gated behind ShowCombatIndicatorEnabled), and a
+        // small sword badge at the sidebar's right edge, vertically centered
+        // on the HP bar, that "lights up" (gold vs dim gray) unconditionally
+        // — per the design doc's own wording, only the border is behind the
+        // setting. Placeholder shape (a plain tinted square via
+        // Art.HealthBar, same solid-color-rectangle technique DrawTooltip
+        // already uses) until real icon art exists; swapping in real art
+        // later is a one-line change to a spriteBatch.Draw call, nothing
+        // structural.
         private const int CombatIconSize = 20;
         private const int CombatBorderThickness = 2;
 
         private static void DrawCombatIndicator(SpriteBatch spriteBatch)
         {
             int x = Game1.SidebarX + SidebarPadding;
-            int y = 224;
 
             if (Player.Instance.InCombat && Player.Instance.ShowCombatIndicatorEnabled)
             {
                 Rectangle barRect = new(
                     x,
-                    y + 20,
+                    HpBarY,
                     100 * SidebarBarScale,
                     SidebarBarHeight
                 );
@@ -460,7 +506,7 @@ namespace Realm
 
             Rectangle iconRect = new(
                 Game1.SidebarX + Game1.SidebarWidth - SidebarPadding - CombatIconSize,
-                y,
+                HpBarY + (SidebarBarHeight - CombatIconSize) / 2,
                 CombatIconSize,
                 CombatIconSize
             );
@@ -515,22 +561,12 @@ namespace Realm
         private static void DrawManaSection(SpriteBatch spriteBatch)
         {
             int x = Game1.SidebarX + SidebarPadding;
-            int y = 288;
-
-            Color color =
-                Player.Instance.ManaMax >= Player.Instance.MaxMana ? Color.LimeGreen : Color.White;
-            spriteBatch.DrawString(
-                Art.HudFont,
-                "Mana: " + Player.Instance.Mana + " / " + Player.Instance.ManaMax,
-                new Vector2(x, y),
-                color
-            );
 
             int normalisedMana = (Player.Instance.Mana * 100 / Player.Instance.ManaMax * 100) / 100;
             Rectangle blueRect = new(0, 0, normalisedMana * SidebarBarScale, SidebarBarHeight);
             Rectangle blackRect = new(0, 0, 100 * SidebarBarScale, SidebarBarHeight);
 
-            Vector2 barPos = new(x, y + 20);
+            Vector2 barPos = new(x, MpBarY);
             spriteBatch.Draw(
                 Art.HealthBar,
                 barPos,
@@ -552,6 +588,17 @@ namespace Realm
                 1f,
                 0,
                 0
+            );
+
+            Color numbersColor =
+                Player.Instance.Mana >= Player.Instance.ManaMax ? Color.Gold : Color.White;
+            Rectangle barRect = new(x, MpBarY, 100 * SidebarBarScale, SidebarBarHeight);
+            DrawBarText(
+                spriteBatch,
+                barRect,
+                "MP",
+                Player.Instance.Mana + " / " + Player.Instance.ManaMax,
+                numbersColor
             );
         }
 

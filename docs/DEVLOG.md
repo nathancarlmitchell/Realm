@@ -5092,3 +5092,41 @@ date/time for those individually; don't treat their grouping as meaning they all
      starts at y=256, well clear of Fame's y=64. Temp code fully reverted (`git diff --stat Game1.cs`
      clean), scratch PNGs deleted, clean build, plain boot-check, and a full real-save-file diff all
      passed with zero differences.
+
+195. **Reworked the XP/HP/MP sidebar bars per a detailed user spec**: labels shortened ("Exp:" ->
+     "XP", "HP:" -> "HP", "Mana:" -> "MP" — all colon-free now), the label and its numbers moved from
+     a separate text row above each bar to inside the bar itself (label left-aligned, numbers
+     center-aligned, both vertically centered within the bar), HP/MP's number turns gold when
+     currently full (`Health >= HealthMax`/`Mana >= ManaMax` — replacing the old, unrelated
+     "permanent stat maxed" LimeGreen/White distinction, which was about `HealthMax >= MaxHealth`,
+     a totally different and much rarer condition), the vertical gap between the three bars is much
+     tighter (a fixed 6px between bars now, vs. the old ~64px-per-section spacing that assumed a
+     separate text row), and the Level-20 branch's "Class Quest: N / M Fame" text is replaced with
+     the same shape as the other three bars — label "Fame", numbers "N / M" (or "N (Complete)" past
+     the 5th tier), no more redundant trailing " Fame" now that the label itself says it.
+     Added one shared helper, `Overlay.DrawBarText()`, since all four bars (XP/Fame, HP, MP) now
+     follow the exact same "label left, numbers centered, both vertically centered in the bar rect"
+     shape — avoids four near-identical copies of the same two `MeasureString`/`DrawString` pairs.
+     Three new layout constants (`XpBarY`/`HpBarY`/`MpBarY`, the last two derived from the one before
+     plus `SidebarBarHeight` + a new `SidebarBarGap` = 6) replace the old independent hardcoded
+     `y = 160`/`224`/`288` literals in `DrawExperience`/`DrawHealthSection`/`DrawManaSection` — needed
+     since `DrawCombatIndicator`'s yellow in-combat border and sword-badge icon are anchored to the
+     HP bar specifically and had to move in lockstep with it (previously both used a local `y = 224`
+     matching HP's old text-row position; now both reference the shared `HpBarY` constant, with the
+     badge re-centered on the bar's height since there's no longer a separate text row above it to
+     align with). Deliberately left `DrawAbilitySection`/`DrawEquipment`/`DrawInventory` untouched —
+     out of scope, and they're positioned independently rather than relative to Mana's bottom, so
+     tightening XP/HP/MP just leaves a bit more empty space above Ability now rather than breaking
+     anything.
+     Verified via a temporary `Game1.StartGame()` test rendering `Overlay.DrawSidebar()` for two
+     throwaway `Wizard()` scenarios to offscreen `RenderTarget2D`s (never touching real save data):
+     Level 15 with Health at exactly half HealthMax and Mana at exactly ManaMax — confirmed "XP" bar
+     shows label+numbers inside the bar, "MP" numbers render gold (full) while "HP" numbers stay
+     white (half); and Level 20 with partial Base Fame, Health at exactly HealthMax, Mana at a third
+     of ManaMax — confirmed the top bar now reads "Fame" / "60 / 500" instead of "Class Quest: ...",
+     and this time "HP" (now full) renders gold while "MP" (partial) stays white, the inverse pairing
+     from the first scenario, ruling out either color always defaulting to gold regardless of the
+     actual full/not-full state. Both renders also visually confirmed the tighter bar spacing and the
+     sword-badge/combat-border repositioning look correct with no overlap. Temp code fully reverted
+     (`git diff --stat Game1.cs` clean), scratch PNGs deleted, clean build, plain boot-check, and a
+     full real-save-file diff all passed with zero differences.
