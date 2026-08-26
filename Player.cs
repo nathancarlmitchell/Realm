@@ -286,6 +286,22 @@ namespace Realm
             return beforeFame + afterFame;
         }
 
+        // Inverts ComputeBaseFame() above — the smallest ExperienceTotal
+        // whose Base Fame reaches targetFame. Derived from the same two
+        // piecewise rates rather than a hardcoded XP number, so debug
+        // tooling (DebugGrantThreeStarsFame() below) stays correct if this
+        // curve or those rates are ever retuned.
+        private static int ExperienceForBaseFame(int targetFame)
+        {
+            int level20Threshold = CumulativeExperienceForLevel(20);
+            int beforeFame = level20Threshold / BaseFameRateBeforeLevel20;
+            if (targetFame <= beforeFame)
+                return targetFame * BaseFameRateBeforeLevel20;
+
+            int afterFame = targetFame - beforeFame;
+            return level20Threshold + (afterFame * BaseFameRateAfterLevel20);
+        }
+
         // "Base fame" — automatically converted from this character's own
         // cumulative XP throughout its life, at the rate above. Not a
         // separately-tracked/persisted field: it's purely a function of
@@ -708,6 +724,22 @@ namespace Realm
 
             Health = HealthMax;
             Mana = ManaMax;
+        }
+
+        // Debug/testing only (F4 in Input.cs) — sets ExperienceTotal (and
+        // HighScore, so Character Select's permanent star record reflects
+        // it immediately, without needing an actual RealmState.Update()
+        // tick to sync HighScore from ExperienceTotal the way real play
+        // does) to the exact XP needed for 3 stars — ClassQuestFameThresholds
+        // index 2, "3 stars" per ComputeStars() above. Handy for testing the
+        // class-unlock chain (CharacterSelectState.cs), which requires 3
+        // stars in the previous class to unlock the next one. Never lowers
+        // either value if this character already has more.
+        public void DebugGrantThreeStarsFame()
+        {
+            int requiredXp = ExperienceForBaseFame(ClassQuestFameThresholds[2]);
+            ExperienceTotal = Math.Max(ExperienceTotal, requiredXp);
+            HighScore = Math.Max(HighScore, ExperienceTotal);
         }
 
         private void EquipHighestTierWeapon()

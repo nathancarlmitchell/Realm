@@ -134,12 +134,15 @@ public static class Input
             }
 
             // Testing only, not real gameplay: max Level (with a real stat
-            // recalculation), top off Health/Mana to their new maxes, and
-            // equip the current class's highest-tier gear for every slot,
-            // replacing whatever was equipped.
+            // recalculation), top off Health/Mana to their new maxes, equip
+            // the current class's highest-tier gear for every slot
+            // (replacing whatever was equipped), and grant enough XP/
+            // HighScore for 3 stars — handy for testing the class-unlock
+            // chain in CharacterSelectState.cs.
             if (WasKeyPressed(Keys.F4))
             {
                 Player.Instance.DebugMaxLevelAndEquipTopGear();
+                Player.Instance.DebugGrantThreeStarsFame();
             }
         }
 
