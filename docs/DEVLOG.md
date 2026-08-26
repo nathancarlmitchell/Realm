@@ -4930,3 +4930,35 @@ date/time for those individually; don't treat their grouping as meaning they all
      leveling changes, and any character already sitting on more `ExperienceTotal` than the new,
      lower next-level threshold requires will simply level up on their very next kill instead of
      needing more grinding first.
+
+190. **Reordered the class unlock chain to Wizard -> Priest -> Archer -> Knight** (previously
+     Wizard -> Archer -> Knight -> Priest — entry 80 introduced Archer/Knight's Fame-gated unlocks,
+     entry 171 later added Priest into the same chain at 5,000 Fame) and replaced the unlock
+     requirement with "3 stars in the previous class," per the user's explicit spec — both the
+     Character Select portrait order and `Slot.IsLocked`'s gating logic changed together in
+     `CharacterSelectState.cs`, since the two were the same list. Previously each class needed a flat
+     amount of account-wide `FameSystem.Fame` (`ArcherFameRequirement`/`KnightFameRequirement`/
+     `PriestFameRequirement` = 1000/3000/5000) regardless of which specific class actually earned
+     that Fame. Replaced `Slot.RequiredFame`/its computed `IsLocked` with
+     `Slot.PreviousClass` (the class immediately to its left in the reordered `slots` list; `null`
+     for Wizard, which stays always-unlocked) and a plain `IsLocked` field recomputed each `Update()`
+     from that specific previous class's own permanent star record — `Player.ComputeStars(previous
+     class's saved HighScore) < 3`, using the same Fame-thresholded `ComputeStars` the Fame rework
+     (entry 186) already introduced for the account-level Character Select star display. `Update()`
+     now runs in two passes: first reading every slot's `Stars`/`HasSave` from disk (needed before
+     any lock check, since a locked slot's requirement depends on a DIFFERENT slot's freshly-read
+     Stars, not its own), then a second pass computing `IsLocked` and running the existing
+     hover/click/delete logic. `DrawLockedPreview()`'s hint text changed from "Requires N Fame (You
+     have M)" to "Requires 3 Stars in {PreviousClass} (You have {PreviousClassStars})" to match.
+     Verified via a temporary `Game1.StartGame()` test constructing a real `CharacterSelectState`
+     (safe against real save data — `Util.PeekPlayerData()` is read-only, no backup needed) and, via
+     reflection, checking the `slots` list's order and `PortraitRect.X` positions against the
+     expected Wizard/Priest/Archer/Knight left-to-right layout (all 4 passed), then calling the real
+     `Update()` once and confirming each slot's `IsLocked` matched an independently-computed
+     `ComputeStars(previous class's real saved HighScore) < 3` check (all 4 passed) — including that
+     a class which already had stored stars from before this reorder (Archer, at 1 star from old
+     save data) is correctly locked anyway if ITS OWN new prerequisite, Priest, hasn't been unlocked
+     yet; historical stars on a class don't grandfather it past the new chain. Temp code fully
+     reverted (`git diff --stat Game1.cs` clean), scratch log deleted, clean build, plain boot-check,
+     and a full real-save-file diff all passed with zero unexpected differences (none expected, given
+     the read-only nature of everything this test touched).

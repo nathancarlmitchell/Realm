@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
@@ -18,18 +19,23 @@ namespace Realm.States
             public Rectangle BorderRect;
             public bool Hover;
 
-            // Account-wide Fame required to unlock this class — 0 means
-            // always unlocked (Wizard). Gated off FameSystem.Fame directly
-            // rather than a separate persisted flag: Fame only ever
-            // increases (see FameSystem.cs), so "has this much Fame ever
-            // been earned" and "is this permanently unlocked" are the same
-            // question — no new save state needed. A locked class can also
-            // never have contributed Fame that unlocked something further
-            // down the chain except through itself once unlocked, since a
-            // class can't be played (and therefore can't earn Fame) before
-            // its own threshold is crossed.
-            public int RequiredFame;
-            public bool IsLocked => RequiredFame > 0 && FameSystem.Fame < RequiredFame;
+            // The class immediately before this one in the unlock chain
+            // (see slots list order below) — null for Wizard, the chain's
+            // starting class, which is always unlocked. Gated on that
+            // class's own permanent star record rather than a separate
+            // persisted flag: stars only ever increase (Player.ComputeStars
+            // is fed by HighScore, which itself only ever increases), so
+            // "has the previous class ever reached 3 stars" and "is this
+            // class permanently unlocked" are the same question — no new
+            // save state needed.
+            public Player.Class? PreviousClass;
+
+            // Refreshed each Update() from PreviousClass's own Stars below
+            // (0 and unused when PreviousClass is null) — cached here so
+            // IsLocked and the locked-preview text don't need to search
+            // the slots list again themselves.
+            public int PreviousClassStars;
+            public bool IsLocked;
 
             // Highest star rating (0-5) this class has ever achieved —
             // permanent, computed fresh each Update() from that class's
@@ -51,21 +57,17 @@ namespace Realm.States
             public bool ConfirmNoHover;
         }
 
-        // First pass at class-unlock thresholds — Wizard starts unlocked,
-        // Archer needs some real Fame invested in Wizard, Knight needs
-        // (necessarily, per RequiredFame's own doc comment above) even more
-        // invested in Wizard and/or Archer. Round numbers chosen as a
-        // reasonable starting point, easy to retune later once there's real
-        // playtesting data on how fast Fame actually accumulates.
-        private const int ArcherFameRequirement = 1000;
-        private const int KnightFameRequirement = 3000;
-        private const int PriestFameRequirement = 5000;
+        // Unlock chain: Wizard starts unlocked; each class after it needs
+        // this many stars earned in the class immediately to its left below
+        // (Wizard -> Priest -> Archer -> Knight) — see Slot.PreviousClass.
+        private const int RequiredStarsPerUnlock = 3;
 
         private const int PortraitSize = 80;
         private const int BorderPadding = 14;
 
-        // Four evenly-spaced slots (Wizard/Archer/Knight/Priest), 150px
-        // between adjacent centers — replaces the old 3-slot layout's single
+        // Four evenly-spaced slots (Wizard/Priest/Archer/Knight, left to
+        // right — the same order as the unlock chain above), 150px between
+        // adjacent centers — replaces the old 3-slot layout's single
         // SlotOffsetFromCenter (195, dead-center + two flanking slots), which
         // has no even-count equivalent. Outer is the two end slots'
         // distance from center, Inner the two middle slots'.
@@ -118,43 +120,43 @@ namespace Realm.States
                         PortraitSize,
                         PortraitSize
                     ),
-                    RequiredFame = 0,
-                },
-                new Slot
-                {
-                    PlayerClass = Player.Class.Archer,
-                    Portrait = Art.Archer,
-                    PortraitRect = new Rectangle(
-                        CenterWidth - SlotOffsetFromCenterInner - PortraitSize / 2,
-                        y,
-                        PortraitSize,
-                        PortraitSize
-                    ),
-                    RequiredFame = ArcherFameRequirement,
-                },
-                new Slot
-                {
-                    PlayerClass = Player.Class.Knight,
-                    Portrait = Art.Knight,
-                    PortraitRect = new Rectangle(
-                        CenterWidth + SlotOffsetFromCenterInner - PortraitSize / 2,
-                        y,
-                        PortraitSize,
-                        PortraitSize
-                    ),
-                    RequiredFame = KnightFameRequirement,
+                    PreviousClass = null,
                 },
                 new Slot
                 {
                     PlayerClass = Player.Class.Priest,
                     Portrait = Art.Priest,
                     PortraitRect = new Rectangle(
+                        CenterWidth - SlotOffsetFromCenterInner - PortraitSize / 2,
+                        y,
+                        PortraitSize,
+                        PortraitSize
+                    ),
+                    PreviousClass = Player.Class.Wizard,
+                },
+                new Slot
+                {
+                    PlayerClass = Player.Class.Archer,
+                    Portrait = Art.Archer,
+                    PortraitRect = new Rectangle(
+                        CenterWidth + SlotOffsetFromCenterInner - PortraitSize / 2,
+                        y,
+                        PortraitSize,
+                        PortraitSize
+                    ),
+                    PreviousClass = Player.Class.Priest,
+                },
+                new Slot
+                {
+                    PlayerClass = Player.Class.Knight,
+                    Portrait = Art.Knight,
+                    PortraitRect = new Rectangle(
                         CenterWidth + SlotOffsetFromCenterOuter - PortraitSize / 2,
                         y,
                         PortraitSize,
                         PortraitSize
                     ),
-                    RequiredFame = PriestFameRequirement,
+                    PreviousClass = Player.Class.Archer,
                 },
             ];
 
@@ -266,15 +268,35 @@ namespace Realm.States
                 return;
             }
 
+            // Every slot's Stars (and HasSave) needs to be known before the
+            // lock check below can run — a locked slot's IsLocked reads the
+            // PREVIOUS slot's Stars, which must already reflect this frame's
+            // save data by then, not a stale value from before this loop.
             foreach (var slot in slots)
             {
-                slot.Hover = slot.BorderRect.Intersects(Input.MouseBounds);
-
                 // One read regardless of lock state — the star rating is a
                 // permanent record shown either way (see Slot.Stars), unlike
                 // HasSave/delete, which only matter for a playable slot.
                 PlayerData saved = Util.PeekPlayerData(slot.PlayerClass);
                 slot.Stars = Player.ComputeStars(saved?.HighScore ?? 0);
+                slot.HasSave = HasDeletableProgress(saved);
+            }
+
+            foreach (var slot in slots)
+            {
+                slot.Hover = slot.BorderRect.Intersects(Input.MouseBounds);
+
+                if (slot.PreviousClass.HasValue)
+                {
+                    slot.PreviousClassStars = slots
+                        .Single(s => s.PlayerClass == slot.PreviousClass.Value)
+                        .Stars;
+                    slot.IsLocked = slot.PreviousClassStars < RequiredStarsPerUnlock;
+                }
+                else
+                {
+                    slot.IsLocked = false;
+                }
 
                 if (slot.IsLocked)
                 {
@@ -287,7 +309,6 @@ namespace Realm.States
                     continue;
                 }
 
-                slot.HasSave = HasDeletableProgress(saved);
                 UpdateDeleteControls(slot);
 
                 if (slot.Hover && Input.GetMouseClick())
@@ -623,11 +644,13 @@ namespace Realm.States
         }
 
         // Shown instead of DrawPreview() while hovering a locked slot — how
-        // much more Fame is needed, rather than stats for a class that's
-        // never been playable yet.
+        // many more stars are needed in the previous class, rather than
+        // stats for a class that's never been playable yet.
         private void DrawLockedPreview(SpriteBatch spriteBatch, Slot slot)
         {
-            string text = $"Requires {slot.RequiredFame} Fame\n(You have {FameSystem.Fame})";
+            string text =
+                $"Requires {RequiredStarsPerUnlock} Stars in {slot.PreviousClass}\n"
+                + $"(You have {slot.PreviousClassStars})";
 
             Vector2 size = Art.HudFont.MeasureString(text);
             Vector2 pos = new(
