@@ -5600,3 +5600,43 @@ date/time for those individually; don't treat their grouping as meaning they all
      work as intended. Reverted the temp code (`git diff --stat Game1.cs` clean), deleted the scratch
      PNGs/log, ran a final clean build + plain boot-check, and confirmed all real save files
      byte-identical to a pre-test backup.
+
+211. **Four gameplay tuning tweaks, all requested together**: enemies no longer collide with each
+     other, enemy spawning no longer factors in elapsed play time or the player's level, and enemies
+     no longer accelerate toward the player.
+     Enemy-enemy collision: `EntityManager.HandleCollisions()` had a dedicated O(n²) pass pushing
+     every overlapping enemy pair apart via `Enemy.HandleCollision()` (`Velocity += 10 * d /
+     (d.LengthSquared() + 1)`, `d` being the vector between them) — deleted that pass and the now-
+     unused `HandleCollision()` method outright; enemies can freely overlap now. Left the
+     player/projectile-vs-enemy collision passes in the same method untouched.
+     Time-passed spawn factor: `EnemySpawner.inverseSpawnChance` was a static field that decayed
+     0.005/tick from 60 down to a floor of 20 for as long as a Realm instance ran, blended via
+     `MathHelper.Lerp` against a separate distance-from-entry factor to set the wave spawn cooldown.
+     Removed the field and its decay entirely, replacing it with a fixed `BaseInverseSpawnChance`
+     (60) constant — the distance-based half of that same blend (denser spawns farther from where
+     the player entered) was left alone since only the time factor was asked to go.
+     Player-level spawn gating: `BasicEnemyPool`'s per-entry `requiredLevel` (Snake unlocked at 1,
+     Brute at 8, etc.) gated `SpawnWave()`'s wave composition — removed the field from the tuple and
+     the `Player.Instance.Level >= requiredLevel` check entirely, so every basic enemy type is
+     available from Level 1 (biome filtering is untouched — still the only remaining gate on which
+     types can spawn in a given ring). Also dropped the `Player.Instance.Level * 50` reduction from
+     the independent SpriteGod roll (was `rand.Next(1500 - Level * 50) == 0`, now a fixed
+     `rand.Next(1500) == 0`), since that too scaled spawn frequency by level.
+     Enemies chasing the player: `Enemy.FollowPlayer()` — the shared coroutine every chasing enemy
+     type opts into via `AddBehaviour(enemy.FollowPlayer(...))` in its factory (Brute, Seeker,
+     Pirate, etc.) — accelerated unconditionally toward `Player.Instance.Position` every tick, with
+     no range gate to begin with. Emptied it to a no-op `while (true) yield return 0;` loop rather
+     than touching each factory, so every current and future user of this behaviour stops chasing
+     with a single change; `FleePlayer()` and the non-player-directed wandering coroutines
+     (`MoveSnake`/`MoveTethered`/`MoveRandomly`) are unrelated code paths and were left alone.
+     Verified via a temporary `Game1.StartGame()` test: spawned two enemies at the exact same
+     position and ran 10 `EntityManager.Update()` ticks, confirming their distance stayed exactly 0
+     (no separating pushback) and that `Enemy.HandleCollision` no longer exists via reflection;
+     confirmed `EnemySpawner.inverseSpawnChance` no longer exists via reflection; set
+     `Player.Instance.Level` to 1 and invoked `SpawnWave()` 200 times via reflection, confirming a
+     PointValue-120 enemy (Brute, previously locked until Level 8) still spawned, then restored the
+     real Level immediately after; spawned a Seeker 2828 units from the player and ran 60 update
+     ticks, confirming it moved 0 units and its distance to the player was unchanged afterward.
+     Reverted the temp code (`git diff --stat Game1.cs` clean), deleted the scratch log, ran a final
+     clean build + plain boot-check, and confirmed all real save files byte-identical to a pre-test
+     backup.

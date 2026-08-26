@@ -264,12 +264,6 @@ namespace Realm
             DrawDebuffIndicators(spriteBatch);
         }
 
-        public void HandleCollision(Enemy other)
-        {
-            var d = Position - other.Position;
-            Velocity += 10 * d / (d.LengthSquared() + 1);
-        }
-
         public void WasShot(int damage, bool ignoresDefense = false)
         {
             if (Invulnerable)
@@ -540,23 +534,15 @@ namespace Realm
 
         #region Movement Behaviors
 
+        // Disabled — enemies using this behaviour (Seeker, Brute, Limon,
+        // etc. via AddBehaviour(enemy.FollowPlayer(...)) in their factories)
+        // no longer accelerate toward the player regardless of position.
+        // Left as a no-op coroutine rather than removed so every call site
+        // that adds it as a behaviour still compiles unchanged.
         protected IEnumerable<int> FollowPlayer(float acceleration = 0.5f)
         {
             while (true)
             {
-                // ScaleTo() divides by the vector's own Length() — a zero
-                // vector (enemy and player at the exact same Position, down
-                // to the float) would divide by zero and permanently poison
-                // Velocity/Position with NaN from that tick on. Found via
-                // BeachedBuccaneer.cs's scripted test spawning an enemy
-                // directly on top of the player; not reachable through
-                // normal movement/spawning, but a one-line guard costs
-                // nothing for every other FollowPlayer() user (Seeker,
-                // Brute, Limon) since it's a no-op unless the vector is
-                // already exactly zero.
-                Vector2 toPlayer = Player.Instance.Position - Position;
-                if (toPlayer != Vector2.Zero)
-                    Velocity += toPlayer.ScaleTo(acceleration);
                 yield return 0;
             }
         }

@@ -9,7 +9,6 @@ namespace Realm
     static class EnemySpawner
     {
         static Random rand = new Random();
-        static float inverseSpawnChance = 60;
 
         // Where the player entered the current Realm instance from the Nexus
         // (RealmState's constructor captures Player.Instance.Position at
@@ -26,45 +25,41 @@ namespace Realm
         public static Vector2 EntryPosition => entryPosition;
 
         // Distance-based spawn density: the farther the player wanders from
-        // where they entered, the denser spawns get, on top of the existing
-        // time-based ramp below. MaxDistanceForFullDensity is roughly a
-        // minute of sustained walking (Speed-derived Velocity is ~5 units/
-        // frame at a mid-range Speed stat, i.e. ~300 units/sec at 60fps) —
-        // tunable, not derived from anything more precise.
+        // where they entered, the denser spawns get. MaxDistanceForFullDensity
+        // is roughly a minute of sustained walking (Speed-derived Velocity is
+        // ~5 units/frame at a mid-range Speed stat, i.e. ~300 units/sec at
+        // 60fps) — tunable, not derived from anything more precise.
+        // BaseInverseSpawnChance is what the density blends FROM (near
+        // entryPosition) down to MinDistanceInverseSpawnChance (far from
+        // entryPosition) — previously this itself decayed over play time
+        // (an elapsed-time-based ramp, independent of distance), but that
+        // time-based ramp was removed; it's now a fixed constant.
         const float MaxDistanceForFullDensity = 20000f;
+        const float BaseInverseSpawnChance = 60f;
         const float MinDistanceInverseSpawnChance = 15f;
 
-        // Level-gated pool for the basic enemy types — each only spawns
-        // once the player has reached its required level, ordered by
-        // toughness (PointValue: Snake 2, Slime 4, Seeker 7, Wanderer 15,
-        // Brute 120). Snake is always available from Level 1 so there's
-        // never a dead stretch with nothing to fight; the rest widen the
-        // mix as the player grows into the run. Levels are a starting
-        // guess, easy to retune. BigSnake is deliberately NOT in this pool
-        // — see BigSnakePackInterval/SpawnBigSnakePack below, its own rarer
+        // Pool for the basic enemy types, ordered by toughness (PointValue:
+        // Snake 2, Slime 4, Seeker 7, Wanderer 15, Brute 120). Every type
+        // here is available from the start — no player-level requirement.
+        // BigSnake is deliberately NOT in this pool — see
+        // BigSnakePackInterval/SpawnBigSnakePack below, its own rarer
         // mini-boss-style spawn instead of blending into the regular wave.
         //
         // Name is cross-referenced against the current biome's own
-        // BiomeData.EnemyNames (see GetCurrentBiome() below) — a second,
-        // independent gate on top of the level requirement, not a
-        // replacement for it. A biome doesn't grant early access to a
-        // still-level-locked type; it only narrows an already-unlocked
-        // type down to the rings it thematically belongs in.
-        private static readonly (
-            string name,
-            int requiredLevel,
-            Func<Vector2, Enemy> factory
-        )[] BasicEnemyPool =
+        // BiomeData.EnemyNames (see GetCurrentBiome() below), which narrows
+        // this pool down to the types that belong in the ring the player is
+        // currently standing in.
+        private static readonly (string name, Func<Vector2, Enemy> factory)[] BasicEnemyPool =
         [
-            ("Snake", 1, Enemy.CreateSnake),
-            ("Slime", 2, Enemy.CreateSlime),
-            ("Seeker", 3, Enemy.CreateSeeker),
-            ("Wanderer", 6, Enemy.CreateWanderer),
-            ("Brute", 8, Enemy.CreateBrute),
-            ("Pirate", 1, Enemy.CreatePirate),
-            ("Bandit", 1, position => new Bandit(position)),
-            ("Piratess", 1, position => new Piratess(position)),
-            ("Sand Devil", 1, position => new SandDevil(position)),
+            ("Snake", Enemy.CreateSnake),
+            ("Slime", Enemy.CreateSlime),
+            ("Seeker", Enemy.CreateSeeker),
+            ("Wanderer", Enemy.CreateWanderer),
+            ("Brute", Enemy.CreateBrute),
+            ("Pirate", Enemy.CreatePirate),
+            ("Bandit", position => new Bandit(position)),
+            ("Piratess", position => new Piratess(position)),
+            ("Sand Devil", position => new SandDevil(position)),
         ];
 
         // The BiomeData ring (Data/BiomeData.json, sorted ascending by
@@ -179,7 +174,12 @@ namespace Realm
                 );
                 int effectiveInverseSpawnChance = Math.Max(
                     1,
-                    (int)MathHelper.Lerp(inverseSpawnChance, MinDistanceInverseSpawnChance, distanceFactor)
+                    (int)
+                        MathHelper.Lerp(
+                            BaseInverseSpawnChance,
+                            MinDistanceInverseSpawnChance,
+                            distanceFactor
+                        )
                 );
 
                 if (waveCooldownRemaining <= 0)
@@ -290,36 +290,31 @@ namespace Realm
                     littlePinkJellyPackCooldownRemaining--;
                 }
 
-                // SpriteGod stays its own independent, level-scaling roll —
-                // a distinct "occasional special threat" rather than part
-                // of the regular basic-enemy wave pattern above.
-                if (rand.Next((int)1500 - Player.Instance.Level * 50) == 0)
+                // SpriteGod stays its own independent roll — a distinct
+                // "occasional special threat" rather than part of the
+                // regular basic-enemy wave pattern above. No longer scales
+                // with player level.
+                if (rand.Next(1500) == 0)
                 {
                     EntityManager.Add(Enemy.CreateSpriteGod(GetSpawnPosition()));
                 }
             }
-
-            // slowly increase the spawn rate as time progresses
-            if (inverseSpawnChance > 20)
-                inverseSpawnChance -= 0.005f;
         }
 
         // Spawns a small (2-4) pack of enemies clustered around one shared
-        // anchor point, drawn from whichever basic types are currently
-        // level-unlocked AND belong to the biome ring the player is
-        // currently standing in (GetCurrentBiome() above) — reads as a
-        // group arriving together rather than scattered independently
-        // around the player.
+        // anchor point, drawn from whichever basic types belong to the
+        // biome ring the player is currently standing in (GetCurrentBiome()
+        // above) — reads as a group arriving together rather than scattered
+        // independently around the player.
         private static void SpawnWave()
         {
             Data.BiomeData biome = GetCurrentBiome();
 
             List<Func<Vector2, Enemy>> unlocked = [];
-            foreach (var (name, requiredLevel, factory) in BasicEnemyPool)
+            foreach (var (name, factory) in BasicEnemyPool)
             {
-                bool levelUnlocked = Player.Instance.Level >= requiredLevel;
                 bool biomeAllows = biome == null || biome.EnemyNames.Contains(name);
-                if (levelUnlocked && biomeAllows)
+                if (biomeAllows)
                     unlocked.Add(factory);
             }
 
@@ -440,7 +435,6 @@ namespace Realm
 
         public static void Reset()
         {
-            inverseSpawnChance = 60;
             waveCooldownRemaining = 0;
             bigSnakePackCooldownRemaining = BigSnakePackInterval;
         }

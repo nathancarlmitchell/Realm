@@ -408,17 +408,6 @@ namespace Realm
 
         static void HandleCollisions()
         {
-            // handle collisions between enemies
-            for (int i = 0; i < enemies.Count; i++)
-            for (int j = i + 1; j < enemies.Count; j++)
-            {
-                if (IsColliding(enemies[i], enemies[j]))
-                {
-                    enemies[i].HandleCollision(enemies[j]);
-                    enemies[j].HandleCollision(enemies[i]);
-                }
-            }
-
             // handle collisions between player projectiles and enemies
             for (int i = 0; i < enemies.Count; i++)
             for (int j = 0; j < bullets.Count; j++)
