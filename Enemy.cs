@@ -616,7 +616,11 @@ namespace Realm
             }
         }
 
-        IEnumerable<int> MoveRandomly()
+        // Was private (only CreateWanderer used it, from within this same
+        // class) — widened to protected the moment a real subclass needed
+        // it directly: SandDevil.cs's "wander erratically" when it gets too
+        // close to the player during its Chase phase.
+        protected IEnumerable<int> MoveRandomly()
         {
             float direction = rand.NextFloat(0, MathHelper.TwoPi);
             while (true)
@@ -765,6 +769,67 @@ namespace Realm
                     EntityManager.Add(
                         new EnemyProjectile(Position, vel, projectileImage) { Damage = damage }
                     );
+                }
+
+                if (cooldownFrames.HasValue)
+                {
+                    if (localCooldownRemaining > 0)
+                        localCooldownRemaining--;
+                }
+                else if (projectileCooldownRemaining > 0)
+                {
+                    projectileCooldownRemaining--;
+                }
+
+                yield return 0;
+            }
+        }
+
+        // Same range/cooldown-override shape as ShootIfInRange above, but
+        // fires `shots` projectiles in one volley, evenly spaced
+        // `angleStep` apart and centered on the aim direction — e.g. 2
+        // shots at a small angleStep read as a narrow "V", while N shots at
+        // angleStep = 360/N read as a full symmetric star regardless of aim
+        // (the two are the same formula; a full-circle step just happens to
+        // make the centering irrelevant). First real use: Little Blue
+        // Jelly's V-shaped shot and Little Green Jelly's 5-point star.
+        protected IEnumerable<int> FanShot(
+            float range,
+            int damage,
+            float projectileSpeed,
+            int shots,
+            float angleStep,
+            Texture2D projectileImage = null,
+            int? cooldownFrames = null
+        )
+        {
+            float rangeSquared = range * range;
+            int localCooldownRemaining = 0;
+            while (true)
+            {
+                bool ready = cooldownFrames.HasValue
+                    ? localCooldownRemaining <= 0
+                    : projectileCooldownRemaining <= 0;
+
+                var aim = Player.Instance.Position - Position;
+                if (aim.LengthSquared() > 0 && aim.LengthSquared() <= rangeSquared && ready)
+                {
+                    if (cooldownFrames.HasValue)
+                        localCooldownRemaining = cooldownFrames.Value;
+                    else
+                        projectileCooldownRemaining = projectileCooldown - (1 * 1);
+
+                    float aimAngle = aim.ToAngle();
+                    float randomSpread = rand.NextFloat(-0.1f, 0.1f) + rand.NextFloat(-0.1f, 0.1f);
+                    float centerOffset = (shots - 1) / 2f;
+                    for (int i = 0; i < shots; i++)
+                    {
+                        float shotAngle = aimAngle + randomSpread + (i - centerOffset) * angleStep;
+                        Vector2 vel = Extensions.FromPolar(shotAngle, projectileSpeed);
+                        EntityManager.Add(
+                            new EnemyProjectile(Position, vel, projectileImage) { Damage = damage }
+                        );
+                    }
                 }
 
                 if (cooldownFrames.HasValue)

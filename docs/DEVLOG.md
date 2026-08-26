@@ -4640,3 +4640,97 @@ date/time for those individually; don't treat their grouping as meaning they all
      values genuinely matched the backup field-by-field before concluding it was the same quirk and
      not a real regression, rather than trusting the diff's truncated first line. Clean build and a
      plain boot-check both passed.
+
+185. **Added Beach's five "Regular Enemies"** — Little Blue/Green/Pink Jelly, Piratess, and Sand
+     Devil — the largest single batch this biome has gotten, and the first labeled "Regular Enemies"
+     rather than mini-boss/escort pairs. This is also the last of the original 16-sprite Beach art
+     drop except Greedy Crab (see [BACKLOG.md](BACKLOG.md)).
+
+     The three Jellies introduce a genuinely new spawn shape: "spawns in groups of 2-7... Mean 5,
+     Std. Deviation 1" — a same-type cluster sized from a real Gaussian, not the fixed escort counts
+     or uniform 2-4 mixed waves every earlier pack used. `System.Random` has no built-in normal
+     sampler, so `EnemySpawner.SampleGroupSize()` implements one directly (Box-Muller transform),
+     rounded and clamped to the spec's own stated [2, 7]. Verified with 2000 samples rather than a
+     handful — a statistical claim like "mean close to 5" needs a large enough sample to mean
+     anything; a small one could pass or fail on pure luck either way. All three Jellies share one
+     `EnemySpawner.SpawnGroupPack(factory)` helper (their own dedicated pack interval each, gated to
+     Beach) instead of three duplicated pack methods — a second and third real consumer of the exact
+     same shape justified generalizing it immediately rather than writing it once, then twice, then
+     refactoring on the third (this session's usual bar is "generalize on the second real need";
+     three arriving in the same message made that moot). Deliberately not part of
+     `EnemySpawner.BasicEnemyPool` — "spawns in groups" already fully describes how each one ever
+     appears, so adding them there too would double up two different spawn mechanisms for the same
+     enemy.
+
+     Little Blue Jelly's "V-shape pattern" (2 shots, Angle 10°) and Little Green Jelly's "star shape"
+     (5 shots, Angle 72°) turned out to be the same underlying formula: a new `Enemy.FanShot()`
+     coroutine (mirroring `ShootIfInRange()`'s range/cooldown-override shape, generalized the same
+     deliberate way as the Jelly pack helper) fires `shots` projectiles spaced `angleStep` apart,
+     centered on the aim direction. For 2 shots at a small step that reads as a narrow V; for 5 shots
+     at exactly 360°/5 = 72°, centering becomes irrelevant and the same formula produces a full,
+     aim-independent 5-point star — confirmed by checking that all 5 fired angles are exact multiples
+     of 72° apart from each other, not by checking any specific rotation. Little Pink Jelly has no
+     Shots/Angle at all (a single shot), so it just reuses `ShootIfInRange()` directly rather than
+     calling `FanShot()` with `shots: 1`. All three Jellies' "Aim: 0.2" matches the existing
+     `rand.NextFloat(-0.1f, 0.1f) + rand.NextFloat(-0.1f, 0.1f)` jitter already baked into every
+     shot-firing coroutine in this codebase — read as confirming/reusing that exact existing spread
+     rather than a new tunable parameter. None of the three states an explicit Wander Speed that maps
+     cleanly onto `MoveTethered()`'s own accel-per-tick scale (0.05-0.2 for every "lazy"/idle wanderer
+     this session) — Green/Pink's stated "Wander Speed: 4" would be 20-40x that if taken as a literal
+     conversion input, so all three instead reuse the same slow-drift value established by
+     BeachedBuccaneer/SandsmanKing's own pre-aggro wander; flagged as an interpretation call, not a
+     silent substitution.
+
+     Piratess and Sand Devil, by contrast, are ordinary `BasicEnemyPool` entries (added to
+     `Data/BiomeData.json`'s Beach roster alongside Pirate/Bandit) — no grouping, no escort tie.
+     Piratess is Pirate's near-twin (HP 6 vs. 5, otherwise identical stats) but got its own dedicated
+     class file rather than a bare `Enemy.CreateX()` factory, matching this session's more recent
+     convention (Bandit.cs, LittleScorpion.cs) instead of Pirate's older one; unlike the original
+     `CreatePirate()`, its projectile speed is properly tiles/sec-converted rather than left as a raw
+     px/tick value, and it explicitly uses `Art.SwordSlash` (the spec's own stated aesthetic) instead
+     of `CreatePirate()`'s implicit default projectile.
+
+     Sand Devil is the most mechanically involved "regular" enemy yet — a real two-phase cycle
+     (Chase/Circle) despite being basic-tier, a pattern every other use of this session was a
+     mini-boss. Chase pursues the player via `FollowPlayer()` while firing, but swaps to
+     `MoveRandomly()` (widened from `private` to `protected` — previously only `CreateWanderer()`
+     used it internally) instead of continuing to close in once within 2 tiles ("it will wander
+     erratically if it moves within 2 tiles of the player") — a live per-tick check, not a one-time
+     latch, so it can resume a real chase if the player backs away again mid-phase. After 3 seconds it
+     switches to Circle, which repositions directly onto a fixed 3-tile ring around the player each
+     tick (same direct-`Position`-overwrite technique as `SthenoPet.Orbit()`/`SandsmanArcher.Orbit()`)
+     rather than accelerating into place, so the transition into circling is immediate. Circle never
+     attacks — the spec's own description of it never mentions firing, reading as a pure
+     repositioning/breather window. Rotation direction and rate ("rotate clockwise for 3 seconds")
+     aren't numerically specified — confirmed that increasing angle reads as clockwise in this
+     engine's Y-down screen space by checking `Extensions.FromPolar()`'s plain cos/sin, then picked
+     one full lap over the 3-second phase as a clean, deliberate circle (not a slow creep or a
+     dizzying spin); both flagged as tunable judgment calls.
+
+     "Wavy shots" (a comment, no numbers) needed a genuinely new projectile behavior no existing class
+     had: `WavyProjectile.cs`, computing Position directly each tick from distance traveled plus a
+     perpendicular sine offset (rather than accumulating a wave-modulated Velocity, which would trace
+     a driftier S-curve instead of a clean sine wave), with `Velocity` zeroed before calling
+     `base.Update()` so its own `Position += Velocity` doesn't double-move it on top of the
+     hand-computed position — `EnemyProjectile`'s shared duration/off-screen-expiry bookkeeping still
+     runs unmodified underneath. Kept as its own dedicated subclass (matching `GrenadeProjectile`'s
+     precedent) rather than adding wave parameters to `EnemyProjectile` itself, since this is the only
+     enemy that needs it so far.
+
+     Verified via 44 scripted checks: all five enemies' stats; Blue Jelly's out-of-range gate and its
+     V-shot's exact 2-projectile count/damage/10°-angle-gap; Green Jelly's out-of-range gate and its
+     star's exact 5-projectile count/damage, confirmed all 72° apart from each other; Pink Jelly's
+     out-of-range gate and single-shot damage; Piratess chasing (closing distance over time),
+     out-of-range gate, and shot damage; Sand Devil's phase starting state, that it closes distance
+     while chasing, that it fires a real `WavyProjectile` with the right damage, that the projectile's
+     path actually deviates from a straight line over time (not just that it was constructed), that
+     forcing Circle phase (via reflection, skipping the real 3-second wait) holds it at ~3 tiles from
+     the player, and that it doesn't fire at all during Circle; `SampleGroupSize()`'s sample mean and
+     range bounds over 2000 draws; the real `EnemySpawner.Update()` spawning a 2-7-sized Little Blue
+     Jelly group while in Beach and none while in Forest; and Piratess/Sand Devil actually appearing
+     across 200 real ambient wave rolls. All 44 checks passed cleanly on the first run and stayed
+     stable across 3 repeats — the camera-centering, far-away-player, and per-tick-re-anchoring
+     lessons from entries 183-184 applied proactively from the start this time, rather than discovered
+     mid-test again. A render confirmed all five new sprites draw correctly together. Real save files
+     confirmed byte-identical before and after (no restore needed this round). Clean build and a plain
+     boot-check both passed.

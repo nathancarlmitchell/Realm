@@ -7,7 +7,7 @@
         "TintR": 230,
         "TintG": 210,
         "TintB": 150,
-        "EnemyNames": ["Pirate", "Bandit"]
+        "EnemyNames": ["Pirate", "Bandit", "Piratess", "Sand Devil"]
     },
     {
         "Name": "Forest",

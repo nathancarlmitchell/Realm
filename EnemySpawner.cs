@@ -63,6 +63,8 @@ namespace Realm
             ("Brute", 8, Enemy.CreateBrute),
             ("Pirate", 1, Enemy.CreatePirate),
             ("Bandit", 1, position => new Bandit(position)),
+            ("Piratess", 1, position => new Piratess(position)),
+            ("Sand Devil", 1, position => new SandDevil(position)),
         ];
 
         // The BiomeData ring (Data/BiomeData.json, sorted ascending by
@@ -131,6 +133,22 @@ namespace Realm
         // in the spec).
         private const int GiantCrabPackInterval = 3000; // ~50 seconds at 60fps
         private static int giantCrabPackCooldownRemaining = GiantCrabPackInterval;
+
+        // The three Little Jellies each spawn as their own same-type
+        // cluster ("spawns in groups of 2-7... Mean 5, Std. Deviation 1") —
+        // a genuinely different shape from every earlier pack above (no
+        // mini-boss, no escort, just a group of one type sampled from a
+        // normal distribution) and from SpawnWave() below (a small,
+        // randomly-mixed handful of different basic types). Gated to Beach
+        // like every other Beach-specific pack; not part of BasicEnemyPool
+        // since "spawns in groups" already fully describes how each one
+        // ever appears.
+        private const int LittleBlueJellyPackInterval = 1500; // ~25 seconds at 60fps
+        private static int littleBlueJellyPackCooldownRemaining = LittleBlueJellyPackInterval;
+        private const int LittleGreenJellyPackInterval = 1650; // ~27.5 seconds at 60fps
+        private static int littleGreenJellyPackCooldownRemaining = LittleGreenJellyPackInterval;
+        private const int LittlePinkJellyPackInterval = 1800; // ~30 seconds at 60fps
+        private static int littlePinkJellyPackCooldownRemaining = LittlePinkJellyPackInterval;
 
         // Wave/pack spawning: instead of each basic type independently
         // rolling a 1-in-N chance every frame (a steady trickle), a wave of
@@ -239,6 +257,39 @@ namespace Realm
                     giantCrabPackCooldownRemaining--;
                 }
 
+                if (littleBlueJellyPackCooldownRemaining <= 0)
+                {
+                    if (GetCurrentBiome()?.Name == "Beach")
+                        SpawnGroupPack(position => new LittleBlueJelly(position));
+                    littleBlueJellyPackCooldownRemaining = LittleBlueJellyPackInterval;
+                }
+                else
+                {
+                    littleBlueJellyPackCooldownRemaining--;
+                }
+
+                if (littleGreenJellyPackCooldownRemaining <= 0)
+                {
+                    if (GetCurrentBiome()?.Name == "Beach")
+                        SpawnGroupPack(position => new LittleGreenJelly(position));
+                    littleGreenJellyPackCooldownRemaining = LittleGreenJellyPackInterval;
+                }
+                else
+                {
+                    littleGreenJellyPackCooldownRemaining--;
+                }
+
+                if (littlePinkJellyPackCooldownRemaining <= 0)
+                {
+                    if (GetCurrentBiome()?.Name == "Beach")
+                        SpawnGroupPack(position => new LittlePinkJelly(position));
+                    littlePinkJellyPackCooldownRemaining = LittlePinkJellyPackInterval;
+                }
+                else
+                {
+                    littlePinkJellyPackCooldownRemaining--;
+                }
+
                 // SpriteGod stays its own independent, level-scaling roll —
                 // a distinct "occasional special threat" rather than part
                 // of the regular basic-enemy wave pattern above.
@@ -334,6 +385,36 @@ namespace Realm
                 Vector2 offset = new(rand.Next(-80, 81), rand.Next(-80, 81));
                 EntityManager.Add(new Bandit(anchor + offset));
             }
+        }
+
+        // A cluster of same-type enemies around one shared anchor point —
+        // same clustering technique as every SpawnXPack() above, but sized
+        // from a normal distribution instead of a fixed escort count. First
+        // real use: the three Little Jellies, all "spawns in groups of 2-7
+        // ... Mean 5, Std. Deviation 1."
+        private static void SpawnGroupPack(Func<Vector2, Enemy> factory)
+        {
+            Vector2 anchor = GetSpawnPosition();
+            int count = SampleGroupSize(mean: 5, stdDev: 1, min: 2, max: 7);
+            for (int i = 0; i < count; i++)
+            {
+                Vector2 offset = new(rand.Next(-80, 81), rand.Next(-80, 81));
+                EntityManager.Add(factory(anchor + offset));
+            }
+        }
+
+        // Box-Muller transform — System.Random has no built-in Gaussian
+        // sampler. Rounded to the nearest int and clamped to [min, max]
+        // (the spec's own stated 2-7 range), so the Mean/Std. Deviation
+        // numbers shape the distribution without ever producing an
+        // out-of-range or degenerate (0-enemy) group.
+        private static int SampleGroupSize(double mean, double stdDev, int min, int max)
+        {
+            double u1 = 1.0 - rand.NextDouble();
+            double u2 = rand.NextDouble();
+            double gaussian = Math.Sqrt(-2.0 * Math.Log(u1)) * Math.Sin(2.0 * Math.PI * u2);
+            int size = (int)Math.Round(mean + stdDev * gaussian);
+            return Math.Clamp(size, min, max);
         }
 
         private static Vector2 GetSpawnPosition()

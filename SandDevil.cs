@@ -1,0 +1,152 @@
+using System.Collections.Generic;
+using Microsoft.Xna.Framework;
+
+namespace Realm
+{
+    // A regular Beach wave enemy (BasicEnemyPool) with a two-phase movement
+    // cycle — unusual for a basic-tier enemy (that pattern's other uses this
+    // session were all mini-bosses), but nothing about its own stats/spawn
+    // implies a mini-boss tier, and the spec gives it no escort.
+    class SandDevil : Enemy
+    {
+        private enum Phase
+        {
+            Chase,
+            Circle,
+        }
+
+        private const int ChasePhaseDuration = 180; // 3s at 60fps
+        private const int CirclePhaseDuration = 180; // 3s at 60fps
+        private const float CloseThreshold = 2f * 32f; // 2 tiles
+        private const float CircleRadius = 3f * 32f; // 3 tiles
+
+        // Not given a specific rate in the spec ("rotate clockwise for 3
+        // seconds") — one full lap over the 3-second Circle phase reads as
+        // a clean, deliberate "circle," not a slow creep or a dizzying
+        // spin. Tunable. Increasing angle = clockwise in this engine's
+        // Y-down screen space (confirmed against Extensions.FromPolar's
+        // plain cos/sin — matches every other "increasing angle" rotation
+        // already in the codebase, e.g. LimonTheSpriteGoddess's sweeps).
+        private const float CircleAngularSpeed = MathHelper.TwoPi / CirclePhaseDuration;
+
+        private const float AttackRange = 9.75f * 32f;
+        private const int AttackDamage = 10;
+        private const float ProjectileSpeed = 6.5f * 32f / 60f; // 6.5 tiles/sec
+
+        // No Cooldown given for the spinner attack at all — falls back to
+        // the same 250-tick default Enemy's own shared Shoot()/Spray()/
+        // ShootIfInRange() already use elsewhere. Can't just call
+        // ShootIfInRange() itself here since it always constructs a plain
+        // EnemyProjectile, not the WavyProjectile this attack needs.
+        private const int AttackCooldown = 250;
+
+        private Phase currentPhase = Phase.Chase;
+        private int phaseTimer = ChasePhaseDuration;
+        private float circleAngle;
+        private int attackCooldownRemaining = 0;
+
+        public SandDevil(Vector2 position)
+            : base(Art.SandDevil, position)
+        {
+            health = 100;
+            healthMax = 100;
+            Defense = 1;
+            PointValue = 8;
+
+            AddBehaviour(PhaseWatcher());
+            AddAttackBehaviour(SpinnerAttack());
+        }
+
+        // Chase: closes in on the player, but swaps to erratic wandering
+        // instead once within CloseThreshold ("it will wander erratically
+        // if it moves within 2 tiles of the player") — a continuous check,
+        // not a one-time latch, so it can dip back into a real chase if the
+        // player creates distance again mid-phase. After
+        // ChasePhaseDuration, switches to Circle, which repositions
+        // directly onto a fixed-radius ring around the player (same
+        // technique as SthenoPet.Orbit()/SandsmanArcher.Orbit()) instead of
+        // accelerating there, so the transition into circling is immediate
+        // rather than a slow drift into position.
+        private IEnumerable<int> PhaseWatcher()
+        {
+            var chase = FollowPlayer(0.15f).GetEnumerator();
+            var erratic = MoveRandomly().GetEnumerator();
+            while (true)
+            {
+                if (currentPhase == Phase.Chase)
+                {
+                    bool tooClose =
+                        Vector2.DistanceSquared(Position, Player.Instance.Position)
+                        <= CloseThreshold * CloseThreshold;
+                    if (tooClose)
+                        erratic.MoveNext();
+                    else
+                        chase.MoveNext();
+
+                    if (phaseTimer <= 0)
+                    {
+                        currentPhase = Phase.Circle;
+                        phaseTimer = CirclePhaseDuration;
+                        circleAngle = (Position - Player.Instance.Position).ToAngle();
+                    }
+                    else
+                    {
+                        phaseTimer--;
+                    }
+                }
+                else
+                {
+                    circleAngle = MathHelper.WrapAngle(circleAngle + CircleAngularSpeed);
+                    Position = Player.Instance.Position + Extensions.FromPolar(circleAngle, CircleRadius);
+
+                    if (phaseTimer <= 0)
+                    {
+                        currentPhase = Phase.Chase;
+                        phaseTimer = ChasePhaseDuration;
+                    }
+                    else
+                    {
+                        phaseTimer--;
+                    }
+                }
+
+                yield return 0;
+            }
+        }
+
+        // Only fires during Chase — the spec's Circle Phase description
+        // never mentions attacking, reading as a pure repositioning/breather
+        // window instead.
+        private IEnumerable<int> SpinnerAttack()
+        {
+            while (true)
+            {
+                if (currentPhase == Phase.Chase)
+                {
+                    var aim = Player.Instance.Position - Position;
+                    if (
+                        aim.LengthSquared() > 0
+                        && aim.LengthSquared() <= AttackRange * AttackRange
+                        && attackCooldownRemaining <= 0
+                    )
+                    {
+                        attackCooldownRemaining = AttackCooldown;
+                        float aimAngle = aim.ToAngle();
+                        Vector2 vel = Extensions.FromPolar(aimAngle, ProjectileSpeed);
+                        EntityManager.Add(
+                            new WavyProjectile(Position, vel, Art.DarkGraySpinner)
+                            {
+                                Damage = AttackDamage,
+                            }
+                        );
+                    }
+
+                    if (attackCooldownRemaining > 0)
+                        attackCooldownRemaining--;
+                }
+
+                yield return 0;
+            }
+        }
+    }
+}

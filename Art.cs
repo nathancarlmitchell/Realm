@@ -50,6 +50,13 @@ namespace Realm
         public static Texture2D GiantCrab { get; private set; }
         public static Texture2D Beam { get; private set; }
         public static Texture2D BlueBolt { get; private set; }
+        public static Texture2D LittleBlueJelly { get; private set; }
+        public static Texture2D LittleGreenJelly { get; private set; }
+        public static Texture2D LittlePinkJelly { get; private set; }
+        public static Texture2D Piratess { get; private set; }
+        public static Texture2D SandDevil { get; private set; }
+        public static Texture2D BlueMissile { get; private set; }
+        public static Texture2D DarkGraySpinner { get; private set; }
         public static Texture2D WhiteBolt { get; private set; }
         public static Texture2D Wizard { get; private set; }
         public static Texture2D Archer { get; private set; }
@@ -259,6 +266,13 @@ namespace Realm
             GiantCrab = content.Load<Texture2D>("Biomes/Beach/Giant Crab");
             Beam = content.Load<Texture2D>("Projectiles/Beam");
             BlueBolt = content.Load<Texture2D>("Projectiles/Blue Bolt");
+            LittleBlueJelly = content.Load<Texture2D>("Biomes/Beach/Little Blue Jelly");
+            LittleGreenJelly = content.Load<Texture2D>("Biomes/Beach/Little Green Jelly");
+            LittlePinkJelly = content.Load<Texture2D>("Biomes/Beach/Little Pink Jelly");
+            Piratess = content.Load<Texture2D>("Biomes/Beach/Piratess");
+            SandDevil = content.Load<Texture2D>("Biomes/Beach/Sand Devil");
+            BlueMissile = content.Load<Texture2D>("Projectiles/Blue Missile");
+            DarkGraySpinner = content.Load<Texture2D>("Projectiles/Dark Gray Spinner");
             WhiteBolt = content.Load<Texture2D>("Projectiles/white_bolt");
 
             // Weapons.
