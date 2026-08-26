@@ -42,7 +42,7 @@ namespace Realm
 
         public static void DrawFame(SpriteBatch spriteBatch)
         {
-            SpriteFont font = Art.HudFont;
+            SpriteFont font = Art.RetroFont;
             string text = "Fame: " + FameSystem.Fame;
             Vector2 textSize = font.MeasureString(text);
 
@@ -55,7 +55,7 @@ namespace Realm
             spriteBatch.Draw(Art.FameIcon, iconRect, Color.White);
 
             int textX = FameOverlayX + FameIconSize + FameIconTextGap;
-            spriteBatch.DrawString(font, text, new Vector2(textX, FameOverlayY), Color.White);
+            Util.DrawOutlinedText(spriteBatch, font, text, new Vector2(textX, FameOverlayY), Color.White);
         }
 
         // Sidebar layout. All sections are stacked top-to-bottom at a fixed
@@ -85,37 +85,12 @@ namespace Realm
 
         private const int BarTextPadding = 6;
 
-        // A thin, fully-surrounding 1px black outline (not just a
-        // bottom-right drop shadow like DrawShadowedText elsewhere) — drawn
-        // as 8 offset copies underneath the real text, cheap enough at this
-        // scale and text length not to bother batching further.
-        private static readonly Vector2[] OutlineOffsets =
-        {
-            new(-1, -1), new(0, -1), new(1, -1),
-            new(-1, 0), new(1, 0),
-            new(-1, 1), new(0, 1), new(1, 1),
-        };
-
-        private static void DrawOutlinedText(
-            SpriteBatch spriteBatch,
-            SpriteFont font,
-            string text,
-            Vector2 pos,
-            Color color
-        )
-        {
-            foreach (Vector2 offset in OutlineOffsets)
-                spriteBatch.DrawString(font, text, pos + offset, Color.Black);
-            spriteBatch.DrawString(font, text, pos, color);
-        }
-
         // Draws a bar's label left-aligned and its numbers center-aligned,
         // both vertically centered within the bar itself — the shared shape
         // every XP/HP/MP/Fame bar below now uses instead of a separate text
-        // row above the bar. Uses Art.RetroFont (a bundled pixel-style font,
-        // for a "retro video game" HUD look — see Art.cs) plus a thin
-        // outline so the text stays readable sitting directly on top of a
-        // busy-colored bar fill.
+        // row above the bar. Uses Art.RetroFont (the game's base HUD font as
+        // of entry 202 — see Art.cs) via Util.DrawOutlinedText so the text
+        // stays readable sitting directly on top of a busy-colored bar fill.
         private static void DrawBarText(
             SpriteBatch spriteBatch,
             Rectangle barRect,
@@ -127,7 +102,7 @@ namespace Realm
             SpriteFont font = Art.RetroFont;
 
             Vector2 labelSize = font.MeasureString(label);
-            DrawOutlinedText(
+            Util.DrawOutlinedText(
                 spriteBatch,
                 font,
                 label,
@@ -136,7 +111,7 @@ namespace Realm
             );
 
             Vector2 numbersSize = font.MeasureString(numbers);
-            DrawOutlinedText(
+            Util.DrawOutlinedText(
                 spriteBatch,
                 font,
                 numbers,
@@ -256,12 +231,12 @@ namespace Realm
             // lets the values line up in a column regardless of each label's
             // own width, instead of drifting based on how long that line's
             // particular label happens to be.
-            float valueX = x + Art.HudFont.MeasureString("Level:").X + 4;
+            float valueX = x + Art.RetroFont.MeasureString("Level:").X + 4;
 
             void DrawStatLine(string label, string value, int rowY, Color color)
             {
-                spriteBatch.DrawString(Art.HudFont, label, new Vector2(x, rowY), color);
-                spriteBatch.DrawString(Art.HudFont, value, new Vector2(valueX, rowY), color);
+                Util.DrawOutlinedText(spriteBatch, Art.RetroFont, label, new Vector2(x, rowY), color);
+                Util.DrawOutlinedText(spriteBatch, Art.RetroFont, value, new Vector2(valueX, rowY), color);
             }
 
             DrawStatLine("Level:", Player.Instance.Level.ToString(), y, Color.Red);
@@ -361,8 +336,9 @@ namespace Realm
             // never collides with either when off.
             if (Player.Instance.AutoFireEnabled)
             {
-                spriteBatch.DrawString(
-                    Art.HudFont,
+                Util.DrawOutlinedText(
+                    spriteBatch,
+                    Art.RetroFont,
                     "Auto-Fire: ON",
                     new Vector2(x, y + 116),
                     Color.Cyan
@@ -516,13 +492,13 @@ namespace Realm
         // Art.CombatBadge — a placeholder tinted square before) that "lights
         // up" (gold vs dim gray tint) unconditionally — per the design doc's
         // own wording, only the border is behind the setting. The badge sits
-        // just below the minimap, right-aligned to the minimap's own right
-        // edge, rather than at the HP bar's right edge — entry 198 widened
-        // every bar to the sidebar's full padded width, which left the badge
-        // sitting on top of the HP bar's own corner instead of in open space.
+        // just above the Fame bar, left-aligned to match the bars below it
+        // (moved here from below the minimap per direct user request — that
+        // position itself was only a fix for entry 198 widening the HP bar
+        // out from under the badge's original spot).
         private const int CombatIconSize = 20;
         private const int CombatBorderThickness = 2;
-        private const int CombatIconY = MinimapPadding + MinimapSize + MinimapPadding;
+        private const int CombatIconY = XpBarY - SidebarBarGap - CombatIconSize;
 
         private static void DrawCombatIndicator(SpriteBatch spriteBatch)
         {
@@ -539,12 +515,7 @@ namespace Realm
                 DrawBorder(spriteBatch, barRect, Color.Yellow, CombatBorderThickness);
             }
 
-            Rectangle iconRect = new(
-                Game1.SidebarX + Game1.SidebarWidth - MinimapPadding - CombatIconSize,
-                CombatIconY,
-                CombatIconSize,
-                CombatIconSize
-            );
+            Rectangle iconRect = new(x, CombatIconY, CombatIconSize, CombatIconSize);
             Color iconColor = Player.Instance.InCombat ? Color.Gold : Color.DarkGray;
             spriteBatch.Draw(Art.CombatBadge, iconRect, iconColor);
 
@@ -562,17 +533,13 @@ namespace Realm
                     + "s";
                 Color textColor = Player.Instance.InCombat ? Color.Gold : Color.White;
 
-                // Anchored below-left of the icon now, rather than above it
-                // — with the icon moved up under the minimap, an
-                // above-anchored tooltip would overlap the minimap itself;
-                // there's open space below the icon instead, well clear of
-                // the Fame/HP/MP bars further down.
-                Vector2 textSize = Art.HudFont.MeasureString(text);
-                Vector2 tooltipPos = new(
-                    iconRect.X - textSize.X - 10,
-                    iconRect.Bottom + 10
-                );
-                Util.DrawTooltip(spriteBatch, Art.HudFont, text, tooltipPos, textColor);
+                // Anchored above-left of the icon — the badge sits well
+                // clear of the stat block above it, so there's open space
+                // for a tooltip to expand upward without overlapping
+                // anything.
+                Vector2 textSize = Art.RetroFont.MeasureString(text);
+                Vector2 tooltipPos = new(iconRect.X, iconRect.Y - textSize.Y - 10);
+                Util.DrawTooltip(spriteBatch, Art.RetroFont, text, tooltipPos, textColor);
             }
         }
 
@@ -674,7 +641,7 @@ namespace Realm
                 Player.Instance.Mana >= Player.Instance.AbilityCost
                     ? "Ability: Ready (Cost: " + Player.Instance.AbilityCost + ")"
                     : "Ability: " + Player.Instance.Mana + " / " + Player.Instance.AbilityCost;
-            spriteBatch.DrawString(Art.HudFont, abilityString, new Vector2(x, y), color);
+            Util.DrawOutlinedText(spriteBatch, Art.RetroFont, abilityString, new Vector2(x, y), color);
 
             // Clamped since Mana can exceed AbilityCost, unlike Health/Mana
             // which are capped at their Max.
@@ -749,31 +716,35 @@ namespace Realm
             float y = 256;
             Vector2 pos = new Vector2(x, y);
 
-            spriteBatch.DrawString(
-                Art.HudFont,
+            Util.DrawOutlinedText(
+                spriteBatch,
+                Art.RetroFont,
                 "EntityManager.Count: " + EntityManager.Count,
                 pos,
                 Color.White
             );
 
             pos = new Vector2(x, y + 16);
-            spriteBatch.DrawString(
-                Art.HudFont,
+            Util.DrawOutlinedText(
+                spriteBatch,
+                Art.RetroFont,
                 "Camera.Pos: " + Game1.Camera.Pos,
                 pos,
                 Color.White
             );
 
             pos = new Vector2(x, y + 32);
-            spriteBatch.DrawString(
-                Art.HudFont,
+            Util.DrawOutlinedText(
+                spriteBatch,
+                Art.RetroFont,
                 "Player.Pos: " + Player.Instance.Position,
                 pos,
                 Color.White
             );
             pos = new Vector2(x, y + 48);
-            spriteBatch.DrawString(
-                Art.HudFont,
+            Util.DrawOutlinedText(
+                spriteBatch,
+                Art.RetroFont,
                 "Game1.WorldBounds: " + Game1.WorldBounds,
                 pos,
                 Color.White
@@ -794,7 +765,7 @@ namespace Realm
             for (int i = 0; i < potionBonusLines.Length; i++)
             {
                 pos = new Vector2(x, y + 72 + (i * 16));
-                spriteBatch.DrawString(Art.HudFont, potionBonusLines[i], pos, Color.White);
+                Util.DrawOutlinedText(spriteBatch, Art.RetroFont, potionBonusLines[i], pos, Color.White);
             }
         }
 

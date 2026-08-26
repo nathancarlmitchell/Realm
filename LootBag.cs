@@ -246,13 +246,13 @@ namespace Realm
 
                         float width = 0f;
                         foreach (var line in lines)
-                            width = Math.Max(width, Art.HudFont.MeasureString(line.Text).X);
+                            width = Math.Max(width, Art.RetroFont.MeasureString(line.Text).X);
                         int textX = (int)(width / 2);
-                        int textY = (int)(lines.Count * Art.HudFont.LineSpacing / 2);
+                        int textY = (int)(lines.Count * Art.RetroFont.LineSpacing / 2);
 
                         Util.DrawTooltip(
                             spriteBatch,
-                            Art.HudFont,
+                            Art.RetroFont,
                             lines,
                             new Vector2(hoveredX - textX, hoveredY - hovered.image.Height - textY),
                             Color.Red,
@@ -262,12 +262,12 @@ namespace Realm
                     else
                     {
                         string text = hovered.Name;
-                        int textX = (int)(Art.HudFont.MeasureString(text).X / 2);
-                        int textY = (int)(Art.HudFont.MeasureString(text).Y / 2);
+                        int textX = (int)(Art.RetroFont.MeasureString(text).X / 2);
+                        int textY = (int)(Art.RetroFont.MeasureString(text).Y / 2);
 
                         Util.DrawTooltip(
                             spriteBatch,
-                            Art.HudFont,
+                            Art.RetroFont,
                             text,
                             new Vector2(hoveredX - textX, hoveredY - hovered.image.Height - textY),
                             Color.Red

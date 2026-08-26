@@ -644,7 +644,6 @@ namespace Realm
                         Position,
                         damageModified,
                         Microsoft.Xna.Framework.Color.Red,
-                        hasBlackBacking: true,
                         followsPlayer: true
                     )
                 );
@@ -1291,15 +1290,16 @@ namespace Realm
                 return;
 
             const string symbol = "+";
-            Vector2 symbolSize = Art.HudFont.MeasureString(symbol);
+            Vector2 symbolSize = Art.RetroFont.MeasureString(symbol);
             float totalWidth = symbolSize.X * activeColors.Count;
             float startX = Position.X - (totalWidth / 2f);
             float y = Position.Y - (Size.Y / 2f) - symbolSize.Y - 4;
 
             for (int i = 0; i < activeColors.Count; i++)
             {
-                spriteBatch.DrawString(
-                    Art.HudFont,
+                Util.DrawOutlinedText(
+                    spriteBatch,
+                    Art.RetroFont,
                     symbol,
                     new Vector2(startX + (i * symbolSize.X), y),
                     activeColors[i]

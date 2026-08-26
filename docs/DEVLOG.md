@@ -5309,3 +5309,58 @@ date/time for those individually; don't treat their grouping as meaning they all
      the four discarded comparison fonts. Temp code (both the font-comparison harness and the final
      verification render) fully reverted (`git diff --stat Game1.cs` clean), scratch PNGs deleted,
      clean build, plain boot-check, and a full real-save-file diff all passed with zero differences.
+
+202. **Moved the Vital Combat sword badge to just above the Fame bar (left-aligned), and made
+     Jersey10 (entry 201's `RetroFont`) the base font for the whole in-game HUD, tooltips, and
+     damage numbers/XP drops** — two more direct requests. Since "the game going forward" was
+     ambiguous about how far a base-font swap should reach (menus/buttons? Character Select? enemy
+     speech bubbles? portal/boss labels?), asked the user to pick a scope tier before touching
+     anything; they chose the narrowest of three — HUD + tooltips + damage numbers only, explicitly
+     leaving `Controls/Button.cs` (every menu button in the game), `States/CharacterSelectState.cs`,
+     `TauntBubble.cs`, `Portal.cs`'s dungeon-name labels, and `BossRealmState.cs`'s boss-name display
+     on their existing fonts.
+     Badge reposition: `CombatIconY` now derives from `XpBarY - SidebarBarGap - CombatIconSize`
+     instead of the minimap-relative position entry 199 gave it, and the icon's `x` is
+     `Game1.SidebarX + SidebarPadding` (matching the bars) instead of a right-edge anchor. Its hover
+     tooltip anchor flipped back to above-left of the icon (entry 199's "anchor below" fix was
+     specifically to dodge the minimap, which is no longer adjacent to the badge's new position; open
+     space above it again, clear of the stat block).
+     Base font swap: promoted `Overlay.cs`'s private `DrawOutlinedText()` helper to a public
+     `Util.DrawOutlinedText()` (now with an optional `scale` parameter for `DamageNumber`'s scaled
+     draws, and an outline alpha that tracks the passed color's own alpha channel so a fading number's
+     outline fades with it) — both `Util.DrawTooltip()` overloads now call it internally instead of a
+     plain `DrawString`, so every tooltip picks up the outline automatically regardless of which font
+     is passed in. Then swapped `Art.HudFont` → `Art.RetroFont` at every remaining call site within
+     scope: all of `Overlay.cs` (DrawFame, DrawStats — including the "Level:" column-width
+     measurement, DrawAbilitySection, DrawDebug, the combat indicator's tooltip), the four equipment
+     tooltip classes (`Weapon.cs`/`Armor.cs`/`Ring.cs`/`AbilityItem.cs`) plus their shared base
+     (`Equipment.cs`)'s `TooltipText()`/`HeaderLines()` — including their `Util.WrapText()` calls,
+     which needed the same font to keep word-wrap widths accurate — `BankSystem.cs`/
+     `InventorySystem.cs`/`LootBag.cs`'s item tooltips and stack-quantity/potion-charge count labels,
+     and `Player.cs`'s `DrawTemporaryBonusIndicators()` (the floating colored "+" buff icons above
+     the player). Every color argument at every one of these call sites was left untouched — only the
+     font and (for anything not already going through `Util.DrawTooltip`) the outline changed.
+     `DamageNumber.cs` swapped `Art.DamageFont` for `Art.RetroFont` too, and its `Draw()` now calls
+     `Util.DrawOutlinedText()` unconditionally — this replaced (rather than kept alongside) the old
+     `hasBlackBacking` mechanism, a single bottom-right drop shadow previously applied only to the
+     player's own damage-taken number (entry 113); a full outline now serves
+     every damage number and XP-gain number equally, so the special case (field, constructor
+     parameter, `BackingOffset`/`BackingAlpha` consts) was dead weight once nothing distinguished it
+     anymore — removed entirely, including updating its one caller (`Player.Hit()`) to drop the
+     `hasBlackBacking: true` argument. `Art.DamageFont` itself had zero remaining consumers afterward,
+     so it was deleted outright (field, load line, `Content.mgcb` block, `.spritefont` file) rather
+     than left as dead content.
+     Verified via a temporary `Game1.StartGame()` test rendering three real scenarios to offscreen
+     `RenderTarget2D`s: the full `Overlay.DrawSidebar()` (confirmed the stat block's existing 16px
+     row spacing has no vertical overlap with Jersey10 at 14pt — a real risk given how much wider/
+     taller this font is than Arial, checked directly via a 4x-zoomed crop — and confirmed the badge's
+     new position/tooltip-anchor); a weapon tooltip forced on via reflection (`hover` is protected)
+     showing the wrapped description, red color, and outline all correct; and three constructed
+     `DamageNumber`s (red player-damage, red enemy-hit, goldenrod scaled XP-gain) confirmed all three
+     now share the same crisp outline with their original colors and the XP number's outline scaling
+     proportionally with its 1.3x text scale. A `Player.cs` HudFont usage
+     (`DrawTemporaryBonusIndicators`) was missed on the first sweep — caught by a final repo-wide
+     grep for `Art.HudFont`/`Art.DamageFont` restricted to the in-scope files, confirming zero
+     remaining matches there and exactly six files left with `Art.HudFont` (all of them the
+     deliberately out-of-scope ones the user chose to exclude). Clean build, plain boot-check, and a
+     full real-save-file diff all passed with zero differences.

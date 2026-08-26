@@ -84,7 +84,7 @@ namespace Realm
         // and AbilityItem override this for their own extra stat line.
         public virtual string TooltipText()
         {
-            string description = Util.WrapText(Art.HudFont, Description, 350);
+            string description = Util.WrapText(Art.RetroFont, Description, 350);
             return $"T{Tier} - {Name}{Environment.NewLine}{description}{Environment.NewLine}{BonusSummary()}";
         }
 
@@ -94,7 +94,7 @@ namespace Realm
         protected List<(string Text, bool Better)> HeaderLines()
         {
             var lines = new List<(string, bool)> { ($"T{Tier} - {Name}", false) };
-            string description = Util.WrapText(Art.HudFont, Description, 350);
+            string description = Util.WrapText(Art.RetroFont, Description, 350);
 
             // WrapText() inserts a bare "\n" between wrapped lines, not
             // Environment.NewLine ("\r\n" on Windows) — splitting on the

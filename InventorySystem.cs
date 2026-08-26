@@ -900,7 +900,7 @@ namespace Realm
                 }
 
                 spriteBatch.DrawString(
-                    Art.HudFont,
+                    Art.RetroFont,
                     quantityText,
                     new Vector2(posX + 4, posY),
                     Color.Black
@@ -936,11 +936,11 @@ namespace Realm
                             ? equipment.ComparisonLines(equippedCounterpart)
                             : new List<(string Text, bool Better)> { (equipment.TooltipText(), false) };
 
-                        int textY = (int)(lines.Count * Art.HudFont.LineSpacing / 2);
+                        int textY = (int)(lines.Count * Art.RetroFont.LineSpacing / 2);
 
                         Util.DrawTooltip(
                             spriteBatch,
-                            Art.HudFont,
+                            Art.RetroFont,
                             lines,
                             new Vector2(posX, posY - (record.InventoryItem.image.Height * 2) - textY),
                             Color.Red,
@@ -950,11 +950,11 @@ namespace Realm
                     else
                     {
                         string text = record.InventoryItem.Name;
-                        int textY = (int)(Art.HudFont.MeasureString(text).Y / 2);
+                        int textY = (int)(Art.RetroFont.MeasureString(text).Y / 2);
 
                         Util.DrawTooltip(
                             spriteBatch,
-                            Art.HudFont,
+                            Art.RetroFont,
                             text,
                             new Vector2(posX, posY - (record.InventoryItem.image.Height * 2) - textY),
                             Color.Red
@@ -1017,7 +1017,7 @@ namespace Realm
             if (charges > 0)
             {
                 spriteBatch.DrawString(
-                    Art.HudFont,
+                    Art.RetroFont,
                     charges.ToString(),
                     new Vector2(bounds.X + 4, bounds.Y),
                     Color.Black

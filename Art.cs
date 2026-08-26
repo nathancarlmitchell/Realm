@@ -119,12 +119,6 @@ namespace Realm
         public static SpriteFont HudFont { get; private set; }
         public static SpriteFont TitleFont { get; private set; }
 
-        // Bold, slightly larger than HudFont — used for floating combat
-        // damage numbers (DamageNumber.cs), which need to read clearly at
-        // a glance over busy backgrounds; HudFont's regular weight stayed
-        // hard to read even after bumping its draw scale up.
-        public static SpriteFont DamageFont { get; private set; }
-
         // A dedicated font for States/SettingsState.cs — same Arial
         // family as HudFont, just a size up (14pt vs 12pt) for a menu
         // screen read at a normal, unhurried pace, rather than reusing the
@@ -133,10 +127,15 @@ namespace Realm
 
         // Jersey10 (SIL Open Font License), a bundled pixel-style TrueType
         // file rather than an installed system font family like every font
-        // above — used where a "retro video game" look was asked for
-        // specifically (Overlay.DrawBarText's Fame/XP/HP/MP bar text).
-        // Chosen via a side-by-side render comparison against four other
-        // free pixel/retro fonts.
+        // above. Originally added just for the sidebar bars, then promoted
+        // to the base font for the whole in-game HUD, tooltips, and damage
+        // numbers/XP drops (menus, buttons, Character Select, taunt
+        // bubbles, and portal/boss labels deliberately kept HudFont/their
+        // own fonts — out of scope per the user's own chosen boundary).
+        // Chosen for the bars via a side-by-side render comparison against
+        // four other free pixel/retro fonts; DamageFont (previously used
+        // for damage numbers) was retired as redundant once this replaced
+        // it there too.
         public static SpriteFont RetroFont { get; private set; }
 
         // Weapons.
@@ -309,7 +308,6 @@ namespace Realm
             // Fonts.
             HudFont = content.Load<SpriteFont>("Fonts/HudFont");
             TitleFont = content.Load<SpriteFont>("Fonts/TitleFont");
-            DamageFont = content.Load<SpriteFont>("Fonts/DamageFont");
             SettingsFont = content.Load<SpriteFont>("Fonts/SettingsFont");
             RetroFont = content.Load<SpriteFont>("Fonts/RetroFont");
         }

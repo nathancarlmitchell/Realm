@@ -13,15 +13,8 @@ namespace Realm
         private const float DefaultScale = 1.0f;
         private const float DefaultVerticalOffset = -20f;
 
-        // Same offset/alpha as the title screen's own text backing (see
-        // Overlay.DrawTitle()/GameOverState.Draw()) — a black copy drawn
-        // behind and offset from the real text.
-        private static readonly Vector2 BackingOffset = new(-4, 4);
-        private const float BackingAlpha = 0.5f;
-
         private readonly string text;
         private readonly Color baseColor;
-        private readonly bool hasBlackBacking;
         private readonly float scale;
         private readonly int lifespanTicks;
         private int ticksRemaining;
@@ -42,11 +35,6 @@ namespace Realm
         private readonly Vector2 spawnOffset;
         private Vector2 floatOffset = Vector2.Zero;
 
-        // hasBlackBacking: only the player's own "I took damage" numbers
-        // get the title-style backing (see Player.Hit()) — enemy hit
-        // numbers (Enemy.WasShot()) are unaffected, matching the user's
-        // request scoped to "the player damage number" specifically.
-        //
         // prefix: empty for every damage number (unchanged); "+" for an XP
         // gain (see Enemy.WasShot()'s death branch) so it visibly reads as
         // a gain rather than a hit sharing the same floating-number visual.
@@ -64,7 +52,6 @@ namespace Realm
             Vector2 position,
             int damage,
             Color color,
-            bool hasBlackBacking = false,
             string prefix = "",
             float scale = DefaultScale,
             int lifespanTicks = DefaultLifespanTicks,
@@ -80,7 +67,6 @@ namespace Realm
             text = prefix + damage;
             baseColor = color;
             this.color = color;
-            this.hasBlackBacking = hasBlackBacking;
             this.scale = scale;
             this.lifespanTicks = lifespanTicks;
             ticksRemaining = lifespanTicks;
@@ -103,32 +89,11 @@ namespace Realm
 
         public override void Draw(SpriteBatch spriteBatch)
         {
-            if (hasBlackBacking)
-            {
-                spriteBatch.DrawString(
-                    Art.DamageFont,
-                    text,
-                    Position + BackingOffset,
-                    Color.Black * (BackingAlpha * currentAlpha),
-                    0f,
-                    Vector2.Zero,
-                    scale,
-                    SpriteEffects.None,
-                    0f
-                );
-            }
-
-            spriteBatch.DrawString(
-                Art.DamageFont,
-                text,
-                Position,
-                color,
-                0f,
-                Vector2.Zero,
-                scale,
-                SpriteEffects.None,
-                0f
-            );
+            // A full outline (Util.DrawOutlinedText) now covers every
+            // damage number equally — previously only the player's own
+            // damage-taken number got a readability boost, via a single
+            // bottom-right drop shadow (hasBlackBacking, now removed).
+            Util.DrawOutlinedText(spriteBatch, Art.RetroFont, text, Position, color, scale);
         }
     }
 }

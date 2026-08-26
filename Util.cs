@@ -1329,12 +1329,66 @@ namespace Realm
             return x;
         }
 
+        // A thin, fully-surrounding 1px black outline (not a single
+        // bottom-right drop shadow) — drawn as 8 offset copies underneath
+        // the real text. The outline's alpha tracks the passed-in color's
+        // own alpha (color.A/255), so a fading DamageNumber's outline fades
+        // at the same rate as its fill instead of snapping to fully-opaque
+        // black while the fill is nearly invisible. scale forwards to
+        // DrawString's own scale parameter (DamageNumber draws at various
+        // scales; everything else stays at the default 1).
+        private static readonly Vector2[] OutlineOffsets =
+        {
+            new(-1, -1), new(0, -1), new(1, -1),
+            new(-1, 0), new(1, 0),
+            new(-1, 1), new(0, 1), new(1, 1),
+        };
+
+        public static void DrawOutlinedText(
+            SpriteBatch spriteBatch,
+            SpriteFont font,
+            string text,
+            Vector2 position,
+            Color color,
+            float scale = 1f
+        )
+        {
+            Color outlineColor = Color.Black * (color.A / 255f);
+            foreach (Vector2 offset in OutlineOffsets)
+            {
+                spriteBatch.DrawString(
+                    font,
+                    text,
+                    position + (offset * scale),
+                    outlineColor,
+                    0f,
+                    Vector2.Zero,
+                    scale,
+                    SpriteEffects.None,
+                    0f
+                );
+            }
+            spriteBatch.DrawString(
+                font,
+                text,
+                position,
+                color,
+                0f,
+                Vector2.Zero,
+                scale,
+                SpriteEffects.None,
+                0f
+            );
+        }
+
         // Draws text with a semi-transparent background panel sized to fit it,
         // so hover tooltips (equip slots, bank, inventory) stay readable
         // regardless of what's behind them in the game world/UI. Reuses
         // Art.HealthBar — a solid white 1x1 pixel already loaded for the
         // health bar fill — stretched and tinted, the standard MonoGame way to
-        // draw a solid-color rectangle without a dedicated texture.
+        // draw a solid-color rectangle without a dedicated texture. Text
+        // itself is drawn outlined (DrawOutlinedText) rather than flat, so it
+        // reads clearly against the tooltip's own semi-transparent panel.
         public static void DrawTooltip(
             SpriteBatch spriteBatch,
             SpriteFont font,
@@ -1355,7 +1409,7 @@ namespace Realm
             );
 
             spriteBatch.Draw(Art.HealthBar, background, Color.WhiteSmoke * 0.75f);
-            spriteBatch.DrawString(font, text, position, textColor);
+            DrawOutlinedText(spriteBatch, font, text, position, textColor);
         }
 
         // Same background-panel technique as the single-string overload
@@ -1393,7 +1447,8 @@ namespace Realm
             for (int i = 0; i < lines.Count; i++)
             {
                 Color color = lines[i].Better ? betterColor : textColor;
-                spriteBatch.DrawString(
+                DrawOutlinedText(
+                    spriteBatch,
                     font,
                     lines[i].Text,
                     position + new Vector2(0, i * font.LineSpacing),

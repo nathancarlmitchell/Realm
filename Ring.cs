@@ -91,11 +91,11 @@ namespace Realm
 
             string text = TooltipText();
 
-            int textY = (int)(Art.HudFont.MeasureString(text).Y / 2);
+            int textY = (int)(Art.RetroFont.MeasureString(text).Y / 2);
 
             Util.DrawTooltip(
                 spriteBatch,
-                Art.HudFont,
+                Art.RetroFont,
                 text,
                 new Vector2(x, y - image.Height - textY),
                 Color.Red
