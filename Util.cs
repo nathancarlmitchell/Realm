@@ -105,17 +105,25 @@ namespace Realm
 
         // Read-only peek at a class's save data, without touching Player.Instance or
         // Player.PlayerClass. Returns null if that class has no save yet.
+        //
+        // CharacterSelectState.Update() calls this for every class slot on
+        // every single frame, so a missing save file (never-played class,
+        // or right after Erase All Data) is a routine, expected outcome
+        // here — not something to detect via a caught exception. Checking
+        // File.Exists() first avoids throwing (and a debugger reporting) a
+        // FileNotFoundException every frame for as long as that screen
+        // stays open with a locked/never-played class showing.
         public static PlayerData PeekPlayerData(Player.Class playerClass)
         {
+            string path = PlayerDataLocation(playerClass);
+            if (!File.Exists(path))
+                return null;
+
             try
             {
-                using StreamReader r = new(PlayerDataLocation(playerClass));
+                using StreamReader r = new(path);
                 string json = r.ReadToEnd();
                 return JsonSerializer.Deserialize<PlayerData>(json);
-            }
-            catch (System.IO.FileNotFoundException)
-            {
-                return null;
             }
             catch (System.Text.Json.JsonException)
             {
