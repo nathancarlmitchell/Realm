@@ -105,6 +105,7 @@ namespace Realm
         public static Texture2D Mute { get; private set; }
         public static Texture2D Unmute { get; private set; }
         public static Texture2D FameIcon { get; private set; }
+        public static Texture2D CombatBadge { get; private set; }
 
         // A filled white circle, generated at runtime rather than loaded
         // from disk — same reasoning as HealthBar above (a 1x1 pixel
@@ -130,10 +131,12 @@ namespace Realm
         // small HUD-scale font that's tuned for compact in-game overlays.
         public static SpriteFont SettingsFont { get; private set; }
 
-        // Press Start 2P (SIL Open Font License), a bundled pixel-style
-        // TrueType file rather than an installed system font family like
-        // every font above — used where a "retro video game" look was asked
-        // for specifically (Overlay.DrawBarText's Fame/XP/HP/MP bar text).
+        // Jersey10 (SIL Open Font License), a bundled pixel-style TrueType
+        // file rather than an installed system font family like every font
+        // above — used where a "retro video game" look was asked for
+        // specifically (Overlay.DrawBarText's Fame/XP/HP/MP bar text).
+        // Chosen via a side-by-side render comparison against four other
+        // free pixel/retro fonts.
         public static SpriteFont RetroFont { get; private set; }
 
         // Weapons.
@@ -219,6 +222,7 @@ namespace Realm
             Unmute = content.Load<Texture2D>("Overlay/unmute");
             Border = content.Load<Texture2D>("Overlay/border");
             FameIcon = content.Load<Texture2D>("Overlay/Fame Icon");
+            CombatBadge = content.Load<Texture2D>("Overlay/Combat Badge");
 
             HealthBar = new Texture2D(Game1.Instance.GraphicsDevice, 1, 1);
             HealthBar.SetData(new[] { Color.White });

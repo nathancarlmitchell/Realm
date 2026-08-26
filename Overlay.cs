@@ -512,18 +512,14 @@ namespace Realm
 
         // Vital Combat's two HUD indicators: a yellow outline around the HP
         // bar itself while InCombat (gated behind ShowCombatIndicatorEnabled,
-        // anchored to HpBarY like before), and a small sword badge that
-        // "lights up" (gold vs dim gray) unconditionally — per the design
-        // doc's own wording, only the border is behind the setting. The
-        // badge sits just below the minimap, right-aligned to the minimap's
-        // own right edge, rather than at the HP bar's right edge — entry
-        // 198 widened every bar to the sidebar's full padded width, which
-        // left the badge sitting on top of the HP bar's own corner instead
-        // of in open space. Placeholder shape (a plain tinted square via
-        // Art.HealthBar, same solid-color-rectangle technique DrawTooltip
-        // already uses) until real icon art exists; swapping in real art
-        // later is a one-line change to a spriteBatch.Draw call, nothing
-        // structural.
+        // anchored to HpBarY like before), and a small sword badge (real art,
+        // Art.CombatBadge — a placeholder tinted square before) that "lights
+        // up" (gold vs dim gray tint) unconditionally — per the design doc's
+        // own wording, only the border is behind the setting. The badge sits
+        // just below the minimap, right-aligned to the minimap's own right
+        // edge, rather than at the HP bar's right edge — entry 198 widened
+        // every bar to the sidebar's full padded width, which left the badge
+        // sitting on top of the HP bar's own corner instead of in open space.
         private const int CombatIconSize = 20;
         private const int CombatBorderThickness = 2;
         private const int CombatIconY = MinimapPadding + MinimapSize + MinimapPadding;
@@ -550,7 +546,7 @@ namespace Realm
                 CombatIconSize
             );
             Color iconColor = Player.Instance.InCombat ? Color.Gold : Color.DarkGray;
-            spriteBatch.Draw(Art.HealthBar, iconRect, iconColor);
+            spriteBatch.Draw(Art.CombatBadge, iconRect, iconColor);
 
             if (iconRect.Intersects(Input.MouseBounds))
             {

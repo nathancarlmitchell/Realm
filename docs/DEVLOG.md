@@ -5277,3 +5277,35 @@ date/time for those individually; don't treat their grouping as meaning they all
      on top of it, and no regressions elsewhere in the sidebar. Temp code fully reverted (`git diff
      --stat Game1.cs` clean), scratch PNGs deleted, clean build, plain boot-check, and a full
      real-save-file diff all passed with zero differences.
+
+201. **Wired in a real Combat Badge icon and switched the retro bar font from Press Start 2P to
+     Jersey10**, both direct follow-ups after entry 200 shipped. For the icon: the user dropped
+     `Content/Overlay/Combat Badge.png` (a 32x32 sword sprite) into the project — added its
+     `Content.mgcb` block (same importer/processor shape as the adjacent `Fame Icon.png` entry) and
+     an `Art.CombatBadge` field/load line, then swapped `DrawCombatIndicator()`'s
+     `spriteBatch.Draw(Art.HealthBar, iconRect, iconColor)` placeholder-square draw for
+     `Art.CombatBadge` — same gold/dim-gray tint logic, no other changes, exactly the "one-line
+     change" the placeholder's own removed comment had predicted back in entry 172.
+     For the font: the user wasn't sold on Press Start 2P. Rather than guess at a replacement,
+     downloaded four more free (SIL Open Font License) candidates from the same trusted `google/fonts`
+     repo — VT323 (retro terminal), Silkscreen (a more compact true pixel font), Jersey10 (a chunky
+     pixel-sports-jersey style), and Pixelify Sans (a rounder, semi-pixel font) — and rendered all
+     five side-by-side in the actual `DrawBarText`-style layout ("HP 615 / 615 (+40)" on a real green
+     bar) via a temporary comparison harness in `Game1.StartGame()`, sent the composite image to the
+     user directly, and asked which one to use. Jersey10 won. Repointed the existing `RetroFont`
+     asset at `Jersey10-Regular.ttf` (14pt — confirmed no label/numbers overlap in the comparison
+     render, unlike Press Start 2P's first attempt in entry 200) rather than creating a
+     differently-named font, since `Art.RetroFont`/`Overlay.DrawBarText()` already referred to "the
+     retro font" generically and had no reason to change identity just because the underlying font
+     file did. Removed `PressStart2P-Regular.ttf` and the three unchosen comparison fonts'
+     `.ttf`/`.spritefont`/`Content.mgcb` entries entirely — only `Jersey10-Regular.ttf` and the
+     (repointed) `RetroFont.spritefont` remain.
+     Verified by rendering the real, currently-loaded live Wizard character's full `Overlay.
+     DrawSidebar()` to an offscreen `RenderTarget2D` one final time and inspecting a 3x-zoomed crop:
+     confirmed the sword badge renders as real pixel art (not a solid tinted square) sitting cleanly
+     below the minimap, and confirmed Jersey10 reads clearly with proper label/numbers spacing and
+     the existing black outline still applying correctly on top of it. Also manually re-checked the
+     built `bin/.../Content/Fonts/` output afterward to confirm no orphaned `.xnb` files remained from
+     the four discarded comparison fonts. Temp code (both the font-comparison harness and the final
+     verification render) fully reverted (`git diff --stat Game1.cs` clean), scratch PNGs deleted,
+     clean build, plain boot-check, and a full real-save-file diff all passed with zero differences.

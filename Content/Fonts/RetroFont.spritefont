@@ -12,19 +12,19 @@ with.
     Modify this string to change the font that will be imported. Unlike the
     other fonts in this folder (which reference an installed system font by
     family name), this points at a bundled TrueType file sitting right next
-    to this .spritefont — Press Start 2P (SIL Open Font License), a pixel
-    font for a "retro video game" HUD look.
+    to this .spritefont — Jersey10 (SIL Open Font License), a chunky
+    pixel-style font for a "retro video game" HUD look. Chosen over four
+    other candidates (Press Start 2P, VT323, Silkscreen, PixelifySans) via a
+    side-by-side render comparison in the actual bar layout.
     -->
-    <FontName>PressStart2P-Regular.ttf</FontName>
+    <FontName>Jersey10-Regular.ttf</FontName>
 
     <!--
     Size is a float value, measured in points. Modify this value to change
-    the size of the font. Press Start 2P's glyphs are much wider/taller per
-    point than Arial's — 10pt was still wide enough to overlap the
-    label/numbers layout DrawBarText already used, so this stays well below
-    HudFont's 12pt.
+    the size of the font. 14pt gave clean label/numbers spacing with no
+    overlap in DrawBarText's layout during comparison testing.
     -->
-    <Size>8</Size>
+    <Size>14</Size>
 
     <!--
     Spacing is a float value, measured in pixels. Modify this value to change
@@ -40,8 +40,8 @@ with.
 
     <!--
     Style controls the style of the font. Valid entries are "Regular", "Bold", "Italic",
-    and "Bold, Italic", and are case sensitive. Press Start 2P only ships a
-    single (already bold-weight-looking) Regular style.
+    and "Bold, Italic", and are case sensitive. Jersey10 only ships a
+    single (already chunky-weight-looking) Regular style.
     -->
     <Style>Regular</Style>
 

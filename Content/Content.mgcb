@@ -1872,6 +1872,18 @@
 /processorParam:TextureFormat=Color
 /build:Overlay/Fame Icon.png
 
+#begin Overlay/Combat Badge.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:Overlay/Combat Badge.png
+
 #begin Classes/wizard.png
 /importer:TextureImporter
 /processor:TextureProcessor
