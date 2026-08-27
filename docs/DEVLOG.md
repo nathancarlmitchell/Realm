@@ -5807,3 +5807,29 @@ date/time for those individually; don't treat their grouping as meaning they all
      worst-case resulting distance was exactly 200 (the clamp floor), never closer. Reverted the temp
      code (`git diff --stat Game1.cs` clean), deleted the scratch log, ran a final clean build + plain
      boot-check, and confirmed all real save files byte-identical to a pre-test backup.
+
+218. **Entry 217's Sand Devil spawn-distance fix wasn't enough — reported again as still too close.**
+     Root cause: the 200-unit floor was still *less* than Sand Devil's own `AttackRange` (312/9.75
+     tiles), so a fresh spawn could already be within its own firing range and open up immediately —
+     that reads as "way too close" regardless of the literal distance number, since the player gets
+     no reaction time before taking a hit. Changed `MinSpawnDistanceFromPlayer` to `AttackRange + (4
+     tiles)` (440 units) instead of a flat number, so a freshly-spawned Sand Devil is always outside
+     its own attack range and has to visibly close distance first.
+     Also directly verified the separate "apply the same 'better than' color logic to bank/loot-bag
+     tooltips" request turned out to already be fully in place — not a new change. `BankSystem.cs`,
+     `InventorySystem.cs`, and `LootBag.cs` all call the exact same `Equipment.ComparisonLines()` →
+     `Util.DrawTooltip(spriteBatch, font, List<(Text,Better)>, position)` path (added together in
+     entry 204, per that entry's own text: "used by `BankSystem`/`InventorySystem`/`LootBag`'s hover
+     tooltips"), with `Color.Gold` overriding a line's category color whenever `Better` is true — the
+     same behavior in all three, no divergence since. Confirmed via `git log` that none of the three
+     files were touched again after entry 204's commit.
+     Verified via a temporary `Game1.StartGame()` test: constructed a Sand Devil directly on top of
+     the player (the worst case) and confirmed the resulting spawn distance was exactly 440 — both
+     matching the new floor and exceeding `AttackRange` (312), so it cannot fire the instant it
+     appears; separately, called `Equipment.ComparisonLines()` on a real Tier-1 weapon against the
+     player's actual equipped Tier-0 weapon (the exact call all three UIs make) and rendered the
+     result through `Util.DrawTooltip`'s list overload — the "Damage: 40 - 70" line came back
+     `Better=true` and rendered in gold, proving the shared path already produces the requested
+     coloring end to end. Reverted the temp code (`git diff --stat Game1.cs` clean), deleted the
+     scratch log/PNG, ran a final clean build + plain boot-check, and confirmed all real save files
+     byte-identical to a pre-test backup.

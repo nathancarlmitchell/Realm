@@ -20,18 +20,6 @@ namespace Realm
         private const float CloseThreshold = 2f * 32f; // 2 tiles
         private const float CircleRadius = 3f * 32f; // 3 tiles
 
-        // Reported directly: Sand Devil spawns too close to the player.
-        // EnemySpawner.SpawnWave()'s shared anchor+offset math only
-        // guarantees ~137 units minimum in the worst case (anchor >= 250
-        // from GetSpawnPosition(), offset up to ~113 toward the player) —
-        // fine for most enemies, but combined with Sand Devil's own fast
-        // FollowPlayer() chase it reads as spawning right on top of the
-        // player. Enforced here rather than in the shared spawn system, so
-        // only Sand Devil is affected. 6.25 tiles — clearly outside
-        // AttackRange-adjacent melee distance, well above the shared
-        // system's own worst case.
-        private const float MinSpawnDistanceFromPlayer = 6.25f * 32f;
-
         // Not given a specific rate in the spec ("rotate clockwise for 3
         // seconds") — one full lap over the 3-second Circle phase reads as
         // a clean, deliberate "circle," not a slow creep or a dizzying
@@ -44,6 +32,22 @@ namespace Realm
         private const float AttackRange = 9.75f * 32f;
         private const int AttackDamage = 10;
         private const float ProjectileSpeed = 6.5f * 32f / 60f; // 6.5 tiles/sec
+
+        // Reported directly, twice: Sand Devil spawns too close to the
+        // player. The first fix (a flat 200-unit/6.25-tile floor) still
+        // wasn't enough — 200 < AttackRange (312/9.75 tiles), so it could
+        // spawn already inside its own firing range and start shooting
+        // immediately, which reads as "way too close" regardless of the
+        // literal distance number. Tied to AttackRange with a real buffer
+        // this time (4 tiles) so a freshly-spawned Sand Devil can never
+        // immediately open fire — it has to close distance first, giving
+        // the player actual reaction time. EnemySpawner.SpawnWave()'s
+        // shared anchor+offset math only guarantees ~137 units minimum in
+        // the worst case (anchor >= 250 from GetSpawnPosition(), offset up
+        // to ~113 toward the player) — fine for most enemies, not this one.
+        // Enforced here rather than in the shared spawn system, so only
+        // Sand Devil is affected.
+        private const float MinSpawnDistanceFromPlayer = AttackRange + (4f * 32f);
 
         // No Cooldown given for the spinner attack at all — falls back to
         // the same 250-tick default Enemy's own shared Shoot()/Spray()/
