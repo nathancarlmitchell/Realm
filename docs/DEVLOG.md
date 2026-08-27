@@ -6064,3 +6064,19 @@ date/time for those individually; don't treat their grouping as meaning they all
      distance) is what's actually being randomized. Reverted the temp code (`git diff --stat Game1.cs`
      clean), deleted the scratch log, ran a final clean build + plain boot-check, and confirmed all
      real save files byte-identical to a pre-test backup.
+
+226. **Committed three previously-flagged external edits, made outside this session's own changes,
+     at the user's direct request.** `Content/Fonts/RetroFontButton.spritefont`'s `Size` changed from
+     18 to 16pt. `SandDevil.cs`'s `AttackCooldown` changed from 250 to 180 ticks (~3s between spinner
+     shots instead of ~4.2s). `Player.cs`'s `Destabilize(int durationFrames = 60)` default changed to
+     180 (3 seconds instead of the entry-223 original 1 second) — flagged directly rather than
+     silently accepted: Sand Devil's own attack (`SpinnerAttack()`, via
+     `EnemyProjectile.UnstablesOnHit`) still relies on this default rather than passing its own
+     explicit duration, so it now also applies Unstable for 3 seconds instead of the 1 second
+     originally requested specifically for it — worth a deliberate look if that's not intended.
+     Updated `Destabilize()`'s own comment to state the actual current default and duration
+     consequence instead of the now-incorrect "1 second, matching Sand Devil" claim, and to mention
+     Wizard/Priest alongside Archer/Knight now that entries 224/225 extended Unstable to all four
+     classes' abilities. No other logic changed. Clean build + plain boot-check passed; no
+     save-touching code was modified, so the full save-file backup/diff cycle wasn't run for this
+     comment-and-config-only change.

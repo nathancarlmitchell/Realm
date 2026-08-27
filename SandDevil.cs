@@ -72,7 +72,7 @@ namespace Realm
         // ShootIfInRange() already use elsewhere. Can't just call
         // ShootIfInRange() itself here since it always constructs a plain
         // EnemyProjectile, not the WavyProjectile this attack needs.
-        private const int AttackCooldown = 250;
+        private const int AttackCooldown = 180;
 
         private Phase currentPhase = Phase.Chase;
         private int phaseTimer = ChasePhaseDuration;
@@ -94,10 +94,15 @@ namespace Realm
             // system landed this enemy closer than that — see the
             // constant's own comment above.
             Vector2 awayFromPlayer = Position - Player.Instance.Position;
-            if (awayFromPlayer.LengthSquared() < MinSpawnDistanceFromPlayer * MinSpawnDistanceFromPlayer)
+            if (
+                awayFromPlayer.LengthSquared()
+                < MinSpawnDistanceFromPlayer * MinSpawnDistanceFromPlayer
+            )
             {
                 Vector2 direction =
-                    awayFromPlayer != Vector2.Zero ? Vector2.Normalize(awayFromPlayer) : Vector2.UnitX;
+                    awayFromPlayer != Vector2.Zero
+                        ? Vector2.Normalize(awayFromPlayer)
+                        : Vector2.UnitX;
                 Position = Player.Instance.Position + direction * MinSpawnDistanceFromPlayer;
             }
 
@@ -224,7 +229,8 @@ namespace Realm
                     Velocity = Vector2.Zero;
 
                     circleAngle = MathHelper.WrapAngle(circleAngle + CircleAngularSpeed);
-                    Position = Player.Instance.Position + Extensions.FromPolar(circleAngle, CircleRadius);
+                    Position =
+                        Player.Instance.Position + Extensions.FromPolar(circleAngle, CircleRadius);
 
                     if (phaseTimer <= 0)
                     {

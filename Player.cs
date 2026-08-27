@@ -669,14 +669,18 @@ namespace Realm
         }
 
         // Makes this player Unstable, widening weapon shot spread
-        // (Weapon.Shoot()) and randomizing directional ability aim
-        // (Archer/Knight.UseAbility()) for durationFrames — see those
-        // methods' own HasDebuff(DebuffType.Unstable) checks for what it
-        // actually does; this is just the apply-the-debuff half, same
-        // shape as Slow() above. Default is 1 second at 60fps, matching
-        // Sand Devil's own attack (SandDevil.cs's SpinnerAttack, via
-        // EnemyProjectile.UnstablesOnHit).
-        public void Destabilize(int durationFrames = 60)
+        // (Weapon.Shoot()) and randomizing aimed-ability targeting
+        // (Archer/Knight/Wizard/Priest.UseAbility()) for durationFrames —
+        // see those methods' own HasDebuff(DebuffType.Unstable) checks for
+        // what it actually does; this is just the apply-the-debuff half,
+        // same shape as Slow() above. Default retuned to 3 seconds at
+        // 60fps (originally 1 second) — Sand Devil's own attack
+        // (SandDevil.cs's SpinnerAttack, via
+        // EnemyProjectile.UnstablesOnHit) still relies on this default
+        // rather than passing its own duration, so it now also applies
+        // Unstable for 3 seconds instead of the 1 second originally
+        // requested for it specifically.
+        public void Destabilize(int durationFrames = 180)
         {
             ApplyDebuff(DebuffType.Unstable, durationFrames);
         }
@@ -950,6 +954,7 @@ namespace Realm
             + AbilityItem.MaxHealthBonus;
         public int EquipmentMaxManaBonus =>
             Weapon.MaxManaBonus + Armor.MaxManaBonus + Ring.MaxManaBonus + AbilityItem.MaxManaBonus;
+
         // Public (same reasoning as EquipmentMaxHealthBonus/EquipmentMaxManaBonus
         // above) — read directly by Overlay.DrawStats() to show each stat's
         // gear contribution as a gold "+N" next to it.
@@ -1275,7 +1280,12 @@ namespace Realm
             spriteBatch.Draw(
                 Art.HealthBar,
                 barPos,
-                new Microsoft.Xna.Framework.Rectangle(0, 0, (int)(LowHealthBarWidth * fraction), LowHealthBarHeight),
+                new Microsoft.Xna.Framework.Rectangle(
+                    0,
+                    0,
+                    (int)(LowHealthBarWidth * fraction),
+                    LowHealthBarHeight
+                ),
                 Microsoft.Xna.Framework.Color.Red
             );
         }

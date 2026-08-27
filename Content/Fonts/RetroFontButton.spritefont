@@ -26,7 +26,7 @@ with.
     confirmed to fit every button label (including "Character Select" and
     "Reset to Defaults") with no overflow.
     -->
-    <Size>18</Size>
+    <Size>16</Size>
 
     <!--
     Spacing is a float value, measured in pixels. Modify this value to change
