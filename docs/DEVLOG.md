@@ -6095,3 +6095,45 @@ date/time for those individually; don't treat their grouping as meaning they all
      the old 1-second/60-frame figure from entry 223. Clean build + plain minimized boot-check
      passed (`Running: True, Minimized: True`); no save-touching code was changed, so the full
      save-file backup/diff cycle wasn't run.
+
+228. **First real-playthrough feedback on the Beach biome (backlog item), acted on directly**: "far
+     too many enemies on screen at once" and "even at a fresh level 1 character it feels a bit easy."
+     Two changes, both explicitly flagged as first-pass numbers needing another playtest:
+     - **Nearby-enemy spawn density cap** (`EnemySpawner.cs`). Every spawn path (`SpawnWave`,
+       `SpawnBigSnakePack`, `SpawnBeachedBuccaneerPack`, the three Little Jelly group packs, the
+       SpriteGod roll) previously only checked distance-scaled *frequency*, never how many enemies
+       were already alive nearby — so enemies could pile up indefinitely as long as the player
+       didn't clear them fast enough. Added `TooManyEnemiesNearby()`: counts live enemies
+       (`EntityManager.EnemyPositions`) within `NearbyEnemyRadius` of the player (the same
+       "on-screen half-diagonal" viewport calc already used for `SandDevil.cs`'s
+       `MinSpawnDistanceFromPlayer`, not an arbitrary flat number) and returns true once that count
+       reaches `MaxNearbyEnemies` (12, first-pass guess). Computed once per `Update()` call and
+       reused across every spawn-type check in the same frame. Each spawn cooldown still ticks down
+       and resets normally even while capped — only the actual spawn call is skipped — so a
+       suppressed wave doesn't queue up on top of the next one; the very next cooldown expiry tries
+       again fresh once the crowd thins.
+     - **Global enemy damage multiplier** (new `Difficulty.cs`, applied in `Player.Hit()`). Rather
+       than hand-tuning every individual enemy/boss/projectile's own `Damage` value, added a single
+       `public const float Difficulty.EnemyDamageMultiplier = 2f;` applied to the raw incoming hit
+       in `Player.Hit()`, before the player's own `DamageTakenMultiplier` (e.g. Knight's Shield
+       Slam) and `Defense` reduction — the two are independent, multiplicative scalings that stack.
+       Set to 2x per the user's own explicit "let's set this at x2 to start" — the intent is
+       shifting play away from tanking hits + leaning on leveling/HP regen, toward actually needing
+       to dodge.
+     Verified via a temporary `Game1.StartGame()` test (real save files backed up first per
+     CLAUDE.md, since the test swaps `Player.Instance` and calls `Hit()`): constructed an isolated
+     `Wizard()` (never added to `EntityManager`, singleton restored to the real `Player.Instance`
+     immediately after), called `Hit(10)` and confirmed the resulting damage-modified amount (18,
+     against that Wizard's Defense of 2) matched the formula computed by hand with the 2x multiplier
+     included — without it, the same hit would have only dealt 8. Separately, via reflection against
+     `EnemySpawner`'s private `TooManyEnemiesNearby()`/`MaxNearbyEnemies`: confirmed false with 0
+     enemies nearby, false at 11 (one below the cap of 12), true at exactly 12, and still true after
+     adding a 13th enemy 50,000 units away (confirming distance, not just raw count, gates
+     inclusion). Reverted the temp code (`git diff --stat Game1.cs` clean), deleted the scratch log,
+     ran a final clean build + plain boot-check, and confirmed all six real save files
+     byte-identical to a pre-test backup.
+     Noted directly for the next playtest pass (see [BACKLOG.md](BACKLOG.md)): enemy HP values may
+     also need retuning now that fights involve fewer enemies hitting twice as hard — no specific
+     numbers decided yet. Also added "Hardcore mode" (a further difficulty-multiplier bump plus
+     possible restrictions like no Nexus escape) to [BACKLOG.md](BACKLOG.md)'s Open ideas, per the
+     user's request — idea only, not scoped.

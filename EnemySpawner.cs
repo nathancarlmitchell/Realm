@@ -51,6 +51,26 @@ namespace Realm
         // intervals below (all Beach-exclusive already).
         const float BeachSpawnRateMultiplier = 1.25f;
 
+        // "Far too many enemies on screen at once" — reported directly
+        // after a live Beach playtest. None of the spawn gates above (or
+        // below) ever look at how many enemies are already alive near the
+        // player, only at distance-scaled frequency — so enemies could
+        // keep piling up indefinitely as long as the player didn't clear
+        // them faster than new ones arrived. This caps it: no new spawn
+        // (wave, pack, or SpriteGod) fires while at least MaxNearbyEnemies
+        // are already within NearbyEnemyRadius of the player, regardless of
+        // what any individual cooldown says — see TooManyEnemiesNearby()
+        // below. Radius mirrors the "on-screen half-diagonal" idiom used
+        // elsewhere (e.g. SandDevil.cs's MinSpawnDistanceFromPlayer) rather
+        // than an arbitrary flat number, so "nearby" tracks the actual
+        // visible play area regardless of window size. Both numbers are a
+        // first-pass guess — expect retuning after the next playtest pass.
+        private static readonly float NearbyEnemyRadius = Vector2.Distance(
+            Vector2.Zero,
+            new Vector2(Game1.GameplayViewportWidth / 2f, Game1.GameplayViewportHeight / 2f)
+        );
+        private const int MaxNearbyEnemies = 12;
+
         // Pool for the basic enemy types, ordered by toughness (PointValue:
         // Snake 2, Slime 4, Seeker 7, Wanderer 15, Brute 120). Every type
         // here is available from the start — no player-level requirement.
@@ -162,6 +182,26 @@ namespace Realm
             entryPosition = position;
         }
 
+        // See MaxNearbyEnemies/NearbyEnemyRadius's own comment above.
+        // Computed once per Update() call (below) rather than once per
+        // spawn-type check, since every check in the same frame asks the
+        // exact same question against the exact same player position.
+        private static bool TooManyEnemiesNearby()
+        {
+            int nearbyCount = 0;
+            float radiusSquared = NearbyEnemyRadius * NearbyEnemyRadius;
+            foreach (var position in EntityManager.EnemyPositions)
+            {
+                if (Vector2.DistanceSquared(position, Player.Instance.Position) <= radiusSquared)
+                {
+                    nearbyCount++;
+                    if (nearbyCount >= MaxNearbyEnemies)
+                        return true;
+                }
+            }
+            return false;
+        }
+
         public static void Update()
         {
             if (!Player.Instance.IsExpired && EntityManager.Count < 1500)
@@ -192,9 +232,18 @@ namespace Realm
                         effectiveInverseSpawnChance * BeachSpawnRateMultiplier
                     );
 
+                // Computed once per Update() call — see TooManyEnemiesNearby()
+                // above. Every cooldown below still ticks down normally even
+                // while this is true; only the actual spawn is suppressed,
+                // so a wave that would have fired isn't queued up on top of
+                // the next one — it's just skipped, and the next expired
+                // cooldown tries again fresh.
+                bool tooManyEnemiesNearby = TooManyEnemiesNearby();
+
                 if (waveCooldownRemaining <= 0)
                 {
-                    SpawnWave();
+                    if (!tooManyEnemiesNearby)
+                        SpawnWave();
                     waveCooldownRemaining = effectiveInverseSpawnChance;
                 }
                 else
@@ -204,7 +253,8 @@ namespace Realm
 
                 if (bigSnakePackCooldownRemaining <= 0)
                 {
-                    SpawnBigSnakePack();
+                    if (!tooManyEnemiesNearby)
+                        SpawnBigSnakePack();
                     bigSnakePackCooldownRemaining = BigSnakePackInterval;
                 }
                 else
@@ -214,7 +264,7 @@ namespace Realm
 
                 if (beachedBuccaneerPackCooldownRemaining <= 0)
                 {
-                    if (GetCurrentBiome()?.Name == "Beach")
+                    if (GetCurrentBiome()?.Name == "Beach" && !tooManyEnemiesNearby)
                         SpawnBeachedBuccaneerPack();
                     beachedBuccaneerPackCooldownRemaining = BeachedBuccaneerPackInterval;
                 }
@@ -225,7 +275,7 @@ namespace Realm
 
                 if (littleBlueJellyPackCooldownRemaining <= 0)
                 {
-                    if (GetCurrentBiome()?.Name == "Beach")
+                    if (GetCurrentBiome()?.Name == "Beach" && !tooManyEnemiesNearby)
                         SpawnGroupPack(position => new LittleBlueJelly(position));
                     littleBlueJellyPackCooldownRemaining = LittleBlueJellyPackInterval;
                 }
@@ -236,7 +286,7 @@ namespace Realm
 
                 if (littleGreenJellyPackCooldownRemaining <= 0)
                 {
-                    if (GetCurrentBiome()?.Name == "Beach")
+                    if (GetCurrentBiome()?.Name == "Beach" && !tooManyEnemiesNearby)
                         SpawnGroupPack(position => new LittleGreenJelly(position));
                     littleGreenJellyPackCooldownRemaining = LittleGreenJellyPackInterval;
                 }
@@ -247,7 +297,7 @@ namespace Realm
 
                 if (littlePinkJellyPackCooldownRemaining <= 0)
                 {
-                    if (GetCurrentBiome()?.Name == "Beach")
+                    if (GetCurrentBiome()?.Name == "Beach" && !tooManyEnemiesNearby)
                         SpawnGroupPack(position => new LittlePinkJelly(position));
                     littlePinkJellyPackCooldownRemaining = LittlePinkJellyPackInterval;
                 }
@@ -264,7 +314,11 @@ namespace Realm
                 // and reclassified regular-wave heavyweights (Bandit
                 // Leader/Scorpion Queen/Sandsman King/Giant Crab); a
                 // SpriteGod on top of those read as out of place there.
-                if (GetCurrentBiome()?.Name != "Beach" && rand.Next(1500) == 0)
+                if (
+                    GetCurrentBiome()?.Name != "Beach"
+                    && !tooManyEnemiesNearby
+                    && rand.Next(1500) == 0
+                )
                 {
                     EntityManager.Add(Enemy.CreateSpriteGod(GetSpawnPosition()));
                 }

@@ -622,6 +622,12 @@ namespace Realm
 
         public void Hit(int damage = 25)
         {
+            // Global difficulty knob — see Difficulty.EnemyDamageMultiplier's
+            // own comment. Applied first, before the player's own per-hit
+            // defensive effects below, since this represents "how hard
+            // enemies hit" as a tunable baseline, not a player ability.
+            damage = (int)(damage * Difficulty.EnemyDamageMultiplier);
+
             // Damage Reduction (e.g. Knight's Shield Slam) scales the raw
             // hit before Defense's own reduction/floor below — the two
             // stack rather than one replacing the other.

@@ -172,12 +172,27 @@ prioritized or scheduled — the user asked to keep these noted for later rather
   entry 216 gave buttons their own dedicated Micro5 font, separate from the Jersey10 base font
   again). Needs the user to point out what specifically still looks off once they've spent more
   time looking at it in actual play.
-- **Playtest the Beach biome.** Follow-up to entry 213's mini-boss reclassification and drop-rate
-  retune — those changes were verified mechanically (reflection checks, a 3000-trial drop-rate
-  simulation) but not yet played by a human. Needs an actual playthrough to confirm the reclassified
-  Bandit Leader/Scorpion Queen/Sandsman King/Giant Crab feel right blended into the regular wave
-  (rather than as dedicated encounters), and that the new flat 5%/2.5% drop rates feel right in
-  practice rather than just matching their target percentages statistically.
+- **Playtest the Beach biome — round 2.** Round 1 (see [DEVLOG.md](DEVLOG.md), latest entry)
+  produced two direct changes — a nearby-enemy spawn density cap (`EnemySpawner.MaxNearbyEnemies`/
+  `NearbyEnemyRadius`) and a global 2x enemy damage multiplier (`Difficulty.EnemyDamageMultiplier`,
+  applied in `Player.Hit()`) — both first-pass numbers needing another real playthrough to confirm
+  they land right, not just that they compile and pass a scripted check. Specifically flagged by the
+  user as needing another look on the next pass: **enemy HP values** — with enemies now hitting 2x
+  harder and fewer of them on screen at once, existing HP totals (tuned against the old, easier
+  baseline) may now make fights drag on too long relative to the new damage-per-hit, or may need
+  raising instead if fights become too swingy/short. No specific numbers decided yet — this is a
+  "look at it in play and see" item, not a known target. Original round-1 items (whether the
+  reclassified Bandit Leader/Scorpion Queen/Sandsman King/Giant Crab feel right blended into the
+  regular wave, whether the flat 5%/2.5% drop rates feel right in practice) are still open too, on
+  top of the new damage/density/HP questions.
+
+- **"Hardcore" mode.** An opt-in mode that raises `Difficulty.EnemyDamageMultiplier` further above
+  its regular baseline (currently 2x — see [DEVLOG.md](DEVLOG.md), latest entry), plus other possible
+  restrictions floated alongside it — e.g. being unable to escape to the Nexus mid-run (no portal
+  retreat once committed). Neither the harder-difficulty multiplier value nor the exact set/shape of
+  restrictions has been decided; likely needs its own persisted flag (character-level, like
+  `HasReachedLevel20`, or a character-creation-time choice) once picked up, plus UI to actually
+  choose it. Purely an idea for now — not scoped or scheduled.
 
 ## Completed
 
