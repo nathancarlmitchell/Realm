@@ -664,6 +664,7 @@ namespace Realm
             else
             {
                 Sound.Play(Sound.PlayerHit, 0.45f);
+                damageFlashTicksRemaining = DamageFlashDurationTicks;
             }
         }
 
@@ -1352,6 +1353,16 @@ namespace Realm
         private const float LowHealthFastFlashHalfPeriodTicks = 5f;
         private float lowHealthFlashPhase = 0f;
 
+        // Damage flash — briefly tints the sprite solid red on taking a
+        // hit (Hit() below), independent of the low-health flash above.
+        // Shares the same `color` field but is applied after that block in
+        // Update() so it always wins on the few ticks it's active, even if
+        // Health also happens to be low right now. Fixed-length rather than
+        // proportional to damage taken — just a quick, readable "you got
+        // hit" cue.
+        private const int DamageFlashDurationTicks = 10; // ~1/6 second at 60fps
+        private int damageFlashTicksRemaining = 0;
+
         // Below-sprite bar shown under the same condition as the flash
         // above (LowHealthIndicatorEnabled + under threshold) — see
         // DrawLowHealthBar(), called from Draw().
@@ -1429,6 +1440,15 @@ namespace Realm
             {
                 color = Microsoft.Xna.Framework.Color.White;
                 lowHealthFlashPhase = 0f;
+            }
+
+            // Damage flash — see the field's own comment above. Applied
+            // after the low-health flash block so it always wins over it
+            // on the ticks it's active.
+            if (damageFlashTicksRemaining > 0)
+            {
+                color = Microsoft.Xna.Framework.Color.Red;
+                damageFlashTicksRemaining--;
             }
 
             // Regenerate mana. Same fraction-per-tick/carry-forward pattern

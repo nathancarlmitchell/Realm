@@ -6177,3 +6177,25 @@ date/time for those individually; don't treat their grouping as meaning they all
      settled, and refreshed this session's save-file backup to the current real state rather than
      restoring the old one, so a future diff check in this session compares against what's actually
      current instead of flagging the user's own legitimate progress as a regression.
+
+230. **Player damage flash** — the player sprite now briefly tints solid red for `DamageFlashDurationTicks`
+     (10 ticks, ~1/6 second) whenever `Hit()` lands and doesn't kill the player, giving a readable
+     "you got hit" cue independent of the existing `-15` damage number. Shares `Entity`'s existing
+     `color` field with the pre-existing low-health flash (`DrawLowHealthBar`'s sibling effect,
+     `Update()`'s `IsLowHealth` block above it) — the new flash block runs *after* that one each
+     tick, so it always wins on the ticks it's active even if Health also happens to be under the
+     low-health threshold at the same time; once `damageFlashTicksRemaining` reaches 0 it stops
+     overriding and the low-health/default logic resumes deciding `color` as before. `Hit()` now sets
+     `damageFlashTicksRemaining = DamageFlashDurationTicks` right alongside its existing
+     `Sound.Play(Sound.PlayerHit, ...)` call — i.e. only on a hit the player survives, matching that
+     same branch.
+     Verified via a temporary `Game1.StartGame()` test: constructed an isolated `Wizard()` (never
+     added to `EntityManager`, singleton restored immediately after), initialized `Game1.Camera`
+     directly via `new Camera(...)` (not through a real `State`'s constructor, to sidestep
+     CLAUDE.md's documented State-constructor autosave risk) since `Player.Update()` reads
+     `Game1.Camera.Pos`, then reflected `Entity`'s protected `color` field and confirmed: White
+     before any hit, still White immediately after `Hit(10)` (the flash applies in `Update()`, not
+     `Hit()` itself), Red after exactly 1 `Update()` call, still Red after 10 total `Update()` calls,
+     and back to White after an 11th. Reverted the temp code (`git diff --stat Game1.cs` clean), ran
+     a final clean build + plain boot-check, and confirmed all six real save files byte-identical to
+     a pre-test backup (refreshed fresh at the start of this entry's work, per entry 229's note).
