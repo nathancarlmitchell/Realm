@@ -5964,3 +5964,48 @@ date/time for those individually; don't treat their grouping as meaning they all
      ~128-unit jumps both prior attempts still produced under this same test. Reverted the temp code
      (`git diff --stat Game1.cs` clean), deleted the scratch log, ran a final clean build + plain
      boot-check, and confirmed all real save files byte-identical to a pre-test backup.
+
+223. **Added a new debuff: Unstable.** New `DebuffType.Unstable` value (Entity.cs) — "weapons gain
+     random shot deviation when aiming (limited to a certain angle), significantly lowering accuracy.
+     Abilities that require aiming (spells, poisons, etc) will fire in random directions," applied by
+     Sand Devil's attack for 1 second per the same request.
+     Two distinct effects, since the spec itself asks for two different strengths:
+     - **Weapon.Shoot()** (the player's basic attack, every weapon type — Wand/Bow/Sword/Staff all
+       funnel through the same `aimAngle + randomSpread` calculation) — new `UnstableSpreadRadians`
+       (±30°) added on top of the existing always-on ±4.6° `randomSpread` while
+       `Player.Instance.HasDebuff(Unstable)`, widening (not replacing) the normal jitter into a much
+       bigger but still bounded cone — "limited to a certain angle."
+     - **Archer/Knight's `UseAbility()`** (the two classes whose ability actually has a directional
+       aim — Wizard's Spell Bomb fires an omnidirectional 16-shot circle from a point, and Priest's
+       Nova targets a point too, so neither "requires aiming" in the sense the spec means and neither
+       is affected) — `aimAngle` is replaced outright with a uniformly random angle
+       (`rand.NextFloat(0, TwoPi)`) while `HasDebuff(Unstable)`, so the whole fan fires in a genuinely
+       random direction rather than a wider cone around the real aim, matching "fire in random
+       directions" as a stronger effect than the weapon spread.
+     `Player.Destabilize(int durationFrames = 60)` applies it (default exactly 1 second at 60fps, so
+     Sand Devil's own call site doesn't need to restate the duration) — same shape as the existing
+     `Slow()`/`Enemy.Paralyze()`/`Stun()` wrappers. New `EnemyProjectile.UnstablesOnHit` flag (mirrors
+     `SlowsOnHit`) consumed in `EntityManager.cs`'s enemy-projectile-vs-player collision handling;
+     Sand Devil's `WavyProjectile` (`SpinnerAttack()`) sets it. New `Art.Unstable` icon
+     (`Content/StatusEffects/unstable.png` — already present as a source asset, not yet wired into
+     the content pipeline; added its `Content.mgcb` build block, same importer/processor shape as the
+     other three status-effect icons) feeds the existing shared `DrawDebuffIndicators()`/
+     `DebuffIcon()` plumbing automatically — no new drawing code needed, per Entity.cs's own comment
+     that adding a debuff is "just a new enum value plus a `DebuffIcon()` case."
+     Verified via a temporary `Game1.StartGame()` test: confirmed `Destabilize()`/`HasDebuff()` apply
+     and expire correctly (false → true → false after 60 simulated `UpdateDebuffs()` ticks) and that
+     `Art.Unstable` loads; fired 300 real `Weapon.Shoot()` calls with a fixed mouse position with the
+     debuff off (max deviation from true aim 0.077 rad, average 0.027 — matching the small baseline
+     spread) then 300 more with it on (max 0.567 rad, average 0.260 — a clear, large jump, within the
+     expected ~0.6 rad ceiling); fired a real `Archer`'s ability once stable (0.061 rad off true aim —
+     exactly the 2-shot Worn Quiver's own half-arc-gap offset, confirming normal aim otherwise
+     unaffected) then 20 times with Unstable applied (max deviation 3.13 rad — essentially π, i.e.
+     genuinely random, including firing almost the exact opposite direction from the real aim on at
+     least one trial). Hit a real test-methodology bug along the way, not a feature bug: constructing
+     `new Archer()` silently replaced the global `Player.Instance` singleton (`Player`'s own base
+     constructor unconditionally does `instance = this`), moving "the player" to a fresh spawn
+     position and invalidating the pre-captured baseline aim angle — fixed by re-pinning `Position`
+     back to the test's fixed point immediately after construction, not by changing anything in the
+     actual feature code. Reverted the temp code (`git diff --stat Game1.cs` clean), deleted the
+     scratch log, ran a final clean build + plain boot-check, and confirmed all real save files
+     byte-identical to a pre-test backup.

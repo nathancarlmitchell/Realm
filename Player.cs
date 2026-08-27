@@ -668,6 +668,19 @@ namespace Realm
             ApplyDebuff(DebuffType.Slow, durationFrames);
         }
 
+        // Makes this player Unstable, widening weapon shot spread
+        // (Weapon.Shoot()) and randomizing directional ability aim
+        // (Archer/Knight.UseAbility()) for durationFrames — see those
+        // methods' own HasDebuff(DebuffType.Unstable) checks for what it
+        // actually does; this is just the apply-the-debuff half, same
+        // shape as Slow() above. Default is 1 second at 60fps, matching
+        // Sand Devil's own attack (SandDevil.cs's SpinnerAttack, via
+        // EnemyProjectile.UnstablesOnHit).
+        public void Destabilize(int durationFrames = 60)
+        {
+            ApplyDebuff(DebuffType.Unstable, durationFrames);
+        }
+
         public void EquipWeapon(Weapon newWeapon)
         {
             Weapon = newWeapon;

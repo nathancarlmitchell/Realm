@@ -18,6 +18,13 @@ namespace Realm
         // whatever explicitly opts in — e.g. a Stheno Pet's trailing orb.
         public bool SlowsOnHit = false;
 
+        // Whether this projectile applies Unstable to the player on hit
+        // (Player.Destabilize(), using that method's default 1-second
+        // duration) — same shape as SlowsOnHit above. False for everything
+        // except whatever explicitly opts in — currently just Sand Devil's
+        // spinner attack (see SandDevil.cs's SpinnerAttack()).
+        public bool UnstablesOnHit = false;
+
         // Whether a hit against the player consumes this projectile — true
         // (the original, still-default behavior) for everything except
         // whatever explicitly opts out, e.g. GrenadeProjectile, which stays

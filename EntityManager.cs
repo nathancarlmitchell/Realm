@@ -456,6 +456,10 @@ namespace Realm
                     {
                         hitPlayer.Slow();
                     }
+                    if (enemiesProjectiles[i].UnstablesOnHit && Player.Instance == hitPlayer)
+                    {
+                        hitPlayer.Destabilize();
+                    }
                     // Marked regardless of ExpiresOnHit below, so a
                     // non-expiring projectile (e.g. GrenadeProjectile) can
                     // only ever damage the player once, not every frame

@@ -196,6 +196,7 @@ namespace Realm
         public static Texture2D Stunned { get; private set; }
         public static Texture2D Slowed { get; private set; }
         public static Texture2D Healing { get; private set; }
+        public static Texture2D Unstable { get; private set; }
 
         public static void Load(ContentManager content)
         {
@@ -333,6 +334,7 @@ namespace Realm
             Stunned = content.Load<Texture2D>("StatusEffects/stunned");
             Slowed = content.Load<Texture2D>("StatusEffects/slowed");
             Healing = content.Load<Texture2D>("StatusEffects/healing");
+            Unstable = content.Load<Texture2D>("StatusEffects/unstable");
 
             // Fonts.
             HudFont = content.Load<SpriteFont>("Fonts/HudFont");

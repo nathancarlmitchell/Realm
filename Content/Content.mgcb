@@ -1723,6 +1723,18 @@
 /processorParam:TextureFormat=Color
 /build:StatusEffects/stunned.png
 
+#begin StatusEffects/unstable.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:StatusEffects/unstable.png
+
 #begin Items/Potions/defense.png
 /importer:TextureImporter
 /processor:TextureProcessor

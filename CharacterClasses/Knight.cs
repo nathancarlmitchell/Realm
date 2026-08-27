@@ -167,6 +167,12 @@ namespace Realm.CharacterClasses
 
                 var aim = Input.GetMouseAimDirection();
                 float aimAngle = aim.ToAngle();
+
+                // Unstable: same full-random-angle treatment as Archer's
+                // Quiver fan — see that file's own comment.
+                if (HasDebuff(DebuffType.Unstable))
+                    aimAngle = rand.NextFloat(0f, MathHelper.TwoPi);
+
                 float arcGapRad = MathHelper.ToRadians(shield.ArcGapDegrees);
 
                 // Symmetric fan, same formula as Archer's Quiver (entry

@@ -52,6 +52,15 @@ namespace Realm
         // for every other weapon type, which never reads it.
         public float ArcGapDegrees { get; set; }
 
+        // Extra shot deviation while the player has the Unstable debuff
+        // (see DebuffType.Unstable) — "weapons gain random shot deviation
+        // when aiming (limited to a certain angle), significantly lowering
+        // accuracy." Applied on top of the small always-on randomSpread
+        // below in Shoot(), not instead of it — ±30°, a full 60° cone,
+        // clearly bounded rather than a fully random direction (that's
+        // reserved for aimed *abilities* — see Archer/Knight.UseAbility()).
+        private static readonly float UnstableSpreadRadians = MathHelper.ToRadians(30f);
+
         private readonly Random rand = new();
 
         // Equipment row, top-left corner of the sidebar's slot area. Armor/
@@ -149,6 +158,12 @@ namespace Realm
             {
                 float aimAngle = aim.ToAngle();
                 float randomSpread = rand.NextFloat(-0.04f, 0.04f) + rand.NextFloat(-0.04f, 0.04f);
+
+                // Unstable widens the always-on spread above into a much
+                // bigger, but still bounded, cone — see UnstableSpreadRadians'
+                // own comment.
+                if (Player.Instance.HasDebuff(Entity.DebuffType.Unstable))
+                    randomSpread += rand.NextFloat(-UnstableSpreadRadians, UnstableSpreadRadians);
 
                 // Spawn from the edge of the player in the aim direction,
                 // rather than dead center — reads as coming from a held

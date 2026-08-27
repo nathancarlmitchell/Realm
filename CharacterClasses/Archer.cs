@@ -144,6 +144,15 @@ namespace Realm.CharacterClasses
 
                 var aim = Input.GetMouseAimDirection();
                 float aimAngle = aim.ToAngle();
+
+                // Unstable: "abilities that require aiming ... will fire in
+                // random directions" — a full random angle, not just a
+                // wider cone like Weapon.Shoot()'s own version of this,
+                // since this fan is a single aimed cast rather than a
+                // continuous stream of individually-aimable shots.
+                if (HasDebuff(DebuffType.Unstable))
+                    aimAngle = rand.NextFloat(0f, MathHelper.TwoPi);
+
                 float arcGapRad = MathHelper.ToRadians(quiver.ArcGapDegrees);
 
                 // A symmetric fan of Shots projectiles, each adjacent pair
