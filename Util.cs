@@ -1414,21 +1414,48 @@ namespace Realm
             DrawOutlinedText(spriteBatch, font, text, position, textColor);
         }
 
-        // Colors a single tooltip line by what it actually contains — white
-        // for plain text (name/description), green for a stat bonus line
-        // ("+N Stat" or "No bonuses"), red for a damage line, blue for a
-        // mana cost line. Shared by both tooltip renderers below so the two
-        // never drift apart on what counts as which category.
-        private static Color ClassifyTooltipLine(string line)
+        // What kind of content a tooltip line actually contains — shared by
+        // both tooltip renderers below so the two never drift apart on what
+        // counts as which category. Stat covers both "+N Stat" (a positive
+        // value/delta) and "-N Stat" (a negative delta, e.g. "-1 Defense" —
+        // only ever produced by Equipment.BonusComparisonLines()'s Worse
+        // case) as well as the "No bonuses" fallback text.
+        private enum TooltipLineCategory
         {
-            if (line.StartsWith('+') || line == "No bonuses")
-                return Color.Green;
-            if (line.StartsWith("Damage:") || line.StartsWith("Side Damage:"))
-                return Color.Red;
-            if (line.EndsWith("Mana Cost"))
-                return Color.Blue;
-            return Color.White;
+            Plain,
+            Stat,
+            Damage,
+            ManaCost,
         }
+
+        private static TooltipLineCategory CategorizeTooltipLine(string line)
+        {
+            if (line.StartsWith('+') || line.StartsWith('-') || line == "No bonuses")
+                return TooltipLineCategory.Stat;
+            if (line.StartsWith("Damage:") || line.StartsWith("Side Damage:"))
+                return TooltipLineCategory.Damage;
+            if (line.EndsWith("Mana Cost"))
+                return TooltipLineCategory.ManaCost;
+            return TooltipLineCategory.Plain;
+        }
+
+        // A category's own color with no comparison data available — white
+        // for plain text (name/description), green for a stat line, red for
+        // a damage line, blue for a mana cost line.
+        private static Color CategoryBaseColor(TooltipLineCategory category) =>
+            category switch
+            {
+                TooltipLineCategory.Stat => Color.Green,
+                TooltipLineCategory.Damage => Color.Red,
+                TooltipLineCategory.ManaCost => Color.Blue,
+                _ => Color.White,
+            };
+
+        // Used by DrawCategorizedTooltip below — an equip slot's own hover
+        // tooltip just shows the item's own absolute values with nothing to
+        // compare against, so every line gets its plain category color.
+        private static Color ClassifyTooltipLine(string line) =>
+            CategoryBaseColor(CategorizeTooltipLine(line));
 
         // Same background-panel technique as the single-string overload
         // above, but colors each line by ClassifyTooltipLine() rather than
@@ -1474,19 +1501,21 @@ namespace Realm
 
         // Same background-panel technique as the single-string overload
         // above, but draws each line with its own color instead of one flat
-        // string/color — used for the inventory/bank hover tooltip
-        // (Equipment.ComparisonLines()). Each line's base color comes from
-        // the same ClassifyTooltipLine() rules DrawCategorizedTooltip uses
-        // (so the two tooltips agree on what a stat-bonus/damage/mana-cost
-        // line looks like), with Gold overriding that whenever the line
-        // beats the currently equipped item — a distinct "this is an
-        // upgrade" signal that stays visible regardless of the line's own
-        // category color, rather than the old flat red-default/dark-green-
-        // if-better scheme.
+        // string/color — used for the inventory/bank/loot-bag hover
+        // tooltip (Equipment.ComparisonLines()). Stat lines (the ones
+        // Equipment.BonusComparisonLines() produces) use a real three-way
+        // scheme: Gold when this item's value matches what's equipped
+        // (TooltipComparison.Same — the new "default" now that these lines
+        // always show, not just when better), Green when it's an upgrade,
+        // Red when it's a downgrade. Every other line (header text,
+        // Weapon/AbilityItem's own Damage/Mana Cost) keeps the older
+        // scheme instead — its own category color (CategoryBaseColor),
+        // with Gold overriding only on Better; those never use Worse, so
+        // they read exactly as before this change.
         public static void DrawTooltip(
             SpriteBatch spriteBatch,
             SpriteFont font,
-            List<(string Text, bool Better)> lines,
+            List<(string Text, TooltipComparison Comparison)> lines,
             Vector2 position
         )
         {
@@ -1509,7 +1538,18 @@ namespace Realm
 
             for (int i = 0; i < lines.Count; i++)
             {
-                Color color = lines[i].Better ? Color.Gold : ClassifyTooltipLine(lines[i].Text);
+                TooltipLineCategory category = CategorizeTooltipLine(lines[i].Text);
+                Color color =
+                    category == TooltipLineCategory.Stat
+                        ? lines[i].Comparison switch
+                        {
+                            TooltipComparison.Better => Color.Green,
+                            TooltipComparison.Worse => Color.Red,
+                            _ => Color.Gold,
+                        }
+                        : lines[i].Comparison == TooltipComparison.Better
+                            ? Color.Gold
+                            : CategoryBaseColor(category);
                 DrawOutlinedText(
                     spriteBatch,
                     font,

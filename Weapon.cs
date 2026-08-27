@@ -330,13 +330,20 @@ namespace Realm
             return text;
         }
 
-        public override List<(string Text, bool Better)> ComparisonLines(Equipment equipped)
+        public override List<(string Text, TooltipComparison Comparison)> ComparisonLines(
+            Equipment equipped
+        )
         {
             var lines = HeaderLines();
             var equippedWeapon = (Weapon)equipped;
             float mine = (DamageMin + DamageMax) / 2f;
             float theirs = (equippedWeapon.DamageMin + equippedWeapon.DamageMax) / 2f;
-            lines.Add(($"Damage: {DamageMin} - {DamageMax}", mine > theirs));
+            lines.Add(
+                (
+                    $"Damage: {DamageMin} - {DamageMax}",
+                    mine > theirs ? TooltipComparison.Better : TooltipComparison.Same
+                )
+            );
             return lines;
         }
     }

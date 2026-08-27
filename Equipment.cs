@@ -4,6 +4,23 @@ using Microsoft.Xna.Framework;
 
 namespace Realm
 {
+    // Same/Better/Worse rather than a plain bool — the inventory/bank/
+    // loot-bag comparison tooltip (ComparisonLines() below) needs a real
+    // three-way result per line, not just "is this an upgrade": a stat
+    // line now always shows (Gold) when it matches what's equipped, not
+    // just when it's better (Green) or worse (Red, e.g. hovering a T0
+    // Robe while a T1 Robe is equipped shows "-1 Defense" in red). Header
+    // lines (name/tier/description) and Weapon/AbilityItem's own Damage/
+    // Mana Cost lines still only ever use Same/Better — Worse is
+    // deliberately scoped to the actual stat-bonus lines only, not
+    // reworked for those two.
+    public enum TooltipComparison
+    {
+        Same,
+        Better,
+        Worse,
+    }
+
     public class Equipment : Item
     {
         public int Tier { get; set; }
@@ -91,9 +108,12 @@ namespace Realm
         // Tier/name/description as individual, uncolored lines — shared by
         // ComparisonLines() below and each subclass's override, so the
         // header doesn't need re-deriving per type.
-        protected List<(string Text, bool Better)> HeaderLines()
+        protected List<(string Text, TooltipComparison Comparison)> HeaderLines()
         {
-            var lines = new List<(string, bool)> { ($"T{Tier} - {Name}", false) };
+            var lines = new List<(string, TooltipComparison)>
+            {
+                ($"T{Tier} - {Name}", TooltipComparison.Same),
+            };
             string description = Util.WrapText(Art.RetroFont, Description, 350);
 
             // WrapText() inserts a bare "\n" between wrapped lines, not
@@ -102,33 +122,60 @@ namespace Realm
             // of a long description into a single list entry and throwing
             // off every line position that comes after it.
             foreach (string line in description.Split('\n'))
-                lines.Add((line, false));
+                lines.Add((line, TooltipComparison.Same));
             return lines;
         }
 
-        // Same content as BonusSummary(), but as individual lines, each
-        // flagged for whether THIS item's value beats the equivalent stat on
-        // `equipped` — used to highlight upgrades in the inventory/bank
-        // hover tooltip (InventorySystem.Draw()/BankSystem.Draw()), where
-        // "is this better than what I have on" is the actual question being
-        // asked. `equipped` is the player's current Weapon/Armor/Ring/
-        // AbilityItem for this slot — never null (an empty slot is a real,
-        // zero-stat placeholder object, not a null reference), so an unequipped
-        // slot naturally compares as "anything beats nothing."
-        protected List<(string Text, bool Better)> BonusComparisonLines(Equipment equipped)
+        // Same stats as BonusSummary(), but as individual delta-based
+        // lines against `equipped` — used by the inventory/bank/loot-bag
+        // hover tooltip (InventorySystem.Draw()/BankSystem.Draw()/
+        // LootBag.DrawLoot()), where "how does this compare to what I have
+        // on" is the actual question being asked. `equipped` is the
+        // player's current Weapon/Armor/Ring/AbilityItem for this slot —
+        // never null (an empty slot is a real, zero-stat placeholder
+        // object, not a null reference), so an unequipped slot naturally
+        // compares as "anything beats nothing."
+        //
+        // A stat shows whenever this item has it OR there's an actual
+        // difference from what's equipped — not just "whenever this item
+        // has it" like the old absolute-value-only version. Better lines
+        // still show this item's own absolute value (e.g. "+5 Defense"),
+        // matching the original display; Worse lines show the actual
+        // negative delta instead (e.g. "-1 Defense" hovering a T0 Robe
+        // while a T1 Robe — DefenseBonus 1 — is equipped), since showing
+        // "+0 Defense" for a decrease would be meaningless; Same lines
+        // (this item matches the equipped value, both nonzero) show the
+        // absolute value too, now visible instead of silently omitted.
+        protected List<(string Text, TooltipComparison Comparison)> BonusComparisonLines(
+            Equipment equipped
+        )
         {
-            var lines = new List<(string, bool)>();
+            var lines = new List<(string, TooltipComparison)>();
 
             void AddInt(int mine, int theirs, string label)
             {
-                if (mine != 0)
-                    lines.Add(($"+{mine} {label}", mine > theirs));
+                int delta = mine - theirs;
+                if (mine == 0 && delta == 0)
+                    return;
+                if (delta > 0)
+                    lines.Add(($"+{mine} {label}", TooltipComparison.Better));
+                else if (delta < 0)
+                    lines.Add(($"{delta} {label}", TooltipComparison.Worse));
+                else
+                    lines.Add(($"+{mine} {label}", TooltipComparison.Same));
             }
 
             void AddFloat(float mine, float theirs, string label)
             {
-                if (mine != 0)
-                    lines.Add(($"+{mine} {label}", mine > theirs));
+                float delta = mine - theirs;
+                if (mine == 0 && delta == 0)
+                    return;
+                if (delta > 0)
+                    lines.Add(($"+{mine} {label}", TooltipComparison.Better));
+                else if (delta < 0)
+                    lines.Add(($"{delta} {label}", TooltipComparison.Worse));
+                else
+                    lines.Add(($"+{mine} {label}", TooltipComparison.Same));
             }
 
             AddInt(MaxHealthBonus, equipped.MaxHealthBonus, "MaxHealth");
@@ -139,11 +186,20 @@ namespace Realm
             AddInt(DexterityBonus, equipped.DexterityBonus, "Dexterity");
             AddInt(VitalityBonus, equipped.VitalityBonus, "Vitality");
             AddInt(WisdomBonus, equipped.WisdomBonus, "Wisdom");
-            if (XpBonusPercent != 0)
-                lines.Add(($"+{XpBonusPercent}% XP", XpBonusPercent > equipped.XpBonusPercent));
+
+            float xpDelta = XpBonusPercent - equipped.XpBonusPercent;
+            if (XpBonusPercent != 0 || xpDelta != 0)
+            {
+                if (xpDelta > 0)
+                    lines.Add(($"+{XpBonusPercent}% XP", TooltipComparison.Better));
+                else if (xpDelta < 0)
+                    lines.Add(($"{xpDelta}% XP", TooltipComparison.Worse));
+                else
+                    lines.Add(($"+{XpBonusPercent}% XP", TooltipComparison.Same));
+            }
 
             if (lines.Count == 0)
-                lines.Add(("No bonuses", false));
+                lines.Add(("No bonuses", TooltipComparison.Same));
 
             return lines;
         }
@@ -152,7 +208,9 @@ namespace Realm
         // as individual lines a caller can color per-line rather than one
         // flat string. Covers Armor/Ring as-is; Weapon and AbilityItem
         // override this the same way they override TooltipText().
-        public virtual List<(string Text, bool Better)> ComparisonLines(Equipment equipped)
+        public virtual List<(string Text, TooltipComparison Comparison)> ComparisonLines(
+            Equipment equipped
+        )
         {
             var lines = HeaderLines();
             lines.AddRange(BonusComparisonLines(equipped));

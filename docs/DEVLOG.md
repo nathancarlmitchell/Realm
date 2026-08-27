@@ -5833,3 +5833,42 @@ date/time for those individually; don't treat their grouping as meaning they all
      coloring end to end. Reverted the temp code (`git diff --stat Game1.cs` clean), deleted the
      scratch log/PNG, ran a final clean build + plain boot-check, and confirmed all real save files
      byte-identical to a pre-test backup.
+
+219. **Reversed the inventory/bank/loot-bag comparison tooltip's stat colors, and made it show
+     decreases for the first time.** Old scheme: a stat-bonus line ("+N Stat") was Green by default,
+     Gold only when it beat the currently-equipped item, and never shown at all when the hovered
+     item's own value was 0 — so a downgrade never displayed anything. New scheme, per direct
+     request: Gold by default (matches what's equipped), Green when it's an upgrade, Red when it's a
+     downgrade — the explicit worked example given (a T0 Robe hovered while a T1 Robe is equipped
+     should show "-1 Defense"/"-1 Wisdom") maps exactly onto this repo's real `Data/ArmorData.json`
+     entries (Cloth Robe: Defense 2/Wisdom 0; Enchanted Robe: Defense 3/Wisdom 1), used directly as
+     the test case.
+     `Equipment.BonusComparisonLines()` reworked from "show this item's own value when nonzero" to
+     "show a delta whenever this item and the equipped item actually differ, or both are nonzero and
+     equal" — added a new `TooltipComparison` enum (`Same`/`Better`/`Worse`, replacing the old plain
+     `bool Better` in the `(string Text, bool Better)` tuple type used everywhere) since a plain bool
+     can't express "unchanged" vs "worse" as two distinct outcomes. A Better line still shows the
+     item's own absolute value (`+3 Defense`, unchanged display from before); a Worse line shows the
+     actual negative delta (`-1 Defense`) since showing the hovered item's own value — often literally
+     0 — would be meaningless for a decrease; a Same line (nonzero on both sides, no difference) now
+     shows the absolute value too, newly visible instead of silently omitted.
+     `Util.DrawTooltip`'s list overload updated to match: stat-category lines (identified by
+     `CategorizeTooltipLine`, which now also recognizes a leading `-` as a stat line, not just `+`)
+     resolve to Green/Red/Gold from the `TooltipComparison` value directly; every other line (header
+     text, and Weapon/AbilityItem's own Damage/Mana Cost lines) keeps the pre-existing scheme
+     unchanged — its own category color, with Gold overriding only on `Better` — since `Worse` is
+     deliberately never produced for those two (Damage/Mana Cost weren't asked to change, only
+     "stats" were). Threaded the new `TooltipComparison` type through every call site that touches
+     it: `Equipment.cs` (`HeaderLines()`/`BonusComparisonLines()`/`ComparisonLines()`), `Weapon.cs`/
+     `AbilityItem.cs`'s own `ComparisonLines()` overrides, and the three real callers
+     (`InventorySystem.cs`/`BankSystem.cs`/`LootBag.cs`)'s local variable types and single-item
+     fallback construction.
+     Verified via a temporary `Game1.StartGame()` test using the real Cloth Robe/Enchanted Robe pair
+     from `Data/ArmorData.json`: equipped Enchanted Robe (T1) and called `ComparisonLines()` on Cloth
+     Robe (T0), confirming `-1 Defense`/`Worse` and `-1 Wisdom`/`Worse` exactly as specified; equipped
+     Cloth Robe and compared Enchanted Robe, confirming `+3 Defense`/`Better` and `+1 Wisdom`/
+     `Better`; equipped Enchanted Robe and compared Enchanted Robe against itself, confirming `+3
+     Defense`/`Same` and `+1 Wisdom`/`Same`; rendered all three scenarios side by side through the
+     real `Util.DrawTooltip` call and visually confirmed red/green/gold respectively. Reverted the
+     temp code (`git diff --stat Game1.cs` clean), deleted the scratch log/PNG, ran a final clean
+     build + plain boot-check, and confirmed all real save files byte-identical to a pre-test backup.

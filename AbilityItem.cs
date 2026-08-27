@@ -100,7 +100,9 @@ namespace Realm
             return parts.Count > 0 ? Environment.NewLine + string.Join(Environment.NewLine, parts) : "";
         }
 
-        public override List<(string Text, bool Better)> ComparisonLines(Equipment equipped)
+        public override List<(string Text, TooltipComparison Comparison)> ComparisonLines(
+            Equipment equipped
+        )
         {
             var equippedItem = (AbilityItem)equipped;
 
@@ -109,7 +111,12 @@ namespace Realm
 
             float mineDamage = (MinDamage + MaxDamage) / 2f;
             float theirDamage = (equippedItem.MinDamage + equippedItem.MaxDamage) / 2f;
-            lines.Add(($"Damage: {MinDamage} - {MaxDamage}", mineDamage > theirDamage));
+            lines.Add(
+                (
+                    $"Damage: {MinDamage} - {MaxDamage}",
+                    mineDamage > theirDamage ? TooltipComparison.Better : TooltipComparison.Same
+                )
+            );
 
             if (ManaCost != 0)
             {
@@ -119,7 +126,12 @@ namespace Realm
                 // an empty slot (nothing equipped has no real mana cost to
                 // beat).
                 bool cheaper = equippedItem.IsEquipped && ManaCost < equippedItem.ManaCost;
-                lines.Add(($"{ManaCost} Mana Cost", cheaper));
+                lines.Add(
+                    (
+                        $"{ManaCost} Mana Cost",
+                        cheaper ? TooltipComparison.Better : TooltipComparison.Same
+                    )
+                );
             }
 
             return lines;

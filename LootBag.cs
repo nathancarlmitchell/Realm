@@ -240,9 +240,12 @@ namespace Realm
                             _ => null,
                         };
 
-                        List<(string Text, bool Better)> lines = equippedCounterpart != null
+                        List<(string Text, TooltipComparison Comparison)> lines = equippedCounterpart != null
                             ? equipment.ComparisonLines(equippedCounterpart)
-                            : new List<(string Text, bool Better)> { (equipment.TooltipText(), false) };
+                            : new List<(string Text, TooltipComparison Comparison)>
+                            {
+                                (equipment.TooltipText(), TooltipComparison.Same),
+                            };
 
                         float width = 0f;
                         foreach (var line in lines)
