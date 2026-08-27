@@ -1503,15 +1503,20 @@ namespace Realm
         // above, but draws each line with its own color instead of one flat
         // string/color — used for the inventory/bank/loot-bag hover
         // tooltip (Equipment.ComparisonLines()). Stat lines (the ones
-        // Equipment.BonusComparisonLines() produces) use a real three-way
-        // scheme: Gold when this item's value matches what's equipped
-        // (TooltipComparison.Same — the new "default" now that these lines
-        // always show, not just when better), Green when it's an upgrade,
-        // Red when it's a downgrade. Every other line (header text,
-        // Weapon/AbilityItem's own Damage/Mana Cost) keeps the older
-        // scheme instead — its own category color (CategoryBaseColor),
-        // with Gold overriding only on Better; those never use Worse, so
-        // they read exactly as before this change.
+        // Equipment.BonusComparisonLines() produces) and Damage lines
+        // (Weapon/AbilityItem's own ComparisonLines() override) both use
+        // the same real three-way scheme: Gold when this item's value
+        // matches what's equipped (TooltipComparison.Same), Green when
+        // it's an upgrade, Red when it's a downgrade — regardless of
+        // category, so a Damage line reads exactly like a stat line now.
+        // TooltipComparison.WrongClass overrides all of that to Gray,
+        // whatever category it's on — set only by Weapon/AbilityItem's
+        // Damage line when CanEquipByCurrentClass is false, since
+        // "better/worse than equipped" is meaningless for an item this
+        // class can't even wear. Mana Cost and header text (name/tier/
+        // description) keep the older scheme — Gold only on Better, else
+        // the category's own base color — deliberately unchanged; they
+        // never produce Worse/WrongClass.
         public static void DrawTooltip(
             SpriteBatch spriteBatch,
             SpriteFont font,
@@ -1540,16 +1545,19 @@ namespace Realm
             {
                 TooltipLineCategory category = CategorizeTooltipLine(lines[i].Text);
                 Color color =
-                    category == TooltipLineCategory.Stat
-                        ? lines[i].Comparison switch
-                        {
-                            TooltipComparison.Better => Color.Green,
-                            TooltipComparison.Worse => Color.Red,
-                            _ => Color.Gold,
-                        }
-                        : lines[i].Comparison == TooltipComparison.Better
-                            ? Color.Gold
-                            : CategoryBaseColor(category);
+                    lines[i].Comparison == TooltipComparison.WrongClass
+                        ? Color.Gray
+                        : category == TooltipLineCategory.Stat
+                            || category == TooltipLineCategory.Damage
+                            ? lines[i].Comparison switch
+                            {
+                                TooltipComparison.Better => Color.Green,
+                                TooltipComparison.Worse => Color.Red,
+                                _ => Color.Gold,
+                            }
+                            : lines[i].Comparison == TooltipComparison.Better
+                                ? Color.Gold
+                                : CategoryBaseColor(category);
                 DrawOutlinedText(
                     spriteBatch,
                     font,

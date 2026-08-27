@@ -9,16 +9,23 @@ namespace Realm
     // three-way result per line, not just "is this an upgrade": a stat
     // line now always shows (Gold) when it matches what's equipped, not
     // just when it's better (Green) or worse (Red, e.g. hovering a T0
-    // Robe while a T1 Robe is equipped shows "-1 Defense" in red). Header
-    // lines (name/tier/description) and Weapon/AbilityItem's own Damage/
-    // Mana Cost lines still only ever use Same/Better — Worse is
-    // deliberately scoped to the actual stat-bonus lines only, not
-    // reworked for those two.
+    // Robe while a T1 Robe is equipped shows "-1 Defense" in red).
+    // Weapon/AbilityItem's own Damage lines use the same three-way scheme
+    // now too (see Util.DrawTooltip()'s color resolution) — Mana Cost and
+    // header lines (name/tier/description) still only ever use Same/Better,
+    // deliberately unchanged.
+    //
+    // WrongClass overrides all three for a Damage line specifically when
+    // CanEquipByCurrentClass is false — the item can't actually be worn by
+    // this class at all, so "better/worse/same" than what's equipped is
+    // moot; Util.DrawTooltip() renders it Gray regardless of the raw damage
+    // numbers.
     public enum TooltipComparison
     {
         Same,
         Better,
         Worse,
+        WrongClass,
     }
 
     public class Equipment : Item
@@ -67,8 +74,10 @@ namespace Realm
             hover = SlotBounds.Intersects(Input.MouseBounds);
         }
 
-        // One-line summary of whichever bonuses are non-zero, for equipped-item
-        // hover tooltips (Armor, Ring).
+        // Summary of whichever bonuses are non-zero, one per line, for
+        // equipped-item hover tooltips (Armor, Ring) — previously joined
+        // with ", " onto a single line, per direct feedback that each stat
+        // should stand on its own line vertically instead.
         protected string BonusSummary()
         {
             List<string> parts = [];
@@ -92,7 +101,7 @@ namespace Realm
             if (XpBonusPercent != 0)
                 parts.Add($"+{XpBonusPercent}% XP");
 
-            return parts.Count > 0 ? string.Join(", ", parts) : "No bonuses";
+            return parts.Count > 0 ? string.Join(Environment.NewLine, parts) : "No bonuses";
         }
 
         // Tier/name/description/bonuses, as shown on hover both in the equip

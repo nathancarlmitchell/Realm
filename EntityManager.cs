@@ -74,8 +74,15 @@ namespace Realm
             entities.Add(entity);
             if (entity is Projectile)
                 bullets.Add(entity as Projectile);
-            else if (entity is Enemy)
-                enemies.Add(entity as Enemy);
+            else if (entity is Enemy enemy)
+            {
+                // Applied exactly once, right here — the single spawn-time
+                // choke point every enemy (any factory, any boss) passes
+                // through on its way into the live game world. See
+                // Enemy.ApplyHealthDifficultyScaling()'s own comment.
+                enemy.ApplyHealthDifficultyScaling();
+                enemies.Add(enemy);
+            }
             else if (entity is EnemyProjectile)
                 enemiesProjectiles.Add(entity as EnemyProjectile);
             else if (entity is Item)

@@ -50,6 +50,21 @@ namespace Realm
         // callers don't have to repeat the healthMax > 0 guard by hand.
         protected float HealthFraction => healthMax > 0 ? (float)health / healthMax : 0f;
 
+        // Called exactly once by EntityManager.AddEntity() the moment this
+        // enemy is actually added to the live game world — scales
+        // health/healthMax by Difficulty.EnemyHealthMultiplier. A method
+        // rather than baking the multiplier into every individual factory/
+        // boss constructor's own health/healthMax assignment, so retuning
+        // the global knob doesn't require touching per-enemy code —
+        // matches Difficulty.EnemyDamageMultiplier/EnemyChaseSpeedMultiplier's
+        // own "one knob, one injection site" shape. Public (not protected)
+        // since EntityManager, not a subclass, is what calls it.
+        public void ApplyHealthDifficultyScaling()
+        {
+            health = (int)(health * Difficulty.EnemyHealthMultiplier);
+            healthMax = (int)(healthMax * Difficulty.EnemyHealthMultiplier);
+        }
+
         protected SoundEffect deathSound;
         protected SoundEffect hitSound;
         public List<Guid> HitBy;
@@ -285,7 +300,14 @@ namespace Realm
             if (Player.Instance.ShowEnemyDamageNumbersEnabled)
                 EntityManager.Add(new DamageNumber(Position, actualDamage, Color.Red, prefix: "-"));
             if (Player.Instance.ShowHitParticlesEnabled)
-                Particle.SpawnBurst(Position, Color.White, count: 5, minSpeed: 1.5f, maxSpeed: 3f, lifespanTicks: 15);
+                Particle.SpawnBurst(
+                    Position,
+                    Color.White,
+                    count: 5,
+                    minSpeed: 1.5f,
+                    maxSpeed: 3f,
+                    lifespanTicks: 15
+                );
 
             if (health <= 0)
             {
@@ -331,9 +353,10 @@ namespace Realm
                 // default), and from Level 20 onward by AlwaysShowExpEnabled
                 // instead (off by default — "the icon... disappears" at 20,
                 // reactivated by that separate setting).
-                bool showXpIcon = Player.Instance.Level < 20
-                    ? Player.Instance.ShowXpDropsEnabled
-                    : Player.Instance.AlwaysShowExpEnabled;
+                bool showXpIcon =
+                    Player.Instance.Level < 20
+                        ? Player.Instance.ShowXpDropsEnabled
+                        : Player.Instance.AlwaysShowExpEnabled;
                 if (showXpIcon)
                 {
                     EntityManager.Add(
@@ -351,7 +374,15 @@ namespace Realm
                     );
                 }
                 if (Player.Instance.ShowHitParticlesEnabled)
-                    Particle.SpawnBurst(Position, Color.OrangeRed, count: 14, minSpeed: 2f, maxSpeed: 5f, lifespanTicks: 25, startScale: 0.2f);
+                    Particle.SpawnBurst(
+                        Position,
+                        Color.OrangeRed,
+                        count: 14,
+                        minSpeed: 2f,
+                        maxSpeed: 5f,
+                        lifespanTicks: 25,
+                        startScale: 0.2f
+                    );
 
                 // Spawn loot — SpawnLoot() is virtual, so Boss subclasses
                 // (guaranteed good loot) override this; every other enemy
@@ -494,24 +525,23 @@ namespace Realm
         protected static readonly Dictionary<ItemSpawner.LootCategory, float> BeachDropChances =
             new()
             {
-                [ItemSpawner.LootCategory.Weapon] = 0.025f,
-                [ItemSpawner.LootCategory.Armor] = 0.025f,
-                [ItemSpawner.LootCategory.Ring] = 0.0125f,
-                [ItemSpawner.LootCategory.AbilityItem] = 0.0125f,
+                [ItemSpawner.LootCategory.Weapon] = 0.0125f,
+                [ItemSpawner.LootCategory.Armor] = 0.0125f,
+                [ItemSpawner.LootCategory.Ring] = 0.005f,
+                [ItemSpawner.LootCategory.AbilityItem] = 0.005f,
                 [ItemSpawner.LootCategory.HealthManaPotion] = 0.025f,
             };
 
         protected static readonly Dictionary<
             ItemSpawner.LootCategory,
             (int Min, int Max)
-        > BeachDropTierRanges =
-            new()
-            {
-                [ItemSpawner.LootCategory.Weapon] = (1, 3),
-                [ItemSpawner.LootCategory.Armor] = (1, 3),
-                [ItemSpawner.LootCategory.Ring] = (1, 1),
-                [ItemSpawner.LootCategory.AbilityItem] = (1, 1),
-            };
+        > BeachDropTierRanges = new()
+        {
+            [ItemSpawner.LootCategory.Weapon] = (1, 3),
+            [ItemSpawner.LootCategory.Armor] = (1, 3),
+            [ItemSpawner.LootCategory.Ring] = (1, 1),
+            [ItemSpawner.LootCategory.AbilityItem] = (1, 1),
+        };
 
         protected void AddBehaviour(IEnumerable<int> behaviour)
         {
@@ -1043,7 +1073,8 @@ namespace Realm
                 // weakest trash enemy in the game shouldn't ever hand out a
                 // stat potion, just (low-tier — see ItemSpawner.
                 // IsWeakEnemy) equipment.
-                DropPool = ItemSpawner.LootCategory.Weapon
+                DropPool =
+                    ItemSpawner.LootCategory.Weapon
                     | ItemSpawner.LootCategory.Armor
                     | ItemSpawner.LootCategory.Ring
                     | ItemSpawner.LootCategory.AbilityItem,

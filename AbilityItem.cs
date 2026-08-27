@@ -114,7 +114,10 @@ namespace Realm
             lines.Add(
                 (
                     $"Damage: {MinDamage} - {MaxDamage}",
-                    mineDamage > theirDamage ? TooltipComparison.Better : TooltipComparison.Same
+                    !CanEquipByCurrentClass ? TooltipComparison.WrongClass
+                        : mineDamage > theirDamage ? TooltipComparison.Better
+                        : mineDamage < theirDamage ? TooltipComparison.Worse
+                        : TooltipComparison.Same
                 )
             );
 

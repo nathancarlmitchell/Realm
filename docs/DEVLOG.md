@@ -6272,3 +6272,60 @@ date/time for those individually; don't treat their grouping as meaning they all
      boot-check, and confirmed save files matched a pre-test backup except for the user's own
      continued live play in between (new gear; Level/Fame progressed normally) — refreshed the
      backup, same as entries 229/231.
+
+233. **Five-part batch: global enemy HP multiplier, equipment tooltip formatting/coloring, and a
+     file reorganization.** Also noted directly, not acted on: the user manually retuned
+     `Enemy.BeachDropChances` further (Weapon/Armor 0.025→0.0125, Ring/AbilityItem 0.0125→0.005)
+     since entry 232 shipped, and manually retuned some of the Beach mini-bosses' own stats
+     (spotted via `BeachedBuccaneer.cs`'s diff during the file move below) — both left exactly as
+     found, not reverted or second-guessed.
+     - **`Difficulty.EnemyHealthMultiplier` (2x)** — a fourth global knob alongside
+       `EnemyDamageMultiplier`/`EnemyChaseSpeedMultiplier`. New `Enemy.ApplyHealthDifficultyScaling()`
+       scales `health`/`healthMax` by it, called exactly once from `EntityManager.AddEntity()`'s
+       `is Enemy` branch — the single choke point every enemy (any factory, any boss) passes through
+       on the way into the live game world — rather than touching every individual factory/boss
+       constructor's own health values. Phase-transition logic across every boss already reads
+       `HealthFraction` (a ratio) rather than a stored absolute threshold, so this scaling doesn't
+       disturb any existing "flee/enrage at X% HP" behavior.
+     - **`Equipment.BonusSummary()` — one stat per line.** Previously joined multiple non-zero bonuses
+       with `", "` onto a single line (e.g. "+3 Defense, +1 Wisdom") for the equipped-slot hover
+       tooltip; now joins with a newline instead, so each stat reads as its own line like the
+       inventory/bank/loot-bag comparison tooltip already does.
+     - **Tooltip damage-line coloring unified with stat-line coloring, plus a new Gray "wrong class"
+       state.** `TooltipComparison` gained a fourth value, `WrongClass`. `Weapon.ComparisonLines()`/
+       `AbilityItem.ComparisonLines()`'s own "Damage:" line now computes a real three-way
+       Better/Worse/Same (previously only ever Better/Same, no Worse) — same-item-defense line
+       treatment as stat lines get — and returns `WrongClass` outright when `!CanEquipByCurrentClass`,
+       since "better/worse than equipped" is meaningless for an item this class can't even wear.
+       `Util.DrawTooltip()`'s color resolution now treats Stat and Damage categories identically
+       (Green/Red/Gold for Better/Worse/Same) and renders any `WrongClass` line Gray regardless of
+       category. Mana Cost and header lines (name/tier/description) deliberately kept their older,
+       narrower scheme (Gold only on Better, else category base color) — the user's ask specifically
+       named "damage numbers," not every tooltip line.
+     - **File reorganization**: moved all 9 regular Beach enemies (`Bandit`, `Piratess`, `SandDevil`,
+       the three Little Jellies, `LittleScorpion`, `SandsmanArcher`, `SandsmanSorcerer`) and all 5
+       Beach mini-bosses (`BanditLeader`, `ScorpionQueen`, `SandsmanKing`, `GiantCrab`,
+       `BeachedBuccaneer` — previously under `Bosses/`) into a new `Enemies/Beach/` folder the user
+       created, via `git mv` to preserve history. Namespaces left untouched (`Realm` for the regular
+       enemies, `Realm.Bosses` for the mini-bosses) — this SDK-style project has no implicit
+       namespace-matches-folder convention (files directly under the project root already use plain
+       `Realm` regardless of which subfolder other files sit in), and every existing call site
+       (`EnemySpawner.BasicEnemyPool`, etc.) already refers to the mini-bosses via `Bosses.X`
+       regardless of physical file location, so a pure move needed zero reference updates. `Boss.cs`
+       (the shared base class) and the non-Beach bosses (`LimonTheSpriteGoddess`,
+       `SthenoTheSnakeQueen`, `SthenoPet`, `SthenoSwarm`) stayed exactly where they were — this
+       project's SDK-style `.csproj` has no explicit `<Compile Include>` list (implicit glob), so no
+       project-file edit was needed either.
+     Verified via a temporary `Game1.StartGame()` test: constructed a `Snake` via
+     `Enemy.CreateSnake()` and confirmed its reflected `health`/`healthMax` were 5/5 before
+     `EntityManager.Add()` and exactly 10/10 immediately after; reflected `Equipment.BonusSummary()`
+     against a test `Armor` with two non-zero bonuses and confirmed the result was newline-separated
+     with no `", "` present; and — after a wrong first attempt used `Weapon.WeaponType.Wand` for a
+     Wizard test player (Wizard's own `WeaponType` is actually `Staff`, a test-setup mistake caught
+     and fixed, not a code bug) — confirmed `Weapon.ComparisonLines()`'s Damage line correctly
+     returned `Same`/`Better`/`Worse`/`WrongClass` across four constructed matchups (identical stats,
+     a strictly worse equipped weapon, a strictly better one, and a same-class-mismatched `Bow` for a
+     `Staff`-only Wizard). Reverted the temp code, including a temporarily re-added
+     `using System.Linq;` (`git diff --stat Game1.cs` clean), ran a final clean build + plain
+     boot-check, and confirmed save files matched a pre-test backup except for the user's own
+     continued live play in between — refreshed the backup, same as the last several entries.

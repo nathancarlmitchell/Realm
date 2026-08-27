@@ -35,7 +35,7 @@ namespace Realm.Bosses
         // engagement distance as the projectile attack's own Range.
         private const float EngageRange = 7f * 32f;
         private const float AoeRange = 4f * 32f;
-        private const float AoeRadius = 6f * 32f;
+        private const float AoeRadius = 4f * 32f;
         private const int AttackCooldown = 120; // 2 seconds at 60fps
         private const float FanSpread = 0.15f; // radians between shots once multi-shot
 
@@ -51,10 +51,10 @@ namespace Realm.Bosses
         public BeachedBuccaneer(Vector2 position)
             : base(Art.BeachedBuccaneer, position)
         {
-            health = 500;
-            healthMax = 500;
-            Defense = 2;
-            PointValue = 60;
+            health = 1500;
+            healthMax = 1500;
+            Defense = 3;
+            PointValue = 250;
             DropPool = BeachDropPool;
             DropChances = BeachDropChances;
             DropTierRanges = BeachDropTierRanges;

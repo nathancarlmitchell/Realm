@@ -31,5 +31,17 @@ namespace Realm
         // retuning after the next playthrough, same as EnemyDamageMultiplier
         // above.
         public const float EnemyChaseSpeedMultiplier = 1.4f;
+
+        // Single global knob scaling every enemy's health/healthMax —
+        // applied once, at spawn time, via Enemy.ApplyHealthDifficultyScaling()
+        // (called from EntityManager.AddEntity() for every Enemy-typed
+        // entity) rather than retuning every individual factory/boss's own
+        // health/healthMax values by hand. Requested directly by the user
+        // as its own explicit ask, independent of EnemyDamageMultiplier/
+        // EnemyChaseSpeedMultiplier above (those came from playtest
+        // feedback about feel; this is a deliberate "make enemies tankier"
+        // dial). 2x to start — expect retuning after a playthrough, same
+        // as the other two.
+        public const float EnemyHealthMultiplier = 2f;
     }
 }
