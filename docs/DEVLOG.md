@@ -5929,3 +5929,38 @@ date/time for those individually; don't treat their grouping as meaning they all
      Game1.cs` clean), deleted the scratch log/PNG, ran a final clean build + plain boot-check, and
      confirmed all real save files (including `GameSettingsData.json`) byte-identical to a pre-test
      backup.
+
+222. **Fixed the real Sand Devil Circle-phase teleport, on the fifth attempt.** The previous fix
+     (entry 220, widening `CircleRadius`) made the *steady-state* circle feel better but didn't touch
+     the actual bug: the Chase→Circle transition fired purely on a fixed 3-second timer regardless of
+     distance, and Circle snaps `Position` directly onto a `CircleRadius` ring the instant it fires —
+     so if the Sand Devil was still hundreds of units away when that timer expired (routine now that
+     it spawns far off-screen — see entry 221's screen-size-based `MinSpawnDistanceFromPlayer`), the
+     snap was a real teleport toward the player.
+     First attempt at fixing this properly: gate the timer's own countdown on already being within
+     `CircleRadius`, so the transition could only fire once actually close. Diagnosed via a
+     `Game1.StartGame()` test with per-tick displacement logging (added to pinpoint exactly where a
+     jump happened, since the earlier fixes' own passing tests weren't catching this) — this
+     introduced a *different* teleport: once within `CircleRadius`, nothing stopped `FollowPlayer()`
+     from continuing to close in, well past the ring, all the way down toward `CloseThreshold` (64
+     units) before the timer — only just starting to count down — finally hit 0, so the eventual snap
+     back OUT to `CircleRadius` was itself a ~128-unit jump, reproducing on every Chase phase after
+     the first, not just the initial approach from spawn.
+     Real fix: stop the approach itself once within `CircleRadius`, rather than gating the timer.
+     `PhaseWatcher()`'s Chase branch now has three states instead of two: `tooClose` (within
+     `CloseThreshold`) still triggers the existing clamped erratic wander; outside `CircleRadius`
+     still calls `FollowPlayer()` normally; and the new state — within `CircleRadius` but not yet
+     `tooClose` — calls neither, holding position (residual `Velocity` decays away naturally over a
+     few ticks) until the independently-still-counting-down timer expires. By the time it does,
+     distance is already ≈ `CircleRadius` regardless of how many Chase/Circle cycles have already
+     happened, so the snap is a no-op in every practical sense every time, not just the first.
+     Verified via the same temporary `Game1.StartGame()` test, extended to 3000 ticks (enough to
+     observe several full Chase/Circle cycles) and tracking the single largest per-tick displacement
+     throughout with diagnostic logging on every new-max event: confirmed a still-far Sand Devil (with
+     the transition timer already expired) never enters Circle phase at all over 60 ticks; confirmed
+     the only max-jump event across the *entire* 3000-tick run was a 6.7-unit correction at the very
+     first transition (191.18 → 192, i.e. already almost exactly on the ring), with zero further jumps
+     of any size for the rest of the run despite multiple subsequent Circle cycles — versus the
+     ~128-unit jumps both prior attempts still produced under this same test. Reverted the temp code
+     (`git diff --stat Game1.cs` clean), deleted the scratch log, ran a final clean build + plain
+     boot-check, and confirmed all real save files byte-identical to a pre-test backup.

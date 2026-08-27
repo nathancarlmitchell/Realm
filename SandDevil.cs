@@ -123,9 +123,38 @@ namespace Realm
             {
                 if (currentPhase == Phase.Chase)
                 {
-                    bool tooClose =
-                        Vector2.DistanceSquared(Position, Player.Instance.Position)
-                        <= CloseThreshold * CloseThreshold;
+                    float distSqToPlayer = Vector2.DistanceSquared(
+                        Position,
+                        Player.Instance.Position
+                    );
+                    bool tooClose = distSqToPlayer <= CloseThreshold * CloseThreshold;
+
+                    // Bug fix: Circle snaps Position directly onto a ring
+                    // CircleRadius from the player (see the else branch
+                    // below) the moment this phase transitions — so
+                    // whatever the actual distance is right then determines
+                    // whether that snap is a no-op or a visible teleport.
+                    // Two earlier attempts both still let a real teleport
+                    // through: gating the transition on the timer alone let
+                    // it fire from hundreds of units away (spawns are far
+                    // off-screen now — see MinSpawnDistanceFromPlayer);
+                    // gating the timer's own countdown on already being in
+                    // range still let normal chasing keep closing in well
+                    // past CircleRadius (there was nothing stopping it) all
+                    // the way down toward CloseThreshold before the timer
+                    // finally expired, so the eventual snap back OUT to
+                    // CircleRadius was itself a ~128-unit jump — and that
+                    // recurred on every Chase phase after the first, not
+                    // just the initial approach. Fixed by stopping the
+                    // approach itself once within CircleRadius: Chase
+                    // literally cannot bring the Sand Devil any closer than
+                    // the ring it's about to circle on, so by the time the
+                    // timer expires and the transition fires, distance is
+                    // already ≈ CircleRadius and the snap is a no-op in
+                    // every practical sense — regardless of how many
+                    // Chase/Circle cycles have already happened.
+                    bool withinCircleRange = distSqToPlayer <= CircleRadius * CircleRadius;
+
                     if (tooClose)
                     {
                         erratic.MoveNext();
@@ -149,16 +178,28 @@ namespace Realm
                             Position = Player.Instance.Position + direction * CloseThreshold;
                         }
                     }
-                    else
+                    else if (!withinCircleRange)
                     {
                         chase.MoveNext();
                     }
+                    // else: within CircleRadius but not yet tooClose — hold
+                    // here (no movement call at all, letting residual
+                    // Velocity decay away naturally over the next few
+                    // ticks) rather than continuing to close in, waiting
+                    // out whatever's left of the Chase timer at roughly the
+                    // ring's own distance.
 
                     if (phaseTimer <= 0)
                     {
-                        currentPhase = Phase.Circle;
-                        phaseTimer = CirclePhaseDuration;
-                        circleAngle = (Position - Player.Instance.Position).ToAngle();
+                        if (withinCircleRange)
+                        {
+                            currentPhase = Phase.Circle;
+                            phaseTimer = CirclePhaseDuration;
+                            circleAngle = (Position - Player.Instance.Position).ToAngle();
+                        }
+                        // else: timer's expired but still too far away —
+                        // keep chasing and re-check every subsequent tick,
+                        // don't decrement further (already at/below 0).
                     }
                     else
                     {
