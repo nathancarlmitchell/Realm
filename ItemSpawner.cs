@@ -275,12 +275,21 @@ namespace Realm
         // tier a drop can reach — rolled per category via RollTierOffset,
         // not a flat bump, so a tough kill doesn't guarantee the maximum
         // every time.
+        //
+        // Doubled from 20/15/8 per direct playtest feedback — drop rates
+        // felt too high across the board. A flat "everything in half" cut,
+        // not yet a Difficulty-style global knob (see Difficulty.cs) — the
+        // user explicitly asked for the raw numbers halved for now, nothing
+        // more abstracted. This also halves every enemy's DropWeights-based
+        // rate automatically (WeightedChance divides this same denominator
+        // by the weight), so BigSnake's potion-leaning weights etc. don't
+        // need separate retuning.
         private static int DropChanceDenominator(int pointValue) =>
             pointValue switch
             {
-                < 10 => 20,
-                < 100 => 15,
-                _ => 8,
+                < 10 => 40,
+                < 100 => 30,
+                _ => 16,
             };
 
         private static int MaxTierJump(int pointValue) =>
@@ -445,14 +454,14 @@ namespace Realm
                         items.Add(new Potion(potion));
                     }
                 }
-                else if (RollsCategory(dropChances, dropWeights, LootCategory.StatPotion, 15))
+                else if (RollsCategory(dropChances, dropWeights, LootCategory.StatPotion, 30))
                 {
                     statPotionDropped = true;
                     items.Add(new Potion(RollStatPotion(statPotionPool)));
                 }
             }
 
-            if (dropPool.HasFlag(LootCategory.HealthManaPotion) && RollsCategory(dropChances, dropWeights, LootCategory.HealthManaPotion, 10))
+            if (dropPool.HasFlag(LootCategory.HealthManaPotion) && RollsCategory(dropChances, dropWeights, LootCategory.HealthManaPotion, 20))
             {
                 if (rand.Next(2) == 0)
                     items.Add(new Potion(Potions.Mana));

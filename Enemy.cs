@@ -477,10 +477,13 @@ namespace Realm
         // duplicating it, so retuning Beach's loot only means editing this
         // once. No stat potions at all (StatPotion excluded from the pool
         // entirely — DropChances/DropTierRanges entries for a category that
-        // never rolls would be meaningless); Weapon/Armor at 5% from tier
-        // 1-3; Ring/AbilityItem at 2.5% from tier 1 only; HP/MP potions at
-        // 5%. static readonly since it's the same table for every instance,
-        // not per-enemy state.
+        // never rolls would be meaningless); Weapon/Armor at 2.5% from tier
+        // 1-3; Ring/AbilityItem at 1.25% from tier 1 only; HP/MP potions at
+        // 2.5%. Halved from 5%/5%/2.5%/2.5%/5% per direct playtest feedback
+        // — drop rates felt too high across the board, same flat "everything
+        // in half" pass as ItemSpawner.DropChanceDenominator/StatPotion/
+        // HealthManaPotion's own base chances. static readonly since it's
+        // the same table for every instance, not per-enemy state.
         protected static readonly ItemSpawner.LootCategory BeachDropPool =
             ItemSpawner.LootCategory.Weapon
             | ItemSpawner.LootCategory.Armor
@@ -491,11 +494,11 @@ namespace Realm
         protected static readonly Dictionary<ItemSpawner.LootCategory, float> BeachDropChances =
             new()
             {
-                [ItemSpawner.LootCategory.Weapon] = 0.05f,
-                [ItemSpawner.LootCategory.Armor] = 0.05f,
-                [ItemSpawner.LootCategory.Ring] = 0.025f,
-                [ItemSpawner.LootCategory.AbilityItem] = 0.025f,
-                [ItemSpawner.LootCategory.HealthManaPotion] = 0.05f,
+                [ItemSpawner.LootCategory.Weapon] = 0.025f,
+                [ItemSpawner.LootCategory.Armor] = 0.025f,
+                [ItemSpawner.LootCategory.Ring] = 0.0125f,
+                [ItemSpawner.LootCategory.AbilityItem] = 0.0125f,
+                [ItemSpawner.LootCategory.HealthManaPotion] = 0.025f,
             };
 
         protected static readonly Dictionary<

@@ -6237,3 +6237,38 @@ date/time for those individually; don't treat their grouping as meaning they all
      `PlayerData_Wizard.json`/`InventoryData_Wizard.json` — not a bug, the user's own ongoing live
      play between turns (new gear equipped; Level/`ExperienceTotal` unchanged) — refreshed the backup
      to the current state, same as entry 229's incident.
+
+232. **Halved every regular drop rate**, per direct playtest feedback that loot felt too frequent.
+     A flat "everything in half" cut on the raw numbers, deliberately *not* a new `Difficulty`-style
+     global knob (see [Difficulty.cs](Difficulty.cs)) — the user explicitly asked for the literal
+     values halved for now, nothing more abstracted yet.
+     - `ItemSpawner.DropChanceDenominator(pointValue)` — the `rand.Next(N) == 0` denominator behind
+       every non-overridden Weapon/Armor/Ring/AbilityItem roll — doubled at all three brackets:
+       20→40 (PointValue < 10), 15→30 (< 100), 8→16 (≥ 100). Doubling this same shared denominator
+       also halves every `Enemy.DropWeights`-based enemy automatically (e.g. BigSnake's
+       potion-leaning weights) — `WeightedChance()` divides this denominator by the weight, so no
+       separate per-enemy retuning was needed there.
+     - `ItemSpawner.Spawn()`'s two flat inline base chances — `StatPotion` (15→30) and
+       `HealthManaPotion` (10→20) — doubled the same way.
+     - `Enemy.BeachDropChances` (the flat, PointValue-independent absolute-probability table
+       every Beach enemy shares — Pirate, Bandit, Piratess, Sand Devil, their mini-boss/escort
+       variants, and the three Little Jellies) — halved directly: Weapon/Armor/HealthManaPotion
+       5%→2.5%, Ring/AbilityItem 2.5%→1.25%.
+     **Deliberately left untouched**: boss `GuaranteedPotionChances` (Limon, Stheno) — a different
+     design category (a boss's own reward structure for a rare, deliberate encounter) rather than
+     ambient trash-mob drop frequency, and halving a literal `1.0` ("guaranteed") entry would silently
+     stop guaranteeing it. Worth a separate explicit ask if the user wants that tuned too.
+     Verified via a temporary `Game1.StartGame()` test, three ways: (1) reflected the private
+     `DropChanceDenominator()` directly and confirmed all three brackets return exactly
+     40/30/16 for pointValue 2/50/500; (2) reflected the private static `BeachDropChances` field
+     directly and confirmed every entry's exact halved value; (3) since the two flat `StatPotion`/
+     `HealthManaPotion` base chances are inline literals with no reflectable field, ran a 20,000-trial
+     Monte Carlo simulation (`Game1.Mute` set true for the duration to suppress the loot-appears sound
+     spam, restored after) calling `ItemSpawner.Spawn()` against a weak enemy and counting `Potion`
+     items across every `LootBag` created — empirical combined rate 0.0819 against an expected
+     0.0833 (`1/30 + 1/20`), well within statistical noise, matching entry 213's own established
+     drop-rate-verification style. Reverted the temp code, including a temporarily-added
+     `using System.Linq;` (`git diff --stat Game1.cs` clean), ran a final clean build + plain
+     boot-check, and confirmed save files matched a pre-test backup except for the user's own
+     continued live play in between (new gear; Level/Fame progressed normally) — refreshed the
+     backup, same as entries 229/231.
