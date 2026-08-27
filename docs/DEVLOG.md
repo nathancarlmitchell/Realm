@@ -5747,3 +5747,31 @@ date/time for those individually; don't treat their grouping as meaning they all
      test data), reverted the temp code (`git diff --stat Game1.cs` clean), deleted the scratch
      PNGs/log, ran a final clean build + plain boot-check, and confirmed all real save files
      (including the restored `GameSettingsData.json`) byte-identical to their pre-test backups.
+
+216. **Gave menu buttons a dedicated font again: Micro5.** Entry 207 had consolidated buttons onto
+     the same `Art.RetroFont` (Jersey10) as everything else, retiring a short-lived dedicated
+     `RetroFontButton`; the user asked for a fresh button-specific font. Downloaded 5 new candidates
+     from Google Fonts (all SIL OFL, none tried before this session): DotGothic16, Rubik Pixels,
+     Micro5, Jacquard 12, Rubik Glitch — plus, per a direct follow-up question, Press Start 2P
+     (already in the repo for `RetroFontLarge`, tried at button scale for the first time). Compared
+     all 6 the same way entries 201/205 compared base-font candidates: temp `.spritefont` assets at a
+     shared 18pt, reflection-swapped into the real `MenuState`'s actual `Button` instances one at a
+     time, rendered to PNGs. DotGothic16, Rubik Pixels, and Press Start 2P all either rendered
+     illegibly or badly overflowed "Character Select" past the button's edges into neighboring rows
+     at this size; only Micro5 and Jacquard 12 fit every label cleanly. The user picked Micro5.
+     Wired in as a new permanent `Content/Fonts/RetroFontButton.spritefont` (Micro5-Regular.ttf,
+     18pt) and `Art.RetroFontButton` — reusing the exact name/shape the short-lived entry-206 asset
+     had, since it's the same role. `Controls/Button.cs`'s two default-font constructors now use it
+     instead of `Art.RetroFont`, and `SettingsState.cs`'s Back/Reset buttons (previously passed
+     `Art.RetroFont` explicitly to match everything else per entry 207's "match the settings font"
+     request) were switched to the new font too, so every button in the game still matches each
+     other — just on a different shared font than before. Deleted the 5 unused candidate `.ttf`
+     files and every temp `.spritefont`/`Content.mgcb` block/`Art.cs` field from the comparison pass.
+     Verified via a temporary `Game1.StartGame()` test: constructed a real `MenuState` and a real
+     `SettingsState` (no reflection this time — the actual wiring) and rendered both to PNGs,
+     confirming every button label — including "Character Select" and "Reset to Defaults", the two
+     widest — renders in Micro5 with no overflow, and that everything else on the Settings screen
+     (row labels, key bindings, tab labels) still renders in the unchanged Jersey10 base font.
+     Reverted the temp code (`git diff --stat Game1.cs` clean), deleted the scratch PNGs/log, ran a
+     final clean build + plain boot-check, and confirmed all real save files byte-identical to a
+     pre-test backup.

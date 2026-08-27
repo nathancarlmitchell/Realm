@@ -356,11 +356,11 @@ namespace Realm.States
             int tallestRowCount = Math.Max(rows.Count, audioRows.Count);
             int buttonsY = rowsTop + tallestRowCount * RowHeight + 30;
 
-            backButton = new Button(Art.ButtonTexture, Art.RetroFont) { Text = "Back" };
+            backButton = new Button(Art.ButtonTexture, Art.RetroFontButton) { Text = "Back" };
             backButton.Click += (sender, e) => Game1.Instance.ChangeState(returnState);
             backButton.Position = new Vector2(CenterWidth - backButton.Rectangle.Width - 10, buttonsY);
 
-            resetButton = new Button(Art.ButtonTexture, Art.RetroFont) { Text = "Reset to Defaults" };
+            resetButton = new Button(Art.ButtonTexture, Art.RetroFontButton) { Text = "Reset to Defaults" };
             resetButton.Click += (sender, e) =>
             {
                 KeyBindings.ResetToDefaults();

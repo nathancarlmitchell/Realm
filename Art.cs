@@ -129,19 +129,16 @@ namespace Realm
         // file rather than an installed system font family like every font
         // above. Originally added just for the sidebar bars, now the base
         // font for the in-game HUD, tooltips, damage numbers/XP drops,
-        // Character Select, every menu button, Settings, and (via
-        // RetroFontLarge below) the title screen and boss-announcement
-        // banner — only TauntBubble.cs's enemy speech bubbles still use
-        // HudFont. Chosen via a side-by-side render comparison against four
-        // other free pixel/retro fonts; DamageFont (previously used for
-        // damage numbers) had zero remaining consumers once this replaced
-        // it and was deleted outright, while SettingsFont (previously
-        // Settings' own font) was left loaded but unused rather than
-        // removed, since deleting it wasn't itself requested. A dedicated
-        // RetroFontButton (18pt) briefly existed for button text alone, but
-        // buttons were switched back to this same font/size to match
-        // Settings' own buttons, so it was removed the same way DamageFont
-        // was.
+        // Character Select, Settings, and (via RetroFontLarge below) the
+        // title screen and boss-announcement banner — only
+        // TauntBubble.cs's enemy speech bubbles still use HudFont. Chosen
+        // via a side-by-side render comparison against four other free
+        // pixel/retro fonts; DamageFont (previously used for damage
+        // numbers) had zero remaining consumers once this replaced it and
+        // was deleted outright, while SettingsFont (previously Settings'
+        // own font) was left loaded but unused rather than removed, since
+        // deleting it wasn't itself requested. No longer used by buttons —
+        // see RetroFontButton below.
         public static SpriteFont RetroFont { get; private set; }
 
         // Same Jersey10 file as RetroFont, baked at a much larger native
@@ -155,6 +152,20 @@ namespace Realm
         // name) — downscaling a large bitmap loses fine detail gracefully,
         // unlike upscaling a small one.
         public static SpriteFont RetroFontLarge { get; private set; }
+
+        // Micro5 (SIL Open Font License), a separate bundled TrueType file
+        // used only by Controls/Button.cs — every button in the game,
+        // including Settings' own Back/Reset. A dedicated RetroFontButton
+        // briefly existed and was retired in favor of RetroFont (to match
+        // Settings' own buttons), then the user asked for a fresh
+        // button-specific font again; chosen via a side-by-side render
+        // comparison of the actual menu buttons against four other
+        // candidates (DotGothic16, RubikPixels, Jacquard12, RubikGlitch)
+        // plus Press Start 2P at the same 18pt — the others either
+        // overflowed "Character Select"/"Reset to Defaults" at a usable
+        // size or rendered illegibly; only this and Jacquard12 fit
+        // cleanly, and this won.
+        public static SpriteFont RetroFontButton { get; private set; }
 
         // Weapons.
         public static Texture2D Wand { get; private set; }
@@ -329,6 +340,7 @@ namespace Realm
             SettingsFont = content.Load<SpriteFont>("Fonts/SettingsFont");
             RetroFont = content.Load<SpriteFont>("Fonts/RetroFont");
             RetroFontLarge = content.Load<SpriteFont>("Fonts/RetroFontLarge");
+            RetroFontButton = content.Load<SpriteFont>("Fonts/RetroFontButton");
         }
 
         // Hard-edged filled circle, diameter x diameter, opaque white

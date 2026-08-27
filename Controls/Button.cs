@@ -50,13 +50,15 @@ namespace Realm.Controls
         // (e.g. the Erase All Data / confirm buttons' Red/DarkRed) are
         // unaffected — this only changes what "didn't set one" means.
         //
-        // font uses Art.RetroFont — the same font/size Settings' own
-        // Back/Reset buttons already use via the explicit-font constructor
-        // below — so every button in the game matches.
+        // font uses Art.RetroFontButton (Micro5) — a dedicated button font,
+        // chosen via a side-by-side render comparison against several other
+        // candidates. Settings' own Back/Reset buttons (the explicit-font
+        // constructor below) are passed this same font too, so every
+        // button in the game still matches.
         public Button()
         {
             texture = Art.ButtonTexture;
-            font = Art.RetroFont;
+            font = Art.RetroFontButton;
             scale = Game1.Scale;
             PenColor = Color.White;
         }
@@ -64,7 +66,7 @@ namespace Realm.Controls
         public Button(Texture2D _texture)
         {
             texture = _texture;
-            font = Art.RetroFont;
+            font = Art.RetroFontButton;
             scale = Game1.Scale;
             PenColor = Color.White;
         }

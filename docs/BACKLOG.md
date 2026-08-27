@@ -166,10 +166,12 @@ prioritized or scheduled — the user asked to keep these noted for later rather
   decided yet. The loot bag popup's current background is whatever `LootBag.cs`/`InventorySystem.cs`
   draw today — needs a decision on the actual desired appearance before implementing.
 - **Finalize font settings and main menu graphics.** A polish/tuning pass on the retro-font rollout
-  (entries 195-213) and the title screen background (entries 209-210) — flagged as not yet
+  (entries 195-216) and the title screen background (entries 209-210) — flagged as not yet
   considered "done," but without specific complaints yet beyond what's already been addressed
-  (blurry upscaling, black-on-black buttons, button font mismatch). Needs the user to point out what
-  specifically still looks off once they've spent more time looking at it in actual play.
+  (blurry upscaling, black-on-black buttons, button font mismatch, and now the button font itself —
+  entry 216 gave buttons their own dedicated Micro5 font, separate from the Jersey10 base font
+  again). Needs the user to point out what specifically still looks off once they've spent more
+  time looking at it in actual play.
 - **Playtest the Beach biome.** Follow-up to entry 213's mini-boss reclassification and drop-rate
   retune — those changes were verified mechanically (reflection checks, a 3000-trial drop-rate
   simulation) but not yet played by a human. Needs an actual playthrough to confirm the reclassified
