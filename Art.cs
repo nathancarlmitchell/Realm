@@ -107,6 +107,7 @@ namespace Realm
         public static Texture2D Unmute { get; private set; }
         public static Texture2D FameIcon { get; private set; }
         public static Texture2D CombatBadge { get; private set; }
+        public static Texture2D IndicatorArrow { get; private set; }
 
         // A filled white circle, generated at runtime rather than loaded
         // from disk — same reasoning as HealthBar above (a 1x1 pixel
@@ -253,6 +254,7 @@ namespace Realm
             Border = content.Load<Texture2D>("Overlay/border");
             FameIcon = content.Load<Texture2D>("Overlay/Fame Icon");
             CombatBadge = content.Load<Texture2D>("Overlay/Combat Badge");
+            IndicatorArrow = content.Load<Texture2D>("Overlay/Indicator Arrow");
 
             HealthBar = new Texture2D(Game1.Instance.GraphicsDevice, 1, 1);
             HealthBar.SetData(new[] { Color.White });

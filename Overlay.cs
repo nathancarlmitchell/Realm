@@ -275,6 +275,82 @@ namespace Realm
             }
         }
 
+        // A small arrow that orbits the player on screen, always pointing
+        // toward the Beach Beacon's world location — visible whenever one
+        // exists in this Realm instance (BeachBeacon.ActiveInstance already
+        // self-filters a stale/expired one out, same as the minimap blip
+        // above), including before it's activated, when it's most useful
+        // for actually finding the thing. Anchored to the gameplay
+        // viewport's exact center rather than Player.Instance.Position
+        // directly: Game1.Camera.Pos == the player's position every frame
+        // (Player.Update()), and Camera.GetTransformation() always maps
+        // that world point to precisely the viewport's center — the one
+        // documented exception being right at a world edge, where
+        // Camera.Pos's own barrier clamp can pull the camera (and so the
+        // player's on-screen position) away from center. Not worth
+        // compensating for here — Beach sits at the world's origin ring,
+        // nowhere near an edge a real playthrough would reach.
+        private const float BeaconIndicatorOrbitRadius = 70f;
+
+        // Pure position/rotation math, split out from the actual Draw()
+        // call below so it's independently testable without needing a
+        // working SpriteBatch/GraphicsDevice. playerPosition/beaconPosition
+        // are both world coordinates; the returned Position is a screen
+        // coordinate (anchored to the viewport center, not the player's raw
+        // world position — see DrawBeaconIndicator()'s own comment on why).
+        private static (Vector2 Position, float Rotation) ComputeBeaconIndicatorTransform(
+            Vector2 playerPosition,
+            Vector2 beaconPosition
+        )
+        {
+            float angle = (beaconPosition - playerPosition).ToAngle();
+            Vector2 playerScreenPos = new(
+                Game1.GameplayViewportWidth / 2f,
+                Game1.GameplayViewportHeight / 2f
+            );
+            Vector2 position = playerScreenPos + Extensions.FromPolar(angle, BeaconIndicatorOrbitRadius);
+
+            // The source art points up (native forward = -Y, angle -π/2),
+            // but this engine's rotation convention everywhere else
+            // (Entity.Orientation, fed straight from Velocity.ToAngle()
+            // with no offset) assumes a sprite's native forward is +X
+            // (angle 0, pointing right) — every projectile/enemy sprite is
+            // drawn that way. A +90° correction bridges the two so this
+            // arrow's actual on-screen tip lands on `angle`, not 90° off
+            // from it.
+            float rotation = angle + MathHelper.PiOver2;
+
+            return (position, rotation);
+        }
+
+        public static void DrawBeaconIndicator(SpriteBatch spriteBatch)
+        {
+            BeachBeacon beacon = BeachBeacon.ActiveInstance;
+            if (beacon == null)
+                return;
+
+            if (beacon.Position == Player.Instance.Position)
+                return; // standing exactly on it — no direction to show
+
+            var (arrowPos, rotation) = ComputeBeaconIndicatorTransform(
+                Player.Instance.Position,
+                beacon.Position
+            );
+            Vector2 origin = new(Art.IndicatorArrow.Width / 2f, Art.IndicatorArrow.Height / 2f);
+
+            spriteBatch.Draw(
+                Art.IndicatorArrow,
+                arrowPos,
+                null,
+                Color.White,
+                rotation,
+                origin,
+                1f,
+                SpriteEffects.None,
+                0f
+            );
+        }
+
         // The six core stats. Level/Experience text used to live here too,
         // duplicating what the XP section below already shows — dropped in
         // favor of just "Level: N", since the actual progress bar belongs

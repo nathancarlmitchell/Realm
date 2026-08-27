@@ -6387,3 +6387,41 @@ date/time for those individually; don't treat their grouping as meaning they all
      time.
      Not implemented, deliberately: any cost/cooldown on the teleport, and a second activated-vs-not
      blip color/size distinction on the minimap — neither was asked for.
+
+235. **Wired up a second new asset, `Content/Overlay/Indicator Arrow.png`, as a compass arrow that
+     orbits the player and always points at the Beach Beacon** — a follow-up request that arrived
+     mid-session, right as entry 234's Beacon commit was going out.
+     - **Content pipeline**: same `#begin`/`#build` block shape as every other `Overlay/*.png` entry
+       (`Fame Icon.png`/`Combat Badge.png`), plus `Art.IndicatorArrow`.
+     - **`Overlay.cs`**: new `ComputeBeaconIndicatorTransform(playerPosition, beaconPosition)` — pure
+       position/rotation math, split out from the actual draw call so it's testable without a working
+       `SpriteBatch`/`GraphicsDevice` (same reasoning as entry 234's `HandleMinimapBeaconClick()`).
+       Anchors the arrow to the gameplay viewport's exact screen center rather than tracking
+       `Player.Instance.Position` directly, since `Game1.Camera.Pos` == the player's position every
+       frame and `Camera.GetTransformation()` always maps that world point to precisely the viewport
+       center (the one documented exception being right at a world edge, where `Camera.Pos`'s own
+       barrier clamp can pull the camera away from center — not worth compensating for, since Beach
+       sits at the world's origin ring, nowhere near an edge). The source art points up natively
+       (native forward = -Y, angle -π/2), but this engine's existing rotation convention everywhere
+       else (`Entity.Orientation`, fed straight from `Velocity.ToAngle()` with no offset) assumes a
+       sprite's native forward is +X — every projectile/enemy sprite is drawn that way — so a +90°
+       correction bridges the two. New `DrawBeaconIndicator(spriteBatch)` calls that helper and draws,
+       no-op via `BeachBeacon.ActiveInstance` whenever no Beacon exists (self-filtering exactly like
+       the minimap blip), and also no-ops if the player is standing exactly on the Beacon (nothing
+       meaningful to point at).
+     - **`States/RealmState.cs`**: calls `Overlay.DrawBeaconIndicator(spriteBatch)` in the same
+       untransformed screen-space draw pass as `DrawSidebar()`/`DrawFame()` — runs harmlessly during
+       a boss fight too (`BossRealmState` inherits this same `Draw()`), since its own constructor's
+       `EntityManager.Reset()` already expires any Beacon from before entering the arena.
+     Verified via a temporary `Game1.StartGame()` test: reflected `ComputeBeaconIndicatorTransform()`
+     directly and confirmed all four cardinal directions produce the expected rotation by hand-derived
+     math (beacon due east → π/2; due south (screen down) → π; due north (screen up) → 0; due west →
+     3π/2, matching either wrap-around representation) — each verified against the actual
+     `MathHelper.Pi`/`PiOver2` constants rather than hand-typed magic numbers, avoiding any
+     floating-point mismatch from a different π representation. Separately confirmed
+     `DrawBeaconIndicator(null)` never throws when the player stands exactly on the Beacon's position
+     (the early-return guard firing before ever reaching the `spriteBatch.Draw()` call that would
+     otherwise NullReferenceException on the null argument). Reverted the temp code
+     (`git diff --stat Game1.cs` clean), ran a final clean build + plain boot-check, and confirmed all
+     six real save files byte-identical to a pre-test backup — no live play happened in between this
+     time either.

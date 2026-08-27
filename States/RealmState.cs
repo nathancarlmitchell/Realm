@@ -204,6 +204,14 @@ namespace Realm.States
             // Draw Fame, top-left — same corner Score/Hi Score used to occupy.
             Overlay.DrawFame(spriteBatch);
 
+            // Compass arrow around the player pointing at the Beach
+            // Beacon — a no-op via BeachBeacon.ActiveInstance whenever
+            // none exists (also runs harmlessly in a boss arena, since
+            // BossRealmState inherits this same Draw() and its own
+            // constructor's EntityManager.Reset() already expires any
+            // Beacon from before entering the fight).
+            Overlay.DrawBeaconIndicator(spriteBatch);
+
             DrawBossHud(spriteBatch);
 
             if (Game1._Debug)
