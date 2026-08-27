@@ -20,6 +20,18 @@ namespace Realm
         private const float CloseThreshold = 2f * 32f; // 2 tiles
         private const float CircleRadius = 3f * 32f; // 3 tiles
 
+        // Reported directly: Sand Devil spawns too close to the player.
+        // EnemySpawner.SpawnWave()'s shared anchor+offset math only
+        // guarantees ~137 units minimum in the worst case (anchor >= 250
+        // from GetSpawnPosition(), offset up to ~113 toward the player) —
+        // fine for most enemies, but combined with Sand Devil's own fast
+        // FollowPlayer() chase it reads as spawning right on top of the
+        // player. Enforced here rather than in the shared spawn system, so
+        // only Sand Devil is affected. 6.25 tiles — clearly outside
+        // AttackRange-adjacent melee distance, well above the shared
+        // system's own worst case.
+        private const float MinSpawnDistanceFromPlayer = 6.25f * 32f;
+
         // Not given a specific rate in the spec ("rotate clockwise for 3
         // seconds") — one full lap over the 3-second Circle phase reads as
         // a clean, deliberate "circle," not a slow creep or a dizzying
@@ -55,6 +67,17 @@ namespace Realm
             DropPool = BeachDropPool;
             DropChances = BeachDropChances;
             DropTierRanges = BeachDropTierRanges;
+
+            // Bug fix: push out to MinSpawnDistanceFromPlayer if the spawn
+            // system landed this enemy closer than that — see the
+            // constant's own comment above.
+            Vector2 awayFromPlayer = Position - Player.Instance.Position;
+            if (awayFromPlayer.LengthSquared() < MinSpawnDistanceFromPlayer * MinSpawnDistanceFromPlayer)
+            {
+                Vector2 direction =
+                    awayFromPlayer != Vector2.Zero ? Vector2.Normalize(awayFromPlayer) : Vector2.UnitX;
+                Position = Player.Instance.Position + direction * MinSpawnDistanceFromPlayer;
+            }
 
             AddBehaviour(PhaseWatcher());
             AddAttackBehaviour(SpinnerAttack());

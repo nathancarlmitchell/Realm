@@ -38,6 +38,19 @@ namespace Realm
         const float BaseInverseSpawnChance = 60f;
         const float MinDistanceInverseSpawnChance = 15f;
 
+        // Beach felt more hectic than every other biome — reported directly
+        // after entry 213 folded four extra enemy types (Bandit Leader,
+        // Scorpion Queen, Sandsman King, Giant Crab) into its own regular
+        // wave pool on top of its existing Beached Buccaneer mini-boss pack
+        // and three Little Jelly group-packs, none of which any other
+        // biome has. Rather than touch the shared distance-based formula
+        // every biome relies on, this stretches Beach's own wave cooldown
+        // (see Update() below) by 25% — a "slightly" reduced spawn rate,
+        // not a rework — and the same factor is baked directly into
+        // BeachedBuccaneerPackInterval/the three Little Jelly pack
+        // intervals below (all Beach-exclusive already).
+        const float BeachSpawnRateMultiplier = 1.25f;
+
         // Pool for the basic enemy types, ordered by toughness (PointValue:
         // Snake 2, Slime 4, Seeker 7, Wanderer 15, Brute 120). Every type
         // here is available from the start — no player-level requirement.
@@ -109,7 +122,9 @@ namespace Realm
         // spawn while the player is actually standing in the Beach biome,
         // since a beach pirate showing up in the middle of Blighted Wastes
         // would be jarring. See GetCurrentBiome() above.
-        private const int BeachedBuccaneerPackInterval = 1800; // ~30 seconds at 60fps
+        // Interval bumped from 1800 by BeachSpawnRateMultiplier (see above)
+        // as part of Beach's overall spawn-rate reduction.
+        private const int BeachedBuccaneerPackInterval = (int)(1800 * BeachSpawnRateMultiplier); // ~37.5 seconds at 60fps
         private const int BeachedBuccaneerPackPirateCount = 4;
         private static int beachedBuccaneerPackCooldownRemaining = BeachedBuccaneerPackInterval;
 
@@ -121,12 +136,13 @@ namespace Realm
         // randomly-mixed handful of different basic types). Gated to Beach
         // like every other Beach-specific pack; not part of BasicEnemyPool
         // since "spawns in groups" already fully describes how each one
-        // ever appears.
-        private const int LittleBlueJellyPackInterval = 1500; // ~25 seconds at 60fps
+        // ever appears. Intervals bumped by BeachSpawnRateMultiplier (see
+        // above), same as BeachedBuccaneerPackInterval.
+        private const int LittleBlueJellyPackInterval = (int)(1500 * BeachSpawnRateMultiplier); // ~31 seconds at 60fps
         private static int littleBlueJellyPackCooldownRemaining = LittleBlueJellyPackInterval;
-        private const int LittleGreenJellyPackInterval = 1650; // ~27.5 seconds at 60fps
+        private const int LittleGreenJellyPackInterval = (int)(1650 * BeachSpawnRateMultiplier); // ~34 seconds at 60fps
         private static int littleGreenJellyPackCooldownRemaining = LittleGreenJellyPackInterval;
-        private const int LittlePinkJellyPackInterval = 1800; // ~30 seconds at 60fps
+        private const int LittlePinkJellyPackInterval = (int)(1800 * BeachSpawnRateMultiplier); // ~37.5 seconds at 60fps
         private static int littlePinkJellyPackCooldownRemaining = LittlePinkJellyPackInterval;
 
         // Wave/pack spawning: instead of each basic type independently
@@ -165,6 +181,16 @@ namespace Realm
                             distanceFactor
                         )
                 );
+
+                // See BeachSpawnRateMultiplier's own comment above — Beach's
+                // regular wave (below) gets the same 25% cooldown stretch as
+                // its dedicated pack intervals, on top of the shared
+                // distance-based formula every other biome still uses
+                // unscaled.
+                if (GetCurrentBiome()?.Name == "Beach")
+                    effectiveInverseSpawnChance = (int)(
+                        effectiveInverseSpawnChance * BeachSpawnRateMultiplier
+                    );
 
                 if (waveCooldownRemaining <= 0)
                 {
@@ -233,8 +259,12 @@ namespace Realm
                 // SpriteGod stays its own independent roll — a distinct
                 // "occasional special threat" rather than part of the
                 // regular basic-enemy wave pattern above. No longer scales
-                // with player level.
-                if (rand.Next(1500) == 0)
+                // with player level. Excluded from Beach specifically —
+                // Beach already has its own mini-boss (Beached Buccaneer)
+                // and reclassified regular-wave heavyweights (Bandit
+                // Leader/Scorpion Queen/Sandsman King/Giant Crab); a
+                // SpriteGod on top of those read as out of place there.
+                if (GetCurrentBiome()?.Name != "Beach" && rand.Next(1500) == 0)
                 {
                     EntityManager.Add(Enemy.CreateSpriteGod(GetSpawnPosition()));
                 }

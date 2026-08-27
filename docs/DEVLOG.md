@@ -5775,3 +5775,35 @@ date/time for those individually; don't treat their grouping as meaning they all
      Reverted the temp code (`git diff --stat Game1.cs` clean), deleted the scratch PNGs/log, ran a
      final clean build + plain boot-check, and confirmed all real save files byte-identical to a
      pre-test backup.
+
+217. **Three Beach/Sand-Devil tuning requests, all in one turn.**
+     SpriteGod no longer spawns on Beach: its independent roll in `EnemySpawner.Update()`
+     (`rand.Next(1500) == 0`) had no biome gate at all, unlike every other Beach-adjacent spawn in
+     that method — added `GetCurrentBiome()?.Name != "Beach" &&` to the condition, since Beach
+     already has its own mini-boss (Beached Buccaneer) and four reclassified regular-wave
+     heavyweights (entry 213) without needing a SpriteGod on top.
+     Beach's spawn rate is reduced ~20% (a 25% longer cooldown): new `BeachSpawnRateMultiplier`
+     (1.25) constant, applied to the regular wave's `effectiveInverseSpawnChance` only when
+     `GetCurrentBiome()?.Name == "Beach"` (every other biome's wave cooldown is untouched), and
+     baked directly into `BeachedBuccaneerPackInterval`/the three Little Jelly pack intervals
+     (already Beach-exclusive) — 1800→2250, 1500→1875, 1650→2062, 1800→2250.
+     Sand Devil no longer spawns too close to the player: the shared `EnemySpawner.SpawnWave()`
+     anchor+offset math only guarantees ~137 units minimum in the worst case (anchor ≥ 250 from
+     `GetSpawnPosition()`, offset up to ~113 toward the player), which combined with Sand Devil's own
+     fast `FollowPlayer()` chase read as spawning right on top of the player. Added a
+     `MinSpawnDistanceFromPlayer` (200 units) guard directly in `SandDevil`'s own constructor —
+     pushes it out to that distance if the spawn system landed it closer — scoped to Sand Devil only
+     rather than changing the shared spawn system every other enemy also relies on.
+     Verified via a temporary `Game1.StartGame()` test, all via reflection against the actual private
+     fields/methods: forced `waveCooldownRemaining` to 0 and called `EnemySpawner.Update()` once at
+     distanceFactor 0 in Beach (read back 75 = 60 × 1.25, confirming the multiplier fires) and once at
+     distanceFactor 0.5 in Forest (read back 37 = the plain unmultiplied lerp, confirming other biomes
+     are untouched); read the four pack interval constants directly (2250/1875/2062/2250, matching
+     hand-computed expectations); ran `EnemySpawner.Update()` 3000 times while positioned in Beach
+     (periodically flushing spawned entities via `EntityManager.Reset()`/`Update()` to stay under the
+     1500-entity cap) and counted 0 `PointValue == 200` (SpriteGod's unique marker) enemies; ran the
+     same loop 9000 times in Forest and counted 5 (nonzero, in the right ballpark for a 1/1500 roll);
+     constructed 4 Sand Devils at deliberately close/on-top-of-player spawn points and confirmed the
+     worst-case resulting distance was exactly 200 (the clamp floor), never closer. Reverted the temp
+     code (`git diff --stat Game1.cs` clean), deleted the scratch log, ran a final clean build + plain
+     boot-check, and confirmed all real save files byte-identical to a pre-test backup.
