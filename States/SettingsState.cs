@@ -170,6 +170,13 @@ namespace Realm.States
                 new SettingsRow
                 {
                     Kind = RowKind.Toggle,
+                    Label = "Always Display Player HP",
+                    GetBool = () => Player.Instance.AlwaysDisplayPlayerHPEnabled,
+                    SetBool = v => Player.Instance.AlwaysDisplayPlayerHPEnabled = v,
+                },
+                new SettingsRow
+                {
+                    Kind = RowKind.Toggle,
                     Label = "Show XP Drops",
                     GetBool = () => Player.Instance.ShowXpDropsEnabled,
                     SetBool = v => Player.Instance.ShowXpDropsEnabled = v,

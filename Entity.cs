@@ -119,7 +119,17 @@ namespace Realm
             int step = DebuffIconDrawSize + DebuffIconSpacing;
             float totalWidth = (step * activeIcons.Count) - DebuffIconSpacing;
             float startX = Position.X - (totalWidth / 2f);
-            float y = Position.Y - (Size.Y / 2f) - (DebuffIconDrawSize * 2) - 8;
+            // One icon-height above the sprite's top edge, plus a small gap
+            // — reads as "just above the head" rather than floating well
+            // above it. Previously `DebuffIconDrawSize * 2`, a leftover from
+            // before DebuffIconScale existed: back when DebuffIconDrawSize
+            // was still the native 16px size, doubling it approximated one
+            // *scaled* icon's worth of headroom. Once DebuffIconDrawSize
+            // itself became the already-2x-scaled 32px value, that same
+            // `* 2` silently doubled it again (64px instead of the intended
+            // ~32px), pushing the row twice as far from the head as
+            // originally meant.
+            float y = Position.Y - (Size.Y / 2f) - DebuffIconDrawSize - 8;
 
             for (int i = 0; i < activeIcons.Count; i++)
             {

@@ -6199,3 +6199,41 @@ date/time for those individually; don't treat their grouping as meaning they all
      and back to White after an 11th. Reverted the temp code (`git diff --stat Game1.cs` clean), ran
      a final clean build + plain boot-check, and confirmed all six real save files byte-identical to
      a pre-test backup (refreshed fresh at the start of this entry's work, per entry 229's note).
+
+231. **Debuff indicator repositioned closer to the head; player HP bar reworked.** Two direct
+     requests:
+     - `Entity.cs`'s `DrawDebuffIndicators()` was floating well above the sprite instead of "just
+       above the head" — root cause: its Y offset (`DebuffIconDrawSize * 2`) was a leftover from
+       before entry 224 introduced `DebuffIconScale`. Back when `DebuffIconDrawSize` was still the
+       native 16px size, doubling it approximated one *scaled* icon's worth of headroom; once
+       `DebuffIconDrawSize` itself became the already-2x-scaled 32px value, that same `* 2` silently
+       doubled it again (64px instead of the intended ~32px). Dropped the stray `* 2`, so the row now
+       sits one icon-height plus a small gap above the sprite.
+     - `Player.cs`'s `DrawLowHealthBar()` — previously only ever visible while `IsLowHealth` — is
+       now `DrawHealthBar()`, visible whenever `InCombat` (Player's existing combat-trigger/duration
+       system, already used elsewhere for the sidebar HP bar's yellow border) or when a new setting,
+       `AlwaysDisplayPlayerHPEnabled` (off by default, "Always Display Player HP" in Settings >
+       Graphics, grouped right after "Low Health Threshold"), is on. `LowHealthIndicatorEnabled`'s
+       own sprite flash and `LowHealthThresholdPercent` threshold are completely untouched — they
+       still work exactly as before regardless of whether this bar happens to be showing. The bar's
+       fill color now switches Green/Red based on `IsLowHealth` instead of always being flat Red
+       (which made sense when the bar only ever appeared *while* already low-health, but not once it
+       can appear at full health too). Renamed `LowHealthBarWidth/Height/OffsetY` to
+       `HealthBarWidth/Height/OffsetY` to match, since the bar is no longer low-health-specific in
+       when it shows. New setting persists through the same `GameSettingsData`/`Util.cs` Save/Load
+       wiring pattern as every other Graphics toggle.
+     Verified via a temporary `Game1.StartGame()` test: constructed an isolated `Wizard()` (singleton
+     restored after), reflected the private `DrawHealthBar()` and invoked it with a `null`
+     `SpriteBatch` — an early return (bar hidden) throws nothing, while actually reaching the draw
+     call throws `NullReferenceException`, used purely as a "did it try to draw?" signal. Confirmed:
+     hidden by default (not in combat, setting off); shown with `AlwaysDisplayPlayerHPEnabled = true`;
+     shown after `Hit(10)` pushed `InCombat` true (exceeding `CombatTrigger`); and, via the reflected
+     private `IsLowHealth` property, `False` at full health and `True` after directly setting
+     `Health` to 10% of `HealthMax`. The debuff-position fix is a straightforward constant-arithmetic
+     correction, verified by inspection rather than a runtime render test (no practical way to
+     inspect a local `y` inside a void draw call without a working `SpriteBatch`), plus the plain
+     boot-check below. Reverted the temp code (`git diff --stat Game1.cs` clean), ran a final clean
+     build + plain boot-check, and confirmed real save files matched a pre-test backup except for
+     `PlayerData_Wizard.json`/`InventoryData_Wizard.json` — not a bug, the user's own ongoing live
+     play between turns (new gear equipped; Level/`ExperienceTotal` unchanged) — refreshed the backup
+     to the current state, same as entry 229's incident.

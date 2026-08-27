@@ -1257,6 +1257,7 @@ namespace Realm
                 ShowHitboxesEnabled = Player.Instance.ShowHitboxesEnabled,
                 LowHealthIndicatorEnabled = Player.Instance.LowHealthIndicatorEnabled,
                 LowHealthThresholdPercent = Player.Instance.LowHealthThresholdPercent,
+                AlwaysDisplayPlayerHPEnabled = Player.Instance.AlwaysDisplayPlayerHPEnabled,
                 ShowXpDropsEnabled = Player.Instance.ShowXpDropsEnabled,
                 AlwaysShowExpEnabled = Player.Instance.AlwaysShowExpEnabled,
                 ShowPlayerDamageNumbersEnabled = Player.Instance.ShowPlayerDamageNumbersEnabled,
@@ -1287,6 +1288,7 @@ namespace Realm
                 Player.Instance.ShowHitboxesEnabled = data.ShowHitboxesEnabled;
                 Player.Instance.LowHealthIndicatorEnabled = data.LowHealthIndicatorEnabled;
                 Player.Instance.LowHealthThresholdPercent = data.LowHealthThresholdPercent;
+                Player.Instance.AlwaysDisplayPlayerHPEnabled = data.AlwaysDisplayPlayerHPEnabled;
                 Player.Instance.ShowXpDropsEnabled = data.ShowXpDropsEnabled;
                 Player.Instance.AlwaysShowExpEnabled = data.AlwaysShowExpEnabled;
                 Player.Instance.ShowPlayerDamageNumbersEnabled = data.ShowPlayerDamageNumbersEnabled;

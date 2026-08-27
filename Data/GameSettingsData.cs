@@ -37,6 +37,12 @@ public class GameSettingsData
     // true) instead of leaving it at the intended 25%.
     public int LowHealthThresholdPercent { get; set; } = 25;
 
+    // Defaults to FALSE (off) — no explicit default needed, `false` is
+    // already the bare-bool default for an old file missing this key.
+    // Gates whether Player.DrawHealthBar() shows outside of combat too;
+    // see that method's own comment. See SettingsState.cs's Graphics tab.
+    public bool AlwaysDisplayPlayerHPEnabled { get; set; }
+
     // Defaults to TRUE (on) — same "give it its own explicit default"
     // reasoning as LowHealthIndicatorEnabled above. Gates the floating
     // "+XP" number spawned in Enemy.WasShot()'s death branch. See

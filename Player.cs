@@ -392,12 +392,22 @@ namespace Realm
         public bool LowHealthIndicatorEnabled = true;
 
         // Same account-wide GameSettingsData persistence, 0-100, defaults
-        // to 25 — the threshold both the flash and the below-sprite health
-        // bar (see DrawLowHealthBar()) key off, replacing what used to be
-        // a hardcoded 25% (LowHealthThresholdFraction). Adjustable from
+        // to 25 — the threshold both the flash and DrawHealthBar()'s
+        // green/red fill color key off, replacing what used to be a
+        // hardcoded 25% (LowHealthThresholdFraction). Adjustable from
         // the Settings > Graphics tab via a +/- stepper (SettingsState.cs's
         // NumericRow), in steps of 5.
         public int LowHealthThresholdPercent = 25;
+
+        // Same account-wide GameSettingsData persistence, defaults to
+        // FALSE. Gates DrawHealthBar()'s visibility: off (default), the
+        // below-sprite HP bar only shows while InCombat; on, it always
+        // shows regardless of combat state. Doesn't affect
+        // LowHealthIndicatorEnabled's own flash/threshold, which keeps
+        // working exactly as before either way. Toggled from the
+        // Settings > Graphics tab, grouped with the other Low Health
+        // controls it's closely related to.
+        public bool AlwaysDisplayPlayerHPEnabled = false;
 
         // Same account-wide GameSettingsData persistence, defaults to TRUE
         // (same reasoning as LowHealthIndicatorEnabled above — see
@@ -1254,35 +1264,47 @@ namespace Realm
                 0
             );
 
-            DrawLowHealthBar(spriteBatch);
+            DrawHealthBar(spriteBatch);
             DrawTemporaryBonusIndicators(spriteBatch);
             DrawDebuffIndicators(spriteBatch);
         }
 
-        // Small bar centered beneath the sprite, only while IsLowHealth —
-        // same "stretched Art.HealthBar rect" technique Overlay.cs's own
-        // sidebar health bar already uses (a 1x1 pixel texture, sized via
-        // the source rectangle's Width/Height rather than actual sampled
-        // pixel content), just a compact in-world version rather than a
-        // fixed HUD element. Proportional to Health/HealthMax (not to the
-        // threshold), so a fuller bar reads as "closer to the threshold"
-        // and an emptier one as "closer to death," same as any other
-        // health bar.
-        private void DrawLowHealthBar(SpriteBatch spriteBatch)
+        // Small bar centered beneath the sprite — same "stretched
+        // Art.HealthBar rect" technique Overlay.cs's own sidebar health bar
+        // already uses (a 1x1 pixel texture, sized via the source
+        // rectangle's Width/Height rather than actual sampled pixel
+        // content), just a compact in-world version rather than a fixed HUD
+        // element. Proportional to Health/HealthMax (not to the low-health
+        // threshold), so a fuller bar reads as "healthier" in general, not
+        // just "closer to the threshold."
+        //
+        // Visible while InCombat (Player's own combat-trigger/duration
+        // system — see InCombat's own comment), or always if
+        // AlwaysDisplayPlayerHPEnabled is on — independent of
+        // LowHealthIndicatorEnabled/IsLowHealth, which still separately
+        // drive Update()'s sprite flash exactly as before regardless of
+        // whether this bar happens to be showing. Green while healthy,
+        // switching to Red once IsLowHealth is true, so the bar's color
+        // reinforces the same low-health signal the flash gives, on top of
+        // whatever reason the bar is visible in the first place.
+        private void DrawHealthBar(SpriteBatch spriteBatch)
         {
-            if (!IsLowHealth)
+            if (!AlwaysDisplayPlayerHPEnabled && !InCombat)
                 return;
 
             float fraction = MathHelper.Clamp(Health / (float)HealthMax, 0f, 1f);
             Vector2 barPos = new(
-                Position.X - LowHealthBarWidth / 2f,
-                Position.Y + Size.Y / 2f + LowHealthBarOffsetY
+                Position.X - HealthBarWidth / 2f,
+                Position.Y + Size.Y / 2f + HealthBarOffsetY
             );
+            Microsoft.Xna.Framework.Color fillColor = IsLowHealth
+                ? Microsoft.Xna.Framework.Color.Red
+                : Microsoft.Xna.Framework.Color.Green;
 
             spriteBatch.Draw(
                 Art.HealthBar,
                 barPos,
-                new Microsoft.Xna.Framework.Rectangle(0, 0, LowHealthBarWidth, LowHealthBarHeight),
+                new Microsoft.Xna.Framework.Rectangle(0, 0, HealthBarWidth, HealthBarHeight),
                 Microsoft.Xna.Framework.Color.Black * 0.6f
             );
             spriteBatch.Draw(
@@ -1291,10 +1313,10 @@ namespace Realm
                 new Microsoft.Xna.Framework.Rectangle(
                     0,
                     0,
-                    (int)(LowHealthBarWidth * fraction),
-                    LowHealthBarHeight
+                    (int)(HealthBarWidth * fraction),
+                    HealthBarHeight
                 ),
-                Microsoft.Xna.Framework.Color.Red
+                fillColor
             );
         }
 
@@ -1363,15 +1385,16 @@ namespace Realm
         private const int DamageFlashDurationTicks = 10; // ~1/6 second at 60fps
         private int damageFlashTicksRemaining = 0;
 
-        // Below-sprite bar shown under the same condition as the flash
-        // above (LowHealthIndicatorEnabled + under threshold) — see
-        // DrawLowHealthBar(), called from Draw().
-        private const int LowHealthBarWidth = 40;
-        private const int LowHealthBarHeight = 6;
-        private const int LowHealthBarOffsetY = 8;
+        // Below-sprite bar's fixed size/offset — see DrawHealthBar(),
+        // called from Draw(). No longer "low health" specific in when it
+        // shows (see DrawHealthBar()'s own comment), so named generically;
+        // its color still keys off IsLowHealth below.
+        private const int HealthBarWidth = 40;
+        private const int HealthBarHeight = 6;
+        private const int HealthBarOffsetY = 8;
 
-        // Shared by both the flash (Update()) and the bar (DrawLowHealthBar())
-        // so the two conditions can never drift apart.
+        // Shared by the sprite flash (Update()) and DrawHealthBar()'s fill
+        // color so the two conditions can never drift apart.
         private bool IsLowHealth =>
             LowHealthIndicatorEnabled
             && HealthMax > 0
