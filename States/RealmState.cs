@@ -97,6 +97,26 @@ namespace Realm.States
                 {
                     biomeRings.Add((biome, content.Load<Texture2D>(biome.GroundTileImageName)));
                 }
+
+                // Beach Beacon: one per Realm instance, at a random point
+                // within the Beach ring (always the innermost — Data/
+                // BiomeData.json's own MinDistance 0 — so every regular
+                // dungeon entry gets exactly one). Uniform over the ring's
+                // AREA, not just its radius — sampling radius directly
+                // would bunch points near the center, since a thin band
+                // near the middle covers far less area than an
+                // equally-thin band near the outer edge.
+                var beachBiome = Game1.Instance.Biomes.FirstOrDefault(b => b.Name == "Beach");
+                if (beachBiome != null)
+                {
+                    var beaconRand = new Random();
+                    float angle = (float)(beaconRand.NextDouble() * MathHelper.TwoPi);
+                    float radius =
+                        beachBiome.MaxDistance * MathF.Sqrt((float)beaconRand.NextDouble());
+                    Vector2 beaconPosition =
+                        EnemySpawner.EntryPosition + Extensions.FromPolar(angle, radius);
+                    EntityManager.Add(new BeachBeacon(beaconPosition));
+                }
             }
 
             // Leaving the Nexus — its fixed portal set no longer applies to

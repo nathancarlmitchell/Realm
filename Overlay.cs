@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
+using Microsoft.Xna.Framework.Input;
 using Realm.States;
 
 namespace Realm
@@ -190,12 +191,9 @@ namespace Realm
         {
             int mapX = Game1.SidebarX + Game1.SidebarWidth - MinimapSize - MinimapPadding;
             int mapY = MinimapPadding;
+            Rectangle mapRect = new(mapX, mapY, MinimapSize, MinimapSize);
 
-            spriteBatch.Draw(
-                Art.HealthBar,
-                new Rectangle(mapX, mapY, MinimapSize, MinimapSize),
-                Color.Black * 0.6f
-            );
+            spriteBatch.Draw(Art.HealthBar, mapRect, Color.Black * 0.6f);
 
             Vector2 mapCenter = new(mapX + MinimapSize / 2f, mapY + MinimapSize / 2f);
             Vector2 playerPos = Player.Instance.Position;
@@ -230,9 +228,51 @@ namespace Realm
             foreach (Vector2 enemyPos in EntityManager.EnemyPositions)
                 DrawBlip(enemyPos, Color.Red, 4);
 
+            // Shown as soon as it exists (before activation too) — a
+            // landmark worth heading toward, same idea as a portal blip.
+            // Purple to read as visually distinct from every other blip
+            // color already in use here.
+            if (BeachBeacon.ActiveInstance != null)
+                DrawBlip(BeachBeacon.ActiveInstance.Position, Color.Purple, 5);
+
             // Player last, always dead center, so it's never hidden under a
             // portal/enemy blip that happens to land on the same spot.
             DrawBlip(playerPos, Color.White, 6);
+
+            HandleMinimapBeaconClick(mapRect);
+        }
+
+        // Click-to-teleport: only meaningful once this Realm instance's
+        // Beacon has actually been activated (walked up to at least once)
+        // — there's only ever one Beacon/destination to disambiguate, so
+        // any click anywhere on the minimap (not just precisely on its
+        // tiny blip) teleports there, rather than requiring a fiddly
+        // pixel-perfect hit on a 5px dot. No cost or cooldown — a free,
+        // repeatable return trip once unlocked. Edge-triggered (release
+        // right after a press), same "just clicked" check
+        // Controls/Button.cs itself uses, so holding the button down
+        // doesn't re-fire every frame. Split out from DrawMinimap() itself
+        // (input handling, not rendering) so it's independently testable
+        // without needing a working SpriteBatch.
+        private static void HandleMinimapBeaconClick(Rectangle mapRect)
+        {
+            BeachBeacon beacon = BeachBeacon.ActiveInstance;
+
+            // ActiveInstance only filters out an expired/torn-down Beacon
+            // (see its own comment) — it says nothing about whether this
+            // one has actually been reached yet, so IsActivated needs its
+            // own explicit check here too.
+            if (
+                beacon != null
+                && beacon.IsActivated
+                && mapRect.Contains(Input.MousePosition)
+                && Input.mouse.LeftButton == ButtonState.Released
+                && Input.previousMouse.LeftButton == ButtonState.Pressed
+            )
+            {
+                Player.Instance.Position = beacon.Position;
+                Game1.Camera.Pos = Player.Instance.Position;
+            }
         }
 
         // The six core stats. Level/Experience text used to live here too,

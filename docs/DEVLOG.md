@@ -6329,3 +6329,61 @@ date/time for those individually; don't treat their grouping as meaning they all
      `using System.Linq;` (`git diff --stat Game1.cs` clean), ran a final clean build + plain
      boot-check, and confirmed save files matched a pre-test backup except for the user's own
      continued live play in between — refreshed the backup, same as the last several entries.
+
+234. **Wired up the Beach Beacon asset and built the feature around it**, per the user's explicit
+     spec: spawn at a random location within Beach, start inert until the player reaches it, then
+     let the minimap teleport there once activated.
+     - **Content pipeline**: `Content/Biomes/Beach/Beach Beacon.png` (already present, unwired) got
+       a `Content.mgcb` `#begin`/`#build` block matching every other Beach sprite's importer/
+       processor params, plus `Art.BeachBeacon`.
+     - **New `BeachBeacon.cs`** (project root, not `Enemies/Beach/` — it's a landmark, not an enemy):
+       a plain `Entity` (no combat, no loot, no animation, so neither `Enemy` nor `Portal` fit) that
+       rides the normal `EntityManager` Update()/Draw() pipeline. Starts tinted Gray (`color`); once
+       the player comes within `ActivationRadius` (3 tiles) it flips to White and stays activated
+       permanently for the rest of the Realm instance (checked once per `Update()`, no re-check once
+       `IsActivated` is already true). `ActiveInstance` (a static property, not the raw backing
+       field) filters out a stale reference automatically by checking `IsExpired` — `EntityManager.
+       Reset()` (called by every state transition — Nexus/BossRealm entry, `StateManager`'s various
+       exits) already marks every non-Player entity expired, so a Beacon from a previous Realm
+       instance can never leak into the Nexus's or a different dungeon's minimap without needing a
+       new explicit per-state `Reset()` call to remember.
+     - **`States/RealmState.cs`**: spawns exactly one `BeachBeacon` per Realm instance (right after
+       the biome-ring setup, still gated on `SpawnsRegularEnemies`), at a point uniformly random over
+       the *area* of the Beach ring (`MinDistance` 0 to `MaxDistance` 8000 from `EnemySpawner.
+       EntryPosition` — Beach is always the innermost ring) — sampling radius directly would bunch
+       points near the center, since a thin band near the middle covers far less area than an
+       equally-thin band near the edge, so `radius = MaxDistance * sqrt(rand.NextDouble())` is used
+       instead of a flat `rand.NextFloat(0, MaxDistance)`.
+     - **`Overlay.cs`'s minimap**: draws a Purple blip for the Beacon as soon as it exists (even
+       before activation — a landmark worth heading toward, same idea as an existing portal blip).
+       New `HandleMinimapBeaconClick()` (split out from `DrawMinimap()` itself, input handling not
+       rendering, so it's testable without a working `SpriteBatch`): once activated, clicking
+       *anywhere* inside the minimap's rectangle (not requiring a pixel-perfect hit on the tiny blip,
+       since there's only one destination to disambiguate right now) teleports the player straight to
+       it and snaps the camera to match, no cost or cooldown — edge-triggered (release right after a
+       press) the same way `Controls/Button.cs` itself detects a click.
+     Verified via a temporary `Game1.StartGame()` test — deliberately never constructing a real
+     `RealmState` (its constructor autosaves unconditionally per CLAUDE.md); everything exercised
+     against isolated objects instead: (1) a `BeachBeacon` stayed inert with the test player 10,000
+     units away, activated the instant the player was moved to its exact position and `Update()` was
+     called, and stayed activated after moving away again; (2) `ActiveInstance` returned the Beacon
+     while live and `null` after manually setting `IsExpired = true` on it, confirming the
+     stale-reference filter; (3) reflected `Overlay`'s private `HandleMinimapBeaconClick()` and, by
+     directly constructing `MouseState`s (per this codebase's own established "can't simulate through
+     `Input.Update()`, drive the underlying fields directly" testing pattern), confirmed a click
+     produced no teleport both before activation and when outside the map rectangle, then did
+     teleport (moving both `Player.Instance.Position` and `Game1.Camera.Pos`) once activated and
+     clicked inside it. **This test caught a real bug on its first run**, not just a test-setup
+     mistake: the click handler originally gated only on `ActiveInstance != null`, which — since
+     `ActiveInstance` only filters expiration, not activation — let a teleport through the instant a
+     fresh, still-inert Beacon was constructed. Fixed by adding an explicit `beacon.IsActivated`
+     check alongside the existing `ActiveInstance != null` one. Reverted the temp code (this time via
+     the Edit tool directly rather than a Python line-slicing script — a first attempt at the
+     line-slice approach rewrote the entire file with different line endings, making `git diff` show
+     the whole file as changed even though the actual content reverted correctly; caught before
+     committing, fixed by `git checkout -- Game1.cs` and redoing the edit properly), confirmed
+     `git diff --stat Game1.cs` clean, ran a final clean build + plain boot-check, and confirmed all
+     six real save files byte-identical to a pre-test backup — no live play happened in between this
+     time.
+     Not implemented, deliberately: any cost/cooldown on the teleport, and a second activated-vs-not
+     blip color/size distinction on the minimap — neither was asked for.

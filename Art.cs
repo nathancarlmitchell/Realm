@@ -55,6 +55,7 @@ namespace Realm
         public static Texture2D LittlePinkJelly { get; private set; }
         public static Texture2D Piratess { get; private set; }
         public static Texture2D SandDevil { get; private set; }
+        public static Texture2D BeachBeacon { get; private set; }
         public static Texture2D BlueMissile { get; private set; }
         public static Texture2D DarkGraySpinner { get; private set; }
         public static Texture2D WhiteBolt { get; private set; }
@@ -312,6 +313,7 @@ namespace Realm
             LittlePinkJelly = content.Load<Texture2D>("Biomes/Beach/Little Pink Jelly");
             Piratess = content.Load<Texture2D>("Biomes/Beach/Piratess");
             SandDevil = content.Load<Texture2D>("Biomes/Beach/Sand Devil");
+            BeachBeacon = content.Load<Texture2D>("Biomes/Beach/Beach Beacon");
             BlueMissile = content.Load<Texture2D>("Projectiles/Blue Missile");
             DarkGraySpinner = content.Load<Texture2D>("Projectiles/Dark Gray Spinner");
             WhiteBolt = content.Load<Texture2D>("Projectiles/white_bolt");
