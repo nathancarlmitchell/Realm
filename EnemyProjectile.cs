@@ -25,6 +25,14 @@ namespace Realm
         // spinner attack (see SandDevil.cs's SpinnerAttack()).
         public bool UnstablesOnHit = false;
 
+        // Duration (in frames) passed to Player.Destabilize() when
+        // UnstablesOnHit fires — defaults to Destabilize()'s own default
+        // (180 frames = 3s) so existing callers that only set
+        // UnstablesOnHit = true keep behaving exactly as before. Whoever
+        // wants a different duration overrides this too, same shape as
+        // Damage above.
+        public int UnstableDurationFrames = 180;
+
         // Whether a hit against the player consumes this projectile — true
         // (the original, still-default behavior) for everything except
         // whatever explicitly opts out, e.g. GrenadeProjectile, which stays

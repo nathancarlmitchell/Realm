@@ -6080,3 +6080,18 @@ date/time for those individually; don't treat their grouping as meaning they all
      classes' abilities. No other logic changed. Clean build + plain boot-check passed; no
      save-touching code was modified, so the full save-file backup/diff cycle wasn't run for this
      comment-and-config-only change.
+
+227. **Decoupled Sand Devil's Unstable duration from `Player.Destabilize()`'s shared default,
+     following up on entry 226's flag.** `EnemyProjectile` gained `public int
+     UnstableDurationFrames = 180;` (defaulting to `Destabilize()`'s own current default, so every
+     existing caller that only sets `UnstablesOnHit = true` keeps behaving exactly as before — same
+     shape as the pre-existing `Damage` field on the same class). `EntityManager.cs`'s
+     enemy-projectile-vs-player collision handling now calls
+     `hitPlayer.Destabilize(enemiesProjectiles[i].UnstableDurationFrames)` instead of the
+     parameterless `Destabilize()`. `SandDevil.cs`'s `SpinnerAttack()` now sets
+     `UnstableDurationFrames = 150` (2.5 seconds at 60fps) explicitly on its `WavyProjectile`, per
+     the user's direct request — independent of whatever `Destabilize()`'s own default is tuned to
+     going forward. Also fixed the stale comment on that object initializer, which still referenced
+     the old 1-second/60-frame figure from entry 223. Clean build + plain minimized boot-check
+     passed (`Running: True, Minimized: True`); no save-touching code was changed, so the full
+     save-file backup/diff cycle wasn't run.

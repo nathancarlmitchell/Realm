@@ -458,7 +458,7 @@ namespace Realm
                     }
                     if (enemiesProjectiles[i].UnstablesOnHit && Player.Instance == hitPlayer)
                     {
-                        hitPlayer.Destabilize();
+                        hitPlayer.Destabilize(enemiesProjectiles[i].UnstableDurationFrames);
                     }
                     // Marked regardless of ExpiresOnHit below, so a
                     // non-expiring projectile (e.g. GrenadeProjectile) can

@@ -270,13 +270,13 @@ namespace Realm
                             new WavyProjectile(Position, vel, Art.DarkGraySpinner)
                             {
                                 Damage = AttackDamage,
-                                // The user's own request: "the sand devil
-                                // attack should apply the unstable effect
-                                // for 1 second" — UnstablesOnHit uses
-                                // Player.Destabilize()'s own default
-                                // duration (60 frames = 1s at 60fps), so no
-                                // explicit duration needs restating here.
+                                // Pinned explicitly to 2.5 seconds,
+                                // independent of Player.Destabilize()'s own
+                                // default duration (currently 180 frames /
+                                // 3s) — see EnemyProjectile.
+                                // UnstableDurationFrames.
                                 UnstablesOnHit = true,
+                                UnstableDurationFrames = 150, // 2.5s at 60fps
                             }
                         );
                     }
