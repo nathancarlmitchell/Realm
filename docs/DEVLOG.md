@@ -6009,3 +6009,38 @@ date/time for those individually; don't treat their grouping as meaning they all
      actual feature code. Reverted the temp code (`git diff --stat Game1.cs` clean), deleted the
      scratch log, ran a final clean build + plain boot-check, and confirmed all real save files
      byte-identical to a pre-test backup.
+
+224. **Extended Unstable to Wizard's Spell Bomb, and doubled every debuff icon's draw size.**
+     Wizard's ability radiates 16 shots evenly across a full circle already, so "fire in random
+     directions" has nothing to act on for the shots themselves — rotating a fully symmetric ring by
+     any amount looks identical. The only real "aim" this ability has is *where* the ring detonates
+     (`Input.GetMousePosition()`, the cursor's world position) — `UseAbility()` now randomizes that
+     instead while `HasDebuff(Unstable)`: keeps the same distance from the caster the player was
+     actually aiming for, but picks a uniformly random direction to put it in, matching the same
+     "random direction" framing the debuff already uses for Archer/Knight/Weapon.Shoot(). Also
+     updated `Weapon.cs`'s own `UnstableSpreadRadians` comment — its value had been retuned to ±180°
+     (an external edit, not reverted) since entry 223 documented it as a deliberately bounded ±30°;
+     the comment now describes what the code actually does (full-circle unpredictability, same as
+     the aimed abilities) instead of contradicting it.
+     Debuff icons doubled: `Entity.cs`'s `DrawDebuffIndicators()` used to draw each icon via the
+     plain `SpriteBatch.Draw(texture, position, color)` overload — always native size (16x16), no
+     scale parameter available on that overload at all. Switched to the 9-argument overload with an
+     explicit `scale: DebuffIconScale` (2f), and introduced `DebuffIconDrawSize` (32, `DebuffIconSize
+     * DebuffIconScale`) used everywhere the old code used the native `DebuffIconSize` for *layout*
+     (row spacing, total width, vertical offset above the sprite) — so the row's positioning scales
+     proportionally with the new visual size instead of just enlarging the icons in place while
+     leaving the old, now-too-tight native-size spacing underneath them. Applies to every debuff
+     (Paralyzed/Stunned/Slow/Healing/Unstable) on both Player and Enemy, since the drawing code is
+     entirely shared.
+     Verified via a temporary `Game1.StartGame()` test (on a standalone `Wizard`, not the real
+     `Player.Instance` — re-pinning `Position` right after construction, the same singleton-swap
+     gotcha entry 223 already ran into): fired the ability stably and confirmed the burst spawned
+     exactly at the cursor's world position (0 offset); applied `Destabilize()` and fired again,
+     confirming the new spawn point was exactly the same distance from the caster as the real target
+     (806.23 units, matching) but 1608 units away from the actual intended point — i.e., landing
+     roughly the opposite direction, a clear, large randomization; read `DebuffIconDrawSize`/
+     `DebuffIconSize` via reflection (32 and 16, exactly 2x) and rendered a real `Player.Draw()` call
+     with Unstable active, visually confirming the icon renders noticeably larger above the sprite.
+     Reverted the temp code (`git diff --stat Game1.cs` clean), deleted the scratch log/PNG, ran a
+     final clean build + plain boot-check, and confirmed all real save files byte-identical to a
+     pre-test backup.

@@ -56,10 +56,12 @@ namespace Realm
         // (see DebuffType.Unstable) — "weapons gain random shot deviation
         // when aiming (limited to a certain angle), significantly lowering
         // accuracy." Applied on top of the small always-on randomSpread
-        // below in Shoot(), not instead of it — ±30°, a full 60° cone,
-        // clearly bounded rather than a fully random direction (that's
-        // reserved for aimed *abilities* — see Archer/Knight.UseAbility()).
-        private static readonly float UnstableSpreadRadians = MathHelper.ToRadians(30f);
+        // below in Shoot(), not instead of it. ±180° — retuned from an
+        // initial ±30° — covers the entire circle, so a weapon shot is now
+        // effectively as unpredictable in direction as an aimed ability's
+        // own full randomization (Archer/Knight.UseAbility(),
+        // Wizard.UseAbility()'s Spell Bomb target point).
+        private static readonly float UnstableSpreadRadians = MathHelper.ToRadians(180f);
 
         private readonly Random rand = new();
 
@@ -100,9 +102,7 @@ namespace Realm
                 // is null, and Content.Load can't take a null asset name.
                 Texture2D sideProjectileTexture =
                     weaponData.SideProjectileImageName != null
-                        ? Game1.Instance.Content.Load<Texture2D>(
-                            weaponData.SideProjectileImageName
-                        )
+                        ? Game1.Instance.Content.Load<Texture2D>(weaponData.SideProjectileImageName)
                         : null;
 
                 Weapon weapon = new(weaponTexture, projectileTexture)

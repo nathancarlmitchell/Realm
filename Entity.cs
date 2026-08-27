@@ -102,7 +102,9 @@ namespace Realm
         // distinct on its own, so no extra color-coding is needed), drawn in
         // the row above the buff row so the two don't overlap when both are
         // active on the same entity.
-        private const int DebuffIconSize = 16; // paralyzed.png/stunned.png are 16x16
+        private const int DebuffIconSize = 16; // paralyzed.png/stunned.png/etc. are 16x16 native
+        private const float DebuffIconScale = 2f; // drawn at 2x native size
+        private const int DebuffIconDrawSize = (int)(DebuffIconSize * DebuffIconScale);
         private const int DebuffIconSpacing = 2;
 
         protected void DrawDebuffIndicators(SpriteBatch spriteBatch)
@@ -114,17 +116,23 @@ namespace Realm
             foreach (var type in activeDebuffs.Keys)
                 activeIcons.Add(DebuffIcon(type));
 
-            int step = DebuffIconSize + DebuffIconSpacing;
+            int step = DebuffIconDrawSize + DebuffIconSpacing;
             float totalWidth = (step * activeIcons.Count) - DebuffIconSpacing;
             float startX = Position.X - (totalWidth / 2f);
-            float y = Position.Y - (Size.Y / 2f) - (DebuffIconSize * 2) - 8;
+            float y = Position.Y - (Size.Y / 2f) - (DebuffIconDrawSize * 2) - 8;
 
             for (int i = 0; i < activeIcons.Count; i++)
             {
                 spriteBatch.Draw(
                     activeIcons[i],
                     new Vector2(startX + (i * step), y),
-                    Microsoft.Xna.Framework.Color.White
+                    null,
+                    Microsoft.Xna.Framework.Color.White,
+                    0f,
+                    Vector2.Zero,
+                    DebuffIconScale,
+                    SpriteEffects.None,
+                    0f
                 );
             }
         }

@@ -146,6 +146,27 @@ namespace Realm.CharacterClasses
                 Mana -= AbilityCost;
 
                 int SpellBombProjectileCount = 16;
+
+                // Spell Bomb radiates evenly in every direction already, so
+                // "fire in random directions" (see DebuffType.Unstable) has
+                // nothing to bite for the shots themselves — rotating a full,
+                // symmetric 360° ring by any amount looks identical. The one
+                // actual aim this ability has is *where* it detonates
+                // (Input.GetMousePosition(), the cursor's world position);
+                // Unstable randomizes that instead, keeping the same
+                // distance from the caster the player was actually aiming
+                // for but picking a random direction to put it in, matching
+                // how the debuff already treats a "direction" everywhere
+                // else.
+                Vector2 spawnPosition = Input.GetMousePosition();
+                if (HasDebuff(DebuffType.Unstable))
+                {
+                    float distanceFromCaster = Vector2.Distance(spawnPosition, Position);
+                    spawnPosition =
+                        Position
+                        + Extensions.FromPolar(rand.NextFloat(0f, MathHelper.TwoPi), distanceFromCaster);
+                }
+
                 // Spell bomb. Always expires on hit regardless of what the
                 // currently-equipped weapon's own basic attack does (e.g.
                 // Wand's pass-through) — an ability shot, not a basic
@@ -157,7 +178,7 @@ namespace Realm.CharacterClasses
                         Instance.Weapon.ProjectileMagnitude
                     );
                     EntityManager.Add(
-                        new Projectile(Input.GetMousePosition(), vel)
+                        new Projectile(spawnPosition, vel)
                         {
                             Damage = damage,
                             ExpiresOnHit = true,
