@@ -650,6 +650,7 @@ namespace Realm
                         Position,
                         damageModified,
                         Microsoft.Xna.Framework.Color.Red,
+                        prefix: "-",
                         followsPlayer: true
                     )
                 );

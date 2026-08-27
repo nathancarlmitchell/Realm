@@ -35,9 +35,15 @@ namespace Realm
         private readonly Vector2 spawnOffset;
         private Vector2 floatOffset = Vector2.Zero;
 
-        // prefix: empty for every damage number (unchanged); "+" for an XP
-        // gain (see Enemy.WasShot()'s death branch) so it visibly reads as
-        // a gain rather than a hit sharing the same floating-number visual.
+        // prefix: "-" for every damage number (Enemy.WasShot()'s hit number,
+        // Player.Hit()'s damage-taken number) so it visibly reads as a loss;
+        // "+" for an XP gain (see Enemy.WasShot()'s death branch) so it
+        // visibly reads as a gain instead — same floating-number visual,
+        // opposite sign.
+        //
+        // suffix: "" for every damage number (unchanged); "XP" for the XP
+        // gain number so it reads as "+45XP" instead of a bare "+45" that
+        // could otherwise be mistaken for another damage/heal number.
         //
         // scale/lifespanTicks/verticalOffset: all default to the original
         // damage-number look, unaffected for every existing call site — the
@@ -53,6 +59,7 @@ namespace Realm
             int damage,
             Color color,
             string prefix = "",
+            string suffix = "",
             float scale = DefaultScale,
             int lifespanTicks = DefaultLifespanTicks,
             float verticalOffset = DefaultVerticalOffset,
@@ -64,7 +71,7 @@ namespace Realm
             spawnOffset = new Vector2(rand.NextFloat(-10, 10), verticalOffset);
             FollowsPlayer = followsPlayer;
             Position = (followsPlayer ? Player.Instance.Position : position) + spawnOffset;
-            text = prefix + damage;
+            text = prefix + damage + suffix;
             baseColor = color;
             this.color = color;
             this.scale = scale;

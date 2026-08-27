@@ -6137,3 +6137,43 @@ date/time for those individually; don't treat their grouping as meaning they all
      numbers decided yet. Also added "Hardcore mode" (a further difficulty-multiplier bump plus
      possible restrictions like no Nexus escape) to [BACKLOG.md](BACKLOG.md)'s Open ideas, per the
      user's request — idea only, not scoped.
+
+229. **Further round-1 Beach feedback, all three acted on directly**: XP numbers should read
+     "+45XP" (previously just "+45", no unit), damage numbers should read "-15" (previously a bare
+     "15" with no sign), and enemies chasing the player felt a little slow.
+     `DamageNumber.cs` gained a `suffix` parameter (mirroring the existing `prefix`) — `Enemy.cs`'s
+     XP-gain number now passes `suffix: "XP"` alongside its existing `prefix: "+"`. Both of
+     `DamageNumber`'s two "hit" call sites (`Enemy.cs`'s enemy-took-damage number, `Player.cs`'s
+     player-took-damage number) now pass `prefix: "-"` — previously neither had any sign at all,
+     unlike the XP number's existing "+".
+     For chase speed: rather than hand-retuning each of `FollowPlayer()`'s roughly ten call sites
+     (Seeker, Brute, Pirate, Bandit, Piratess, Limon, BeachedBuccaneer, GiantCrab, BanditLeader,
+     SandsmanKing, SandDevil's Chase phase — each passes its own baked-in acceleration), added a
+     second global knob to `Difficulty.cs`: `EnemyChaseSpeedMultiplier = 1.4f`, applied once inside
+     `FollowPlayer()` itself (`acceleration * Difficulty.EnemyChaseSpeedMultiplier`) — same "single
+     knob instead of N call sites" shape as entry 228's `EnemyDamageMultiplier`, and it scales every
+     chasing enemy/boss uniformly, preserving their relative speed ordering (Brute still fastest,
+     bosses still slowest).
+     Verified via a temporary `Game1.StartGame()` test: reflected `DamageNumber`'s private `text`
+     field and confirmed a `prefix: "-"`-constructed number reads exactly `"-15"` and a
+     `prefix: "+", suffix: "XP"` one reads exactly `"+45XP"`. For chase speed, reflected `Enemy`'s
+     protected `FollowPlayer()` and drove its enumerator directly (bypassing `Enemy.Update()`
+     entirely, so `Velocity` accumulates without the usual per-tick 0.8x decay) against a `Seeker`
+     placed within `AggroRadius` of a temporarily-repositioned `Player.Instance`: after 100 ticks,
+     `Velocity.Length()` came out to 35.0, matching `100 * 0.25 * 1.4` by hand exactly. (First attempt
+     placed the test enemy 5000 units away and got 0 — a test-setup mistake, not a code bug: that
+     distance is well outside `AggroRadius`, ~669 units, so the aggro gate correctly blocked any
+     chase at all; fixed by moving the test enemy to 200 units away instead.) Reverted the temp code
+     (`git diff --stat Game1.cs` clean), deleted the scratch log, ran a final clean build + plain
+     boot-check.
+     **Save-file note, not a bug**: the post-test save-file diff (this session's usual safety check)
+     showed `PlayerData_Wizard.json`/`FameData.json` differing from the pre-test backup — Level
+     10→5, ExperienceTotal 4257→1194, Fame 22→26. This wasn't caused by this session's test code; it's
+     the real result of the user's own live playtest session in between (launched earlier, left
+     running, not a minimized boot-check instance) — the character died once (Fame +4 matches
+     `floor(4257/900)`, the exact Base Fame conversion `GameOverState`/entry 186 already implement)
+     and the account continued playing the fresh life up to Level 5 by the time this check ran.
+     Confirmed no stray `Realm.exe` process was still running (`tasklist`) before treating this as
+     settled, and refreshed this session's save-file backup to the current real state rather than
+     restoring the old one, so a future diff check in this session compares against what's actually
+     current instead of flagging the user's own legitimate progress as a regression.

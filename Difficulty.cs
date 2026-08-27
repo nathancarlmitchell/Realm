@@ -20,5 +20,16 @@ namespace Realm
     public static class Difficulty
     {
         public const float EnemyDamageMultiplier = 2f;
+
+        // Single global knob scaling every enemy's FollowPlayer() chase
+        // acceleration (Enemy.cs) — applied once inside FollowPlayer()
+        // itself rather than retuning each of its ~10 call sites (Seeker,
+        // Brute, Pirate, Bandit, Piratess, Limon, and several
+        // bosses/mini-bosses each pass their own baked-in acceleration).
+        // Reported directly from a playtest: enemies moving toward the
+        // player felt a little slow. 1.4x is a first-pass guess — expect
+        // retuning after the next playthrough, same as EnemyDamageMultiplier
+        // above.
+        public const float EnemyChaseSpeedMultiplier = 1.4f;
     }
 }

@@ -283,7 +283,7 @@ namespace Realm
             health -= actualDamage;
 
             if (Player.Instance.ShowEnemyDamageNumbersEnabled)
-                EntityManager.Add(new DamageNumber(Position, actualDamage, Color.Red));
+                EntityManager.Add(new DamageNumber(Position, actualDamage, Color.Red, prefix: "-"));
             if (Player.Instance.ShowHitParticlesEnabled)
                 Particle.SpawnBurst(Position, Color.White, count: 5, minSpeed: 1.5f, maxSpeed: 3f, lifespanTicks: 15);
 
@@ -342,6 +342,7 @@ namespace Realm
                             xpGained,
                             Color.Goldenrod,
                             prefix: "+",
+                            suffix: "XP",
                             scale: 1.3f,
                             lifespanTicks: 70,
                             verticalOffset: -45f,
@@ -607,7 +608,9 @@ namespace Realm
                 // already exactly zero.
                 Vector2 toPlayer = Player.Instance.Position - Position;
                 if (toPlayer != Vector2.Zero && toPlayer.LengthSquared() <= AggroRadiusSquared)
-                    Velocity += toPlayer.ScaleTo(acceleration);
+                    Velocity += toPlayer.ScaleTo(
+                        acceleration * Difficulty.EnemyChaseSpeedMultiplier
+                    );
                 yield return 0;
             }
         }
