@@ -29,13 +29,13 @@ public class GameSettingsData
     // See Player.cs's flash logic and SettingsState.cs's Graphics tab.
     public bool LowHealthIndicatorEnabled { get; set; } = true;
 
-    // 0-100, defaults to 20 — same "give it its own explicit default"
+    // 0-100, defaults to 25 — same "give it its own explicit default"
     // reasoning as LowHealthIndicatorEnabled just above: an old
     // GameSettingsData.json missing this key would otherwise deserialize
     // it at the unstated default (0 for a bare int), which would silently
     // disable the flash/bar entirely (Health < HealthMax * 0% is never
-    // true) instead of leaving it at the intended 20%.
-    public int LowHealthThresholdPercent { get; set; } = 20;
+    // true) instead of leaving it at the intended 25%.
+    public int LowHealthThresholdPercent { get; set; } = 25;
 
     // Defaults to TRUE (on) — same "give it its own explicit default"
     // reasoning as LowHealthIndicatorEnabled above. Gates the floating
@@ -69,13 +69,6 @@ public class GameSettingsData
     // in-combat border around the sidebar HP bar; the sword icon itself
     // always shows. See Overlay.cs's DrawCombatIndicator().
     public bool ShowCombatIndicatorEnabled { get; set; } = true;
-
-    // Defaults to TRUE (on) — same "give it its own explicit default"
-    // reasoning as LowHealthIndicatorEnabled above. Gates Player.cs's
-    // general-purpose in-world HP bar (Player.DrawHealthBar()), separate
-    // from LowHealthIndicatorEnabled's own critical-threshold warning bar.
-    // See SettingsState.cs's Graphics tab ("Show Player HP").
-    public bool ShowPlayerHealthBarEnabled { get; set; } = true;
 
     // Audio — see Sound.cs's RefreshMusicState()/ShouldPlaySfx() and
     // SettingsState.cs's Audio tab. MusicEnabled/MusicVolumePercent/

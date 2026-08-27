@@ -5890,3 +5890,42 @@ date/time for those individually; don't treat their grouping as meaning they all
      Reverted the temp code (`git diff --stat Game1.cs` clean), deleted the scratch log, ran a final
      clean build + plain boot-check, and confirmed all real save files byte-identical to a pre-test
      backup.
+
+221. **Removed the general-purpose player HP bar and its "Show Player HP" setting (entry 215),
+     reverted the low-HP threshold default to 25%, and fixed Sand Devil's spawn distance a fourth
+     time by tying it to the actual screen size.**
+     Player HP bar removal: deleted `Player.DrawHealthBar()`, its call from `Draw()`, the
+     `ShowPlayerHealthBarEnabled` field, and the `PlayerHealthBarWidth`/`Height`/`OffsetY` constants;
+     restored `LowHealthBarOffsetY` to its original fixed `8` (it had been computed relative to the
+     now-deleted bar's own offset+height so the two wouldn't overlap — no longer needed). Removed
+     `GameSettingsData.ShowPlayerHealthBarEnabled`, its `Util.Save/LoadGameSettingsData()` wiring, and
+     the "Show Player HP" row from `SettingsState.cs`'s `graphicsRows`. `DrawLowHealthBar()` (the
+     separate critical-threshold warning flash) is completely unaffected.
+     Low-HP threshold default: `Player.LowHealthThresholdPercent` and
+     `GameSettingsData.LowHealthThresholdPercent` both changed from `20` back to `25`. Note: an
+     already-saved `GameSettingsData.json` that has this key persisted at `20` won't pick up the new
+     default automatically — `System.Text.Json` only applies a DTO's declared default when the key is
+     genuinely absent from the file — so an existing settings file keeps whatever value was last
+     saved until changed manually in Settings or the file is regenerated fresh; only brand-new
+     settings files see `25` right away.
+     Sand Devil spawn distance, fourth attempt: two prior fixes (a flat 200-unit floor, then
+     AttackRange + 4 tiles = 440) were each individually verified correct but still didn't satisfy
+     the report — the actual problem was never "not a big enough number," it was that any fixed
+     distance well inside the visible screen still spawns it in plain view. Replaced
+     `MinSpawnDistanceFromPlayer` with the gameplay viewport's own half-diagonal (`Vector2.Distance`
+     from center to corner — the same reasoning `Enemy.AggroRadius` already uses, ≈608 units at the
+     current 980x720 viewport), the exact distance beyond which a point can never be on screen at
+     all — `static readonly`, not `const`, since `Vector2.Distance()` isn't a compile-time constant.
+     Verified via a temporary `Game1.StartGame()` test: confirmed via reflection that
+     `Player.ShowPlayerHealthBarEnabled`/`DrawHealthBar`/`GameSettingsData.ShowPlayerHealthBarEnabled`
+     no longer exist and that no `SettingsRow` in `graphicsRows` is labeled "Show Player HP"; rendered
+     the player at 50% health with `LowHealthIndicatorEnabled` off and confirmed visually that no bar
+     draws under the sprite at all; confirmed a fresh `GameSettingsData()`'s
+     `LowHealthThresholdPercent` reads `25`; read `SandDevil.MinSpawnDistanceFromPlayer` via
+     reflection (608.03, matching the hand-computed viewport half-diagonal) and constructed a Sand
+     Devil directly on top of the player, confirming the resulting spawn distance was exactly
+     608.03 — comfortably beyond both the viewport's half-width (490) and half-height (360), so it's
+     guaranteed off-screen at spawn regardless of direction. Reverted the temp code (`git diff --stat
+     Game1.cs` clean), deleted the scratch log/PNG, ran a final clean build + plain boot-check, and
+     confirmed all real save files (including `GameSettingsData.json`) byte-identical to a pre-test
+     backup.

@@ -44,21 +44,28 @@ namespace Realm
         private const int AttackDamage = 10;
         private const float ProjectileSpeed = 6.5f * 32f / 60f; // 6.5 tiles/sec
 
-        // Reported directly, twice: Sand Devil spawns too close to the
-        // player. The first fix (a flat 200-unit/6.25-tile floor) still
-        // wasn't enough — 200 < AttackRange (312/9.75 tiles), so it could
-        // spawn already inside its own firing range and start shooting
-        // immediately, which reads as "way too close" regardless of the
-        // literal distance number. Tied to AttackRange with a real buffer
-        // this time (4 tiles) so a freshly-spawned Sand Devil can never
-        // immediately open fire — it has to close distance first, giving
-        // the player actual reaction time. EnemySpawner.SpawnWave()'s
-        // shared anchor+offset math only guarantees ~137 units minimum in
-        // the worst case (anchor >= 250 from GetSpawnPosition(), offset up
-        // to ~113 toward the player) — fine for most enemies, not this one.
-        // Enforced here rather than in the shared spawn system, so only
-        // Sand Devil is affected.
-        private const float MinSpawnDistanceFromPlayer = AttackRange + (4f * 32f);
+        // Reported three times: Sand Devil spawns too close to the player.
+        // Two prior fixes each picked a bigger arbitrary distance (a flat
+        // 200-unit floor, then AttackRange + 4 tiles = 440) and each still
+        // wasn't enough — the real problem was never "not a big enough
+        // number," it was that any fixed distance well inside the visible
+        // screen still spawns it in plain view, which reads as "too close"
+        // regardless of the literal value. Tied to the actual screen size
+        // this time instead: the gameplay viewport's own half-diagonal
+        // (center-to-corner, the same reasoning Enemy.AggroRadius already
+        // uses) is the exact distance beyond which a point can never be
+        // on screen — so a Sand Devil now always spawns fully off-screen,
+        // not just "far" by some arbitrary number. static readonly, not
+        // const, since Vector2.Distance() isn't a compile-time constant.
+        // EnemySpawner.SpawnWave()'s shared anchor+offset math only
+        // guarantees ~137 units minimum in the worst case (anchor >= 250
+        // from GetSpawnPosition(), offset up to ~113 toward the player) —
+        // fine for most enemies, not this one. Enforced here rather than
+        // in the shared spawn system, so only Sand Devil is affected.
+        private static readonly float MinSpawnDistanceFromPlayer = Vector2.Distance(
+            Vector2.Zero,
+            new Vector2(Game1.GameplayViewportWidth / 2f, Game1.GameplayViewportHeight / 2f)
+        );
 
         // No Cooldown given for the spinner attack at all — falls back to
         // the same 250-tick default Enemy's own shared Shoot()/Spray()/
