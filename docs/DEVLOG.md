@@ -5872,3 +5872,21 @@ date/time for those individually; don't treat their grouping as meaning they all
      real `Util.DrawTooltip` call and visually confirmed red/green/gold respectively. Reverted the
      temp code (`git diff --stat Game1.cs` clean), deleted the scratch log/PNG, ran a final clean
      build + plain boot-check, and confirmed all real save files byte-identical to a pre-test backup.
+
+220. **Sand Devil reported too close a third time — the real cause was its Circle phase, not
+     spawning.** Both prior fixes (entries 217/218) were correct on their own terms (verified by
+     script each time) but didn't address the actual complaint, since neither touched the mechanism
+     actually responsible. Asked directly which behavior matched what was being seen, rather than
+     guessing again: confirmed it was the Circle phase — `PhaseWatcher()`'s Circle branch snaps the
+     Sand Devil onto a fixed ring around the player every tick, and that ring's radius
+     (`CircleRadius`) was only 3 tiles (96 units), so once already engaged, every ~3-second phase
+     cycle pulled it back to a tight, close-feeling orbit regardless of how far away it had originally
+     spawned or chased from. The spec never gave this radius a specific value at all (just "rotate
+     clockwise for 3 seconds"), so it was always a judgment call that turned out too tight in
+     practice. Doubled `CircleRadius` to 6 tiles (192 units).
+     Verified via a temporary `Game1.StartGame()` test: force-set a Sand Devil directly into Circle
+     phase via reflection and ran 30 `EntityManager.Update()` ticks, confirming its distance to the
+     player settled at 192 units (matching the new `CircleRadius` exactly, up from the old 96).
+     Reverted the temp code (`git diff --stat Game1.cs` clean), deleted the scratch log, ran a final
+     clean build + plain boot-check, and confirmed all real save files byte-identical to a pre-test
+     backup.

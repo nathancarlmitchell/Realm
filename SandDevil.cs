@@ -18,7 +18,18 @@ namespace Realm
         private const int ChasePhaseDuration = 180; // 3s at 60fps
         private const int CirclePhaseDuration = 180; // 3s at 60fps
         private const float CloseThreshold = 2f * 32f; // 2 tiles
-        private const float CircleRadius = 3f * 32f; // 3 tiles
+
+        // Widened from 3 tiles after both prior spawn-distance fixes
+        // (200-unit floor, then AttackRange+4-tile floor) turned out not to
+        // be the real cause — confirmed directly: the actual complaint was
+        // this Circle phase snapping the Sand Devil onto a tight 3-tile
+        // ring around the player every ~3-second cycle once already
+        // engaged, which reads as "too close" repeatedly throughout a
+        // fight, independent of how far away it originally spawned. Not
+        // given a specific radius in the spec at all (just "rotate
+        // clockwise for 3 seconds"), so this was always a judgment call;
+        // doubled to give real breathing room during the phase.
+        private const float CircleRadius = 6f * 32f; // 6 tiles
 
         // Not given a specific rate in the spec ("rotate clockwise for 3
         // seconds") — one full lap over the 3-second Circle phase reads as
