@@ -1263,6 +1263,7 @@ namespace Realm
                 ShowEnemyDamageNumbersEnabled = Player.Instance.ShowEnemyDamageNumbersEnabled,
                 ShowHitParticlesEnabled = Player.Instance.ShowHitParticlesEnabled,
                 ShowCombatIndicatorEnabled = Player.Instance.ShowCombatIndicatorEnabled,
+                ShowPlayerHealthBarEnabled = Player.Instance.ShowPlayerHealthBarEnabled,
                 MusicEnabled = Player.Instance.MusicEnabled,
                 MusicVolumePercent = Player.Instance.MusicVolumePercent,
                 MusicMuted = Player.Instance.MusicMuted,
@@ -1293,6 +1294,7 @@ namespace Realm
                 Player.Instance.ShowEnemyDamageNumbersEnabled = data.ShowEnemyDamageNumbersEnabled;
                 Player.Instance.ShowHitParticlesEnabled = data.ShowHitParticlesEnabled;
                 Player.Instance.ShowCombatIndicatorEnabled = data.ShowCombatIndicatorEnabled;
+                Player.Instance.ShowPlayerHealthBarEnabled = data.ShowPlayerHealthBarEnabled;
                 Player.Instance.MusicEnabled = data.MusicEnabled;
                 Player.Instance.MusicVolumePercent = data.MusicVolumePercent;
                 Player.Instance.MusicMuted = data.MusicMuted;

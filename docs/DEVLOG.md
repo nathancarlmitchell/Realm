@@ -5719,3 +5719,31 @@ date/time for those individually; don't treat their grouping as meaning they all
      otherwise close in further, and the Circle phase now zeroes `Velocity` every tick instead of
      leaving Chase's leftover Velocity to bleed into the ring position via `Enemy.Update()`'s own
      `Position += Velocity`. Removed the now-resolved item from `BACKLOG.md`'s open ideas.
+
+215. **Added a general-purpose player HP bar under the sprite, plus a "Show Player HP" setting (on
+     by default).** New `Player.DrawHealthBar()` draws a dark-green/dark-red two-tone bar centered
+     beneath the player at every health level — the same visual style `Enemy.DrawHealthBars()`
+     already uses for every enemy, for consistency — separate from the existing
+     `DrawLowHealthBar()` (a critical-threshold warning flash, red-only, gated by
+     `LowHealthIndicatorEnabled`/`LowHealthThresholdPercent`, unchanged). The two bars stack rather
+     than overlap: `DrawHealthBar()` sits directly under the sprite (`PlayerHealthBarOffsetY`), and
+     `LowHealthBarOffsetY` is now computed relative to it (`PlayerHealthBarOffsetY +
+     PlayerHealthBarHeight + 2`) instead of a fixed `8`, so the warning bar always renders just below
+     the general one on the (common) case where both are visible together.
+     New `Player.ShowPlayerHealthBarEnabled` field (defaults `true`) gates it, following the exact
+     same account-wide `GameSettingsData`/`Util.Save|LoadGameSettingsData()`/`SettingsState.cs`
+     Graphics-tab wiring every other toggle here already uses — new `GameSettingsData
+     .ShowPlayerHealthBarEnabled` DTO property (explicit `= true` default, since an old settings file
+     missing the key must not silently disable it), a new "Show Player HP" row in
+     `SettingsState.cs`'s `graphicsRows`.
+     Verified via a temporary `Game1.StartGame()` test: rendered the player to an offscreen
+     `RenderTarget2D` at 100/50/10 HealthMax-100 health (visually confirmed the bar's fill fraction
+     scales correctly, and that the 10-health render shows both bars stacked without any overlap) and
+     once with the setting off (confirmed no bar drawn at all); also exercised the settings
+     round-trip directly — set the toggle false, called `Util.SaveGameSettingsData()`, flipped it
+     back to true in memory, called `Util.LoadGameSettingsData()`, and confirmed it read back as
+     `False`, proving persistence actually works end to end. Restored the real `GameSettingsData.json`
+     from a pre-test backup afterward (the round-trip test's own `Save` call had overwritten it with
+     test data), reverted the temp code (`git diff --stat Game1.cs` clean), deleted the scratch
+     PNGs/log, ran a final clean build + plain boot-check, and confirmed all real save files
+     (including the restored `GameSettingsData.json`) byte-identical to their pre-test backups.

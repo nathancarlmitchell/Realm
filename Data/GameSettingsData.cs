@@ -70,6 +70,13 @@ public class GameSettingsData
     // always shows. See Overlay.cs's DrawCombatIndicator().
     public bool ShowCombatIndicatorEnabled { get; set; } = true;
 
+    // Defaults to TRUE (on) — same "give it its own explicit default"
+    // reasoning as LowHealthIndicatorEnabled above. Gates Player.cs's
+    // general-purpose in-world HP bar (Player.DrawHealthBar()), separate
+    // from LowHealthIndicatorEnabled's own critical-threshold warning bar.
+    // See SettingsState.cs's Graphics tab ("Show Player HP").
+    public bool ShowPlayerHealthBarEnabled { get; set; } = true;
+
     // Audio — see Sound.cs's RefreshMusicState()/ShouldPlaySfx() and
     // SettingsState.cs's Audio tab. MusicEnabled/MusicVolumePercent/
     // SfxVolumePercent all need their own explicit defaults for the same

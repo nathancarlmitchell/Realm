@@ -209,6 +209,13 @@ namespace Realm.States
                     GetBool = () => Player.Instance.ShowCombatIndicatorEnabled,
                     SetBool = v => Player.Instance.ShowCombatIndicatorEnabled = v,
                 },
+                new SettingsRow
+                {
+                    Kind = RowKind.Toggle,
+                    Label = "Show Player HP",
+                    GetBool = () => Player.Instance.ShowPlayerHealthBarEnabled,
+                    SetBool = v => Player.Instance.ShowPlayerHealthBarEnabled = v,
+                },
             ];
 
             // Order matches how the settings actually read best together —
