@@ -6044,3 +6044,23 @@ date/time for those individually; don't treat their grouping as meaning they all
      Reverted the temp code (`git diff --stat Game1.cs` clean), deleted the scratch log/PNG, ran a
      final clean build + plain boot-check, and confirmed all real save files byte-identical to a
      pre-test backup.
+
+225. **Extended Unstable to Priest's Nova**, closing out the last aimed ability — flagged as a
+     follow-up in entry 224, confirmed directly rather than assumed. Nova is a point-centered AoE
+     burst (`EntityManager.DamageEnemiesInRadius`/`NovaPulse`) with no directional shots of its own,
+     same shape as Wizard's Spell Bomb, so the identical fix applies: the target point
+     (`Input.GetMousePosition()`, clamped to the Tome's own `Range`) gets its direction randomized
+     while keeping the exact same (already-clamped) distance from the caster, rather than picking an
+     arbitrary new distance.
+     Verified via a temporary `Game1.StartGame()` test (a standalone `Priest`, re-pinned `Position`
+     after construction — the same singleton-swap gotcha from entries 223/224): fired the ability
+     stably and confirmed the Nova center landed exactly 192 units from the caster (the Healing
+     Tome's own clamped range — the test's fixed cursor position was far outside it, so the *clamp*
+     dominates rather than the raw cursor distance, which is correct, pre-existing behavior, not a
+     bug) in the same direction as the cursor; applied `Destabilize()` and fired again, confirming the
+     new center was still exactly 192 units away (matching the clamped distance) but in a completely
+     different direction — the stable and unstable centers landed roughly 993 units apart from each
+     other despite sharing the identical distance-from-caster, direct evidence the direction (not the
+     distance) is what's actually being randomized. Reverted the temp code (`git diff --stat Game1.cs`
+     clean), deleted the scratch log, ran a final clean build + plain boot-check, and confirmed all
+     real save files byte-identical to a pre-test backup.

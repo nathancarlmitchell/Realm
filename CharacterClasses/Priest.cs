@@ -179,6 +179,18 @@ namespace Realm.CharacterClasses
                 float rangePixels = tome.Range * 32f;
                 if (toCursor.LengthSquared() > rangePixels * rangePixels)
                     toCursor = Vector2.Normalize(toCursor) * rangePixels;
+
+                // Unstable: same "keep the distance, randomize the
+                // direction" treatment as Wizard's Spell Bomb — Nova is a
+                // point-centered AoE burst with no directional shots of its
+                // own, so the target point itself is the only "aim" this
+                // ability has to disrupt (see DebuffType.Unstable).
+                if (HasDebuff(DebuffType.Unstable))
+                    toCursor = Extensions.FromPolar(
+                        rand.NextFloat(0f, MathHelper.TwoPi),
+                        toCursor.Length()
+                    );
+
                 Vector2 novaCenter = Position + toCursor;
 
                 int damagePerPulse = tome.MinDamage / 2;
