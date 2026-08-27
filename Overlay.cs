@@ -185,7 +185,44 @@ namespace Realm
         // culled, so a nearby-but-off-radius threat/portal still shows.
         private const int MinimapSize = 130;
         private const int MinimapPadding = 10;
-        private const float MinimapWorldRadius = 2000f;
+
+        // No longer a flat const — the mouse wheel adjusts this while
+        // hovering the map (see HandleMinimapZoom()), so it needs to be a
+        // mutable field. 2000f is the original fixed value, kept as the
+        // starting zoom level; persists for the rest of the session (not
+        // reset per state transition) rather than snapping back to default
+        // every time the player changes realms, same as a real settings
+        // preference would.
+        private static float minimapWorldRadius = 2000f;
+        private const float MinimapMinWorldRadius = 500f; // most zoomed in
+        private const float MinimapMaxWorldRadius = 6000f; // most zoomed out
+
+        // One step per standard wheel notch (120 units of ScrollWheelValue,
+        // MonoGame/Windows' usual unit) — scrolling up (positive delta)
+        // zooms in (shrinks the world radius shown), matching how zoom
+        // conventionally works in most map UIs.
+        private const float MinimapZoomStepPerNotch = 250f;
+
+        // Screen position of a world point's blip on the minimap — pure
+        // math, shared by the actual drawing below and
+        // HandleMinimapBeaconClick()'s hit test, so the two can never
+        // silently disagree on where a blip visually landed. Blips outside
+        // minimapWorldRadius clamp to the map's edge (independently per
+        // axis, not a true radial clamp — simpler math, still points
+        // roughly the right direction) rather than being culled, so a
+        // nearby-but-off-radius threat/portal/Beacon still shows.
+        private static Vector2 ComputeMinimapBlipPosition(
+            Vector2 worldPos,
+            Vector2 playerPos,
+            Vector2 mapCenter,
+            int dotSize
+        )
+        {
+            Vector2 offset = worldPos - playerPos;
+            float nx = MathHelper.Clamp(offset.X / minimapWorldRadius, -1f, 1f);
+            float ny = MathHelper.Clamp(offset.Y / minimapWorldRadius, -1f, 1f);
+            return mapCenter + new Vector2(nx, ny) * (MinimapSize / 2f - dotSize / 2f);
+        }
 
         private static void DrawMinimap(SpriteBatch spriteBatch)
         {
@@ -195,16 +232,14 @@ namespace Realm
 
             spriteBatch.Draw(Art.HealthBar, mapRect, Color.Black * 0.6f);
 
+            HandleMinimapZoom(mapRect);
+
             Vector2 mapCenter = new(mapX + MinimapSize / 2f, mapY + MinimapSize / 2f);
             Vector2 playerPos = Player.Instance.Position;
 
             void DrawBlip(Vector2 worldPos, Color color, int dotSize)
             {
-                Vector2 offset = worldPos - playerPos;
-                float nx = MathHelper.Clamp(offset.X / MinimapWorldRadius, -1f, 1f);
-                float ny = MathHelper.Clamp(offset.Y / MinimapWorldRadius, -1f, 1f);
-                Vector2 dotPos =
-                    mapCenter + new Vector2(nx, ny) * (MinimapSize / 2f - dotSize / 2f);
+                Vector2 dotPos = ComputeMinimapBlipPosition(worldPos, playerPos, mapCenter, dotSize);
 
                 spriteBatch.Draw(
                     Art.HealthBar,
@@ -230,31 +265,61 @@ namespace Realm
 
             // Shown as soon as it exists (before activation too) — a
             // landmark worth heading toward, same idea as a portal blip.
-            // Purple to read as visually distinct from every other blip
-            // color already in use here.
             if (BeachBeacon.ActiveInstance != null)
-                DrawBlip(BeachBeacon.ActiveInstance.Position, Color.Purple, 5);
+                DrawBlip(BeachBeacon.ActiveInstance.Position, Color.Cyan, BeaconBlipSize);
 
             // Player last, always dead center, so it's never hidden under a
             // portal/enemy blip that happens to land on the same spot.
             DrawBlip(playerPos, Color.White, 6);
 
-            HandleMinimapBeaconClick(mapRect);
+            HandleMinimapBeaconClick(mapCenter, playerPos);
         }
 
+        // Scroll wheel zoom, only while the mouse is actually over the
+        // minimap — split out from DrawMinimap() (input handling, not
+        // rendering) so it's independently testable without needing a
+        // working SpriteBatch, same reasoning as HandleMinimapBeaconClick()
+        // below. ScrollWheelValue is cumulative for the whole session, not
+        // per-tick, so the delta (this frame vs. last) is what actually
+        // matters — Input.mouse/previousMouse are already the real,
+        // per-frame-refreshed OS mouse state (Input.Update()), unlike
+        // Controls/Button.cs's own separate Mouse.GetState() polling.
+        private static void HandleMinimapZoom(Rectangle mapRect)
+        {
+            if (!mapRect.Contains(Input.MousePosition))
+                return;
+
+            int scrollDelta = Input.mouse.ScrollWheelValue - Input.previousMouse.ScrollWheelValue;
+            if (scrollDelta == 0)
+                return;
+
+            float notches = scrollDelta / 120f;
+            minimapWorldRadius = MathHelper.Clamp(
+                minimapWorldRadius - notches * MinimapZoomStepPerNotch,
+                MinimapMinWorldRadius,
+                MinimapMaxWorldRadius
+            );
+        }
+
+        // The Beacon's own minimap blip is a small dot — a bit of forgiving
+        // padding around its exact pixel footprint (ClickPaddingRadius)
+        // keeps the click from being a frustrating pixel-hunt while still
+        // requiring the Beacon's blip specifically, not just anywhere on
+        // the map.
+        private const int BeaconBlipSize = 5;
+        private const float BeaconBlipClickPaddingRadius = 4f;
+
         // Click-to-teleport: only meaningful once this Realm instance's
-        // Beacon has actually been activated (walked up to at least once)
-        // — there's only ever one Beacon/destination to disambiguate, so
-        // any click anywhere on the minimap (not just precisely on its
-        // tiny blip) teleports there, rather than requiring a fiddly
-        // pixel-perfect hit on a 5px dot. No cost or cooldown — a free,
+        // Beacon has actually been activated (walked up to at least once),
+        // and only when the click actually lands on the Beacon's own blip
+        // — not anywhere on the minimap. No cost or cooldown — a free,
         // repeatable return trip once unlocked. Edge-triggered (release
         // right after a press), same "just clicked" check
         // Controls/Button.cs itself uses, so holding the button down
         // doesn't re-fire every frame. Split out from DrawMinimap() itself
         // (input handling, not rendering) so it's independently testable
         // without needing a working SpriteBatch.
-        private static void HandleMinimapBeaconClick(Rectangle mapRect)
+        private static void HandleMinimapBeaconClick(Vector2 mapCenter, Vector2 playerPos)
         {
             BeachBeacon beacon = BeachBeacon.ActiveInstance;
 
@@ -262,10 +327,21 @@ namespace Realm
             // (see its own comment) — it says nothing about whether this
             // one has actually been reached yet, so IsActivated needs its
             // own explicit check here too.
+            if (beacon == null || !beacon.IsActivated)
+                return;
+
+            Vector2 blipPos = ComputeMinimapBlipPosition(
+                beacon.Position,
+                playerPos,
+                mapCenter,
+                BeaconBlipSize
+            );
+            float clickRadius = BeaconBlipSize / 2f + BeaconBlipClickPaddingRadius;
+            bool clickedBlip =
+                Vector2.DistanceSquared(Input.MousePosition, blipPos) <= clickRadius * clickRadius;
+
             if (
-                beacon != null
-                && beacon.IsActivated
-                && mapRect.Contains(Input.MousePosition)
+                clickedBlip
                 && Input.mouse.LeftButton == ButtonState.Released
                 && Input.previousMouse.LeftButton == ButtonState.Pressed
             )

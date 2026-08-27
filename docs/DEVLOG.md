@@ -6425,3 +6425,43 @@ date/time for those individually; don't treat their grouping as meaning they all
      (`git diff --stat Game1.cs` clean), ran a final clean build + plain boot-check, and confirmed all
      six real save files byte-identical to a pre-test backup — no live play happened in between this
      time either.
+
+236. **Three direct follow-ups on the Beach Beacon/minimap.** Beacon blip color Purple → Cyan (now
+     shares the color portals already use — a deliberate choice per the user's explicit ask, not an
+     oversight). Minimap scroll-to-zoom, scoped to just the minimap (not the main camera — the
+     broader BACKLOG.md item stays open): `Overlay.cs`'s `MinimapWorldRadius` const became a mutable
+     `minimapWorldRadius` field, adjusted by a new `HandleMinimapZoom(mapRect)` while the mouse
+     hovers the map — reads `Input.mouse.ScrollWheelValue - Input.previousMouse.ScrollWheelValue`
+     directly (both fields already the real per-frame OS mouse state via `Input.Update()`; no new
+     `Input.cs` plumbing needed), one step (250 units) per standard 120-unit wheel notch, clamped to
+     500–6000. Persists for the rest of the session rather than resetting per state transition, same
+     as a real settings preference would. Third: entry 234's "click anywhere on the minimap"
+     teleport-trigger was too loose — reworked to require the click land on the Beacon's own blip
+     specifically. New `ComputeMinimapBlipPosition()` (pure math, shared by the actual `DrawBlip`
+     rendering and the click hit-test, so the two can never silently disagree on where a blip visually
+     lands) plus a small forgiving click-radius padding (4px beyond the 5px dot) so it isn't a
+     frustrating pixel-hunt while still requiring the blip itself, not just anywhere on the map.
+     `HandleMinimapBeaconClick()`'s signature changed from `(Rectangle mapRect)` to
+     `(Vector2 mapCenter, Vector2 playerPos)` to support this.
+     Verified via a temporary `Game1.StartGame()` test: reflected `HandleMinimapZoom()` and confirmed
+     scrolling while the mouse sat outside the map rectangle left the radius untouched, one notch
+     while hovering the map moved it by exactly the expected step, and both a huge zoom-in and a huge
+     zoom-out scroll clamped correctly at 500/6000. Separately, reflected `ComputeMinimapBlipPosition()`
+     to compute the Beacon's exact expected blip screen position for a known player/Beacon/map-center
+     setup, then reflected `HandleMinimapBeaconClick()` directly: a click at the map's center (a
+     point deliberately away from the blip in this setup) produced no teleport, while a click at the
+     blip's own exact computed position did. **First run crashed the whole process** (a genuine
+     .NET unhandled-exception exit code, not a hang) — added a temporary `try`/`catch` around the
+     test body to see the real exception rather than guessing, which showed a `NullReferenceException`
+     on `Game1.Camera.Pos = ...` inside `HandleMinimapBeaconClick()`: a test-setup gap, not a feature
+     bug — this second test block never initialized `Game1.Camera` (the first test block in this same
+     session didn't need it), fixed by constructing one directly, same pattern as every earlier
+     Camera-dependent test this session. Reverted the temp code — this time back via the Edit tool
+     from the start after two separate attempts at a bulk `sed`/line-range delete both silently
+     rewrote the entire file's line endings (CRLF→LF), which `git diff --stat` reported as the whole
+     file changing even though `git diff --ignore-all-space` confirmed zero actual content
+     difference; both times caught before committing and fixed by `git checkout -- Game1.cs` followed
+     by a proper Edit-tool-based removal instead. Ran a final clean build + plain boot-check, and
+     confirmed five of six real save files were byte-identical to a pre-test backup; the sixth
+     (`PlayerData_Wizard.json`) showed a small `ExperienceTotal` increase (4468→4483) at the same
+     `Level` — the user's own continued live play in between, not a bug — backup refreshed.
