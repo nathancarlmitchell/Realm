@@ -176,20 +176,6 @@ prioritized or scheduled — the user asked to keep these noted for later rather
   Bandit Leader/Scorpion Queen/Sandsman King/Giant Crab feel right blended into the regular wave
   (rather than as dedicated encounters), and that the new flat 5%/2.5% drop rates feel right in
   practice rather than just matching their target percentages statistically.
-- **Sand Devil bug: circle phase, and spawning directly on the player.** Reported during play, not
-  yet root-caused or fixed. Two symptoms, possibly related: (1) something wrong during the Circle
-  phase specifically (`SandDevil.cs`'s `PhaseWatcher()`) — one candidate worth checking first: the
-  phase transition (`currentPhase = Phase.Circle; circleAngle = (Position -
-  Player.Instance.Position).ToAngle();`) computes its starting angle from the Sand Devil's position
-  at that instant, then immediately snaps `Position` to `Player.Instance.Position +
-  Extensions.FromPolar(circleAngle, CircleRadius)` every tick from then on — a hard teleport onto a
-  fixed 96px ring around the player's *current* position the moment Circle begins, not a smooth
-  transition from wherever it actually was chasing from, which could read as an abrupt/wrong jump;
-  (2) a Sand Devil (or its Circle-phase ring) ending up exactly on the player's own position, which
-  `EnemySpawner.GetSpawnPosition()`'s 250-unit `minSpawnDistance` should prevent at initial spawn —
-  worth checking whether the bug is actually about the Circle-phase snap-to-ring above landing too
-  close/exactly on the player mid-fight, rather than the initial spawn itself. Needs reproduction and
-  a real fix, not a guess — this is a lead for whoever picks it up, not a diagnosis.
 
 ## Completed
 

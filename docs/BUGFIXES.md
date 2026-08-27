@@ -773,3 +773,35 @@ happened at once.
     rather than trusting every future hand-written taunt to stay ASCII-only. Verified via a
     dedicated scripted check constructing a `TauntBubble` with curly quotes and an ellipsis and
     confirming both the constructor and a full `Draw()` call complete without throwing.
+
+## 2026-08-27
+
+55. **Sand Devil (`SandDevil.cs`) could end up directly on top of the player, and its Circle phase
+    could drift instead of tracing a clean ring** — reported by the user during play, both symptoms
+    root-caused in the same `PhaseWatcher()` method by code inspection (no repro steps beyond "circle
+    phase" and "spawning directly on the player"). (1) Chase phase's "wander erratically" sub-state
+    (triggered within `CloseThreshold`, 2 tiles) drove `MoveRandomly()` — a blind random walk with no
+    bias away from the player at all — so nothing stopped it from wandering further in instead of
+    out, up to and including onto the player's own exact position; this is almost certainly what
+    read as "spawning directly on the player" (nothing in `EnemySpawner.GetSpawnPosition()`'s own
+    250-unit minimum distance could produce that once the enemy is already alive and moving). (2) The
+    Circle phase directly sets `Position` onto a ring around the player every tick rather than
+    accelerating there, but `Enemy.Update()` applies `Position += Velocity` right after that same
+    tick's behaviour runs regardless of phase — so any Velocity left over from Chase (both
+    `FollowPlayer()` and `MoveRandomly()` accumulate into it) kept bleeding into the ring position
+    afterward, worst right at the Chase→Circle transition when residual Velocity is largest, making
+    the circle drift instead of staying a clean ring. Fixed (1) by clamping `Position` back out to
+    `CloseThreshold` from the player after each erratic-wander tick whenever it would otherwise end
+    up closer, and (2) by zeroing `Velocity` every tick of the Circle phase (not just once at the
+    transition), so the leftover-Velocity bleed can never contaminate the ring calculation. Verified
+    via a temporary `Game1.StartGame()` test: force-set one Sand Devil's phase to Chase via
+    reflection with `Position` set exactly onto the player's own position (the worst case) and ran 30
+    `EntityManager.Update()` ticks, confirming its minimum distance to the player over that window
+    stayed at ~63.4 units (matching the ~64-unit clamp target within float precision) instead of
+    collapsing to 0; force-set a second Sand Devil's phase to Circle with a large simulated leftover
+    Velocity `(50, 50)` and ran 30 more ticks, confirming its distance to the player stayed within
+    ~7.6e-6 units of the exact 96-unit `CircleRadius` (float noise, no real drift) and that `Velocity`
+    read back as exactly zero every single tick. Reverted the temp code (`git diff --stat Game1.cs`
+    clean), deleted the scratch log, ran a final clean build + plain boot-check, and confirmed all
+    real save files byte-identical to a pre-test backup. See [DEVLOG.md](DEVLOG.md) entry 214 and
+    [BACKLOG.md](BACKLOG.md) (the open item this closes out). *(08:41 EDT)*

@@ -82,9 +82,32 @@ namespace Realm
                         Vector2.DistanceSquared(Position, Player.Instance.Position)
                         <= CloseThreshold * CloseThreshold;
                     if (tooClose)
+                    {
                         erratic.MoveNext();
+
+                        // Bug fix: MoveRandomly() is a blind random walk with
+                        // no bias away from the player at all — left alone,
+                        // "wander erratically" once too close could just as
+                        // easily wander further in as out, including onto
+                        // the player's own exact position (reported as a
+                        // real bug — a Sand Devil ending up directly on the
+                        // player). Clamp back out to CloseThreshold after
+                        // each erratic step so the wander still looks random
+                        // but can never actually converge onto the player.
+                        Vector2 awayFromPlayer = Position - Player.Instance.Position;
+                        if (awayFromPlayer.LengthSquared() < CloseThreshold * CloseThreshold)
+                        {
+                            Vector2 direction =
+                                awayFromPlayer != Vector2.Zero
+                                    ? Vector2.Normalize(awayFromPlayer)
+                                    : Vector2.UnitX;
+                            Position = Player.Instance.Position + direction * CloseThreshold;
+                        }
+                    }
                     else
+                    {
                         chase.MoveNext();
+                    }
 
                     if (phaseTimer <= 0)
                     {
@@ -99,6 +122,21 @@ namespace Realm
                 }
                 else
                 {
+                    // Bug fix: this branch sets Position directly onto a
+                    // ring around the player every tick rather than
+                    // accelerating there (see this method's own header
+                    // comment) — but Enemy.Update() applies `Position +=
+                    // Velocity` right after this coroutine runs, every
+                    // frame, regardless of phase. Any Velocity left over
+                    // from Chase (FollowPlayer/MoveRandomly both accumulate
+                    // into it) was bleeding into the ring position
+                    // afterward and corrupting the circle — worst right at
+                    // the Chase->Circle transition, when residual Velocity
+                    // is largest. Zeroing it every tick here, not just once
+                    // at the transition, keeps the circle clean for its
+                    // whole duration.
+                    Velocity = Vector2.Zero;
+
                     circleAngle = MathHelper.WrapAngle(circleAngle + CircleAngularSpeed);
                     Position = Player.Instance.Position + Extensions.FromPolar(circleAngle, CircleRadius);
 

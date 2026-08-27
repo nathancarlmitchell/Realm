@@ -5711,3 +5711,11 @@ date/time for those individually; don't treat their grouping as meaning they all
      all 3000 trials. Reverted the temp code (`git diff --stat Game1.cs` clean), deleted the scratch
      log, ran a final clean build + plain boot-check, and confirmed all real save files byte-identical
      to a pre-test backup.
+
+214. **Fixed the Sand Devil bug flagged on the backlog** (circle-phase drift, and ending up directly
+     on the player) — see [BUGFIXES.md](BUGFIXES.md) entry 55 for the full root-cause writeup and
+     verification. Both fixes live in `SandDevil.cs`'s `PhaseWatcher()`: the erratic-wander sub-state
+     now clamps `Position` back out to `CloseThreshold` from the player whenever a random step would
+     otherwise close in further, and the Circle phase now zeroes `Velocity` every tick instead of
+     leaving Chase's leftover Velocity to bleed into the ring position via `Enemy.Update()`'s own
+     `Position += Velocity`. Removed the now-resolved item from `BACKLOG.md`'s open ideas.
