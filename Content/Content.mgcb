@@ -1524,6 +1524,13 @@
 /processorParam:TextureFormat=Compressed
 /build:Fonts/RetroFontLarge.spritefont
 
+#begin Fonts/RetroFontMedium.spritefont
+/importer:FontDescriptionImporter
+/processor:FontDescriptionProcessor
+/processorParam:PremultiplyAlpha=True
+/processorParam:TextureFormat=Compressed
+/build:Fonts/RetroFontMedium.spritefont
+
 #begin Fonts/RetroFontButton.spritefont
 /importer:FontDescriptionImporter
 /processor:FontDescriptionProcessor

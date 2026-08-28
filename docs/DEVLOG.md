@@ -6729,3 +6729,24 @@ date/time for those individually; don't treat their grouping as meaning they all
      the real save file's `Level`/`ExperienceTotal` were unchanged from a pre-test backup (a
      byte-level difference remained, not investigated further, same pattern as the last two
      entries).
+
+249. **New `RetroFontMedium` font, applied to the GameOver screen only** (not menu buttons, which
+     already have their own dedicated `RetroFontButton`). Same bundled Jersey10 TrueType file as
+     `RetroFont`/`RetroFontLarge`, baked at its own 110pt native size — same
+     `#begin`/`#build` block shape in `Content.mgcb`, same `Art.cs` field/load-line pattern as the
+     other two. `States/GameOverState.cs`'s `titleFont` (its "Score:"/"Fame Earned:" text, drawn at
+     native size, no `SpriteBatch` scale stretching) switched from `Art.RetroFont` (14pt — a
+     previous external edit, entry 246/247's own pending-changes commit) to the new
+     `Art.RetroFontMedium`, per direct request that it read as genuinely medium-sized rather than
+     tiny HUD-scale text. 110pt was chosen as "slightly smaller than `RetroFontLarge`'s 140pt" — a
+     first-pass value, easy to retune with just that one number if it doesn't look right in practice.
+     Verified via a temporary `Game1.StartGame()` test: measured the same sample string with all
+     three fonts (`RetroFont`, `RetroFontMedium`, `RetroFontLarge`) and confirmed their rendered
+     heights are strictly ordered small < medium < large (20 / 158 / 200 respectively) — confirming
+     the new font asset actually loaded and is genuinely positioned between the other two, not just
+     that it compiles. Deliberately never constructed a real `GameOverState` to test this — that
+     would require an actual player death to trigger through normal gameplay, and CLAUDE.md flags
+     `Hit()`/`Kill()` as a real save-corruption risk; checking the loaded font asset directly was
+     sufficient. Reverted the temp code (`git diff --stat Game1.cs` clean), ran a final clean build +
+     plain boot-check, and confirmed real save files matched a pre-test backup except for the user's
+     own continued live play (`ExperienceTotal` 2,978,440→2,980,703 at the same `Level`) — refreshed.

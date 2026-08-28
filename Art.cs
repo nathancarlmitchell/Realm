@@ -155,6 +155,16 @@ namespace Realm
         // unlike upscaling a small one.
         public static SpriteFont RetroFontLarge { get; private set; }
 
+        // Same bundled Jersey10 file as RetroFont/RetroFontLarge, baked at
+        // its own 110pt native size — sits between RetroFont's small 14pt
+        // HUD size and RetroFontLarge's full 140pt title size. Used by
+        // GameOverState's "Score:"/"Fame Earned:" text, which needs
+        // something bigger than HUD text but smaller than the actual
+        // title, drawn at native size for the same crisp-bitmap reasoning
+        // as RetroFontLarge's own comment. Not used by any button — see
+        // RetroFontButton below for those.
+        public static SpriteFont RetroFontMedium { get; private set; }
+
         // Micro5 (SIL Open Font License), a separate bundled TrueType file
         // used only by Controls/Button.cs — every button in the game,
         // including Settings' own Back/Reset. A dedicated RetroFontButton
@@ -346,6 +356,7 @@ namespace Realm
             SettingsFont = content.Load<SpriteFont>("Fonts/SettingsFont");
             RetroFont = content.Load<SpriteFont>("Fonts/RetroFont");
             RetroFontLarge = content.Load<SpriteFont>("Fonts/RetroFontLarge");
+            RetroFontMedium = content.Load<SpriteFont>("Fonts/RetroFontMedium");
             RetroFontButton = content.Load<SpriteFont>("Fonts/RetroFontButton");
         }
 
