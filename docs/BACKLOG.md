@@ -106,13 +106,6 @@ prioritized or scheduled — the user asked to keep these noted for later rather
   same `Art.HealthBar`-stretched-into-a-rect technique that overlay already uses. Needs a
   tier-to-color mapping decided (a fixed palette by tier number, or a gradient) before
   implementation.
-- **Scroll-to-zoom on the main game camera.** The minimap half of this shipped (see
-  [DEVLOG.md](DEVLOG.md), entry 236 — `Overlay.HandleMinimapZoom()`, 500-6000 world-unit range,
-  `Input.mouse.ScrollWheelValue` now read for the first time anywhere in the codebase). Still open:
-  [Camera.cs](Camera.cs) already has a clamped `Zoom` property (`0.5`-`1.5`, set once to a fixed `1f`
-  in `RealmState`'s constructor and never changed after) with no input wired to it at all — zooming
-  the actual gameplay view (not just the minimap) while the mouse is over the rest of the viewport,
-  not over the minimap's own rect.
 - **Free-form teleport via the minimap** — click *any* spot on the minimap to teleport the player
   there, the original broader idea. What shipped instead (entries 234/236) is narrower and
   purpose-built: clicking the Beach Beacon's own blip specifically teleports to that one fixed,

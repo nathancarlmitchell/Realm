@@ -6486,3 +6486,26 @@ date/time for those individually; don't treat their grouping as meaning they all
      — consistent with the user's own continued play (likely an equipment interaction elsewhere in
      the file), not investigated further given the same benign pattern confirmed repeatedly earlier
      this session — backup refreshed.
+
+238. **Main-camera scroll-to-zoom**, closing out the other half of the BACKLOG.md item entry 236
+     shipped the minimap half of. `Camera.cs` already had a clamped `Zoom` property (0.5-1.5) with
+     nothing driving it — new `Camera.HandleScrollZoom()` reads
+     `Input.mouse.ScrollWheelValue - Input.previousMouse.ScrollWheelValue` (same already-tracked
+     per-frame mouse state entry 236 first read from, no new `Input.cs` plumbing needed), one 0.1
+     step per standard 120-unit wheel notch, only while the mouse sits left of `Game1.SidebarX` (the
+     actual gameplay viewport — the sidebar, which contains the minimap and its own separate
+     `Overlay.HandleMinimapZoom()`, is naturally excluded by that same X check without needing to
+     know anything about the minimap's own rect). Called from `Player.Update()` — already the single
+     place that syncs `Game1.Camera` every frame (`Game1.Camera.Pos = Position`) — rather than adding
+     a second call site to every state that also drives `EntityManager.Update()`
+     (RealmState/NexusState/BossRealmState alike, since `BossRealmState` inherits `RealmState`'s
+     `Update()`). Ordered before the existing `Pos` sync specifically: `Pos`'s own boundary-barrier
+     clamp is computed from the current zoom, so zooming first means the same frame's position clamp
+     already reflects this frame's scroll instead of lagging one frame behind it.
+     Verified via a temporary `Game1.StartGame()` test: constructed a `Camera` directly and confirmed
+     scrolling while the mouse sat over the sidebar (`X >= Game1.SidebarX`) left `Zoom` completely
+     unchanged; scrolling one notch while over the gameplay viewport moved it by exactly the expected
+     0.1 step (1.0 → 1.1); and both a huge zoom-in scroll and a huge zoom-out scroll clamped correctly
+     at the existing 1.5/0.5 limits. Reverted the temp code (`git diff --stat Game1.cs` clean), ran a
+     final clean build + plain boot-check, and confirmed all six real save files byte-identical to a
+     pre-test backup — no live play happened in between this time.

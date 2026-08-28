@@ -76,6 +76,40 @@ namespace Realm
             _pos += amount;
         }
 
+        // One step per standard wheel notch (120 units of ScrollWheelValue)
+        // — scrolling up (positive delta) zooms in (raises Zoom, which
+        // GetTransformation() feeds straight into Matrix.CreateScale, so a
+        // bigger value really does render the world larger/closer). Same
+        // sign convention as Overlay.HandleMinimapZoom()'s own scroll
+        // handling, just the opposite direction on the underlying number
+        // (there, zooming in shrinks the world-radius shown; here, it
+        // raises Zoom) — "scroll up = more zoomed in" reads the same way
+        // in both places regardless.
+        private const float ZoomStepPerNotch = 0.1f;
+
+        // Only while the mouse is over the actual gameplay viewport, not
+        // the HUD sidebar — the sidebar (which includes the minimap, with
+        // its own separate scroll-zoom, Overlay.HandleMinimapZoom()) always
+        // occupies screen X >= Game1.SidebarX, so anything left of that is
+        // the gameplay view. Called once per frame from Player.Update(),
+        // which already owns syncing this Camera to the player's position
+        // every tick, so both bits of "keep the camera in sync" state live
+        // in the same place rather than needing a second call site added
+        // to every state that also calls EntityManager.Update() (RealmState/
+        // NexusState/BossRealmState alike).
+        public void HandleScrollZoom()
+        {
+            if (Input.MousePosition.X >= Game1.SidebarX)
+                return;
+
+            int scrollDelta = Input.mouse.ScrollWheelValue - Input.previousMouse.ScrollWheelValue;
+            if (scrollDelta == 0)
+                return;
+
+            float notches = scrollDelta / 120f;
+            Zoom += notches * ZoomStepPerNotch;
+        }
+
         public Vector2 Pos
         {
             get { return _pos; }

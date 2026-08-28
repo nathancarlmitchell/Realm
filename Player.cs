@@ -1423,6 +1423,13 @@ namespace Realm
             Velocity = pixelsPerTick * slowMultiplier * Input.GetMovementDirection();
             Position += Velocity;
 
+            // Scroll-wheel zoom, applied before Pos below — Pos's own
+            // boundary-barrier clamp (Camera.cs) is computed from the
+            // current zoom, so zooming first means this frame's clamp
+            // already reflects any change from this same frame's scroll
+            // instead of lagging one frame behind it.
+            Game1.Camera.HandleScrollZoom();
+
             // Update camera position. Syncs directly to the player's actual
             // position rather than accumulating the same Velocity
             // separately — the two are otherwise independent state, so if
