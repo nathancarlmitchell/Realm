@@ -861,9 +861,10 @@ namespace Realm
         // Little Scorpion), which still share Enemy's own private cooldown
         // field exactly as before.
         //
-        // collisionShape: overrides the projectile's default
-        // CollisionShape.Circle (e.g. a wide slash/beam sprite that reads
-        // better hit-testing as a rectangle — see Bandit.cs's own
+        // collisionShape: forwarded straight through to EnemyProjectile's
+        // own matching constructor parameter, overriding the projectile's
+        // default CollisionShape.Circle (e.g. a wide slash/beam sprite that
+        // reads better hit-testing as a rectangle — see Bandit.cs's own
         // Rectangle-shaped sword slash, built by hand rather than through
         // this method since Bandit doesn't use ShootIfInRange). Left null,
         // this is a byte-for-byte no-op for every existing caller.
@@ -895,13 +896,12 @@ namespace Realm
                     float aimAngle = aim.ToAngle();
                     float randomSpread = rand.NextFloat(-0.1f, 0.1f) + rand.NextFloat(-0.1f, 0.1f);
                     Vector2 vel = Extensions.FromPolar(aimAngle + randomSpread, projectileSpeed);
-                    var projectile = new EnemyProjectile(Position, vel, projectileImage)
-                    {
-                        Damage = damage,
-                    };
-                    if (collisionShape.HasValue)
-                        projectile.Shape = collisionShape.Value;
-                    EntityManager.Add(projectile);
+                    EntityManager.Add(
+                        new EnemyProjectile(Position, vel, projectileImage, collisionShape)
+                        {
+                            Damage = damage,
+                        }
+                    );
                 }
 
                 if (cooldownFrames.HasValue)

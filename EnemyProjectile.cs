@@ -54,13 +54,27 @@ namespace Realm
         // rather than via an object initializer, since Radius is derived
         // from the image's own size and needs to be computed against
         // whichever image actually ends up used.
-        public EnemyProjectile(Vector2 position, Vector2 velocity, Texture2D image = null)
+        //
+        // shape: overrides the inherited Entity.Shape default (Circle) —
+        // e.g. a wide slash/beam sprite that reads better hit-testing as a
+        // rectangle (Bandit.cs's own sword slash). Left null, this is a
+        // byte-for-byte no-op for every existing caller; same shape as
+        // Enemy.ShootIfInRange()'s own collisionShape parameter, which now
+        // just forwards here instead of setting Shape after construction.
+        public EnemyProjectile(
+            Vector2 position,
+            Vector2 velocity,
+            Texture2D image = null,
+            CollisionShape? shape = null
+        )
         {
             this.image = image ?? Art.EnemyProjectile;
             Position = position;
             Velocity = velocity;
             Orientation = Velocity.ToAngle();
             Radius = this.image.Width / 2f;
+            if (shape.HasValue)
+                Shape = shape.Value;
         }
 
         private int durationCooldown = 0;

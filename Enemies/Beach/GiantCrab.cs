@@ -123,12 +123,9 @@ namespace Realm.Bosses
                 {
                     if (phaseTimer <= 0)
                     {
-                        currentPhase =
-                            currentPhase == Phase.Beam ? Phase.BlueBolt : Phase.Beam;
+                        currentPhase = currentPhase == Phase.Beam ? Phase.BlueBolt : Phase.Beam;
                         phaseTimer =
-                            currentPhase == Phase.Beam
-                                ? BeamPhaseDuration
-                                : BlueBoltPhaseDuration;
+                            currentPhase == Phase.Beam ? BeamPhaseDuration : BlueBoltPhaseDuration;
                     }
                     else
                     {

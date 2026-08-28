@@ -53,7 +53,7 @@ namespace Realm
                     range: AttackRange,
                     damage: AttackDamage,
                     projectileSpeed: ProjectileSpeed,
-                    projectileImage: Art.SwordSlash
+                    projectileImage: Art.GreenMagic
                 )
             );
         }

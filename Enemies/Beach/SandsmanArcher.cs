@@ -53,7 +53,8 @@ namespace Realm
                     damage: AttackDamage,
                     projectileSpeed: ProjectileSpeed,
                     projectileImage: Art.GreenArrow,
-                    cooldownFrames: AttackCooldown
+                    cooldownFrames: AttackCooldown,
+                    collisionShape: CollisionShape.Rectangle
                 )
             );
         }

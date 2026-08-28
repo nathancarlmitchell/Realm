@@ -6568,3 +6568,25 @@ date/time for those individually; don't treat their grouping as meaning they all
      (`git diff --stat Game1.cs` clean), ran a final clean build + plain boot-check, and confirmed
      real save files matched a pre-test backup (refreshed after, per the user's own continued live
      play — Level/`ExperienceTotal` unchanged this time).
+
+242. **Added the same `shape` override directly to `new EnemyProjectile(...)`'s own constructor**,
+     following up on entry 241 one level down — `Enemy.ShootIfInRange()` had the override, but the
+     class it actually constructs didn't have a constructor-level way to set it (every existing
+     caller that wanted a non-default `Shape`, like `Enemy.Spray()`'s own pre-existing
+     `collisionShape` parameter from `5d43426` or `Bandit.cs`'s hand-built sword slash, had to set it
+     via a post-construction object initializer instead). New optional
+     `CollisionShape? shape = null` constructor parameter — same "leave null, byte-for-byte no-op"
+     shape as `ShootIfInRange()`'s own parameter, which now just forwards straight through to this
+     instead of setting `Shape` after construction (removing the intermediate
+     `var projectile = ...; if (collisionShape.HasValue) projectile.Shape = ...;` in favor of passing
+     it as a constructor argument directly). `Spray()`'s own separate, longer-standing
+     `collisionShape` parameter (non-nullable, defaulting to `Circle` rather than `null`) was left
+     untouched — a different, pre-existing mechanism, not something this ask was about.
+     Verified via a temporary `Game1.StartGame()` test: constructed an `EnemyProjectile` directly with
+     no shape argument and confirmed its `Shape` was the default `Circle`; constructed a second one
+     passing `CollisionShape.Rectangle` explicitly and confirmed `Shape` was `Rectangle`; then
+     re-ran entry 241's own `ShootIfInRange()` reflection test against the now-simplified
+     implementation and confirmed it still forwards `collisionShape` correctly end-to-end after the
+     refactor. Reverted the temp code (`git diff --stat Game1.cs` clean), ran a final clean build +
+     plain boot-check, and confirmed real save files matched a pre-test backup (refreshed after, per
+     the user's own continued live play — Level/`ExperienceTotal` unchanged).

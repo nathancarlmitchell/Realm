@@ -57,7 +57,8 @@ namespace Realm.Bosses
                     range: MainRange,
                     damage: MainDamage,
                     projectileSpeed: ProjectileSpeed,
-                    projectileImage: Art.SwordSlash
+                    projectileImage: Art.SwordSlash,
+                    collisionShape: CollisionShape.Rectangle
                 )
             );
             AddAttackBehaviour(ThrowGrenades());
