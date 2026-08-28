@@ -6714,3 +6714,18 @@ date/time for those individually; don't treat their grouping as meaning they all
      and confirmed the real save file's `Level`/`ExperienceTotal` were unchanged from a pre-test
      backup (a byte-level difference remained elsewhere in the file, not investigated further, same
      as entry 245's incident).
+
+248. **Moved the tier label to the bottom-right corner with a 4px inset from both edges**, per direct
+     follow-up. `Equipment.DrawTierLabel()`'s position math split into a new
+     `ComputeTierLabelPosition(Rectangle iconBounds, Vector2 textSize)` — pure math, no
+     `SpriteBatch`/`GraphicsDevice` needed to test it — returning
+     `(iconBounds.Right - textSize.X - 4, iconBounds.Bottom - textSize.Y - 4)` instead of the
+     previous bottom-left `(iconBounds.Left, iconBounds.Bottom - textSize.Y)`.
+     Verified via a temporary `Game1.StartGame()` test: reflected the new private
+     `ComputeTierLabelPosition()` directly with a known `Rectangle(10, 20, 40, 40)` (Right=50,
+     Bottom=60) and a known text size `(12, 8)`, confirming the returned position was exactly
+     `(34, 48)` — matching the hand-computed `(50-12-4, 60-8-4)`. Reverted the temp code
+     (`git diff --stat Game1.cs` clean), ran a final clean build + plain boot-check, and confirmed
+     the real save file's `Level`/`ExperienceTotal` were unchanged from a pre-test backup (a
+     byte-level difference remained, not investigated further, same pattern as the last two
+     entries).

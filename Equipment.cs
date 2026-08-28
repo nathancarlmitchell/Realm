@@ -43,8 +43,9 @@ namespace Realm
         public bool IsEquipped => image != null;
 
         // Settings > Graphics > "Display Item Tiers" (default on) —
-        // "T{Tier}" drawn in the bottom-left corner of this item's own
-        // icon, wherever it's drawn. Public rather than protected: three
+        // "T{Tier}" drawn in the bottom-right corner of this item's own
+        // icon (inset 4px from both edges so it doesn't touch the icon's
+        // actual border), wherever it's drawn. Public rather than protected: three
         // of its four call sites (InventorySystem.Draw(), BankSystem.Draw(),
         // LootBag.DrawLoot()) aren't Equipment subclasses, so they can't
         // reach a protected member — each of those passes its own
@@ -52,6 +53,17 @@ namespace Realm
         // field exists across all four contexts to read instead); the
         // fourth (each of Weapon/Armor/Ring/AbilityItem's own
         // DrawEquipped()) just passes its existing SlotBounds.
+        // Pure position math, split out from the actual draw call below so
+        // it's independently testable without needing a working
+        // SpriteBatch/GraphicsDevice.
+        private const float TierLabelEdgeOffset = 4f;
+
+        private static Vector2 ComputeTierLabelPosition(Rectangle iconBounds, Vector2 textSize) =>
+            new(
+                iconBounds.Right - textSize.X - TierLabelEdgeOffset,
+                iconBounds.Bottom - textSize.Y - TierLabelEdgeOffset
+            );
+
         public void DrawTierLabel(SpriteBatch spriteBatch, Rectangle iconBounds)
         {
             if (!Player.Instance.DisplayItemTiersEnabled)
@@ -59,7 +71,7 @@ namespace Realm
 
             string text = "T" + Tier;
             Vector2 textSize = Art.RetroFont.MeasureString(text);
-            Vector2 position = new(iconBounds.Left, iconBounds.Bottom - textSize.Y);
+            Vector2 position = ComputeTierLabelPosition(iconBounds, textSize);
             Util.DrawOutlinedText(spriteBatch, Art.RetroFont, text, position, Color.White);
         }
 
