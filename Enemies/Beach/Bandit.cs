@@ -75,9 +75,16 @@ namespace Realm
                         float aimAngle = aim.ToAngle();
                         float randomSpread =
                             rand.NextFloat(-0.1f, 0.1f) + rand.NextFloat(-0.1f, 0.1f);
-                        Vector2 vel = Extensions.FromPolar(aimAngle + randomSpread, ProjectileSpeed);
+                        Vector2 vel = Extensions.FromPolar(
+                            aimAngle + randomSpread,
+                            ProjectileSpeed
+                        );
                         EntityManager.Add(
-                            new EnemyProjectile(Position, vel, Art.SwordSlash) { Damage = damage }
+                            new EnemyProjectile(Position, vel, Art.SwordSlash)
+                            {
+                                Damage = damage,
+                                Shape = CollisionShape.Rectangle,
+                            }
                         );
                     }
                 }

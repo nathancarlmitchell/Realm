@@ -114,6 +114,22 @@ namespace Realm
             potions = potions.Where(x => !x.IsExpired).ToList();
         }
 
+        // Drawn separately from the general Draw() pass below, so a caller
+        // (RealmState's own Draw()) can place it before Portal.DroppedPortals
+        // — a Beacon is a background landmark, and should sit beneath any
+        // portal that happens to overlap it on screen, the same way it
+        // already sits beneath every other entity via Draw()'s own
+        // exclusion of BeachBeacon below. A no-op wherever no Beacon exists
+        // (every state except a Beach-containing RealmState).
+        public static void DrawBeachBeacon(SpriteBatch spriteBatch)
+        {
+            foreach (var entity in entities)
+            {
+                if (entity is BeachBeacon beacon)
+                    beacon.Draw(spriteBatch);
+            }
+        }
+
         public static void Draw(SpriteBatch spriteBatch)
         {
             // Draw the player last so it always renders above projectiles,
@@ -126,10 +142,18 @@ namespace Realm
             // player's head and would otherwise get the same treatment,
             // painted over by this same player-on-top rule — drawn in a
             // third pass instead, after the player, so it's never hidden
-            // behind the sprite it's meant to float over.
+            // behind the sprite it's meant to float over. BeachBeacon is
+            // excluded entirely — DrawBeachBeacon() above already drew it,
+            // earlier, so it renders under Portal.DroppedPortals too (see
+            // RealmState.Draw()); drawing it again here would double-paint
+            // it on top of everything else instead.
             foreach (var entity in entities)
             {
-                if (entity is not Player && !(entity is DamageNumber dn && dn.FollowsPlayer))
+                if (
+                    entity is not Player
+                    && entity is not BeachBeacon
+                    && !(entity is DamageNumber dn && dn.FollowsPlayer)
+                )
                     entity.Draw(spriteBatch);
             }
 

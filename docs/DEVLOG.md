@@ -6525,3 +6525,28 @@ date/time for those individually; don't treat their grouping as meaning they all
     `Zoom = 1` and `Zoom = 1.5`. Reverted the temp code, ran a final clean build + plain boot-check,
     and confirmed real save files matched a pre-test backup (refreshed after, per the user's own
     concurrent live play — Level/`ExperienceTotal` unchanged).
+
+240. **Portals now draw on top of the Beach Beacon**, per direct request — previously
+     `RealmState.Draw()` drew `Portal.DroppedPortals` before `EntityManager.Draw()` (which is where
+     the Beacon, added like any other `Entity`, actually rendered), so with `SpriteSortMode.Deferred`
+     drawing strictly in submission order, the Beacon painted over any portal it happened to overlap
+     on screen — backwards from what was wanted. New `EntityManager.DrawBeachBeacon(spriteBatch)`
+     draws just the (at most one) `BeachBeacon` in `entities`, called from `RealmState.Draw()` right
+     before the portal loop; `EntityManager.Draw()`'s own general pass now explicitly excludes
+     `BeachBeacon` (same shape as its existing `Player`/player-anchored-`DamageNumber` exclusions, for
+     the same reason — a type that needs to render at a specific point in the draw order rather than
+     wherever it happened to land in `entities`) so it's never drawn twice. Net order is now: Beacon
+     → portals → player/enemies/projectiles (that last relationship unchanged from before).
+     Verified via a temporary `Game1.StartGame()` test: reflected `EntityManager`'s private static
+     `entities` field and temporarily replaced it with a list containing only a lone `BeachBeacon` (to
+     rule out the real `Player.Instance` — always present via `EntityManager.Add()` in `StartGame()`
+     — confounding the result), then used the "`null` `SpriteBatch` throws only if `Draw()` is
+     actually reached" technique: `DrawBeachBeacon(null)` threw (confirming it processed the Beacon),
+     while `Draw(null)` did not throw (confirming the general pass correctly skipped it, since with
+     the Beacon excluded there was nothing left in the list to draw). Restored the real `entities`
+     list afterward. Reverted the temp code (`git diff --stat Game1.cs` clean), ran a final clean
+     build + plain boot-check, and confirmed real save files matched a pre-test backup except for two
+     expected, non-bug differences: `GameSettingsData.json` gained the `ShowQuestIndicatorEnabled`/
+     `AlwaysDisplayPlayerHPEnabled` keys (added earlier this session, now persisted with their
+     defaults for the first time since the backup predated them) and `PlayerData_Wizard.json` showed
+     real continued play (Level 10→12) — both refreshed into the backup.

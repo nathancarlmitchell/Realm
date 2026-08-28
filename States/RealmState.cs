@@ -160,6 +160,12 @@ namespace Realm.States
                 Game1.Camera.GetTransformation()
             );
 
+            // Drawn before portals below — a Beacon is a background
+            // landmark and should sit beneath any portal that happens to
+            // overlap it on screen. A no-op outside a Beach-containing
+            // Realm instance.
+            EntityManager.DrawBeachBeacon(spriteBatch);
+
             // Draw portals dropped in the world (e.g. by a defeated
             // SpriteGod, or a boss arena's own exit portal).
             foreach (Portal portal in Portal.DroppedPortals)
