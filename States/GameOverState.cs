@@ -80,16 +80,10 @@ namespace Realm.States
             int x;
             int y = 128;
 
-            string text = "Score: " + score;
             Color color = Color.AliceBlue;
 
-            x = (int)(CenterWidth - (titleFont.MeasureString(text).X / 2));
-
-            spriteBatch.DrawString(titleFont, text, new Vector2(x - 4, y + 4), Color.Black * 0.5f);
-            spriteBatch.DrawString(titleFont, text, new Vector2(x, y), color);
-
             string fameText = "Fame Earned: " + fameEarned;
-            int fameY = y + (int)titleFont.MeasureString(text).Y;
+            int fameY = y;
             int fameX = (int)(CenterWidth - (titleFont.MeasureString(fameText).X / 2));
 
             spriteBatch.DrawString(

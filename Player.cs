@@ -1263,6 +1263,11 @@ namespace Realm
 
         public override void Draw(SpriteBatch spriteBatch)
         {
+            // Ground-level indicator (e.g. Priest's Nova aim preview) drawn
+            // first, so it sits underneath the player sprite rather than
+            // painting over it.
+            DrawAbilityPreview(spriteBatch);
+
             spriteBatch.Draw(
                 image,
                 Position,
@@ -1279,6 +1284,14 @@ namespace Realm
             DrawTemporaryBonusIndicators(spriteBatch);
             DrawDebuffIndicators(spriteBatch);
         }
+
+        // No-op for every class except whichever overrides it (currently
+        // just Priest, for its Nova aim-radius preview — see
+        // CharacterClasses/Priest.cs). A hook rather than special-casing a
+        // specific class/ability here, so a future class's own targeted
+        // ability can add its own preview the same way without touching
+        // this shared base method again.
+        protected virtual void DrawAbilityPreview(SpriteBatch spriteBatch) { }
 
         // Small bar centered beneath the sprite — same "stretched
         // Art.HealthBar rect" technique Overlay.cs's own sidebar health bar

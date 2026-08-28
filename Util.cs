@@ -1335,6 +1335,45 @@ namespace Realm
             return x;
         }
 
+        // World-space circle outline, e.g. an ability's AoE radius preview
+        // (Priest's Nova — see CharacterClasses/Priest.cs's
+        // DrawAbilityPreview()/the NovaRadiusFlash entity it spawns on
+        // cast). Same stretched-1x1-texture line-segment technique
+        // EntityManager's own debug hitbox circle already uses internally
+        // (DrawHitboxCircle/DrawHitboxLine) — duplicated here rather than
+        // exposed from there, since this is a real gameplay visual, not a
+        // debug-only one, and shouldn't be coupled to EntityManager's
+        // internal debug-drawing machinery.
+        public static void DrawCircleOutline(
+            SpriteBatch spriteBatch,
+            Vector2 center,
+            float radius,
+            Color color,
+            int segments = 32
+        )
+        {
+            Vector2 prev = center + new Vector2(radius, 0);
+            for (int i = 1; i <= segments; i++)
+            {
+                Vector2 next = center + Extensions.FromPolar(i * (MathHelper.TwoPi / segments), radius);
+                Vector2 delta = next - prev;
+                float length = delta.Length();
+                float angle = (float)Math.Atan2(delta.Y, delta.X);
+                spriteBatch.Draw(
+                    Art.HealthBar,
+                    prev,
+                    null,
+                    color,
+                    angle,
+                    Vector2.Zero,
+                    new Vector2(length, 1f),
+                    SpriteEffects.None,
+                    0f
+                );
+                prev = next;
+            }
+        }
+
         // A thin, fully-surrounding 1px black outline (not a single
         // bottom-right drop shadow) — drawn as 8 offset copies underneath
         // the real text. The outline's alpha tracks the passed-in color's

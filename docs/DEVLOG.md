@@ -6750,3 +6750,42 @@ date/time for those individually; don't treat their grouping as meaning they all
      sufficient. Reverted the temp code (`git diff --stat Game1.cs` clean), ran a final clean build +
      plain boot-check, and confirmed real save files matched a pre-test backup except for the user's
      own continued live play (`ExperienceTotal` 2,978,440→2,980,703 at the same `Level`) — refreshed.
+
+250. **Priest Nova radius visual display — both a live pre-cast aim preview and a one-shot
+     cast-moment flash**, per direct request (user chose "Both" when asked to disambiguate scope).
+     Two independent pieces:
+     - `Util.DrawCircleOutline(SpriteBatch, Vector2 center, float radius, Color color, int
+       segments = 32)` — a new world-space circle-outline helper using the same stretched-1x1-
+       texture line-segment technique `EntityManager`'s internal debug hitbox-circle drawing already
+       uses, deliberately duplicated rather than exposed from there since this is a real gameplay
+       visual, not a debug-only one.
+     - `Player.cs` gained a no-op `protected virtual void DrawAbilityPreview(SpriteBatch)` hook,
+       called from `Draw()` right before the player sprite itself so a ground-level indicator sits
+       underneath the sprite rather than on top of it. `Priest.cs` overrides it to draw a translucent
+       white ring (`Color.White * 0.35f`) at the cursor's world position — clamped to the equipped
+       Tome's own `Range`, matching `UseAbility()`'s own cast-point math via a new shared
+       `ComputeClampedCursorOffset(Tome)` — with radius `NovaRadius`, gated on a `Tome` actually
+       being equipped. Deliberately does *not* reflect `DebuffType.Unstable`'s per-cast direction
+       randomization — re-rolling a random direction every frame would just make the preview circle
+       jitter distractingly rather than communicate anything useful, so it always shows where a
+       stable cast would land.
+     - New `NovaRadiusFlash : Entity` (project root, alongside `DamageNumber`/`Particle`) — a
+       brighter gold ring at the Nova's actual cast center/radius, fading its alpha linearly over a
+       20-tick lifespan then expiring. Spawned once per successful cast in `Priest.UseAbility()`
+       right alongside the existing `NovaPulse`/`Particle.SpawnBurst()` calls, riding the normal
+       `EntityManager` `Update()`/`Draw()` pipeline for free.
+     Verified via a temporary `Game1.StartGame()` test (constructing an isolated `Priest()` and
+     swapping it into `Player.Instance` for the duration, restored afterward — a real gotcha hit and
+     fixed along the way: `Input.GetMousePosition()` needs `Game1.Camera` initialized or it throws,
+     same as the existing `Player.Update()`/`EntityManager.Update()` gotcha already documented in
+     CLAUDE.md, fixed here via `Camera.Reset()`): (1) `Util.DrawCircleOutline()` reaches its draw
+     call (null-`SpriteBatch` throw) for both a normal and a degenerate zero radius; (2) reflected
+     `ComputeClampedCursorOffset()` directly, confirming it clamps to the Tome's `Range` in world
+     pixels when the cursor is far away and passes an unclamped offset through unchanged when close
+     (mouse coordinates expressed relative to the viewport center, since `GetMousePosition()`
+     transforms screen space through the camera); (3) reflected `DrawAbilityPreview()`, confirming it
+     reaches its draw call with a Tome equipped and returns early (no throw) once swapped for a bare
+     `AbilityItem`; (4) constructed a `NovaRadiusFlash` directly with a 5-tick lifespan, confirming
+     `IsExpired` stays false through tick 4 and flips true exactly at tick 5. All four passed.
+     Reverted the temp code (`git diff --stat Game1.cs` clean), ran a final clean build + plain
+     boot-check, and confirmed all six real save files were byte-identical to a pre-test backup.

@@ -24,7 +24,7 @@ with.
     direct request — a first-pass value, easy to retune with just this one
     number.
     -->
-    <Size>110</Size>
+    <Size>64</Size>
 
     <!--
     Spacing is a float value, measured in pixels. Modify this value to change

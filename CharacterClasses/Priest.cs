@@ -1,5 +1,6 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Audio;
+using Microsoft.Xna.Framework.Graphics;
 
 namespace Realm.CharacterClasses
 {
@@ -134,6 +135,40 @@ namespace Realm.CharacterClasses
 
         public override bool CanEquipAbilityItem(AbilityItem item) => item is Tome;
 
+        // The cursor's world position, clamped to the Tome's own Range —
+        // shared by UseAbility() (the actual cast, which applies
+        // Unstable's own direction-randomization on top of this
+        // afterward) and DrawAbilityPreview() below (the live aim
+        // indicator), so the two agree exactly on the clamped-range part.
+        // The preview deliberately does NOT reflect Unstable's per-cast
+        // randomization — re-rolling a random direction every single frame
+        // would make the preview circle jitter distractingly rather than
+        // usefully communicate anything, so it just shows where a stable
+        // cast would land.
+        private Vector2 ComputeClampedCursorOffset(Tome tome)
+        {
+            Vector2 toCursor = Input.GetMousePosition() - Position;
+            float rangePixels = tome.Range * 32f;
+            if (toCursor.LengthSquared() > rangePixels * rangePixels)
+                toCursor = Vector2.Normalize(toCursor) * rangePixels;
+            return toCursor;
+        }
+
+        // Live Nova radius preview — a translucent ring following the
+        // cursor (clamped to the Tome's own Range) whenever one is
+        // equipped, so the actual blast area is visible before casting.
+        // Separate from the brief, brighter NovaRadiusFlash spawned in
+        // UseAbility() below at the moment of an actual cast — that's a
+        // one-shot confirmation, this is a continuous targeting aid.
+        protected override void DrawAbilityPreview(SpriteBatch spriteBatch)
+        {
+            if (AbilityItem is not Tome tome || !tome.IsEquipped)
+                return;
+
+            Vector2 novaCenter = Position + ComputeClampedCursorOffset(tome);
+            Util.DrawCircleOutline(spriteBatch, novaCenter, NovaRadius, Color.White * 0.35f);
+        }
+
         // Tome: instant self-heal, a Red Cross Healing HoT (self-only, per
         // the user's explicit choice — the original spec describes healing
         // nearby allies too, but this engine is single-player with no one
@@ -175,10 +210,7 @@ namespace Realm.CharacterClasses
                 // Nova center: the cursor's world position, clamped to the
                 // Tome's own Range so it can't be cast further away than
                 // intended.
-                Vector2 toCursor = Input.GetMousePosition() - Position;
-                float rangePixels = tome.Range * 32f;
-                if (toCursor.LengthSquared() > rangePixels * rangePixels)
-                    toCursor = Vector2.Normalize(toCursor) * rangePixels;
+                Vector2 toCursor = ComputeClampedCursorOffset(tome);
 
                 // Unstable: same "keep the distance, randomize the
                 // direction" treatment as Wizard's Spell Bomb — Nova is a
@@ -207,6 +239,12 @@ namespace Realm.CharacterClasses
                 EntityManager.Add(
                     new NovaPulse(novaCenter, NovaRadius, damagePerPulse, NovaPulseDelayFrames)
                 );
+
+                // Brief, brighter confirmation of the actual blast area at
+                // the moment it lands — see NovaRadiusFlash's own comment
+                // for how this differs from DrawAbilityPreview()'s
+                // continuous pre-cast aim indicator above.
+                EntityManager.Add(new NovaRadiusFlash(novaCenter, NovaRadius, Color.Gold));
 
                 Sound.Play(Sound.MagicShoot, 0.3f);
             }
