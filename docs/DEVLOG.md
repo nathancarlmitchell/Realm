@@ -6870,3 +6870,24 @@ date/time for those individually; don't treat their grouping as meaning they all
      (`git diff --stat Game1.cs` clean, including a temporary `System.Linq` using), ran a final clean
      build + plain boot-check, and confirmed all six real save files were byte-identical to a
      pre-test backup.
+
+254. **Healing particles: doubled rise speed, evenly distributed across the player's width**, per
+     direct follow-up on entry 253. `RisingParticle.SpawnRisingBurst()`'s `riseSpeed` default
+     doubled 0.6→1.2 (Priest's call site doesn't override it, so this alone doubles the visible
+     speed). Its old fixed `spawnSpread` parameter (a constant ±6px range, unrelated to the actual
+     player) was replaced with `spawnWidth`, now stratified rather than fully independent per-
+     particle randomness: `spawnWidth` is divided into `count` equal slices and each particle picks
+     a random point within its own slice, so a small clump (3 particles per call) reliably spreads
+     across the width instead of occasionally clustering to one side the way pure per-particle
+     randomness could. `Priest.cs`'s `Update()` override now passes `spawnWidth: Size.X` — the
+     Priest's own actual sprite width — instead of the old fixed 6px range.
+     Verified via a temporary `Game1.StartGame()` test: (1) a directly-constructed `RisingParticle`
+     with `riseSpeed: 1.2` moved up exactly 1.2 units in one `Update()` tick; (2)
+     `SpawnRisingBurst()`'s own default `riseSpeed` (reflected on 20 spawned particles) fell within
+     its documented ±20% randomized range around 1.2; (3) 3 particles spawned across a 30-wide
+     `spawnWidth` landed one per 10-wide slice, in order; (4) a real `Priest.Update()` call (isolated
+     instance, `HasDebuff(Healing)` active) spawned particles spanning close to the Priest's actual
+     56px `Size.X`, confirmed wider than the old fixed 6px half-spread. All four passed. Reverted the
+     temp code (`git diff --stat Game1.cs` clean, including a temporary `System.Linq` using), ran a
+     final clean build + plain boot-check, and confirmed all six real save files were byte-identical
+     to a pre-test backup.

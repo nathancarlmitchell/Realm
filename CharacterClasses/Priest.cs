@@ -163,7 +163,8 @@ namespace Realm.CharacterClasses
                         Color.White,
                         count: 3,
                         lifespanTicks: 40,
-                        scale: 0.06f
+                        scale: 0.06f,
+                        spawnWidth: Size.X
                     );
                     healingParticleCooldown = HealingParticleIntervalFrames;
                 }

@@ -63,25 +63,33 @@ namespace Realm
                 IsExpired = true;
         }
 
-        // Spawns `count` motes at randomized points along a short horizontal
-        // spread centered on `origin` (e.g. Priest.Position's feet, see
-        // Priest.cs's Update() override) so they don't all rise in a
-        // single-file line. Called repeatedly in small clumps for as long as
-        // a healing effect is active, rather than once as a single big
-        // burst — small `count`/`scale` values are the expected inputs.
+        // Spawns `count` motes across `spawnWidth` (e.g. the player's own
+        // Size.X, see Priest.cs's Update() override) centered on `origin`.
+        // Stratified rather than fully independent per-particle randomness —
+        // `spawnWidth` is divided into `count` equal slices and each
+        // particle picks a random point within its own slice — so a small
+        // clump (3 particles per call) reliably spreads evenly across the
+        // width instead of occasionally clustering to one side the way pure
+        // per-particle randomness could. Called repeatedly in small clumps
+        // for as long as a healing effect is active, rather than once as a
+        // single big burst — small `count`/`scale` values are the expected
+        // inputs.
         public static void SpawnRisingBurst(
             Vector2 origin,
             Color color,
             int count,
             int lifespanTicks,
             float scale = 0.06f,
-            float riseSpeed = 0.6f,
-            float spawnSpread = 6f
+            float riseSpeed = 1.2f,
+            float spawnWidth = 12f
         )
         {
+            float sliceWidth = spawnWidth / count;
             for (int i = 0; i < count; i++)
             {
-                Vector2 position = origin + new Vector2(rand.NextFloat(-spawnSpread, spawnSpread), 0);
+                float sliceStart = -spawnWidth / 2f + i * sliceWidth;
+                float x = sliceStart + rand.NextFloat(0f, sliceWidth);
+                Vector2 position = origin + new Vector2(x, 0);
                 float speed = riseSpeed * rand.NextFloat(0.8f, 1.2f);
                 EntityManager.Add(new RisingParticle(position, color, lifespanTicks, scale, speed));
             }
