@@ -1256,6 +1256,7 @@ namespace Realm
                 AutoEnterPortalsEnabled = Player.Instance.AutoEnterPortalsEnabled,
                 ShowHitboxesEnabled = Player.Instance.ShowHitboxesEnabled,
                 ShowQuestIndicatorEnabled = Player.Instance.ShowQuestIndicatorEnabled,
+                DisplayItemTiersEnabled = Player.Instance.DisplayItemTiersEnabled,
                 LowHealthIndicatorEnabled = Player.Instance.LowHealthIndicatorEnabled,
                 LowHealthThresholdPercent = Player.Instance.LowHealthThresholdPercent,
                 AlwaysDisplayPlayerHPEnabled = Player.Instance.AlwaysDisplayPlayerHPEnabled,
@@ -1288,6 +1289,7 @@ namespace Realm
                 Player.Instance.AutoEnterPortalsEnabled = data.AutoEnterPortalsEnabled;
                 Player.Instance.ShowHitboxesEnabled = data.ShowHitboxesEnabled;
                 Player.Instance.ShowQuestIndicatorEnabled = data.ShowQuestIndicatorEnabled;
+                Player.Instance.DisplayItemTiersEnabled = data.DisplayItemTiersEnabled;
                 Player.Instance.LowHealthIndicatorEnabled = data.LowHealthIndicatorEnabled;
                 Player.Instance.LowHealthThresholdPercent = data.LowHealthThresholdPercent;
                 Player.Instance.AlwaysDisplayPlayerHPEnabled = data.AlwaysDisplayPlayerHPEnabled;

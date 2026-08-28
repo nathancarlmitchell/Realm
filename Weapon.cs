@@ -308,6 +308,7 @@ namespace Realm
             }
 
             spriteBatch.Draw(this.image, new Vector2(x, y), Color.White);
+            DrawTierLabel(spriteBatch, SlotBounds);
         }
 
         // Drawn in its own pass, after every equip slot's border/icon (see

@@ -160,6 +160,13 @@ namespace Realm.States
                 new SettingsRow
                 {
                     Kind = RowKind.Toggle,
+                    Label = "Display Item Tiers",
+                    GetBool = () => Player.Instance.DisplayItemTiersEnabled,
+                    SetBool = v => Player.Instance.DisplayItemTiersEnabled = v,
+                },
+                new SettingsRow
+                {
+                    Kind = RowKind.Toggle,
                     Label = "Low Health Indicator",
                     GetBool = () => Player.Instance.LowHealthIndicatorEnabled,
                     SetBool = v => Player.Instance.LowHealthIndicatorEnabled = v,

@@ -328,6 +328,9 @@ namespace Realm
                     record.InventoryItem.image.Height
                 );
 
+                if (record.InventoryItem is Equipment tieredItem)
+                    tieredItem.DrawTierLabel(spriteBatch, bounds);
+
                 if (bounds.Intersects(Input.MouseBounds))
                 {
                     // Full Tier/name/description/bonuses for equipment, same

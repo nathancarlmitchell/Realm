@@ -393,6 +393,13 @@ namespace Realm
         public bool ShowHitboxesEnabled;
 
         // Same account-wide GameSettingsData persistence, but defaults to
+        // TRUE — gates Equipment.DrawTierLabel()'s "T{Tier}" overlay drawn
+        // in the bottom-left corner of every equipment icon (equip slots,
+        // inventory, bank, loot bag). Toggled from the Settings > Graphics
+        // tab.
+        public bool DisplayItemTiersEnabled = true;
+
+        // Same account-wide GameSettingsData persistence, but defaults to
         // TRUE (unlike every other toggle above) — see GameSettingsData.cs's
         // matching comment on why the DTO's own default also has to be
         // `true`, not just this field. Drives the low-health flash in

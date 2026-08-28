@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
 
 namespace Realm
 {
@@ -40,6 +41,27 @@ namespace Realm
         // False for the blank placeholder every equip slot starts as (and
         // returns to once unequipped/dragged out).
         public bool IsEquipped => image != null;
+
+        // Settings > Graphics > "Display Item Tiers" (default on) —
+        // "T{Tier}" drawn in the bottom-left corner of this item's own
+        // icon, wherever it's drawn. Public rather than protected: three
+        // of its four call sites (InventorySystem.Draw(), BankSystem.Draw(),
+        // LootBag.DrawLoot()) aren't Equipment subclasses, so they can't
+        // reach a protected member — each of those passes its own
+        // already-computed icon bounds for that specific slot (no shared
+        // field exists across all four contexts to read instead); the
+        // fourth (each of Weapon/Armor/Ring/AbilityItem's own
+        // DrawEquipped()) just passes its existing SlotBounds.
+        public void DrawTierLabel(SpriteBatch spriteBatch, Rectangle iconBounds)
+        {
+            if (!Player.Instance.DisplayItemTiersEnabled)
+                return;
+
+            string text = "T" + Tier;
+            Vector2 textSize = Art.RetroFont.MeasureString(text);
+            Vector2 position = new(iconBounds.Left, iconBounds.Bottom - textSize.Y);
+            Util.DrawOutlinedText(spriteBatch, Art.RetroFont, text, position, Color.White);
+        }
 
         // True if the player's current class can actually equip this item —
         // used to visually flag wrong-class items sitting in the inventory/

@@ -6684,3 +6684,33 @@ date/time for those individually; don't treat their grouping as meaning they all
      seen this session, worth the user's own attention rather than silently accepted as more routine
      background play. Not investigated or touched further — the file was only ever read during this
      test, never written to.
+
+247. **Added a "T{Tier}" label to every equipment icon** — equip slots, inventory, bank, and loot
+     bag — bottom-left corner, gated by a new "Display Item Tiers" setting (Settings > Graphics, on
+     by default). New `Equipment.DrawTierLabel(SpriteBatch, Rectangle)`: `"T" + Tier`, positioned at
+     `(iconBounds.Left, iconBounds.Bottom - textSize.Y)`, outlined via the same `Util.
+     DrawOutlinedText()` every other HUD label already uses. Public (not `protected`) since three of
+     its four call sites — `InventorySystem.Draw()`, `BankSystem.Draw()`, `LootBag.DrawLoot()` — 
+     aren't `Equipment` subclasses; each passes its own already-computed icon bounds for that
+     specific slot (no shared field exists across all four contexts to read instead). Wired into:
+     - Each of `Weapon`/`Armor`/`Ring`/`AbilityItem`'s own `DrawEquipped()` (only reached when
+       `IsEquipped`, matching the method's existing early-return-on-empty-slot shape) — passes the
+       existing `SlotBounds`.
+     - `InventorySystem.Draw()`/`BankSystem.Draw()` — both gated on `record.InventoryItem is
+       Equipment`, reusing the `bounds` rectangle each already computes for its own hover-tooltip
+       check right there.
+     - `LootBag.DrawLoot()` — gated on `Items[i] is Equipment`, passing `Items[i].Bounds` (the
+       `Entity`-level centered-bounds property every `Item` already has), since loot-bag icons are
+       drawn centered on a point rather than top-left-anchored like the other three contexts.
+     New setting wired through the same `GameSettingsData`/`Util.cs`/`SettingsState.cs` pattern as
+     every other Graphics toggle (`DisplayItemTiersEnabled`, defaults `true` in both `Player.cs` and
+     the DTO).
+     Verified via a temporary `Game1.StartGame()` test: confirmed a fresh `Wizard()` defaults to
+     `DisplayItemTiersEnabled == true`; then, reusing the "pass a `null` `SpriteBatch`, a
+     `NullReferenceException` means the draw call was actually reached" technique from several
+     earlier entries this session, confirmed `DrawTierLabel()` reaches its draw call (throws) with
+     the setting on, and returns early (no throw) the instant the setting is toggled off. Reverted
+     the temp code (`git diff --stat Game1.cs` clean), ran a final clean build + plain boot-check,
+     and confirmed the real save file's `Level`/`ExperienceTotal` were unchanged from a pre-test
+     backup (a byte-level difference remained elsewhere in the file, not investigated further, same
+     as entry 245's incident).

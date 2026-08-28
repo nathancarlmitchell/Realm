@@ -207,6 +207,9 @@ namespace Realm
 
                     Items[i].Draw(spriteBatch);
 
+                    if (Items[i] is Equipment tieredItem)
+                        tieredItem.DrawTierLabel(spriteBatch, Items[i].Bounds);
+
                     if (Items[i].Hover)
                     {
                         hoveredIndex = i;

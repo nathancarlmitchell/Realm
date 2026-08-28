@@ -913,6 +913,9 @@ namespace Realm
                     record.InventoryItem.image.Height
                 );
 
+                if (record.InventoryItem is Equipment tieredItem)
+                    tieredItem.DrawTierLabel(spriteBatch, bounds);
+
                 // Mouse over inventory item. Full Tier/name/description/bonuses
                 // for equipment, same as hovering the equip slot or a bank item —
                 // plain items (e.g. potions) just show their name, since they

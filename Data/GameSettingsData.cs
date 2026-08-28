@@ -22,6 +22,11 @@ public class GameSettingsData
     // off instead of leaving it on. Gates Overlay.DrawBeaconIndicator().
     public bool ShowQuestIndicatorEnabled { get; set; } = true;
 
+    // Defaults to TRUE (on), same "give it its own explicit default"
+    // reasoning as ShowQuestIndicatorEnabled just above. Gates
+    // Equipment.DrawTierLabel()'s "T{Tier}" overlay on equipment icons.
+    public bool DisplayItemTiersEnabled { get; set; } = true;
+
     // Defaults to TRUE (on) — unlike every other setting above, this one
     // warns about something urgent, so it should already be doing its job
     // for anyone who's never touched it. The explicit `= true` here is
