@@ -98,14 +98,15 @@ prioritized or scheduled — the user asked to keep these noted for later rather
   with damage/cost modified by the equipped `AbilityItem`. Open-ended — could mean multiple
   abilities per class, an ability hotbar, or more distinct ability behaviors per class rather than
   each being a single damage-number roll.
-- **Color-coded tier indicator on item icons** — an outline or overlay tinted by `Equipment.Tier`,
-  so tier is visible at a glance without hovering. Would touch the same icon draw sites as the
-  wrong-class-equipment overlay (see
-  [DEVLOG.md](DEVLOG.md) entry 64 —
-  `InventorySystem.Draw()`/`BankSystem.Draw()`, likely also each `DrawEquipped()`), reusing the
-  same `Art.HealthBar`-stretched-into-a-rect technique that overlay already uses. Needs a
-  tier-to-color mapping decided (a fixed palette by tier number, or a gradient) before
-  implementation.
+- **Color-coded tier indicator on item icons** — a text label version already shipped (see
+  [DEVLOG.md](DEVLOG.md) entries 247/248: `Equipment.DrawTierLabel()`, a plain white "T{Tier}" in
+  the bottom-right corner of every equip slot/inventory/bank/loot-bag icon, gated by "Display Item
+  Tiers" in Settings > Graphics). Still open, and genuinely different from what shipped: an actual
+  *color-coded* outline or overlay tinted by `Equipment.Tier` itself, so tier reads at a glance from
+  color alone rather than needing to read a two-character label. Would reuse the same
+  `Art.HealthBar`-stretched-into-a-rect technique the wrong-class-equipment overlay already uses
+  (entry 64). Needs a tier-to-color mapping decided (a fixed palette by tier number, or a gradient)
+  before implementation.
 - **Free-form teleport via the minimap** — click *any* spot on the minimap to teleport the player
   there, the original broader idea. What shipped instead (entries 234/236) is narrower and
   purpose-built: clicking the Beach Beacon's own blip specifically teleports to that one fixed,
