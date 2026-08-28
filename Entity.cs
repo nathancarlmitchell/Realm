@@ -103,8 +103,7 @@ namespace Realm
         // the row above the buff row so the two don't overlap when both are
         // active on the same entity.
         private const int DebuffIconSize = 16; // paralyzed.png/stunned.png/etc. are 16x16 native
-        private const float DebuffIconScale = 2f; // drawn at 2x native size
-        private const int DebuffIconDrawSize = (int)(DebuffIconSize * DebuffIconScale);
+        private const int DebuffIconDrawSize = DebuffIconSize; // drawn at native size, no scaling
         private const int DebuffIconSpacing = 2;
 
         protected void DrawDebuffIndicators(SpriteBatch spriteBatch)
@@ -121,14 +120,7 @@ namespace Realm
             float startX = Position.X - (totalWidth / 2f);
             // One icon-height above the sprite's top edge, plus a small gap
             // — reads as "just above the head" rather than floating well
-            // above it. Previously `DebuffIconDrawSize * 2`, a leftover from
-            // before DebuffIconScale existed: back when DebuffIconDrawSize
-            // was still the native 16px size, doubling it approximated one
-            // *scaled* icon's worth of headroom. Once DebuffIconDrawSize
-            // itself became the already-2x-scaled 32px value, that same
-            // `* 2` silently doubled it again (64px instead of the intended
-            // ~32px), pushing the row twice as far from the head as
-            // originally meant.
+            // above it.
             float y = Position.Y - (Size.Y / 2f) - DebuffIconDrawSize - 8;
 
             for (int i = 0; i < activeIcons.Count; i++)
@@ -140,7 +132,7 @@ namespace Realm
                     Microsoft.Xna.Framework.Color.White,
                     0f,
                     Vector2.Zero,
-                    DebuffIconScale,
+                    1f,
                     SpriteEffects.None,
                     0f
                 );

@@ -159,9 +159,9 @@ namespace Realm.CharacterClasses
                 if (healingParticleCooldown <= 0)
                 {
                     RisingParticle.SpawnRisingBurst(
-                        Position + new Vector2(0, Size.Y / 2f),
+                        () => Position + new Vector2(0, Size.Y / 2f),
                         Color.White,
-                        count: 3,
+                        count: 2,
                         lifespanTicks: 80,
                         scale: 0.06f,
                         spawnWidth: Size.X
