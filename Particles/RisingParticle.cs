@@ -1,7 +1,7 @@
 using System;
 using Microsoft.Xna.Framework;
 
-namespace Realm
+namespace Realm.Particles
 {
     // A third particle "flavor," alongside Particle.cs's decelerating
     // scatter-and-fade burst and SwirlParticle.cs's orbiting spiral — this
@@ -131,7 +131,9 @@ namespace Realm
             float scale,
             float riseSpeed,
             float spawnWidth,
-            float spawnHeightJitter
+            float spawnHeightJitter,
+            float minRiseSpeed = 1.0f,
+            float maxRiseSpeed = 1.8f
         )
         {
             float sliceWidth = spawnWidth / count;
@@ -140,9 +142,16 @@ namespace Realm
                 float sliceStart = -spawnWidth / 2f + i * sliceWidth;
                 float x = sliceStart + rand.NextFloat(0f, sliceWidth);
                 float y = rand.NextFloat(-spawnHeightJitter, spawnHeightJitter);
-                float speed = riseSpeed * rand.NextFloat(0.8f, 1.2f);
+                float speed = riseSpeed * rand.NextFloat(minRiseSpeed, maxRiseSpeed);
                 EntityManager.Add(
-                    new RisingParticle(anchor, new Vector2(x, y), pickColor(), lifespanTicks, scale, speed)
+                    new RisingParticle(
+                        anchor,
+                        new Vector2(x, y),
+                        pickColor(),
+                        lifespanTicks,
+                        scale,
+                        speed
+                    )
                 );
             }
         }

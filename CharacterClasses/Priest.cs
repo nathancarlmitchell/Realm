@@ -1,5 +1,6 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Audio;
+using Realm.Particles;
 
 namespace Realm.CharacterClasses
 {
@@ -160,7 +161,12 @@ namespace Realm.CharacterClasses
                 {
                     RisingParticle.SpawnRisingBurst(
                         () => Position + new Vector2(0, Size.Y / 2f),
-                        Color.White,
+                        colors: new[]
+                        {
+                            new RisingParticle.ColorChance(Color.White, 3f), // 3x as likely as Gold
+                            new RisingParticle.ColorChance(Color.WhiteSmoke, 2f),
+                            new RisingParticle.ColorChance(Color.LightSlateGray, 1f),
+                        },
                         count: 2,
                         lifespanTicks: 80,
                         scale: 0.06f,

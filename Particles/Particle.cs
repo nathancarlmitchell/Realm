@@ -2,7 +2,7 @@ using System;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 
-namespace Realm
+namespace Realm.Particles
 {
     // The engine's first visual-effects primitive — a single small dot that
     // scatters outward, shrinks, and fades over a short lifespan. Same

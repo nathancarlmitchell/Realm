@@ -6891,3 +6891,29 @@ date/time for those individually; don't treat their grouping as meaning they all
      temp code (`git diff --stat Game1.cs` clean, including a temporary `System.Linq` using), ran a
      final clean build + plain boot-check, and confirmed all six real save files were byte-identical
      to a pre-test backup.
+
+255. **Moved `Particle.cs`, `SwirlParticle.cs`, and `RisingParticle.cs` into a new `Particles/`
+     folder** (via `git mv`, preserving history), per direct request to group the particle-effect
+     classes together. Namespace changed `Realm` → `Realm.Particles` in all three, matching this
+     repo's existing convention of a subfolder getting its own matching sub-namespace (e.g.
+     `CharacterClasses/` → `Realm.CharacterClasses`, `States/` → `Realm.States`). `NovaRadiusFlash.cs`
+     and `NovaPulse.cs` were deliberately left in the project root — neither actually calls itself a
+     particle in its own doc comment (both are one-shot effect/damage-tick entities, a different
+     category), unlike `Particle`/`SwirlParticle`/`RisingParticle`, which explicitly cross-reference
+     each other in their comments as the first/second/third "particle flavor."
+     Added `using Realm.Particles;` to every consumer that referenced these types from outside the
+     new namespace: `Player.cs`, `Enemy.cs`, `EntityManager.cs`, `NovaPulse.cs` (all root `Realm`
+     namespace, which has no automatic visibility into a child namespace), and
+     `CharacterClasses/Priest.cs` (a sibling namespace to `Realm.Particles`, not an ancestor, so it
+     also needs the explicit `using` despite already being nested — this repo's existing
+     `Realm.States` `using` lines in `Player.cs`/`Enemy.cs` are the same pattern). The three moved
+     files themselves needed no new `using` — `Realm.Particles` is nested under `Realm`, so its
+     ancestor namespace's members (`Entity`, `Art`, `EntityManager`, `Extensions`, etc.) stay
+     automatically visible, the same relationship `CharacterClasses/Priest.cs` already relies on for
+     the root-namespace types it uses. No `.csproj` changes needed — this is an SDK-style project
+     with implicit file globbing, not an explicit `<Compile Include>` list.
+     Verified via a clean `dotnet build` (0 errors, same two pre-existing/external warnings) and a
+     plain minimized boot-check — no scripted `Game1.cs` test, since this is a pure code-organization
+     change with no logic altered (confirmed no string-based type-name lookups anywhere in the
+     codebase that could silently break from the namespace change). Confirmed all six real save
+     files were byte-identical to a pre-check backup.

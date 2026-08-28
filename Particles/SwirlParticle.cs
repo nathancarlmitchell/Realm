@@ -1,7 +1,7 @@
 using System;
 using Microsoft.Xna.Framework;
 
-namespace Realm
+namespace Realm.Particles
 {
     // A second particle "flavor," alongside Particle.cs's straight-line
     // scatter-and-fade burst — this one moves in polar coordinates around a
