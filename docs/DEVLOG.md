@@ -6613,3 +6613,22 @@ date/time for those individually; don't treat their grouping as meaning they all
      clean), ran a final clean build + plain boot-check, and confirmed real save files matched a
      pre-test backup except for the user's own continued live play (`ExperienceTotal` 6313→6771 at
      the same `Level`) — refreshed.
+
+244. **`BeachBeacon`'s activation distance now equals `Radius` exactly**, per direct request, rather
+     than being tracked as a separate constant. Removed the standalone `ActivationRadius` const
+     (previously a fixed 3 tiles = 96) and changed `Update()`'s proximity check to compare against
+     `Radius` directly instead — the same field the F3 debug-hitbox circle already uses (entry 243).
+     One source of truth instead of two numbers that could drift apart. Noted directly in a comment
+     on the trade-off this creates going forward: `Radius` now drives both the actual gameplay
+     activation range and the debug-visualization circle size, so changing it for either reason now
+     changes both. Also flagged the current magnitude directly: with `Radius` at `image.Width * 2f`
+     (an external edit from between entries 242/243), the real activation distance is now ~340
+     units (≈10.6 tiles) — considerably larger than the old 96-unit/3-tile constant it replaced,
+     not obviously a problem but a real behavioral difference worth knowing about.
+     Verified via a temporary `Game1.StartGame()` test: constructed a `BeachBeacon`, read its actual
+     `Radius` (340, confirming the `image.Width * 2f` computation), then confirmed a test player
+     placed 1 unit inside that radius triggered activation and a second, fresh Beacon's player placed
+     5 units outside it stayed inert. Reverted the temp code (`git diff --stat Game1.cs` clean), ran
+     a final clean build + plain boot-check, and confirmed real save files matched a pre-test backup
+     except for the user's own continued live play (`ExperienceTotal` 6771→6786 at the same `Level`)
+     — refreshed.

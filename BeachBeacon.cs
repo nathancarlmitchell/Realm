@@ -7,10 +7,11 @@ namespace Realm
     // States/RealmState.cs's constructor, which rolls the actual
     // position) — Beach is always the innermost ring (Data/BiomeData.json:
     // MinDistance 0), so every regular dungeon entry gets exactly one.
-    // Inert (dim) until the player physically walks within
-    // ActivationRadius of it; once activated (permanently, for the rest of
-    // this Realm instance), clicking the minimap teleports the player
-    // straight to it — see Overlay.DrawMinimap()'s click handling.
+    // Inert (dim) until the player physically walks within Radius of it
+    // (the same Radius used for the F3 debug-hitbox circle — see the
+    // constructor); once activated (permanently, for the rest of this
+    // Realm instance), clicking the minimap teleports the player straight
+    // to it — see Overlay.DrawMinimap()'s click handling.
     //
     // A plain Entity rather than a Portal (no animation, no Destination to
     // route through) or an Enemy (no combat/loot) — it just needs to sit
@@ -35,17 +36,25 @@ namespace Realm
         public static BeachBeacon ActiveInstance =>
             instance != null && !instance.IsExpired ? instance : null;
 
-        // A few tiles — generous enough that walking past registers it
-        // without needing to step directly on top of the sprite.
-        private const float ActivationRadius = 3f * 32f;
-
         public bool IsActivated { get; private set; }
 
         public BeachBeacon(Vector2 position)
         {
             image = Art.BeachBeacon;
             Position = position;
-            Radius = image.Width / 2f;
+
+            // Also doubles as the activation distance below (Update()) —
+            // a single source of truth rather than two numbers that could
+            // drift out of sync, per the user's own direct request.
+            // Previously a separate ActivationRadius const (3 tiles = 96);
+            // Radius is currently image.Width * 2f, which lands in
+            // roughly the same range, so this doesn't meaningfully change
+            // today's activation distance. Worth keeping in mind going
+            // forward though: Radius also drives the F3 debug-hitbox
+            // circle's size, so changing it for debug-visibility reasons
+            // alone would now silently change the real activation range
+            // too.
+            Radius = image.Width * 2f;
 
             // Dim while inert — the source art has only the one sprite, no
             // separate lit/unlit state, so a tint is the only way to show
@@ -60,8 +69,7 @@ namespace Realm
         {
             if (
                 !IsActivated
-                && Vector2.DistanceSquared(Position, Player.Instance.Position)
-                    <= ActivationRadius * ActivationRadius
+                && Vector2.DistanceSquared(Position, Player.Instance.Position) <= Radius * Radius
             )
             {
                 IsActivated = true;
