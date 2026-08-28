@@ -6632,3 +6632,29 @@ date/time for those individually; don't treat their grouping as meaning they all
      a final clean build + plain boot-check, and confirmed real save files matched a pre-test backup
      except for the user's own continued live play (`ExperienceTotal` 6771→6786 at the same `Level`)
      — refreshed.
+
+245. **Changed Portal's teleport-trigger hitbox from a rectangle to a circle**, per direct request.
+     Previously `Portal.bounds` was a `Rectangle` (1/3 of the portal's rendered width/height,
+     centered — itself a fix from entry 116/117 for a worse, corner-anchored version), checked via
+     `Player.Instance.Bounds.Intersects(bounds)`. Replaced with a `private float radius` (public
+     `Radius`) — `((RenderedWidth + RenderedHeight) / 2f) * TriggerRadiusFraction / 2f`, reusing the
+     same 1/3 sizing fraction the old rectangle used (renamed from `BoundsSizeFraction`), just
+     expressed as a radius instead of a box side. `BoundsOffsetFraction` (the old rectangle's
+     centering offset) is gone entirely — meaningless for a circle, which is inherently centered on
+     `Position` already, unlike a box anchored from a corner. The actual trigger check in `Update()`
+     now combines both radii and does a `DistanceSquared` comparison —
+     `Vector2.DistanceSquared(Player.Instance.Position, position) < (radius + Player.Instance.Radius)²`
+     — the exact same circle-vs-circle convention `EntityManager.IsColliding()` already uses for
+     every other circle pairing in the game, rather than treating the player as a dimensionless
+     point. `EntityManager.DrawHitboxes()`'s F3 debug view updated to match: `DrawHitboxCircle(...,
+     portal.Position, portal.Radius, ...)` instead of `DrawHitboxRectangle(..., portal.Bounds, ...)`.
+     The Bank portal's own separate proximity check (`BankInteractionRadius`, already circular/
+     distance-based, never used `bounds` at all) is untouched.
+     Verified via a temporary `Game1.StartGame()` test: constructed a real `Portal` (`Destination.Realm`,
+     with `AutoEnterPortalsEnabled` left off so the test can't accidentally trigger a real state
+     change), reflected its private static `pendingConfirmation` field, and confirmed a test player
+     placed 1 unit inside the *combined* portal+player radius got armed as the pending confirmation,
+     while a player placed 5 units outside that same combined radius did not — matching the
+     `IsColliding()`-style "add both radii" formula rather than either radius alone. Reverted the
+     temp code (`git diff --stat Game1.cs` clean), ran a final clean build + plain boot-check, and
+     confirmed all six real save files byte-identical to a pre-test backup.

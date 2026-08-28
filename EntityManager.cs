@@ -179,13 +179,14 @@ namespace Realm
         // debug view always matches whichever check IsColliding() actually
         // runs, not just the circle case. Covers player, enemies, and both
         // projectile lists (player-fired bullets and enemy projectiles).
-        // Portals aren't Entity subclasses (no Shape/Radius/Width/Height),
-        // so their teleport-trigger rectangle is drawn separately here via
-        // an optional list — each caller passes whichever portal list is
-        // actually valid for its own state (NexusState's fixed portalList,
-        // RealmState's Portal.DroppedPortals) rather than this reaching for
-        // a shared static, so a leftover list from a previous state never
-        // draws stray outlines.
+        // Portals aren't Entity subclasses (no Shape/Radius/Width/Height as
+        // Entity defines them — Portal has its own like-named Radius
+        // property instead), so their teleport-trigger circle is drawn
+        // separately here via an optional list — each caller passes
+        // whichever portal list is actually valid for its own state
+        // (NexusState's fixed portalList, RealmState's Portal.DroppedPortals)
+        // rather than this reaching for a shared static, so a leftover list
+        // from a previous state never draws stray outlines.
         public static void DrawHitboxes(SpriteBatch spriteBatch, IEnumerable<Portal> portals = null)
         {
             foreach (var enemy in enemies)
@@ -222,7 +223,7 @@ namespace Realm
             if (portals != null)
             {
                 foreach (var portal in portals)
-                    DrawHitboxRectangle(spriteBatch, portal.Bounds, Color.Cyan);
+                    DrawHitboxCircle(spriteBatch, portal.Position, portal.Radius, Color.Cyan);
             }
 
             // LootBag is an Entity (so it does have a Shape/Radius), but its
@@ -230,8 +231,9 @@ namespace Realm
             // IsColliding() — it hand-rolls a Bounds.Intersects() check
             // directly, bypassing Shape entirely. Drawing the generic
             // Shape-based DrawHitbox() here would show a circle that has
-            // nothing to do with the actual test, so this uses the same
-            // rectangle outline as Portal's Bounds above instead. Read
+            // nothing to do with the actual test, so this uses its own
+            // rectangle outline instead (Portal's above is now a circle,
+            // not a rectangle — this one's unrelated to that). Read
             // directly off ItemSpawner.LootBags (unlike the portals param)
             // since that single static list is already correctly scoped to
             // whichever state is current — Game1.ChangeState() clears it via

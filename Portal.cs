@@ -226,52 +226,36 @@ namespace Realm
         private Vector2 TopLeft => position - new Vector2(RenderedWidth / 2f, RenderedHeight / 2f);
 
         // Fraction of the portal's own rendered footprint the teleport
-        // trigger occupies — a 1/3-sized box centered in the middle third
-        // of the frame. Was previously anchored to the frame's
-        // bottom-right corner (2/3 offset) instead of centered — harmless
-        // for the original generic swirl's math (still landed inside its
-        // 96px bounding square) but visually wrong once actually rendered
-        // and checked against the F3 outline (entry 116/117): every
-        // portal's art is a roughly circular/arch/diamond shape that
+        // trigger's radius occupies. Was previously a 1/3-sized box
+        // centered in the middle third of the frame (and, before that,
+        // corner-anchored — see entry 116/117's original investigation:
+        // every portal's art is a roughly circular/arch/diamond shape that
         // doesn't fill the corners of its own bounding square, so a
         // corner-anchored box sat next to the visible sprite instead of on
         // it, confirmed by rendering each portal + its outline to an
-        // offscreen RenderTarget2D and inspecting the PNG directly.
-        // Centering instead of corner-anchoring (offset 1/3 instead of
-        // 2/3, same 1/3 size) puts the trigger over the sprite's actual
-        // visual mass for every current portal. Note this is still a
-        // single fixed box, not re-derived per animation frame — Sprite
+        // offscreen RenderTarget2D and inspecting the PNG directly). Now a
+        // circle instead, per direct request — no separate offset needed
+        // at all, since a circle centered on `position` is inherently
+        // centered already, unlike a box. Note this is still a single
+        // fixed radius, not re-derived per animation frame — Sprite
         // World's opening-animation frames vary a lot in visible content
         // size (frame 0 is a small closed icon, later frames fill most of
         // the cell), so alignment during the tiny early frames is still
         // only approximate; a per-frame hitbox isn't worth the complexity
         // for a debug-only visual plus a walk-up teleport trigger.
-        private const float BoundsOffsetFraction = 1f / 3f;
-        private const float BoundsSizeFraction = 1f / 3f;
+        private const float TriggerRadiusFraction = 1f / 3f;
 
-        private Rectangle bounds
-        {
-            get
-            {
-                Vector2 topLeft = TopLeft;
-                return new Rectangle(
-                    (int)(topLeft.X + RenderedWidth * BoundsOffsetFraction),
-                    (int)(topLeft.Y + RenderedHeight * BoundsOffsetFraction),
-                    (int)(RenderedWidth * BoundsSizeFraction),
-                    (int)(RenderedHeight * BoundsSizeFraction)
-                );
-            }
-        }
+        private float radius => ((RenderedWidth + RenderedHeight) / 2f) * TriggerRadiusFraction / 2f;
 
-        // Public read-only view of the same rectangle, for the F3 debug
+        // Public read-only view of the same radius, for the F3 debug
         // hitbox overlay (EntityManager.DrawHitboxes()) — the teleport
         // trigger area, not the sprite's on-screen footprint.
-        public Rectangle Bounds => bounds;
+        public float Radius => radius;
 
         public Destination dest;
 
         // How close the player needs to stay to a Bank portal for BankSystem to
-        // stay open — wider than the tight teleport-trigger `bounds` above so a
+        // stay open — wider than the tight teleport-trigger `radius` above so a
         // single step away doesn't flicker the panel shut.
         private const float BankInteractionRadius = 120f;
 
@@ -279,7 +263,7 @@ namespace Realm
 
         // On-screen footprint (source frame size at this portal's own draw
         // scale) — used to center the label beneath it, and to derive
-        // `bounds` above. Computed per-image rather than a shared constant
+        // `radius` above. Computed per-image rather than a shared constant
         // since dungeon portals (see Destination.PortalArt) use a smaller
         // source frame than the generic 64px swirl.
         private float RenderedWidth => image.FrameWidth * image.Scale;
@@ -309,7 +293,7 @@ namespace Realm
 
             // The bank is a panel to stand near, not a place to teleport to —
             // open/close it based on proximity instead of the tight
-            // teleport-trigger `bounds` the other destinations use below.
+            // teleport-trigger `radius` the other destinations use below.
             if (dest == Destination.Bank)
             {
                 // position is already the portal's visual center (see
@@ -338,7 +322,16 @@ namespace Realm
             // HUD button or the ConfirmPortalEntry key bind. Stepping back
             // out cancels it, same as walking away from any other
             // proximity prompt in the game.
-            if (Player.Instance.Bounds.Intersects(bounds))
+            //
+            // Circle-vs-circle, combining both radii — the same convention
+            // EntityManager.IsColliding() already uses for every other
+            // circle pairing in the game (e.g. player vs. an enemy),
+            // rather than treating the player as a dimensionless point.
+            float triggerRadius = radius + Player.Instance.Radius;
+            bool inTrigger =
+                Vector2.DistanceSquared(Player.Instance.Position, position)
+                < triggerRadius * triggerRadius;
+            if (inTrigger)
             {
                 // Settings > Gameplay > "Auto-Enter Portals" — skips the
                 // confirm prompt entirely and teleports the instant the
