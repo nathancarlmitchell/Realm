@@ -805,3 +805,29 @@ happened at once.
     clean), deleted the scratch log, ran a final clean build + plain boot-check, and confirmed all
     real save files byte-identical to a pre-test backup. See [DEVLOG.md](DEVLOG.md) entry 214 and
     [BACKLOG.md](BACKLOG.md) (the open item this closes out). *(08:41 EDT)*
+
+56. **Aiming (weapon shots and every fan-shaped ability) broke at any zoom level other than the
+    game's original hardcoded 1.0** — reported directly by the user right after main-camera
+    scroll-to-zoom shipped (entry 238), and a clean regression from it: nothing about aiming itself
+    changed, only that `Camera.Zoom` could now actually differ from 1 for the first time ever.
+    Root cause in `Input.GetMouseAimDirection()`: it computed `screen-space MousePosition -
+    world-space Player.Instance.Position` — mixing two different coordinate frames directly — and
+    then ran the camera's inverse transform over that already-mixed, meaningless "direction" as if it
+    were a further screen point to unproject. For an affine map `f(x) = Ax + b`,
+    `f(u - v) = Au - Av + b`, not `f(u) - f(v) = Au - Av` — the extra `+ b` (translation) term meant
+    this was never actually correct at any zoom, but the resulting error apparently stayed small
+    enough at the permanently-fixed `Zoom = 1` to go unnoticed; once zoom could vary, the error grew
+    large enough to read as "aiming is broken." Fixed by reusing the already-correct
+    `Input.GetMousePosition()` (which properly unprojects a real screen point to world space) and
+    subtracting two world-space points instead: `GetMousePosition() - Player.Instance.Position`.
+    Verified via a temporary `Game1.StartGame()` test: with the player pinned exactly under the
+    camera's own center and the mouse held at a fixed screen offset from that center, confirmed
+    `GetMouseAimDirection()` returned the same correct direction — a pure horizontal offset gave
+    exactly `(1, 0)`, a diagonal offset gave `(0.707, 0.707)` — at both `Zoom = 1` (the old-default
+    case) and `Zoom = 1.5` (previously broken), matching the mathematical fact that a pure screen
+    offset from an object exactly under the camera center points the same true world direction
+    regardless of uniform scale, with no camera rotation involved. Reverted the temp code
+    (`git diff --stat Game1.cs` clean), ran a final clean build + plain boot-check, and confirmed all
+    six real save files matched a pre-test backup (Level/`ExperienceTotal` identical; refreshed
+    anyway per this session's established handling of the user's own concurrent live play). See
+    [DEVLOG.md](DEVLOG.md) entry 239.

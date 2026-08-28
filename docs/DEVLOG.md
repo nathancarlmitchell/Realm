@@ -6509,3 +6509,19 @@ date/time for those individually; don't treat their grouping as meaning they all
      at the existing 1.5/0.5 limits. Reverted the temp code (`git diff --stat Game1.cs` clean), ran a
      final clean build + plain boot-check, and confirmed all six real save files byte-identical to a
      pre-test backup — no live play happened in between this time.
+
+239. **Fixed aiming breaking at any non-default zoom** — a regression from entry 238's own
+    scroll-to-zoom, reported directly by the user immediately after. Full root cause and fix
+    described in [BUGFIXES.md](BUGFIXES.md) entry 56: `Input.GetMouseAimDirection()` mixed
+    screen-space and world-space coordinates before running the camera's inverse transform over the
+    result, which was never actually correct at any zoom but only became noticeable once `Zoom`
+    could differ from the permanently-fixed `1` it was stuck at before entry 238. Fixed by reusing
+    `Input.GetMousePosition()` (already correct) and subtracting in world space. This is the single
+    shared helper behind `Weapon.Shoot()`'s aim and `Archer`/`Knight.UseAbility()`'s fan-shot
+    direction, so the one fix covers every class's basic attack plus those two abilities — `Wizard`/
+    `Priest`'s abilities were never affected, since they already use the point-based
+    `GetMousePosition()` directly rather than a direction. Verified via a temporary
+    `Game1.StartGame()` test (see BUGFIXES.md entry 56 for the exact setup/expected values) at both
+    `Zoom = 1` and `Zoom = 1.5`. Reverted the temp code, ran a final clean build + plain boot-check,
+    and confirmed real save files matched a pre-test backup (refreshed after, per the user's own
+    concurrent live play — Level/`ExperienceTotal` unchanged).

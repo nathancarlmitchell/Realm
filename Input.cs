@@ -267,11 +267,19 @@ public static class Input
 
     public static Vector2 GetMouseAimDirection()
     {
-        Vector2 direction = MousePosition - Player.Instance.Position;
-
-        // Transform mouse input from view to world position
-        Matrix inverse = Matrix.Invert(Game1.Camera.GetTransformation());
-        direction = Vector2.Transform(direction, inverse);
+        // Bug fixed here: this used to subtract screen-space MousePosition
+        // from world-space Player.Instance.Position first, then run the
+        // camera's inverse transform over that already-mixed-frames
+        // "direction" — conceptually wrong regardless of zoom, but it
+        // happened to cancel out correctly at the Zoom == 1, Rotation == 0
+        // the camera was permanently stuck at before Camera.HandleScrollZoom()
+        // existed. Once Zoom could actually differ from 1, that
+        // cancellation stopped holding and aiming broke. Correct approach:
+        // convert the mouse to a world position first (GetMousePosition()
+        // already does this correctly — Vector2.Transform() applied to a
+        // literal screen point is exactly the right use of the inverse
+        // transform), then subtract two world-space points.
+        Vector2 direction = GetMousePosition() - Player.Instance.Position;
 
         if (direction == Vector2.Zero)
             return Vector2.Zero;
