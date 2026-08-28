@@ -207,7 +207,7 @@ namespace Realm
             foreach (var enemyProjectile in enemiesProjectiles)
             {
                 if (!enemyProjectile.IsExpired)
-                    DrawHitbox(spriteBatch, enemyProjectile, Color.Orange);
+                    DrawHitbox(spriteBatch, enemyProjectile, Color.Pink);
             }
 
             // A real Entity with a real Shape/Radius like everything above
@@ -254,13 +254,19 @@ namespace Realm
                 DrawHitboxCircle(spriteBatch, entity.Position, entity.Radius, color);
         }
 
-        private static void DrawHitboxCircle(SpriteBatch spriteBatch, Vector2 center, float radius, Color color)
+        private static void DrawHitboxCircle(
+            SpriteBatch spriteBatch,
+            Vector2 center,
+            float radius,
+            Color color
+        )
         {
             const int segments = 24;
             Vector2 prev = center + new Vector2(radius, 0);
             for (int i = 1; i <= segments; i++)
             {
-                Vector2 next = center + Extensions.FromPolar(i * (MathHelper.TwoPi / segments), radius);
+                Vector2 next =
+                    center + Extensions.FromPolar(i * (MathHelper.TwoPi / segments), radius);
                 DrawHitboxLine(spriteBatch, prev, next, color);
                 prev = next;
             }
@@ -270,7 +276,11 @@ namespace Realm
         // teleport-trigger bounds (see DrawHitboxes' portals param above),
         // which is never rotated, so this doesn't need
         // DrawHitboxRotatedRectangle's orientation math.
-        private static void DrawHitboxRectangle(SpriteBatch spriteBatch, Rectangle rect, Color color)
+        private static void DrawHitboxRectangle(
+            SpriteBatch spriteBatch,
+            Rectangle rect,
+            Color color
+        )
         {
             Vector2 topLeft = new(rect.Left, rect.Top);
             Vector2 topRight = new(rect.Right, rect.Top);
@@ -288,7 +298,11 @@ namespace Realm
         // axis-aligned box — matches what IsRectangleCircleColliding()
         // below actually checks against, unlike the old AABB-based outline
         // which was visibly looser than the sprite at diagonal angles.
-        private static void DrawHitboxRotatedRectangle(SpriteBatch spriteBatch, Entity entity, Color color)
+        private static void DrawHitboxRotatedRectangle(
+            SpriteBatch spriteBatch,
+            Entity entity,
+            Color color
+        )
         {
             float halfWidth = entity.Width / 2f;
             float halfHeight = entity.Height / 2f;
@@ -307,7 +321,12 @@ namespace Realm
             DrawHitboxLine(spriteBatch, corner4, corner1, color);
         }
 
-        private static void DrawHitboxLine(SpriteBatch spriteBatch, Vector2 start, Vector2 end, Color color)
+        private static void DrawHitboxLine(
+            SpriteBatch spriteBatch,
+            Vector2 start,
+            Vector2 end,
+            Color color
+        )
         {
             Vector2 delta = end - start;
             float length = delta.Length();

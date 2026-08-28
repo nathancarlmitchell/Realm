@@ -43,8 +43,7 @@ namespace Realm
             internal virtual AnimatedTexture PortalArt() => Art.Portal.Clone();
 
             public static readonly Destination Realm = new RealmDestination();
-            public static readonly Destination CharacterSelect =
-                new CharacterSelectDestination();
+            public static readonly Destination CharacterSelect = new CharacterSelectDestination();
             public static readonly Destination Bank = new BankDestination();
 
             // Dropped by SpriteGod on death (see Enemy.WasShot()) — leads
@@ -77,14 +76,18 @@ namespace Realm
             private sealed class RealmDestination : Destination
             {
                 public override string DisplayName => "Realm";
+
                 public override void Enter() => StateManager.EnterPortal();
+
                 internal override AnimatedTexture PortalArt() => Art.RealmPortal.Clone();
             }
 
             private sealed class CharacterSelectDestination : Destination
             {
                 public override string DisplayName => "Character Select";
+
                 public override void Enter() => StateManager.SelectClass();
+
                 internal override AnimatedTexture PortalArt() => Art.CharacterSelectPortal.Clone();
             }
 
@@ -99,13 +102,16 @@ namespace Realm
                 // rather than a throw so it can't crash if that ever
                 // changes.
                 public override void Enter() { }
+
                 internal override AnimatedTexture PortalArt() => Art.BankPortal.Clone();
             }
 
             private sealed class NexusDestination : Destination
             {
                 public override string DisplayName => "Nexus";
+
                 public override void Enter() => StateManager.Nexus();
+
                 internal override AnimatedTexture PortalArt() => Art.NexusPortal.Clone();
             }
 
@@ -136,7 +142,9 @@ namespace Realm
                 }
 
                 public override string DisplayName => DungeonName;
+
                 public override void Enter() => StateManager.EnterBossRealm(this);
+
                 internal override AnimatedTexture PortalArt() => getPortalArt().Clone();
             }
         }
@@ -245,7 +253,8 @@ namespace Realm
         // for a debug-only visual plus a walk-up teleport trigger.
         private const float TriggerRadiusFraction = 1f / 3f;
 
-        private float radius => ((RenderedWidth + RenderedHeight) / 2f) * TriggerRadiusFraction / 2f;
+        private float radius =>
+            ((RenderedWidth + RenderedHeight) / 2f) * TriggerRadiusFraction * 2f;
 
         // Public read-only view of the same radius, for the F3 debug
         // hitbox overlay (EntityManager.DrawHitboxes()) — the teleport
@@ -384,7 +393,13 @@ namespace Realm
             int y = Player.Instance.Inventory.Bounds.Bottom + 20;
 
             string dungeonName = pendingConfirmation.DisplayName;
-            Util.DrawOutlinedText(spriteBatch, Art.RetroFont, dungeonName, new Vector2(x, y), Color.White);
+            Util.DrawOutlinedText(
+                spriteBatch,
+                Art.RetroFont,
+                dungeonName,
+                new Vector2(x, y),
+                Color.White
+            );
             int labelHeight = (int)Art.RetroFont.MeasureString(dungeonName).Y;
 
             Button button = ConfirmButton;

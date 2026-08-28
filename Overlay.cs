@@ -492,8 +492,11 @@ namespace Realm
                 }
             }
 
-            DrawStatLine("Level:", Player.Instance.Level.ToString(), y, Color.Red);
-
+            // Level used to be the first row here — moved to sit just
+            // above the XP/Fame bar instead (centered, DrawExperience()),
+            // per direct request. Removing it tightened this block by one
+            // row (16px), so ATT is now first at y+0 instead of y+16, and
+            // so on down through WIS.
             Color color =
                 Player.Instance.PermanentAttack >= Player.Instance.MaxAttack ? maxColor : Color.Red;
             DrawStatLine(
@@ -504,7 +507,7 @@ namespace Realm
                     + " / "
                     + Player.Instance.MaxAttack
                     + ")",
-                y + 16,
+                y,
                 color,
                 Player.Instance.EquipmentAttackBonus
             );
@@ -521,7 +524,7 @@ namespace Realm
                     + " / "
                     + Player.Instance.MaxDefense
                     + ")",
-                y + 32,
+                y + 16,
                 color,
                 Player.Instance.EquipmentDefenseBonus
             );
@@ -536,7 +539,7 @@ namespace Realm
                     + " / "
                     + Player.Instance.MaxSpeed
                     + ")",
-                y + 48,
+                y + 32,
                 color,
                 Player.Instance.EquipmentSpeedBonus
             );
@@ -553,7 +556,7 @@ namespace Realm
                     + " / "
                     + Player.Instance.MaxDexterity
                     + ")",
-                y + 64,
+                y + 48,
                 color,
                 Player.Instance.EquipmentDexterityBonus
             );
@@ -570,7 +573,7 @@ namespace Realm
                     + " / "
                     + Player.Instance.MaxVitality
                     + ")",
-                y + 80,
+                y + 64,
                 color,
                 Player.Instance.EquipmentVitalityBonus
             );
@@ -585,12 +588,13 @@ namespace Realm
                     + " / "
                     + Player.Instance.MaxWisdom
                     + ")",
-                y + 96,
+                y + 80,
                 color,
                 Player.Instance.EquipmentWisdomBonus
             );
 
-            // Sits in the gap between the stat block (ends at y+96) and
+            // Sits in the gap between the stat block (ends at y+80, now
+            // that Level moved out — see the top of this method) and
             // DrawExperience (starts at y=160) — only drawn when on, so it
             // never collides with either when off.
             if (Player.Instance.AutoFireEnabled)
@@ -599,7 +603,7 @@ namespace Realm
                     spriteBatch,
                     Art.RetroFont,
                     "Auto-Fire: ON",
-                    new Vector2(x, y + 116),
+                    new Vector2(x, y + 100),
                     Color.Cyan
                 );
             }
@@ -608,6 +612,23 @@ namespace Realm
         private static void DrawExperience(SpriteBatch spriteBatch)
         {
             int x = Game1.SidebarX + SidebarPadding;
+
+            // Moved here from the top of the stat block (DrawStats()) per
+            // direct request — sits just above this bar now, centered
+            // across its width, rather than in the label/value column with
+            // the other six stats. Shares CombatIconY's row (the existing
+            // gap right above this bar, previously only holding the Combat
+            // Badge) rather than opening a new one: the badge is small and
+            // left-aligned, so a centered label doesn't collide with it.
+            string levelText = "Level: " + Player.Instance.Level;
+            Vector2 levelSize = Art.RetroFont.MeasureString(levelText);
+            Util.DrawOutlinedText(
+                spriteBatch,
+                Art.RetroFont,
+                levelText,
+                new Vector2(x + (SidebarBarWidth - levelSize.X) / 2f, CombatIconY),
+                Color.Red
+            );
 
             string label;
             string numbers;

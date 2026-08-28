@@ -201,7 +201,12 @@ namespace Realm.Bosses
             List<SweepingShot> targetList
         )
         {
-            var projectile = new EnemyProjectile(Position + relativeStart, Vector2.Zero)
+            var projectile = new EnemyProjectile(
+                Position + relativeStart,
+                Vector2.Zero,
+                Art.LimonProjectile,
+                CollisionShape.Rectangle
+            )
             {
                 image = Art.LimonProjectile,
                 duration = travelFrames,

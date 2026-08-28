@@ -6658,3 +6658,29 @@ date/time for those individually; don't treat their grouping as meaning they all
      `IsColliding()`-style "add both radii" formula rather than either radius alone. Reverted the
      temp code (`git diff --stat Game1.cs` clean), ran a final clean build + plain boot-check, and
      confirmed all six real save files byte-identical to a pre-test backup.
+
+246. **Moved the Level display from the stat block to just above the XP/Fame bar, centered**, per
+     direct request. `Overlay.DrawStats()`'s `DrawStatLine("Level:", ...)` (previously the first row)
+     removed entirely; the remaining six stats (ATT/DEF/SPD/DEX/VIT/WIS) shifted up one row (16px)
+     each to close the gap, so the block is now 16px shorter overall (ends at `y+80` instead of
+     `y+96`) — the "Auto-Fire: ON" indicator that sits in the gap below the block moved with it
+     (`y+116` → `y+100`, preserving the same 20px gap after the block's new end). `DrawExperience()`
+     gained a new centered `"Level: N"` draw, sized via `Art.RetroFont.MeasureString()` and
+     positioned at `x + (SidebarBarWidth - textWidth) / 2f`, sharing `CombatIconY`'s row (the
+     existing gap right above the XP/Fame bar, previously only holding the small, left-aligned
+     Combat Badge) rather than opening a new dedicated row — confirmed by the numbers that the
+     centered text and the 20px badge don't overlap at any real sidebar width.
+     Verified via a temporary `Game1.StartGame()` test — a numeric sanity check only (actual visual
+     centering isn't something a scripted assertion can meaningfully judge): reflected `Overlay`'s
+     private layout constants and confirmed the computed Level-text position sits entirely within
+     `SidebarBarWidth`, above `XpBarY`, and starts to the right of the Combat Badge's own right edge
+     (no overlap). Reverted the temp code (`git diff --stat Game1.cs` clean), ran a final clean build
+     + plain boot-check, and confirmed the real save file matched a pre-test backup except for the
+     user's own concurrent play — flagged directly and separately (not a code-review finding, just
+     surfaced to the user): `PlayerData_Wizard.json`'s `ExperienceTotal` jumped from 6786 to
+     2,978,440 and `Level` to 20 between this and the previous entry's backup, yet
+     `HasReachedLevel20` still read `false` — an internally inconsistent combination (that flag
+     normally flips true the instant `Level` first reaches 20) and a far larger jump than any other
+     seen this session, worth the user's own attention rather than silently accepted as more routine
+     background play. Not investigated or touched further — the file was only ever read during this
+     test, never written to.
