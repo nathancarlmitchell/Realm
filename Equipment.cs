@@ -44,7 +44,7 @@ namespace Realm
 
         // Settings > Graphics > "Display Item Tiers" (default on) —
         // "T{Tier}" drawn in the bottom-right corner of this item's own
-        // icon (inset 4px from both edges so it doesn't touch the icon's
+        // icon (inset 2px from both edges so it doesn't touch the icon's
         // actual border), wherever it's drawn. Public rather than protected: three
         // of its four call sites (InventorySystem.Draw(), BankSystem.Draw(),
         // LootBag.DrawLoot()) aren't Equipment subclasses, so they can't
@@ -56,7 +56,7 @@ namespace Realm
         // Pure position math, split out from the actual draw call below so
         // it's independently testable without needing a working
         // SpriteBatch/GraphicsDevice.
-        private const float TierLabelEdgeOffset = 4f;
+        private const float TierLabelEdgeOffset = 2f;
 
         private static Vector2 ComputeTierLabelPosition(Rectangle iconBounds, Vector2 textSize) =>
             new(
