@@ -6841,3 +6841,32 @@ date/time for those individually; don't treat their grouping as meaning they all
      and several near-orange `Particle`s. All three passed. Reverted the temp code (`git diff --stat
      Game1.cs` clean, including a temporary `System.Linq` using), ran a final clean build + plain
      boot-check, and confirmed all six real save files were byte-identical to a pre-test backup.
+
+253. **Healing particles: smaller, more of them, spawned continuously for the HoT's duration, and
+     drawn above the player**, per direct follow-up on entry 252. `Priest.cs` gained its first-ever
+     `Update()` override: a `healingParticleCooldown` counter spawns a clump of 3
+     `RisingParticle`s (scale dropped from 0.12 to 0.06, `RisingParticle.SpawnRisingBurst()`'s own
+     default updated to match) from the Priest's feet every `HealingParticleIntervalFrames` (5)
+     ticks for as long as `HasDebuff(DebuffType.Healing)` is true — that debuff mirrors
+     `ApplyHealing()`'s own real duration exactly (already true before this entry, per
+     `ApplyHealing()`'s own comment), so no separate timer was needed to know when to stop. Replaces
+     entry 252's single 14-particle burst at cast time, which is now removed from `UseAbility()`
+     entirely (the `healed` bool it used is gone too, since nothing consumes it anymore).
+     `EntityManager.Draw()`'s existing "draw the player last, then a third pass for anything that
+     needs to render above it" structure (previously only `DamageNumber.FollowsPlayer`) gained a
+     `RisingParticle` branch in that same third pass, so the rising motes stay visible drifting up
+     past the sprite instead of being painted over by it.
+     Verified via a temporary `Game1.StartGame()` test (isolated `Priest` swapped into
+     `Player.Instance`, restored after): (1) `ApplyHealing(10f, 8)` then six direct `Update()` calls
+     confirmed the exact spawn cadence — 3 particles immediately, none by tick 5, 3 more (6 total) by
+     tick 6; (2) every spawned particle's reflected `drawScale` was exactly 0.06; (3) continuing
+     `Update()` well past the 8-tick duration confirmed `HasDebuff(Healing)` drops and no further
+     particles spawn afterward; (4) a real `EntityManager.Draw()` pass (using the live process's own
+     real `SpriteBatch`/`GraphicsDevice`, since this test runs inside the actual running game) with
+     both a `Player` and a `RisingParticle` present completed without throwing, confirming the new
+     third-pass branch doesn't crash — noted directly that this only checks for a crash, not that the
+     on-screen stacking order is visually correct, since faking real draw-order verification without
+     a screenshot comparison isn't practical from a script. All four passed. Reverted the temp code
+     (`git diff --stat Game1.cs` clean, including a temporary `System.Linq` using), ran a final clean
+     build + plain boot-check, and confirmed all six real save files were byte-identical to a
+     pre-test backup.

@@ -8,12 +8,13 @@ namespace Realm
     // one rises straight upward at a steady, undecaying speed (no Drag,
     // unlike Particle) while only fading, never shrinking, so a burst reads
     // as buoyant motes drifting off rather than an explosion. Used by
-    // Priest's self-heal (see CharacterClasses/Priest.cs's UseAbility()) —
-    // a small side-to-side sway is layered on top of the rise so a burst of
-    // these doesn't look like a rigid column of dots. Same "ephemeral
-    // Entity managed by the normal EntityManager pipeline" shape as
-    // Particle/SwirlParticle — own lifespan countdown, IsExpired when it
-    // runs out.
+    // Priest's self-heal (see CharacterClasses/Priest.cs's Update()
+    // override, which spawns a small clump of these every few ticks for as
+    // long as the Healing HoT is active) — a small side-to-side sway is
+    // layered on top of the rise so a clump of these doesn't look like a
+    // rigid column of dots. Same "ephemeral Entity managed by the normal
+    // EntityManager pipeline" shape as Particle/SwirlParticle — own
+    // lifespan countdown, IsExpired when it runs out.
     public class RisingParticle : Entity
     {
         private static readonly Random rand = new();
@@ -64,13 +65,16 @@ namespace Realm
 
         // Spawns `count` motes at randomized points along a short horizontal
         // spread centered on `origin` (e.g. Priest.Position's feet, see
-        // UseAbility()) so they don't all rise in a single-file line.
+        // Priest.cs's Update() override) so they don't all rise in a
+        // single-file line. Called repeatedly in small clumps for as long as
+        // a healing effect is active, rather than once as a single big
+        // burst — small `count`/`scale` values are the expected inputs.
         public static void SpawnRisingBurst(
             Vector2 origin,
             Color color,
             int count,
             int lifespanTicks,
-            float scale = 0.12f,
+            float scale = 0.06f,
             float riseSpeed = 0.6f,
             float spawnSpread = 6f
         )

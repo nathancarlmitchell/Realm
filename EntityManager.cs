@@ -142,16 +142,22 @@ namespace Realm
             // player's head and would otherwise get the same treatment,
             // painted over by this same player-on-top rule — drawn in a
             // third pass instead, after the player, so it's never hidden
-            // behind the sprite it's meant to float over. BeachBeacon is
-            // excluded entirely — DrawBeachBeacon() above already drew it,
-            // earlier, so it renders under Portal.DroppedPortals too (see
-            // RealmState.Draw()); drawing it again here would double-paint
-            // it on top of everything else instead.
+            // behind the sprite it's meant to float over. RisingParticle
+            // (Priest's healing motes, rising from the player's own feet —
+            // see CharacterClasses/Priest.cs's Update() override) gets the
+            // same third-pass treatment for the same reason: it needs to
+            // stay visible drifting up past the sprite, not hidden beneath
+            // it. BeachBeacon is excluded entirely — DrawBeachBeacon() above
+            // already drew it, earlier, so it renders under
+            // Portal.DroppedPortals too (see RealmState.Draw()); drawing it
+            // again here would double-paint it on top of everything else
+            // instead.
             foreach (var entity in entities)
             {
                 if (
                     entity is not Player
                     && entity is not BeachBeacon
+                    && entity is not RisingParticle
                     && !(entity is DamageNumber dn && dn.FollowsPlayer)
                 )
                     entity.Draw(spriteBatch);
@@ -165,7 +171,7 @@ namespace Realm
 
             foreach (var entity in entities)
             {
-                if (entity is DamageNumber dn && dn.FollowsPlayer)
+                if (entity is RisingParticle || (entity is DamageNumber dn && dn.FollowsPlayer))
                     entity.Draw(spriteBatch);
             }
         }

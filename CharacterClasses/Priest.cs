@@ -134,6 +134,46 @@ namespace Realm.CharacterClasses
 
         public override bool CanEquipAbilityItem(AbilityItem item) => item is Tome;
 
+        // How often (in ticks) Update() below spawns another small clump of
+        // rising motes while the Healing HoT is active — a first-pass value,
+        // easy to retune with just this one number.
+        private const int HealingParticleIntervalFrames = 5;
+        private int healingParticleCooldown;
+
+        // A continuous trickle of small white motes for exactly as long as
+        // the Healing HoT (Red Cross Healing) is active, rather than a
+        // single burst at the moment of casting — HasDebuff(DebuffType.
+        // Healing) mirrors ApplyHealing()'s own real duration exactly (see
+        // Player.cs's ApplyHealing() comment), so this needs no separate
+        // timer of its own to know when to stop. Reset to 0 (spawn
+        // immediately) the instant the debuff drops, so a fresh cast never
+        // has to wait out whatever was left of the interval from a previous
+        // one.
+        public override void Update()
+        {
+            base.Update();
+
+            if (HasDebuff(DebuffType.Healing))
+            {
+                healingParticleCooldown--;
+                if (healingParticleCooldown <= 0)
+                {
+                    RisingParticle.SpawnRisingBurst(
+                        Position + new Vector2(0, Size.Y / 2f),
+                        Color.White,
+                        count: 3,
+                        lifespanTicks: 40,
+                        scale: 0.06f
+                    );
+                    healingParticleCooldown = HealingParticleIntervalFrames;
+                }
+            }
+            else
+            {
+                healingParticleCooldown = 0;
+            }
+        }
+
         // The cursor's world position, clamped to the Tome's own Range —
         // used by UseAbility() below (Unstable's own direction-
         // randomization is applied on top of this afterward, for the
@@ -176,32 +216,13 @@ namespace Realm.CharacterClasses
             {
                 Mana -= AbilityCost;
 
-                bool healed = false;
-
                 if (tome.HealAmount > 0)
-                {
                     Heal(tome.HealAmount);
-                    healed = true;
-                }
 
                 if (tome.HealingAmountPerSecond > 0)
-                {
                     ApplyHealing(
                         tome.HealingAmountPerSecond,
                         (int)(tome.HealingDurationSeconds * 60)
-                    );
-                    healed = true;
-                }
-
-                // Small white motes rising from the Priest's feet — a
-                // one-shot cue at the moment of casting, not spawned
-                // continuously over the HoT's own duration.
-                if (healed)
-                    RisingParticle.SpawnRisingBurst(
-                        Position + new Vector2(0, Size.Y / 2f),
-                        Color.White,
-                        count: 14,
-                        lifespanTicks: 45
                     );
 
                 // Nova center: the cursor's world position, clamped to the
