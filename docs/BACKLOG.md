@@ -106,24 +106,21 @@ prioritized or scheduled — the user asked to keep these noted for later rather
   same `Art.HealthBar`-stretched-into-a-rect technique that overlay already uses. Needs a
   tier-to-color mapping decided (a fixed palette by tier number, or a gradient) before
   implementation.
-- **Scroll-to-zoom, both the main game camera and the minimap, active whenever the mouse is over
-  that respective area.** Two separate targets: [Camera.cs](Camera.cs) already has a clamped `Zoom`
-  property (`0.5`-`1.5`, set once to a fixed `1f` in `RealmState`'s constructor and never changed
-  after) with no input wired to it yet; the minimap ([Overlay.cs](Overlay.cs)'s `DrawMinimap()`,
-  `MinimapWorldRadius` constant, currently a fixed 2000-unit view) has no zoom concept at all today.
-  Also needs mouse-wheel input added to [Input.cs](Input.cs) from scratch — nothing reads
-  `MouseState.ScrollWheelValue` anywhere in the codebase yet. "Mouse is over that area" naturally
-  splits into two hit-tests: over the minimap's screen rect (`Overlay.cs`'s existing `mapX`/`mapY`/
-  `MinimapSize` bounds) vs. over the rest of the gameplay viewport for the main camera.
-- **Teleport via the minimap** — click a spot on the minimap to teleport the player there. Today
-  [Overlay.cs](Overlay.cs)'s `DrawMinimap()` is purely visual, no click handling at all; the minimap
-  only shows a fixed 2000-unit radius around the player (`MinimapWorldRadius`), so a click position
-  would need converting from map-relative screen coordinates back into a world position (the
-  inverse of the existing blip-placement math) — straightforward for the open Realm, but worth
-  deciding whether this is even allowed in a boss arena (a much smaller, bounded space where
-  free teleporting could trivialize or break the fight). Also needs a decision on whether it's a
-  free instant teleport or has some cost/limit (cooldown, mana, distance cap) so it doesn't just
-  replace normal movement outright.
+- **Scroll-to-zoom on the main game camera.** The minimap half of this shipped (see
+  [DEVLOG.md](DEVLOG.md), entry 236 — `Overlay.HandleMinimapZoom()`, 500-6000 world-unit range,
+  `Input.mouse.ScrollWheelValue` now read for the first time anywhere in the codebase). Still open:
+  [Camera.cs](Camera.cs) already has a clamped `Zoom` property (`0.5`-`1.5`, set once to a fixed `1f`
+  in `RealmState`'s constructor and never changed after) with no input wired to it at all — zooming
+  the actual gameplay view (not just the minimap) while the mouse is over the rest of the viewport,
+  not over the minimap's own rect.
+- **Free-form teleport via the minimap** — click *any* spot on the minimap to teleport the player
+  there, the original broader idea. What shipped instead (entries 234/236) is narrower and
+  purpose-built: clicking the Beach Beacon's own blip specifically teleports to that one fixed,
+  already-discovered location, nothing else is clickable. The general "click anywhere, go there"
+  version is still open, and still carries the same open questions this item always had: whether
+  it's even allowed in a boss arena (a much smaller, bounded space where free teleporting could
+  trivialize or break the fight), and whether it's a free instant teleport or has some cost/limit
+  (cooldown, mana, distance cap) so it doesn't just replace normal movement outright.
 - **Visual effects — further targets beyond the two shipped.** A hand-rolled particle system now
   exists (`Particle.cs`, see [DEVLOG.md](DEVLOG.md) entries
   141-142) — a lightweight `Entity` subclass managed by the normal `EntityManager` pipeline, no
@@ -172,19 +169,17 @@ prioritized or scheduled — the user asked to keep these noted for later rather
   entry 216 gave buttons their own dedicated Micro5 font, separate from the Jersey10 base font
   again). Needs the user to point out what specifically still looks off once they've spent more
   time looking at it in actual play.
-- **Playtest the Beach biome — round 2.** Round 1 (see [DEVLOG.md](DEVLOG.md), latest entry)
-  produced two direct changes — a nearby-enemy spawn density cap (`EnemySpawner.MaxNearbyEnemies`/
-  `NearbyEnemyRadius`) and a global 2x enemy damage multiplier (`Difficulty.EnemyDamageMultiplier`,
-  applied in `Player.Hit()`) — both first-pass numbers needing another real playthrough to confirm
-  they land right, not just that they compile and pass a scripted check. Specifically flagged by the
-  user as needing another look on the next pass: **enemy HP values** — with enemies now hitting 2x
-  harder and fewer of them on screen at once, existing HP totals (tuned against the old, easier
-  baseline) may now make fights drag on too long relative to the new damage-per-hit, or may need
-  raising instead if fights become too swingy/short. No specific numbers decided yet — this is a
-  "look at it in play and see" item, not a known target. Original round-1 items (whether the
-  reclassified Bandit Leader/Scorpion Queen/Sandsman King/Giant Crab feel right blended into the
-  regular wave, whether the flat 5%/2.5% drop rates feel right in practice) are still open too, on
-  top of the new damage/density/HP questions.
+- **Playtest the Beach biome — round 2.** Round 1 (see [DEVLOG.md](DEVLOG.md) entry 228) added a
+  nearby-enemy spawn density cap (`EnemySpawner.MaxNearbyEnemies`/`NearbyEnemyRadius`) and a global
+  2x enemy damage multiplier (`Difficulty.EnemyDamageMultiplier`). The enemy-HP question that round
+  flagged has since been acted on too (entry 233): a matching global `Difficulty.EnemyHealthMultiplier`
+  (also 2x) now scales every enemy's health at spawn time. A further round of drop-rate tuning also
+  landed since (entry 232 halved every rate outright; the user has since hand-tuned
+  `Enemy.BeachDropChances` and some Beach mini-boss stats further still, on top of that). None of
+  these — damage x2, HP x2, the density cap, the halved-then-further-hand-tuned drop rates, or the
+  reclassified Bandit Leader/Scorpion Queen/Sandsman King/Giant Crab blending into the regular wave
+  — have had a real playthrough since landing together. This is a "look at it in play and see" item
+  across the board, not a single known target.
 
 - **"Hardcore" mode.** An opt-in mode that raises `Difficulty.EnemyDamageMultiplier` further above
   its regular baseline (currently 2x — see [DEVLOG.md](DEVLOG.md), latest entry), plus other possible
