@@ -26,6 +26,8 @@
     <Folder Include="Content\Weapons\Swords\" />
     <Folder Include="Content\Weapons\Wands\Projectiles\" />
     <Folder Include="Enemies\Beach\" />
+    <Folder Include="Projectiles\" />
+    <Folder Include="Particles\" />
     <Folder Include="Weapons\" />
   </ItemGroup>
   <ItemGroup>
