@@ -401,6 +401,9 @@ namespace Realm
 
         public static void DrawBeaconIndicator(SpriteBatch spriteBatch)
         {
+            if (!Player.Instance.ShowQuestIndicatorEnabled)
+                return;
+
             BeachBeacon beacon = BeachBeacon.ActiveInstance;
             if (beacon == null)
                 return;

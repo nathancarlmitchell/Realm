@@ -6465,3 +6465,24 @@ date/time for those individually; don't treat their grouping as meaning they all
      confirmed five of six real save files were byte-identical to a pre-test backup; the sixth
      (`PlayerData_Wizard.json`) showed a small `ExperienceTotal` increase (4468→4483) at the same
      `Level` — the user's own continued live play in between, not a bug — backup refreshed.
+
+237. **New "Show Quest Indicator" setting (Settings > Gameplay, on by default)**, gating
+     `Overlay.DrawBeaconIndicator()` — the compass arrow from entry 235. Same account-wide
+     `GameSettingsData`/`Util.cs` Save/Load wiring pattern as every other toggle, added right after
+     `AutoEnterPortalsEnabled` in both `Player.cs`'s field list and `SettingsState.cs`'s
+     `gameplayRows` (Gameplay tab specifically, per the user's own wording — not Graphics, where
+     every other visual-indicator toggle so far has lived). `ShowQuestIndicatorEnabled` defaults to
+     `true` in both `Player.cs` and the `GameSettingsData` DTO (the DTO needs its own explicit
+     `= true`, same reasoning as `LowHealthIndicatorEnabled`/`ShowXpDropsEnabled` — an old settings
+     file missing this key must not silently deserialize to "off").
+     Verified via a temporary `Game1.StartGame()` test: confirmed a fresh `Wizard()` defaults to
+     `ShowQuestIndicatorEnabled == true`; then, reusing the "pass a `null` `SpriteBatch`, a
+     `NullReferenceException` means Draw() was actually reached" technique from entry 235's own test,
+     confirmed `DrawBeaconIndicator()` reaches its draw call (throws) with the setting on and a
+     Beacon present, and returns early (no throw) the instant the setting is toggled off. Reverted
+     the temp code (`git diff --stat Game1.cs` clean), ran a final clean build + plain boot-check, and
+     confirmed five of six real save files byte-identical to a pre-test backup; the sixth
+     (`PlayerData_Wizard.json`) differed at the byte level but with identical `Level`/`ExperienceTotal`
+     — consistent with the user's own continued play (likely an equipment interaction elsewhere in
+     the file), not investigated further given the same benign pattern confirmed repeatedly earlier
+     this session — backup refreshed.

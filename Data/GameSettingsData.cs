@@ -17,6 +17,11 @@ public class GameSettingsData
     // independent of the F3 debug HUD. See RealmState/NexusState.Draw().
     public bool ShowHitboxesEnabled { get; set; }
 
+    // Defaults to TRUE (on) — without `= true` that default would silently
+    // be `false` for an old save missing this key, flipping the setting
+    // off instead of leaving it on. Gates Overlay.DrawBeaconIndicator().
+    public bool ShowQuestIndicatorEnabled { get; set; } = true;
+
     // Defaults to TRUE (on) — unlike every other setting above, this one
     // warns about something urgent, so it should already be doing its job
     // for anyone who's never touched it. The explicit `= true` here is

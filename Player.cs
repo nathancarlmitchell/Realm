@@ -374,6 +374,14 @@ namespace Realm
         // Toggled from the Settings > Gameplay tab.
         public bool AutoEnterPortalsEnabled;
 
+        // Same account-wide GameSettingsData persistence, but defaults to
+        // TRUE (see GameSettingsData.cs's matching comment on why the DTO's
+        // own default also has to be `true`). Gates
+        // Overlay.DrawBeaconIndicator() — the compass arrow that orbits the
+        // player pointing at the Beach Beacon. Toggled from the
+        // Settings > Gameplay tab.
+        public bool ShowQuestIndicatorEnabled = true;
+
         // Same account-wide GameSettingsData persistence, defaults to
         // false. Independent of (additive with) the F3/Game1._Debug
         // toggle — F3 still shows hitboxes plus the full debug HUD panel

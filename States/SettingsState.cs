@@ -139,6 +139,13 @@ namespace Realm.States
                     GetBool = () => Player.Instance.AutoEnterPortalsEnabled,
                     SetBool = v => Player.Instance.AutoEnterPortalsEnabled = v,
                 },
+                new SettingsRow
+                {
+                    Kind = RowKind.Toggle,
+                    Label = "Show Quest Indicator",
+                    GetBool = () => Player.Instance.ShowQuestIndicatorEnabled,
+                    SetBool = v => Player.Instance.ShowQuestIndicatorEnabled = v,
+                },
             ];
 
             graphicsRows =
