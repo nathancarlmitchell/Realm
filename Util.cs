@@ -1335,42 +1335,40 @@ namespace Realm
             return x;
         }
 
-        // World-space circle outline, e.g. an ability's AoE radius preview
-        // (Priest's Nova — see CharacterClasses/Priest.cs's
-        // DrawAbilityPreview()/the NovaRadiusFlash entity it spawns on
-        // cast). Same stretched-1x1-texture line-segment technique
-        // EntityManager's own debug hitbox circle already uses internally
-        // (DrawHitboxCircle/DrawHitboxLine) — duplicated here rather than
-        // exposed from there, since this is a real gameplay visual, not a
-        // debug-only one, and shouldn't be coupled to EntityManager's
-        // internal debug-drawing machinery.
-        public static void DrawCircleOutline(
+        // World-space solid filled circle, e.g. an ability's AoE blast flash
+        // (Priest's Nova — see CharacterClasses/Priest.cs's UseAbility()/the
+        // NovaRadiusFlash entity it spawns on cast). Rasterized as a stack
+        // of 1px-tall horizontal strips (same stretched-1x1-texture
+        // technique the rest of this file's drawing helpers already use),
+        // each stretched to that row's chord width via the circle equation
+        // -- cheap enough for a short-lived one-shot effect, and avoids
+        // needing a dedicated filled-circle texture asset.
+        public static void DrawFilledCircle(
             SpriteBatch spriteBatch,
             Vector2 center,
             float radius,
-            Color color,
-            int segments = 32
+            Color color
         )
         {
-            Vector2 prev = center + new Vector2(radius, 0);
-            for (int i = 1; i <= segments; i++)
+            int rows = (int)Math.Ceiling(radius * 2f);
+            for (int i = 0; i <= rows; i++)
             {
-                Vector2 next = center + Extensions.FromPolar(i * (MathHelper.TwoPi / segments), radius);
-                Vector2 delta = next - prev;
-                float length = delta.Length();
-                float angle = (float)Math.Atan2(delta.Y, delta.X);
+                float y = -radius + i;
+                float halfWidth = (float)Math.Sqrt(Math.Max(0f, radius * radius - y * y));
+                if (halfWidth <= 0f)
+                    continue;
+
                 spriteBatch.Draw(
                     Art.HealthBar,
-                    prev,
+                    center + new Vector2(-halfWidth, y),
                     null,
                     color,
-                    angle,
+                    0f,
                     Vector2.Zero,
-                    new Vector2(length, 1f),
+                    new Vector2(halfWidth * 2f, 1f),
                     SpriteEffects.None,
                     0f
                 );
-                prev = next;
             }
         }
 

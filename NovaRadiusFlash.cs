@@ -3,13 +3,11 @@ using Microsoft.Xna.Framework.Graphics;
 
 namespace Realm
 {
-    // A brief fading ring outline at an AoE cast's actual center/radius —
+    // A brief fading solid disc at an AoE cast's actual center/radius —
     // visual confirmation of the blast area at the moment it lands, spawned
-    // once per cast (e.g. Priest.UseAbility()'s Nova). Separate from a
-    // class's own continuous pre-cast aim preview (see Player.
-    // DrawAbilityPreview()) — this is a one-shot effect, not a targeting
-    // aid. A plain Entity (like DamageNumber/Particle) so it rides the
-    // normal EntityManager Update()/Draw() pipeline for free.
+    // once per cast (e.g. Priest.UseAbility()'s Nova). A plain Entity (like
+    // DamageNumber/Particle) so it rides the normal EntityManager
+    // Update()/Draw() pipeline for free.
     public class NovaRadiusFlash : Entity
     {
         private readonly float radius;
@@ -36,7 +34,7 @@ namespace Realm
         public override void Draw(SpriteBatch spriteBatch)
         {
             float alpha = MathHelper.Clamp(ticksRemaining / (float)lifespanTicks, 0f, 1f);
-            Util.DrawCircleOutline(spriteBatch, Position, radius, baseColor * alpha);
+            Util.DrawFilledCircle(spriteBatch, Position, radius, baseColor * alpha);
         }
     }
 }

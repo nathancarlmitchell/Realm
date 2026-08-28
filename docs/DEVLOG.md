@@ -6789,3 +6789,26 @@ date/time for those individually; don't treat their grouping as meaning they all
      `IsExpired` stays false through tick 4 and flips true exactly at tick 5. All four passed.
      Reverted the temp code (`git diff --stat Game1.cs` clean), ran a final clean build + plain
      boot-check, and confirmed all six real save files were byte-identical to a pre-test backup.
+
+251. **Removed the Nova live aim preview; made the cast-moment flash a solid filled disc**, per
+     direct follow-up on entry 250. `Priest.DrawAbilityPreview()` and `Player.cs`'s now-unused
+     `DrawAbilityPreview()` virtual hook (and its call in `Draw()`) were deleted outright rather than
+     left as dead infrastructure — `ComputeClampedCursorOffset()` stays, since `UseAbility()` still
+     needs it for the actual cast. `Util.DrawCircleOutline()` was replaced with a new
+     `Util.DrawFilledCircle(SpriteBatch, Vector2 center, float radius, Color color)` — rasterized as
+     a stack of 1px-tall horizontal strips sized via the circle equation (`halfWidth =
+     sqrt(radius² - y²)`), reusing the same stretched-1x1-texture technique as the rest of this
+     file's drawing helpers rather than needing a dedicated filled-circle texture asset.
+     `NovaRadiusFlash.Draw()` now calls this instead of the outline version, so the cast-moment
+     flash reads as a much more visually prominent solid gold blast instead of a thin ring.
+     Verified via a temporary `Game1.StartGame()` test: (1) reflected both `Player` and `Priest` to
+     confirm `DrawAbilityPreview` no longer exists on either class; (2) `Util.DrawFilledCircle()`
+     reaches its draw call (null-`SpriteBatch` throw) for a normal radius, and a degenerate zero
+     radius doesn't throw any unexpected exception type; (3) `NovaRadiusFlash.Draw()` still reaches
+     a draw call the same way, confirming it's actually calling the new filled-circle helper; (4)
+     re-confirmed `NovaRadiusFlash`'s expiry timing is unchanged. All four passed. Reverted the temp
+     code (`git diff --stat Game1.cs` clean), ran a final clean build + plain boot-check, and
+     confirmed all six real save files were byte-identical to a pre-test backup — noting the
+     backup itself had to be refreshed first, since `InventoryData_Priest.json`/
+     `PlayerData_Priest.json` had grown between entry 250's commit and this turn from the user's own
+     continued live play (unrelated to anything tested here).
