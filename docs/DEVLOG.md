@@ -6550,3 +6550,21 @@ date/time for those individually; don't treat their grouping as meaning they all
      `AlwaysDisplayPlayerHPEnabled` keys (added earlier this session, now persisted with their
      defaults for the first time since the backup predated them) and `PlayerData_Wizard.json` showed
      real continued play (Level 10→12) — both refreshed into the backup.
+
+241. **Added a `collisionShape` override parameter to `Enemy.ShootIfInRange()`**, matching an
+     externally-made change spotted on `Bandit.cs` (its hand-built sword-slash `EnemyProjectile` now
+     sets `Shape = CollisionShape.Rectangle` directly, swept into commit 524bfbd alongside unrelated
+     work and flagged to the user at the time) — `ShootIfInRange()` itself had no equivalent lever for
+     any of its own callers (Pirate, Little Scorpion, Piratess, Sandsman Archer, Bandit Leader) to
+     reach for the same thing. New optional `CollisionShape? collisionShape = null` parameter, same
+     "leave null, byte-for-byte no-op for every existing caller" shape as the existing
+     `cooldownFrames` parameter right above it — only sets the constructed `EnemyProjectile.Shape`
+     when a caller actually passes a value, otherwise its own default (`Circle`) is left untouched.
+     Verified via a temporary `Game1.StartGame()` test: reflected the protected `ShootIfInRange()` on
+     a freshly-created `Snake`, fired one shot with no override and confirmed the resulting
+     `EnemyProjectile.Shape` (read back via `EntityManager`'s own private `enemiesProjectiles` list)
+     was the default `Circle`; fired a second shot passing `CollisionShape.Rectangle` explicitly and
+     confirmed the resulting projectile's `Shape` was `Rectangle`. Reverted the temp code
+     (`git diff --stat Game1.cs` clean), ran a final clean build + plain boot-check, and confirmed
+     real save files matched a pre-test backup (refreshed after, per the user's own continued live
+     play — Level/`ExperienceTotal` unchanged this time).
