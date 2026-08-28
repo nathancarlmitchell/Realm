@@ -162,7 +162,7 @@ namespace Realm.CharacterClasses
                         Position + new Vector2(0, Size.Y / 2f),
                         Color.White,
                         count: 3,
-                        lifespanTicks: 40,
+                        lifespanTicks: 80,
                         scale: 0.06f,
                         spawnWidth: Size.X
                     );
