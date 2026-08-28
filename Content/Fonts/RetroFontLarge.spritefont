@@ -18,7 +18,7 @@ with.
     long boss name needs to fit, which stays crisp — downscaling loses
     detail gracefully, upscaling doesn't) fixes that.
     -->
-    <FontName>PressStart2P-Regular.ttf</FontName>
+    <FontName>Jersey10-Regular.ttf</FontName>
 
     <!--
     Size is a float value, measured in points. Modify this value to change
@@ -26,7 +26,7 @@ with.
     entry 205 used for the title, so nothing else needs to change on top of
     switching which font asset is drawn.
     -->
-    <Size>84</Size>
+    <Size>140</Size>
 
     <!--
     Spacing is a float value, measured in pixels. Modify this value to change

@@ -114,7 +114,12 @@ namespace Realm.Bosses
                     {
                         aoeCooldownRemaining = AoeCooldown;
                         EntityManager.Add(
-                            new GrenadeProjectile(Position + toPlayer, AoeRadius, AoeDamage)
+                            new GrenadeProjectile(
+                                Position + toPlayer,
+                                AoeRadius,
+                                AoeDamage,
+                                fuseFrames: 50
+                            )
                         );
                         if (rand.NextDouble() < CatchTauntChance)
                             EntityManager.Add(new TauntBubble(this, "Catch!"));

@@ -28,7 +28,7 @@ namespace Realm.Controls
                 // Y position of single buttons
                 if (buttons.Count == 1)
                 {
-                    buttonHeight = Game1.ScreenHeight - 64 * 4;
+                    buttonHeight = Game1.ScreenHeight - 64 * 2;
                 }
 
                 buttons[i].Position = new Vector2(centerWidth, buttonHeight);

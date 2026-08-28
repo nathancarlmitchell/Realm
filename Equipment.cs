@@ -56,12 +56,12 @@ namespace Realm
         // Pure position math, split out from the actual draw call below so
         // it's independently testable without needing a working
         // SpriteBatch/GraphicsDevice.
-        private const float TierLabelEdgeOffset = 2f;
+        private const float TierLabelEdgeOffsetX = 2f;
 
         private static Vector2 ComputeTierLabelPosition(Rectangle iconBounds, Vector2 textSize) =>
             new(
-                iconBounds.Right - textSize.X - TierLabelEdgeOffset,
-                iconBounds.Bottom - textSize.Y - TierLabelEdgeOffset
+                iconBounds.Right - textSize.X - TierLabelEdgeOffsetX,
+                iconBounds.Bottom - textSize.Y
             );
 
         public void DrawTierLabel(SpriteBatch spriteBatch, Rectangle iconBounds)

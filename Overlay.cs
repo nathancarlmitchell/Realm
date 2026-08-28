@@ -51,7 +51,7 @@ namespace Realm
         private const int FameIconSize = 24;
         private const int FameIconTextGap = 6;
         private const int FameOverlayX = 32;
-        private const int FameOverlayY = 64;
+        private const int FameOverlayY = 32;
 
         public static void DrawFame(SpriteBatch spriteBatch)
         {
@@ -239,7 +239,12 @@ namespace Realm
 
             void DrawBlip(Vector2 worldPos, Color color, int dotSize)
             {
-                Vector2 dotPos = ComputeMinimapBlipPosition(worldPos, playerPos, mapCenter, dotSize);
+                Vector2 dotPos = ComputeMinimapBlipPosition(
+                    worldPos,
+                    playerPos,
+                    mapCenter,
+                    dotSize
+                );
 
                 spriteBatch.Draw(
                     Art.HealthBar,
@@ -384,7 +389,8 @@ namespace Realm
                 Game1.GameplayViewportWidth / 2f,
                 Game1.GameplayViewportHeight / 2f
             );
-            Vector2 position = playerScreenPos + Extensions.FromPolar(angle, BeaconIndicatorOrbitRadius);
+            Vector2 position =
+                playerScreenPos + Extensions.FromPolar(angle, BeaconIndicatorOrbitRadius);
 
             // The source art points up (native forward = -Y, angle -π/2),
             // but this engine's rotation convention everywhere else

@@ -174,7 +174,7 @@ namespace Realm.States
             backButton.Click += BackButton_Click;
             menu = new Menu([backButton]);
 
-            eraseAllButton = new Button() { Text = "Erase All Data", PenColor = Color.DarkRed };
+            eraseAllButton = new Button() { Text = "Erase All Data", PenColor = Color.Red };
             eraseAllButton.Click += (sender, e) =>
             {
                 eraseStage = EraseStage.Warning;
@@ -621,7 +621,8 @@ namespace Realm.States
             // FameSystem.Fame shown at the top of the menu, which is shared
             // across every class.
             string fameText = $"Fame: {Player.ComputeBaseFame(saved?.ExperienceTotal ?? 0)}";
-            string highestFameText = $"Highest Fame: {Player.ComputeBaseFame(saved?.HighScore ?? 0)}";
+            string highestFameText =
+                $"Highest Fame: {Player.ComputeBaseFame(saved?.HighScore ?? 0)}";
 
             // Stack bottom-up from just above the portrait: stats block closest to the
             // portrait, then Fame, then Highest Fame on top.

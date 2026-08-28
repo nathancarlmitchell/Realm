@@ -18,7 +18,7 @@ with.
     Select" at a usable size or rendered illegibly; only Micro5 and
     Jacquard12 fit cleanly, and Micro5 won.
     -->
-    <FontName>Micro5-Regular.ttf</FontName>
+    <FontName>Jersey10-Regular.ttf</FontName>
 
     <!--
     Size is a float value, measured in points. Modify this value to change
@@ -26,7 +26,7 @@ with.
     confirmed to fit every button label (including "Character Select" and
     "Reset to Defaults") with no overflow.
     -->
-    <Size>16</Size>
+    <Size>14</Size>
 
     <!--
     Spacing is a float value, measured in pixels. Modify this value to change

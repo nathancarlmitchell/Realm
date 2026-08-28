@@ -24,7 +24,7 @@ namespace Realm.States
             Sound.SongInstance.Stop();
             Sound.Play(Sound.Death, 0.4f);
 
-            titleFont = Art.TitleFont;
+            titleFont = Art.RetroFont;
 
             score = Player.Instance.ExperienceTotal;
 
