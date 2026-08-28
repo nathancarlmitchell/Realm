@@ -80,5 +80,47 @@ namespace Realm
                 EntityManager.Add(new Particle(position, velocity, color, lifespanTicks, startScale));
             }
         }
+
+        // Scatters `count` particles at randomized points across a disc
+        // around `center` (out to `radius`, plus a bit beyond it via
+        // spawnRadiusMultiplier, for the "nearby" part) rather than a single
+        // spawn point like SpawnBurst above — reads as debris/sparks thrown
+        // across a blast area instead of one burst radiating from its exact
+        // center. Each particle still moves further outward from wherever
+        // it happened to spawn (not from `center`), using the same
+        // velocity/drag/fade-and-shrink physics as a plain burst. Used by
+        // Priest's damaging Nova (see CharacterClasses/Priest.cs's
+        // UseAbility() and NovaPulse.cs).
+        public static void SpawnAreaBurst(
+            Vector2 center,
+            float radius,
+            Color color,
+            int count,
+            float minSpeed,
+            float maxSpeed,
+            int lifespanTicks,
+            float startScale = 0.15f,
+            float spawnRadiusMultiplier = 1.15f
+        )
+        {
+            for (int i = 0; i < count; i++)
+            {
+                Vector2 offset = Extensions.FromPolar(
+                    rand.NextFloat(0f, MathHelper.TwoPi),
+                    rand.NextFloat(0f, radius * spawnRadiusMultiplier)
+                );
+                Vector2 position = center + offset;
+
+                // Fly outward from this particle's own spawn point, not from
+                // `center` -- a spark that happened to spawn near the center
+                // still needs some direction, so fall back to a fully
+                // randomized one in that (rare, zero-offset) case.
+                float speed = rand.NextFloat(minSpeed, maxSpeed);
+                Vector2 velocity =
+                    offset == Vector2.Zero ? rand.NextVector2(minSpeed, maxSpeed) : Vector2.Normalize(offset) * speed;
+
+                EntityManager.Add(new Particle(position, velocity, color, lifespanTicks, startScale));
+            }
+        }
     }
 }

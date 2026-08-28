@@ -6812,3 +6812,32 @@ date/time for those individually; don't treat their grouping as meaning they all
      backup itself had to be refreshed first, since `InventoryData_Priest.json`/
      `PlayerData_Priest.json` had grown between entry 250's commit and this turn from the user's own
      continued live play (unrelated to anything tested here).
+
+252. **Two new particle effects: rising motes for Priest's self-heal, orange sparks for the
+     damaging Nova.** New `RisingParticle.cs` — a third particle "flavor" alongside
+     `Particle.cs`'s decelerating scatter-burst and `SwirlParticle.cs`'s orbiting spiral — rises
+     straight upward at a steady, undecaying speed (no `Drag`, unlike `Particle`) while only fading,
+     never shrinking, with a small side-to-side sway layered on top so a burst doesn't look like a
+     rigid column of dots. `Particle.cs` gained a `SpawnAreaBurst()` static method alongside the
+     existing `SpawnBurst()` — scatters particles at randomized points across a disc (out to
+     `radius * 1.15` by default, covering "in and nearby") rather than a single spawn point, each
+     still flying further outward from wherever it spawned using the same velocity/drag/fade physics
+     an ordinary burst already uses.
+     Wired into `CharacterClasses/Priest.cs`'s `UseAbility()`: a `healed` flag (true if either
+     `tome.HealAmount` or `tome.HealingAmountPerSecond` triggered) spawns a 14-particle
+     `RisingParticle.SpawnRisingBurst()` from `Position + (0, Size.Y / 2)` — the Priest's feet — once
+     per cast, not continuously over the HoT's own duration. The Nova's existing white
+     center-burst (on both its immediate first pulse in `UseAbility()` and its delayed second pulse
+     in `NovaPulse.cs`) is now paired with a 16-particle `Particle.SpawnAreaBurst(novaCenter,
+     NovaRadius, Color.Orange, ...)` at each pulse, so both hits scatter orange sparks across the
+     blast area on top of the plain white burst.
+     Verified via a temporary `Game1.StartGame()` test: (1) a standalone `RisingParticle` rises
+     (Y strictly decreases), its `drawScale` stays constant while `color.A` fades partway by tick 9,
+     and it expires exactly at tick 10, not before; (2) `Particle.SpawnAreaBurst()` spawns exactly
+     the requested count, every one within `radius * 1.15` of its center (reflected `EntityManager`'s
+     private entity list and `Entity`'s private `color`/`drawScale` fields to check, rather than
+     adding new public API just for the test); (3) a real `Priest.UseAbility()` cast (isolated
+     instance swapped into `Player.Instance`, restored after) spawns at least one `RisingParticle`
+     and several near-orange `Particle`s. All three passed. Reverted the temp code (`git diff --stat
+     Game1.cs` clean, including a temporary `System.Linq` using), ran a final clean build + plain
+     boot-check, and confirmed all six real save files were byte-identical to a pre-test backup.

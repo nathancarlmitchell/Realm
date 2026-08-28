@@ -176,13 +176,32 @@ namespace Realm.CharacterClasses
             {
                 Mana -= AbilityCost;
 
+                bool healed = false;
+
                 if (tome.HealAmount > 0)
+                {
                     Heal(tome.HealAmount);
+                    healed = true;
+                }
 
                 if (tome.HealingAmountPerSecond > 0)
+                {
                     ApplyHealing(
                         tome.HealingAmountPerSecond,
                         (int)(tome.HealingDurationSeconds * 60)
+                    );
+                    healed = true;
+                }
+
+                // Small white motes rising from the Priest's feet — a
+                // one-shot cue at the moment of casting, not spawned
+                // continuously over the HoT's own duration.
+                if (healed)
+                    RisingParticle.SpawnRisingBurst(
+                        Position + new Vector2(0, Size.Y / 2f),
+                        Color.White,
+                        count: 14,
+                        lifespanTicks: 45
                     );
 
                 // Nova center: the cursor's world position, clamped to the
@@ -213,6 +232,19 @@ namespace Realm.CharacterClasses
                     minSpeed: 1.5f,
                     maxSpeed: 4f,
                     lifespanTicks: 20
+                );
+                // Orange sparks scattered in and just beyond the blast
+                // radius, on top of the plain white center-burst above —
+                // NovaPulse's own second pulse spawns the same on its own
+                // delayed hit, so both hits read consistently.
+                Particle.SpawnAreaBurst(
+                    novaCenter,
+                    NovaRadius,
+                    Color.Orange,
+                    count: 16,
+                    minSpeed: 1f,
+                    maxSpeed: 5f,
+                    lifespanTicks: 18
                 );
                 EntityManager.Add(
                     new NovaPulse(novaCenter, NovaRadius, damagePerPulse, NovaPulseDelayFrames)

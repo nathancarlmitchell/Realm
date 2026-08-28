@@ -39,6 +39,18 @@ namespace Realm
                     maxSpeed: 4f,
                     lifespanTicks: 20
                 );
+                // Matches the orange scatter Priest.UseAbility() spawns on
+                // the Nova's first, immediate pulse -- see Particle.
+                // SpawnAreaBurst's own comment.
+                Particle.SpawnAreaBurst(
+                    center,
+                    radius,
+                    Color.Orange,
+                    count: 16,
+                    minSpeed: 1f,
+                    maxSpeed: 5f,
+                    lifespanTicks: 18
+                );
                 IsExpired = true;
             }
         }
