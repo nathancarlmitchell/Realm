@@ -2,7 +2,7 @@
 using Microsoft.Xna.Framework;
 using Realm;
 
-namespace Realm
+namespace Realm.Projectiles
 {
     class Projectile : Entity
     {

@@ -6917,3 +6917,32 @@ date/time for those individually; don't treat their grouping as meaning they all
      change with no logic altered (confirmed no string-based type-name lookups anywhere in the
      codebase that could silently break from the namespace change). Confirmed all six real save
      files were byte-identical to a pre-check backup.
+
+256. **Moved `Projectile.cs`, `EnemyProjectile.cs`, `SineWaveProjectile.cs`, `GrenadeProjectile.cs`,
+     and `WavyProjectile.cs` into a new `Projectiles/` folder** (via `git mv`, preserving history),
+     the same treatment entry 255 gave the particle-effect classes — per direct request, and
+     matching this repo's existing subfolder-matches-sub-namespace convention. Namespace changed
+     `Realm` → `Realm.Projectiles` in all five.
+     This move touched far more consumers than entry 255's did, since projectiles are constructed
+     from every weapon/enemy/boss attack rather than one class: `using Realm.Projectiles;` was added
+     to `Weapon.cs`, `Enemy.cs`, `EntityManager.cs` (all root `Realm`, no automatic visibility into a
+     child namespace); `CharacterClasses/Archer.cs`/`Knight.cs`/`Wizard.cs` and
+     `Bosses/LimonTheSpriteGoddess.cs`/`SthenoPet.cs`/`SthenoSwarm.cs`/`SthenoTheSnakeQueen.cs`
+     (sibling namespaces, not ancestors, so the `using` is needed despite already being nested); and
+     `Enemies/Beach/Bandit.cs`/`BanditLeader.cs`/`BeachedBuccaneer.cs`/`GiantCrab.cs`/`SandDevil.cs`/
+     `SandsmanSorcerer.cs` (a mix of root `Realm` and `Realm.Bosses` — this folder's files are
+     inconsistently split between those two namespaces already, a pre-existing quirk untouched here).
+     Deliberately excluded from the consumer list after checking each one actually constructs a
+     projectile rather than just sharing a name: `Art.cs`'s own `Projectile`/`EnemyProjectile`
+     texture properties (same names, unrelated types, always accessed as `Art.Projectile` so there's
+     no ambiguity regardless of what's `using`), `Data/WeaponData.cs`'s `Projectile*` data fields,
+     and stray comment-only mentions in `NovaPulse.cs`/`Player.cs`. `CollisionShape` (referenced by
+     several of the moved classes' constructors) stays put in `Entity.cs` — unaffected, since it was
+     never part of these five files. No `.csproj` changes needed (same SDK-style implicit globbing
+     as entry 255).
+     Verified via a clean `dotnet build` (0 errors, same two pre-existing/external warnings) — a
+     final grep confirmed every file with a genuine `new Projectile(`/`new EnemyProjectile(`/etc.
+     call actually got the new `using` line, not just files that merely mentioned the word — and a
+     plain minimized boot-check. No scripted `Game1.cs` test, same reasoning as entry 255 (pure
+     code-organization, no logic altered). Confirmed all six real save files were byte-identical to a
+     pre-check backup.

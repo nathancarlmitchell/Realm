@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using Realm;
+using Realm.Projectiles;
 
 namespace Realm.Bosses
 {

@@ -1,7 +1,7 @@
 using System;
 using Microsoft.Xna.Framework;
 
-namespace Realm
+namespace Realm.Projectiles
 {
     // A Projectile that weaves in a sine wave perpendicular to its base
     // aim direction instead of flying in a straight line — currently only

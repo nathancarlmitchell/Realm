@@ -1,7 +1,7 @@
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 
-namespace Realm
+namespace Realm.Projectiles
 {
     // A stationary telegraphed-AoE hazard: spawns as a grey circle with no
     // live hitbox (Radius 0, so nothing can collide with it yet), ramping

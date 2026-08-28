@@ -2,7 +2,7 @@ using System;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 
-namespace Realm
+namespace Realm.Projectiles
 {
     // "Wavy shots" — Sand Devil's Dark Gray Spinner. Traces a real sine
     // wave around its straight-line path (offset perpendicular to the
