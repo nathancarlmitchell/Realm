@@ -163,7 +163,12 @@ namespace Realm.Bosses
             for (int i = 0; i < shots; i++)
             {
                 Vector2 vel = Extensions.FromPolar(startAngle + i * FanSpread, ProjectileSpeed);
-                EntityManager.Add(new EnemyProjectile(Position, vel, Art.WhiteBolt) { Damage = 8 });
+                EntityManager.Add(
+                    new EnemyProjectile(Position, vel, Art.WhiteBolt, CollisionShape.Rectangle)
+                    {
+                        Damage = 8,
+                    }
+                );
             }
         }
 

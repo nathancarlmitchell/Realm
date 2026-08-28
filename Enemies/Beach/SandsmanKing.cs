@@ -57,7 +57,8 @@ namespace Realm.Bosses
                     damage: AttackDamage,
                     projectileSpeed: ProjectileSpeed,
                     projectileImage: Art.SwordSlash,
-                    cooldownFrames: AttackCooldown
+                    cooldownFrames: AttackCooldown,
+                    collisionShape: CollisionShape.Rectangle
                 )
             );
             AddBehaviour(MaintainArchers());
@@ -99,13 +100,17 @@ namespace Realm.Bosses
             {
                 int missing =
                     MaxArchers
-                    - EntityManager.CountWhere<SandsmanArcher>(a => a.Owner == this && !a.IsExpired);
+                    - EntityManager.CountWhere<SandsmanArcher>(a =>
+                        a.Owner == this && !a.IsExpired
+                    );
 
                 if (missing > 0)
                 {
                     if (cooldownRemaining <= 0)
                     {
-                        EntityManager.Add(new SandsmanArcher(this, Position + rand.NextVector2(0f, 40f)));
+                        EntityManager.Add(
+                            new SandsmanArcher(this, Position + rand.NextVector2(0f, 40f))
+                        );
                         cooldownRemaining = ArcherSpawnCooldownFrames;
                     }
                     else

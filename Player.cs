@@ -567,10 +567,6 @@ namespace Realm
             Armor = new Armor();
             Ring = new Ring();
             AbilityItem = new AbilityItem();
-
-            // Radius is not accurate,
-            // Archer is smaller.
-            Radius = 64 / 2f;
         }
 
         // Level++ happens in the subclass override, before it calls

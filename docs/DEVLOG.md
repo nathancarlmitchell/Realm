@@ -6590,3 +6590,26 @@ date/time for those individually; don't treat their grouping as meaning they all
      refactor. Reverted the temp code (`git diff --stat Game1.cs` clean), ran a final clean build +
      plain boot-check, and confirmed real save files matched a pre-test backup (refreshed after, per
      the user's own continued live play — Level/`ExperienceTotal` unchanged).
+
+243. **Added the Beach Beacon to the F3/debug hitbox overlay.** `EntityManager.DrawHitboxes()`
+     already covered enemies, the player, both projectile lists, portals, and loot bags, but never
+     the Beacon — a real `Entity` with a real `Shape`/`Radius` like the first four, so the same
+     generic `DrawHitbox()` path applies directly with no special-casing needed, one new
+     `if (BeachBeacon.ActiveInstance != null) DrawHitbox(spriteBatch, BeachBeacon.ActiveInstance,
+     Color.Purple);` (`ActiveInstance` already filters out a stale/expired Beacon from a previous
+     Realm instance, same as everywhere else it's used). Purple to stay visually distinct from every
+     other hitbox color already in this method (Lime player, Red enemies, Yellow player bullets,
+     Orange enemy projectiles, Cyan portals). Drawn even though nothing in the game currently
+     collision-checks against the Beacon (its activation range is a plain distance check in its own
+     `Update()`, not `IsColliding()`) — purely for visibility, matching the user's own direct request
+     to see its collision radius in the debug view.
+     Verified via a temporary `Game1.StartGame()` test: isolated `EntityManager`'s private `entities`
+     list to rule out the real `Player.Instance` confounding the result (its own hitbox draw runs
+     unconditionally whenever `!IsExpired`, so it was temporarily set `IsExpired = true` for this
+     test too), then used the "`null` `SpriteBatch` throws only if a draw call is actually reached"
+     technique: `DrawHitboxes(null)` did not throw with an empty entity list, and did throw once a
+     lone `BeachBeacon` was the only entity present — confirming the new branch is reached exactly
+     when a Beacon exists and not otherwise. Reverted the temp code (`git diff --stat Game1.cs`
+     clean), ran a final clean build + plain boot-check, and confirmed real save files matched a
+     pre-test backup except for the user's own continued live play (`ExperienceTotal` 6313→6771 at
+     the same `Level`) — refreshed.

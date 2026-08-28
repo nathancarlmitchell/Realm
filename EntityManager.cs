@@ -209,6 +209,16 @@ namespace Realm
                     DrawHitbox(spriteBatch, enemyProjectile, Color.Orange);
             }
 
+            // A real Entity with a real Shape/Radius like everything above
+            // (unlike Portal/LootBag below), so the same DrawHitbox() path
+            // applies directly — even though nothing currently collision-
+            // checks against it (BeachBeacon has no gameplay hitbox use
+            // yet), this still shows its actual Radius for visibility.
+            // ActiveInstance already filters out a stale/expired Beacon
+            // from a previous Realm instance.
+            if (BeachBeacon.ActiveInstance != null)
+                DrawHitbox(spriteBatch, BeachBeacon.ActiveInstance, Color.Purple);
+
             if (portals != null)
             {
                 foreach (var portal in portals)

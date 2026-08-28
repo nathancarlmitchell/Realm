@@ -176,7 +176,7 @@ namespace Realm.Bosses
             {
                 Vector2 vel = Extensions.FromPolar(aimAngle, speed);
                 EntityManager.Add(
-                    new EnemyProjectile(Position, vel, Art.Beam)
+                    new EnemyProjectile(Position, vel, Art.Beam, CollisionShape.Rectangle)
                     {
                         Damage = damage,
                         duration = (int)(range / speed),
@@ -205,7 +205,12 @@ namespace Realm.Bosses
                         float aimAngle = aim.ToAngle();
                         Vector2 vel = Extensions.FromPolar(aimAngle, BlueBoltSpeed);
                         EntityManager.Add(
-                            new EnemyProjectile(Position, vel, Art.BlueBolt)
+                            new EnemyProjectile(
+                                Position,
+                                vel,
+                                Art.BlueBolt,
+                                CollisionShape.Rectangle
+                            )
                             {
                                 Damage = BlueBoltDamage,
                                 duration = (int)(BlueBoltRange / BlueBoltSpeed),
