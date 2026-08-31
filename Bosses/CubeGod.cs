@@ -175,7 +175,6 @@ namespace Realm.Bosses
                         Damage = damage,
                         duration = duration,
                         Shape = CollisionShape.Rectangle,
-                        image = Art.BlueMagic,
                     }
                 );
             }

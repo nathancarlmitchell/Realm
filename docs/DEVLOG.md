@@ -7189,3 +7189,26 @@ date/time for those individually; don't treat their grouping as meaning they all
      Per direct instruction, no scripted `Game1.cs` test this time — going forward, that step only
      happens when specifically asked (see the new project note this same instruction prompted).
      Verified with a plain `dotnet build` (0 errors, same two pre-existing/external warnings) only.
+
+263. **Sword damage/range now match the real wiki's Tiered Swords table
+     (https://www.realmeye.com/wiki/swords), and the two top tiers use the newly-added bolt art.**
+     `Data/WeaponData.json`'s 15 `Type: 2` (Sword) entries kept their existing fictional names (real
+     names weren't substituted — a save referencing an equipped sword by name would silently fail to
+     resolve if renamed, per `Weapon.LoadWeapon()`'s name lookup) but every tier's `DamageMin`/
+     `DamageMax` was replaced with the wiki's real per-tier damage range in tier order (e.g. tier 0
+     25-40 → 45-90, tier 14 215-245 → 250-305). The wiki states all tiered swords share "a projectile
+     speed of 10 tiles per second, and a range of 3.5 tiles" — converted via the same 32px/tile,
+     60-ticks/sec arithmetic used throughout this codebase (`ProjectileMagnitude = 10*32/60 =
+     5.333333`, `ProjectileDuration = 21`, since `5.333333*21 = 112px = 3.5 tiles` exactly), replacing
+     the old 8/14 pair (which happened to already total the same 112px range at a different, faster-
+     looking speed/duration split).
+     Tier 13 ("Sword of Radiant Justice") and tier 14 ("Sword of Eternal Valor") — the wiki's own
+     "Sword of Splendor" and "Sword of Majesty" tier slots — now use `Projectiles/Splendor Bolt` and
+     `Projectiles/Majesty Bolt` respectively as `ProjectileImageName`, the two newly-added bolt
+     textures whose names match those exact tiers (wired into `Art.cs`/`Content.mgcb` last entry).
+     The other two new bolt textures added at the same time (`Darkness Bolt`, `Purple Bolt`) don't
+     correspond to anything on the Swords page and remain unused — loaded and available, not yet
+     assigned anywhere.
+     Verified with a plain `dotnet build` (0 errors, same two pre-existing/external warnings) — the
+     Content Pipeline rebuilt cleanly with no complaint about the two newly-referenced projectile
+     assets. No scripted test, per the standing no-test-unless-asked convention.

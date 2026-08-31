@@ -45,7 +45,7 @@ namespace Realm.Bosses
         private const float BaseAngularSpeed = 0.03f; // radians/tick
         private const float SpeedWobbleAmplitude = 0.4f; // +/-40% of base
         private const float SpeedWobbleSpeed = 0.02f; // radians/tick
-        private const float PositionJitterMagnitude = 2f; // px, per tick
+        private const float PositionJitterMagnitude = 0f; // px, per tick
         private const int MinDirectionSwitchFrames = 180; // 3s
         private const int MaxDirectionSwitchFrames = 420; // 7s
 
@@ -146,17 +146,20 @@ namespace Realm.Bosses
                     }
 
                     speedWobblePhase += SpeedWobbleSpeed;
-                    float speedMultiplier = 1f + SpeedWobbleAmplitude * (float)Math.Sin(speedWobblePhase);
+                    float speedMultiplier =
+                        1f + SpeedWobbleAmplitude * (float)Math.Sin(speedWobblePhase);
                     orbitAngle = MathHelper.WrapAngle(
                         orbitAngle + orbitDirection * BaseAngularSpeed * speedMultiplier
                     );
 
                     radiusWobblePhase += RadiusWobbleSpeed;
                     float radius =
-                        baseOrbitRadius + OrbitRadiusJitterAmplitude * (float)Math.Sin(radiusWobblePhase);
+                        baseOrbitRadius
+                        + OrbitRadiusJitterAmplitude * (float)Math.Sin(radiusWobblePhase);
 
                     Vector2 jitter = rand.NextVector2(0f, PositionJitterMagnitude);
-                    Vector2 targetPosition = Owner.Position + Extensions.FromPolar(orbitAngle, radius) + jitter;
+                    Vector2 targetPosition =
+                        Owner.Position + Extensions.FromPolar(orbitAngle, radius) + jitter;
 
                     if (rehomeTransitionRemaining > 0)
                     {

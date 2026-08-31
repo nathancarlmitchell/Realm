@@ -40,7 +40,7 @@ namespace Realm.Bosses
         // cadence is given for the shot itself — AttackCooldown is a
         // first-pass tunable.
         private int attackCooldownRemaining = 0;
-        private const int AttackCooldown = 60;
+        private const int AttackCooldown = 45;
         private const int AttackDamage = 50;
         private const float AttackSpeed = 10f * 32f / 60f; // 10 tiles/sec
         private const int AttackDuration = 144; // 24-tile range / speed

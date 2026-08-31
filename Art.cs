@@ -69,6 +69,10 @@ namespace Realm
         public static Texture2D BlueMissile { get; private set; }
         public static Texture2D DarkGraySpinner { get; private set; }
         public static Texture2D WhiteBolt { get; private set; }
+        public static Texture2D DarknessBolt { get; private set; }
+        public static Texture2D MajestyBolt { get; private set; }
+        public static Texture2D PurpleBolt { get; private set; }
+        public static Texture2D SplendorBolt { get; private set; }
         public static Texture2D Wizard { get; private set; }
         public static Texture2D Archer { get; private set; }
         public static Texture2D Knight { get; private set; }
@@ -358,6 +362,10 @@ namespace Realm
             BlueMissile = content.Load<Texture2D>("Projectiles/Blue Missile");
             DarkGraySpinner = content.Load<Texture2D>("Projectiles/Dark Gray Spinner");
             WhiteBolt = content.Load<Texture2D>("Projectiles/white_bolt");
+            DarknessBolt = content.Load<Texture2D>("Projectiles/Darkness Bolt");
+            MajestyBolt = content.Load<Texture2D>("Projectiles/Majesty Bolt");
+            PurpleBolt = content.Load<Texture2D>("Projectiles/Purple Bolt");
+            SplendorBolt = content.Load<Texture2D>("Projectiles/Splendor Bolt");
 
             // Weapons.
             Wand = content.Load<Texture2D>("Weapons/Wands/wand");
