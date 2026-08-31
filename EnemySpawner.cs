@@ -322,6 +322,16 @@ namespace Realm
                 {
                     EntityManager.Add(Enemy.CreateSpriteGod(GetSpawnPosition()));
                 }
+
+                // Cube stays its own independent roll too, same shape as
+                // SpriteGod above — not biome-restricted (the real fight's
+                // own lore is "hordes of sentient squares" left behind
+                // everywhere, unlike SpriteGod's Sprite-forest theming), so
+                // no Beach exclusion either.
+                if (!tooManyEnemiesNearby && rand.Next(1500) == 0)
+                {
+                    EntityManager.Add(Enemy.CreateCube(GetSpawnPosition()));
+                }
             }
         }
 

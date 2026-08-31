@@ -6946,3 +6946,73 @@ date/time for those individually; don't treat their grouping as meaning they all
      plain minimized boot-check. No scripted `Game1.cs` test, same reasoning as entry 255 (pure
      code-organization, no logic altered). Confirmed all six real save files were byte-identical to a
      pre-check backup.
+
+257. **Third boss: Cube God**, adapted from RotMG's own encounter
+     (https://www.realmeye.com/wiki/cube-god) — a multiplayer-scaled fight (45,000 HP, a 13-bullet
+     shotgun meant to be split across a whole party) needing the same real single-player adaptation
+     Limon/Stheno's own source material already got, not a 1:1 port. Two scope decisions confirmed
+     with the user first: the full "cube system" (Cube God spawns Cube Overseer adds, each of which
+     spawns its own small cluster of Cube Defender/Cube Blaster minions), and both arena-access
+     options (a new dedicated trigger enemy that drops the entry portal, *and* a direct Nexus TEMP
+     shortcut for testing).
+     New `Bosses/CubeGod.cs` (`class CubeGod : Boss`) — `health 14000, Defense 24, PointValue 4500`
+     (base values, pre-`Difficulty.EnemyHealthMultiplier`; clearly above Stheno's 9000/19/3000, the
+     "next boss up"). `MoveTethered` slow wander ("slowly wanders the area"). A single
+     `ShotgunVolleys()` attack coroutine fires a Blue Magic fan (9 pellets, 60 damage, speed/range
+     converted from the wiki's own 10 tiles/sec + 24-tile numbers) with a 40% chance to immediately
+     chain a Blue Bolts fan right after (7 pellets, 90 damage, 8 tiles/sec + 20 tiles) — one combined
+     coroutine rather than two independently-cadenced attacks, matching the wiki's "sometimes
+     followed by" as one attack chaining into another. `PhaseWatcher()` polls `HealthFraction`
+     against 2/3 and 1/3 thresholds (`FlashRed()` + `Invulnerable` for 60 frames each, one-shot bools
+     per threshold — same shape as `LimonTheSpriteGoddess.PhaseWatcher()`), matching the wiki's
+     "about every time it loses 1/3 HP, flashes red and becomes invulnerable"; crossing 1/3
+     additionally unlocks a permanent `EnrageBurst()` (a full-circle burst, same `FromPolar`
+     technique as Limon's `BossBurst()`) — the closest single-player equivalent to the real fight's
+     permanent post-⅔-HP escalation, since the real "gains Stun Immunity" has no engine counterpart
+     to guard against (no player ability stuns enemies today) and isn't modeled as a flag nothing
+     reads. `MaintainOverseers()` tops up to 3 live `CubeOverseer`s, cooldown-gated every 10s — same
+     shape as `ScorpionQueen.MaintainScorpions()`.
+     New `Bosses/CubeOverseer.cs` — doesn't fight directly (matches the wiki's own framing: its role
+     is spawning Defender/Blaster, not attacking), orbits/wanders near the live Cube God via
+     `MoveTethered(anchor: owner)` (no custom orbit method needed, unlike `SthenoPet.Orbit()`, since
+     `MoveTethered`'s own `anchor` parameter already tracks another `Enemy`'s live position).
+     `MaintainMinions()` tops up 2 `CubeDefender` + 2 `CubeBlaster` per Overseer, scoped
+     `Owner == this` so multiple simultaneous Overseers never count each other's minions — same
+     shape as `SandsmanKing`'s two independent `MaintainX()` coroutines. New `Bosses/CubeDefender.cs`
+     (melee-range, `FollowPlayer` + `ShootIfInRange`) and `Bosses/CubeBlaster.cs` (stands off at
+     range) — both continuously-replenished (`PointValue 0`, `DropsLoot false`, matching
+     `SthenoPet`/`SthenoSwarm`'s "don't let it be farmed" convention rather than `LittleScorpion`'s).
+     No dedicated art exists for the "cube system" — every entity in this family, plus the new
+     trigger enemy below, draws itself as a plain tinted square via `Art.HealthBar` (a
+     runtime-generated 1x1 pixel, the same "stretch into a shape" primitive
+     `Util.DrawFilledCircle`/`GrenadeProjectile` already reuse) — on-theme rather than a placeholder
+     compromise for something literally named "Cube."
+     `Enemy.cs` gained `CreateCube()` — same plain-factory shape as `CreateSpriteGod`/
+     `CreateBigSnake` (`health 40, PointValue 90`, `portalDropOnDeath = Portal.Destination.
+     CubeGodBossRealm`, a generic non-Beach `DropWeights` table mirroring `CreateBigSnake`'s own).
+     `EnemySpawner.cs` gained an independent rare roll for it alongside SpriteGod's existing one
+     (`rand.Next(1500) == 0`) — not biome-restricted, since the real fight's own lore ("hordes of
+     sentient squares" left behind everywhere) doesn't tie it to one biome the way SpriteGod's
+     Sprite-forest theming does. `Portal.cs` gained `Destination.CubeGodBossRealm` (a
+     `BossDestination`, same shape as `BossRealm`/`SthenoBossRealm` — no switch/enum edit needed
+     anywhere else), reusing the plain default portal swirl rather than a bespoke skin.
+     `States/NexusState.cs` gained a third TEMP shortcut portal, same shape as the existing two
+     (`bossTestPortalPos`/`sthenoTestPortalPos`) — `docs/BACKLOG.md`'s "remove the test-only boss
+     portals" item updated to cover all three. `States/BossRealmState.cs` needed zero changes — it
+     was already shared/parameterized by `BossDestination`, exactly the point of that shape.
+     Verified via a temporary `Game1.StartGame()` test: (1) a standalone `CubeGod`, run for enough
+     simulated ticks, tops up to exactly 3 `CubeOverseer`s; (2) a standalone `CubeOverseer` tops up
+     to exactly 2 `CubeDefender` + 2 `CubeBlaster` scoped to itself; (3) `CreateCube()`'s
+     `portalDropOnDeath` reflects correctly, and a real `WasShot()` kill (isolated throwaway
+     `Player.Instance` swapped in first, since `WasShot()`'s death branch unconditionally awards XP
+     to whichever `Player.Instance` is live) actually drops a `CubeGodBossRealm` portal into
+     `Portal.DroppedPortals`; (4) `PhaseWatcher()` flashes/goes invulnerable at both the 2/3 and 1/3
+     `HealthFraction` thresholds and the enrage attack is added exactly once, not re-added on every
+     subsequent frame below 1/3 — caught and fixed a real test-setup mistake along the way (the
+     first attempt used too few `Update()` calls per threshold, not accounting for `Enemy.Update()`'s
+     own mandatory 60-frame spawn fade-in that has to elapse before any behaviour coroutine runs at
+     all). All four passed. Reverted the temp code (`git diff --stat Game1.cs` clean), ran a final
+     clean build + plain boot-check, and confirmed all twelve real save files (four classes now have
+     save data) were byte-identical to a pre-test backup. Not independently verified: an actual
+     in-game walk to the new TEMP portal and a real playthrough of the fight — flagged directly to
+     the user, same as every other boss's own first-pass numbers were when first shipped.

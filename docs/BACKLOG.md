@@ -49,25 +49,34 @@ prioritized or scheduled — the user asked to keep these noted for later rather
   enemy (`MoveSnake`+`Spray` is still open too, though `MoveSnake`+`Shoot` at a different speed is
   now covered by BigSnake). Real new art (rather than another tinted reskin) is also still an
   option whenever the user wants to supply some.
-- **Boss follow-ups, both bosses now need a real playtest pass.** Limon: real hit/death sounds
+- **Boss follow-ups, all three bosses now need a real playtest pass.** Limon: real hit/death sounds
   (still reusing `Sound.SpriteGod*` as placeholders) and revisiting hand-tuned balance numbers
   after actually playing the fight. Stheno (see [DEVLOG.md](DEVLOG.md) entry 100): also reusing
   placeholder audio (`Sound.Snakes*`); every numeric constant in `Bosses/SthenoTheSnakeQueen.cs`/
   `SthenoPet.cs`/`SthenoSwarm.cs` (phase/cooldown durations, grenade radii/damage, orbit/spiral
   speed, center-check radius) is a first-pass estimate needing an actual playtest to confirm the
   spiral reads as a spiral, the grenade dodge-gaps are actually walkable, pet orbit speed reads as
-  "rapidly circling," and swarm charge speed/distance reads as "a straight line." The second-boss
-  extension pattern predicted in this item (its own `XyzBoss : Boss` subclass, nothing moved into
-  the shared `Boss` base beyond what turned out genuinely common — just `Name`/`Description`/
-  `SpawnLoot()`/`DrawHealthBars()`) held up as designed.
-- **Remove the test-only boss portals in the Nexus.** `States/NexusState.cs`'s `portalList` has two
-  `// TEMP`-commented shortcut portals: `Portal.Destination.BossRealm` at `Player.Instance.Position
-  + (-150, -100)` and `Portal.Destination.SthenoBossRealm` at `+ (-150, +100)`, added purely so
+  "rapidly circling," and swarm charge speed/distance reads as "a straight line." Cube God (see
+  [DEVLOG.md](DEVLOG.md), latest entry): reuses `Sound.DefaultHit` entirely (no dedicated audio at
+  all, not even a borrowed family like Limon/Stheno get); every numeric constant across
+  `Bosses/CubeGod.cs`/`CubeOverseer.cs`/`CubeDefender.cs`/`CubeBlaster.cs` (HP/Defense/PointValue,
+  shotgun damage/pellet-count/cooldown, phase-flash thresholds, Overseer/minion respawn intervals)
+  is a first-pass scale-down from RotMG's own multiplayer numbers, not derived from real balance
+  testing — needs an actual playthrough to confirm the shotgun volleys are dodgeable, the "cube
+  system" escort density feels right, and the fight reads as tougher than Stheno without being
+  unfair. The second-boss extension pattern predicted in this item (its own `XyzBoss : Boss`
+  subclass, nothing moved into the shared `Boss` base beyond what turned out genuinely common —
+  just `Name`/`Description`/`SpawnLoot()`/`DrawHealthBars()`) held up as designed, now proven a
+  third time by Cube God.
+- **Remove the test-only boss portals in the Nexus.** `States/NexusState.cs`'s `portalList` has
+  three `// TEMP`-commented shortcut portals: `Portal.Destination.BossRealm` at
+  `Player.Instance.Position + (-150, -100)`, `Portal.Destination.SthenoBossRealm` at
+  `+ (-150, +100)`, and `Portal.Destination.CubeGodBossRealm` at `+ (-150, +300)`, added purely so
   each boss arena could be reached directly for testing without needing to find and kill a
-  SpriteGod/BigSnake first. The user said the first one should come out "at some point" — remove
-  both portal list entries (and their `bossTestPortalPos`/`sthenoTestPortalPos` variables) once
-  both boss fights are done being tested; the real access paths (SpriteGod/BigSnake → dropped
-  portal) stay as-is.
+  SpriteGod/BigSnake/Cube first. The user said the first one should come out "at some point" —
+  remove all three portal list entries (and their `bossTestPortalPos`/`sthenoTestPortalPos`/
+  `cubeTestPortalPos` variables) once all three boss fights are done being tested; the real access
+  paths (SpriteGod/BigSnake/Cube → dropped portal) stay as-is.
 - **Multiple rooms/floors** instead of one open world area — locked doors needing a key drop, a
   portal to the next floor.
 - **What Fame should unlock — remaining pieces.** Class unlocks (see

@@ -1209,6 +1209,47 @@ namespace Realm
             return enemy;
         }
 
+        // Trigger enemy for the third boss, Cube God (see Bosses/CubeGod.cs)
+        // — same "plain Enemy factory, portalDropOnDeath set" shape as
+        // CreateSpriteGod/CreateBigSnake above, not biome-restricted (the
+        // real fight's own lore is "hordes of sentient squares" left behind
+        // everywhere, unlike CreateSpriteGod's Sprite-forest theming, so no
+        // Beach exclusion either — see EnemySpawner.cs's own independent
+        // roll for this). No dedicated art exists for the "cube system" —
+        // drawn as a plain tinted square via Art.HealthBar, same as every
+        // other entity in this family (see CubeGod.cs's own comment).
+        public static Enemy CreateCube(Vector2 position)
+        {
+            var enemy = new Enemy(Art.HealthBar, position)
+            {
+                health = 40,
+                healthMax = 40,
+                Defense = 1,
+                PointValue = 90,
+                portalDropOnDeath = Portal.Destination.CubeGodBossRealm,
+                drawScale = 24f,
+                Radius = 12f,
+                tint = Color.LightGray,
+
+                // Generic non-Beach pool, same shape as CreateBigSnake's own
+                // DropWeights — no StatPotion, gear/ability items all still
+                // reachable, just not the sole outcome.
+                DropWeights = new()
+                {
+                    [ItemSpawner.LootCategory.Weapon] = 1f,
+                    [ItemSpawner.LootCategory.Armor] = 1f,
+                    [ItemSpawner.LootCategory.Ring] = 0.5f,
+                    [ItemSpawner.LootCategory.AbilityItem] = 0.5f,
+                    [ItemSpawner.LootCategory.HealthManaPotion] = 1f,
+                },
+            };
+
+            enemy.AddBehaviour(enemy.MoveRandomly());
+            enemy.AddAttackBehaviour(enemy.ShootIfInRange(range: 6f * 32f, damage: 6, projectileSpeed: 3f));
+
+            return enemy;
+        }
+
         #endregion
     }
 }

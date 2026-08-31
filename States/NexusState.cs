@@ -43,8 +43,8 @@ namespace Realm.States
 
             // TEMP: direct shortcuts into the boss arenas for testing, so
             // they don't have to be reached by finding and killing a
-            // SpriteGod/BigSnake every time. Remove once both boss fights
-            // have been tested.
+            // SpriteGod/BigSnake/Cube every time. Remove once all three boss
+            // fights have been tested.
             var bossTestPortalPos = new Vector2(
                 Player.Instance.Position.X - 150,
                 Player.Instance.Position.Y - 100
@@ -55,6 +55,11 @@ namespace Realm.States
                 Player.Instance.Position.Y + 100
             );
 
+            var cubeTestPortalPos = new Vector2(
+                Player.Instance.Position.X - 150,
+                Player.Instance.Position.Y + 300
+            );
+
             portalList =
             [
                 new Portal(),
@@ -62,6 +67,7 @@ namespace Realm.States
                 new Portal(bankPortalPos, Portal.Destination.Bank),
                 new Portal(bossTestPortalPos, Portal.Destination.BossRealm),
                 new Portal(sthenoTestPortalPos, Portal.Destination.SthenoBossRealm),
+                new Portal(cubeTestPortalPos, Portal.Destination.CubeGodBossRealm),
             ];
 
             // So Overlay's minimap can show these regardless of which state

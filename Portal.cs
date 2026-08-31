@@ -68,6 +68,18 @@ namespace Realm
                 () => Art.SnakePitPortal
             );
 
+            // Dropped by the new "Cube" trigger enemy on death (see
+            // Enemy.CreateCube()) — same shape as BossRealm/SthenoBossRealm
+            // above, carrying the third boss. Reuses the plain default
+            // portal swirl (getPortalArt) rather than a bespoke skin — only
+            // Limon/Stheno got their own unique portal art so far.
+            public static readonly Destination CubeGodBossRealm = new BossDestination(
+                "Cube God",
+                "The Third Dimension",
+                position => new CubeGod(position),
+                () => Art.Portal
+            );
+
             // The boss arena's own exit portal. No other portal currently
             // routes to Nexus — every other Nexus-bound path goes straight
             // through StateManager.Nexus() rather than a world portal.
