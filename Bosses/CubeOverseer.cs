@@ -61,7 +61,7 @@ namespace Realm.Bosses
             health = 1500;
             healthMax = 1500;
             Defense = 0;
-            PointValue = 0;
+            PointValue = 15;
             DropsLoot = false;
 
             AddBehaviour(MoveTethered(wanderDistance: WanderDistance, speed: WanderSpeed));
@@ -114,6 +114,7 @@ namespace Realm.Bosses
                                 {
                                     Damage = OrangeMagicDamage,
                                     duration = OrangeMagicDuration,
+                                    Shape = CollisionShape.Rectangle,
                                 }
                             );
                         }
@@ -129,6 +130,7 @@ namespace Realm.Bosses
                                 {
                                     Damage = FireBoltDamage,
                                     duration = FireBoltDuration,
+                                    Shape = CollisionShape.Rectangle,
                                 }
                             );
                     }
@@ -162,7 +164,9 @@ namespace Realm.Bosses
                 {
                     if (defenderCooldownRemaining <= 0)
                     {
-                        EntityManager.Add(new CubeDefender(this, Position + rand.NextVector2(0f, 40f)));
+                        EntityManager.Add(
+                            new CubeDefender(this, Position + rand.NextVector2(0f, 40f))
+                        );
                         defenderCooldownRemaining = MinionRespawnIntervalFrames;
                     }
                     else
@@ -179,7 +183,9 @@ namespace Realm.Bosses
                 {
                     if (blasterCooldownRemaining <= 0)
                     {
-                        EntityManager.Add(new CubeBlaster(this, Position + rand.NextVector2(0f, 40f)));
+                        EntityManager.Add(
+                            new CubeBlaster(this, Position + rand.NextVector2(0f, 40f))
+                        );
                         blasterCooldownRemaining = MinionRespawnIntervalFrames;
                     }
                     else

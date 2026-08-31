@@ -47,7 +47,7 @@ namespace Realm.Bosses
             health = 500;
             healthMax = 500;
             Defense = 0;
-            PointValue = 0;
+            PointValue = 5;
             DropsLoot = false;
 
             AddBehaviour(
@@ -107,6 +107,7 @@ namespace Realm.Bosses
                             {
                                 Damage = WavyDamage,
                                 duration = WavyDuration,
+                                Shape = CollisionShape.Rectangle,
                             }
                         );
                     }

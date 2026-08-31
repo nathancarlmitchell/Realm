@@ -770,6 +770,14 @@ namespace Realm
 
             Health = HealthMax;
             Mana = ManaMax;
+
+            // Sets Level directly rather than going through LevelUp(), which
+            // is the only place HasReachedLevel20 normally gets flipped —
+            // without this, F4 left a save-visible inconsistency (Level 20,
+            // multi-million ExperienceTotal, but HasReachedLevel20 still
+            // false) that a real character reaching 20 through play never
+            // hits, since LevelUp() always sets both together.
+            HasReachedLevel20 = true;
         }
 
         // Debug/testing only (F4 in Input.cs) — sets ExperienceTotal (and

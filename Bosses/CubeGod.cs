@@ -74,10 +74,10 @@ namespace Realm.Bosses
             Description =
                 "Cube + Godlike powers = Cube God. Happens to be three dimensional. Not a square.";
 
-            health = 14000;
-            healthMax = 14000;
-            Defense = 24;
-            PointValue = 4500;
+            health = 45000;
+            healthMax = 45000;
+            Defense = 40;
+            PointValue = 25000;
 
             // No dedicated Cube God audio exists yet — placeholder, same
             // status as Limon/Stheno's own reused-family audio (see
@@ -174,6 +174,8 @@ namespace Realm.Bosses
                     {
                         Damage = damage,
                         duration = duration,
+                        Shape = CollisionShape.Rectangle,
+                        image = Art.BlueMagic,
                     }
                 );
             }
@@ -199,6 +201,7 @@ namespace Realm.Bosses
                             )
                             {
                                 Damage = EnrageBurstDamage,
+                                Shape = CollisionShape.Rectangle,
                             }
                         );
                     }
@@ -256,7 +259,9 @@ namespace Realm.Bosses
                 {
                     if (cooldownRemaining <= 0)
                     {
-                        EntityManager.Add(new CubeOverseer(this, Position + rand.NextVector2(0f, 80f)));
+                        EntityManager.Add(
+                            new CubeOverseer(this, Position + rand.NextVector2(0f, 80f))
+                        );
                         cooldownRemaining = OverseerRespawnIntervalFrames;
                     }
                     else
