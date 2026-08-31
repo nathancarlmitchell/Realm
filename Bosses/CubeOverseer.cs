@@ -24,8 +24,8 @@ namespace Realm.Bosses
         // point (MoveTethered's default anchor), not tracking Cube God as
         // he drifts — same "only wanders in place" shape as
         // ScorpionQueen's own wander.
-        private const float WanderDistance = 60f;
-        private const float WanderSpeed = 0.05f;
+        private const float WanderDistance = 60f * 5;
+        private const float WanderSpeed = 0.1f;
 
         // Speed/range converted from the wiki's own tiles/sec and tiles
         // values (32px/tile, 60 ticks/sec) — real numbers, not guesses.
@@ -43,18 +43,41 @@ namespace Realm.Bosses
         private const float FireBoltSpeed = 8f * 32f / 60f; // 8 tiles/sec
         private const int FireBoltDuration = 150; // 20-tile range / speed
 
-        private const int TargetDefenderCount = 2;
-        private const int TargetBlasterCount = 2;
+        private const int TargetDefenderCount = 3;
+        private const int TargetBlasterCount = 3;
         private const int MinionRespawnIntervalFrames = 450;
+
+        // Nearest still-alive Overseer to `position`, or null if none exist
+        // — used by CubeDefender/CubeBlaster to re-home the instant their
+        // own Owner dies (see the boss page's own tips: "the protecting
+        // Cubes will search for a new Overseer... or stand almost still"
+        // if none exist, which a null return naturally leaves as a no-op
+        // for both callers).
+        public static CubeOverseer FindNearest(Vector2 position)
+        {
+            CubeOverseer nearest = null;
+            float nearestDistSq = float.MaxValue;
+            foreach (var overseer in EntityManager.OfEnemyType<CubeOverseer>())
+            {
+                if (overseer.IsExpired)
+                    continue;
+
+                float distSq = Vector2.DistanceSquared(overseer.Position, position);
+                if (distSq < nearestDistSq)
+                {
+                    nearestDistSq = distSq;
+                    nearest = overseer;
+                }
+            }
+
+            return nearest;
+        }
 
         // `owner` isn't stored/used for movement (see WanderDistance's own
         // comment — Overseer wanders in place, not tracking Cube God) but
         // stays a required parameter so CubeGod's own spawn calls stay
         // typed to a real CubeGod, matching every other escort constructor
-        // in this codebase (e.g. LittleScorpion(ScorpionQueen owner, ...)),
-        // and leaves room for a future "search for a new Overseer when
-        // mine dies" behavior (see the boss page's own tips) without
-        // another signature change.
+        // in this codebase (e.g. LittleScorpion(ScorpionQueen owner, ...)).
         public CubeOverseer(CubeGod owner, Vector2 position)
             : base(Art.CubeOverseer, position)
         {
@@ -63,6 +86,9 @@ namespace Realm.Bosses
             Defense = 0;
             PointValue = 15;
             DropsLoot = false;
+
+            drawScale = 1.25f;
+            Radius = image.Width * drawScale / 2;
 
             AddBehaviour(MoveTethered(wanderDistance: WanderDistance, speed: WanderSpeed));
             AddBehaviour(MaintainMinions());

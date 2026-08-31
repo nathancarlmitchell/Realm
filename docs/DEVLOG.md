@@ -7138,3 +7138,41 @@ date/time for those individually; don't treat their grouping as meaning they all
      25000-`PointValue` enemy (Cube God's own real scale) gains the full 25000. All three passed.
      Reverted the temp code (`git diff --stat Game1.cs` clean), ran a final clean build + plain
      boot-check, and confirmed all twelve real save files were byte-identical to a pre-test backup.
+
+261. **Cube Defender/Cube Blaster now re-home to the nearest surviving Overseer when their own dies,
+     and both got real, distinct movement patterns**, per direct request.
+     `EntityManager.cs` gained `OfEnemyType<T>()` — `CountWhere<T>()` only returns a count, not
+     enough when a caller (re-homing) needs the actual objects to compare. `Bosses/CubeOverseer.cs`
+     gained a static `FindNearest(Vector2 position)` built on top of it, returning the nearest
+     still-alive Overseer or `null` if none exist — matches the boss page's own tips ("when their
+     Overseer dies, the protecting Cubes will search for a new Overseer... or stand almost still" if
+     none exist, which a `null` return naturally leaves as a no-op for both callers).
+     `Owner` widened from `{ get; }` to `{ get; private set; }` on both `CubeDefender`/`CubeBlaster`,
+     each gaining a `MaintainOwner()` coroutine (`AddBehaviour`) that re-homes to
+     `CubeOverseer.FindNearest()` the instant `Owner == null || Owner.IsExpired`.
+     `CubeBlaster` movement replaced entirely: `OrbitOwner()` re-derives `Position` from the
+     Overseer's own live position every frame (same technique `SthenoPet.Orbit()` already
+     established), at a per-instance-randomized 2-3 tile (64-96px) `baseOrbitRadius`, with a smooth
+     sine-based "twinkle"-style wobble (the same modulation technique `SwirlParticle` already uses
+     for its own sparkle look, applied here to radius and angular speed instead of scale/alpha) for
+     "slight variations in speed," a small independent per-tick random offset for "jitter," and a
+     periodically randomly-timed sign flip on the orbit direction for "occasionally switching
+     rotation directions." Replaces the plain `MoveTethered(anchor: owner)` guess from entry 259.
+     `CubeDefender` movement also replaced entirely: `ErraticDash()` — a short, strong one-shot
+     `Velocity` impulse toward or away from the player (coin-flip each cycle) every 20-50 frames,
+     relying on `Enemy.Update()`'s own built-in `Velocity *= 0.8` decay to carry each impulse out and
+     settle it back down, reading as a "jump" rather than a sustained drift. Movement is now purely
+     player-relative rather than tethered to the Overseer at all, per the request's own wording
+     ("jumping forward and backward from the player").
+     Verified via a temporary `Game1.StartGame()` test (three manually-constructed `CubeOverseer`s,
+     explicitly registered via `EntityManager.Add()` — caught and fixed a real test-setup mistake
+     along the way: `FindNearest()` only sees entities actually added to `EntityManager`, not merely
+     constructed, so the first attempt's re-homing checks all failed until this was fixed): (1) a
+     `CubeDefender` correctly starts owned by Overseer A, and re-homes to Overseer B (the only
+     survivor) once A is killed; (2) a `CubeBlaster` orbits within roughly 50-110px of its live
+     Overseer over 300 ticks (confirming both the radius range and that it's actually moving, not
+     static) and re-homes the same way once its own Overseer dies; (3) a `CubeDefender`'s erratic
+     dash produces nonzero `Velocity` and an actually-changed `Position` over 200 ticks. All three
+     passed. Reverted the temp code (`git diff --stat Game1.cs` clean), ran a final clean build +
+     plain boot-check, and confirmed all twelve real save files were byte-identical to a pre-test
+     backup.

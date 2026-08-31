@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using Realm;
@@ -7,21 +8,46 @@ namespace Realm.Bosses
 {
     // The other of Cube Overseer's two escort types (see
     // CubeOverseer.MaintainMinions()) — https://www.realmeye.com/wiki/cube-blaster.
-    // Real stats/attacks this time, replacing entry 257's first-pass guess
-    // (a single straight `ShootIfInRange` shot — this page didn't exist to
-    // check yet). Two independent attacks per the wiki's own combat table:
-    // a slow-inflicting "star" shot and a wavy shot, each needing its own
-    // cooldown field (same reasoning as CubeGod's own two-volley
-    // ShotgunVolleys() — a shared cooldown can only serve one attack).
-    // Movement tethers to its own Overseer, same reasoning as
-    // CubeDefender's own comment. Same continuously-replenished
-    // PointValue/DropsLoot convention as CubeDefender.
+    // Real attacks from the wiki's own combat table. Movement is a
+    // deliberate departure from this class's own entry-259 guess
+    // (tethering near its Overseer via MoveTethered) — per direct request,
+    // it now orbits its Overseer at ~2-3 tiles, with a smoothly-wobbling
+    // radius/speed and an occasional direction flip. Re-derives Position
+    // from the Overseer's own live position every frame, same technique
+    // SthenoPet.Orbit() already established; the wobble is the same
+    // sine-based "twinkle" modulation SwirlParticle already uses for its
+    // own sparkle look, applied here to radius and angular speed instead
+    // of scale/alpha. Same continuously-replenished PointValue/DropsLoot
+    // convention as CubeDefender.
     class CubeBlaster : Enemy
     {
-        public CubeOverseer Owner { get; }
+        private static readonly Random rand = new();
 
-        private const float WanderDistance = 100f;
-        private const float WanderSpeed = 0.1f;
+        public CubeOverseer Owner { get; private set; }
+
+        // "Rotate around its parent at about 2-3 tiles distance, with
+        // slight variations in speed and jitter, occasionally switching
+        // rotation directions" — baseOrbitRadius randomized once per
+        // instance within that 2-3 tile range (64-96px); a slow sine
+        // wobble layered on top of both radius and angular speed for
+        // continuous "variation" (re-randomizing either one independently
+        // every tick would read as noise, not a smooth variation); a
+        // separate small random per-tick position offset for "jitter"; and
+        // a periodic, randomly-timed sign flip on the orbit direction.
+        private readonly float baseOrbitRadius;
+        private float orbitAngle;
+        private float orbitDirection;
+        private float radiusWobblePhase;
+        private float speedWobblePhase;
+        private int directionSwitchCooldownRemaining;
+        private const float OrbitRadiusJitterAmplitude = 8f;
+        private const float RadiusWobbleSpeed = 0.05f; // radians/tick
+        private const float BaseAngularSpeed = 0.03f; // radians/tick
+        private const float SpeedWobbleAmplitude = 0.4f; // +/-40% of base
+        private const float SpeedWobbleSpeed = 0.02f; // radians/tick
+        private const float PositionJitterMagnitude = 2f; // px, per tick
+        private const int MinDirectionSwitchFrames = 180; // 3s
+        private const int MaxDirectionSwitchFrames = 420; // 7s
 
         // Speed/range converted from the wiki's own tiles/sec and tiles
         // values (32px/tile, 60 ticks/sec) — real numbers, not guesses. No
@@ -50,11 +76,77 @@ namespace Realm.Bosses
             PointValue = 5;
             DropsLoot = false;
 
-            AddBehaviour(
-                MoveTethered(wanderDistance: WanderDistance, speed: WanderSpeed, anchor: owner)
+            baseOrbitRadius = rand.NextFloat(64f, 96f); // 2-3 tiles
+            orbitAngle = rand.NextFloat(0f, MathHelper.TwoPi);
+            orbitDirection = rand.Next(2) == 0 ? 1f : -1f;
+            radiusWobblePhase = rand.NextFloat(0f, MathHelper.TwoPi);
+            speedWobblePhase = rand.NextFloat(0f, MathHelper.TwoPi);
+            directionSwitchCooldownRemaining = rand.Next(
+                MinDirectionSwitchFrames,
+                MaxDirectionSwitchFrames
             );
+
+            AddBehaviour(MaintainOwner());
+            AddBehaviour(OrbitOwner());
             AddAttackBehaviour(StarAttack());
             AddAttackBehaviour(WavyAttack());
+        }
+
+        // Re-homes to the nearest still-alive Overseer the instant its own
+        // dies — per direct request, matching the boss page's own tips
+        // ("when their Overseer dies, the protecting Cubes will search for
+        // a new Overseer... or stand almost still" if none exist, which
+        // OrbitOwner() below leaves as a no-op — nothing to orbit).
+        private IEnumerable<int> MaintainOwner()
+        {
+            while (true)
+            {
+                if (Owner == null || Owner.IsExpired)
+                {
+                    var nearest = CubeOverseer.FindNearest(Position);
+                    if (nearest != null)
+                        Owner = nearest;
+                }
+
+                yield return 0;
+            }
+        }
+
+        private IEnumerable<int> OrbitOwner()
+        {
+            while (true)
+            {
+                if (Owner != null && !Owner.IsExpired)
+                {
+                    if (directionSwitchCooldownRemaining <= 0)
+                    {
+                        orbitDirection = -orbitDirection;
+                        directionSwitchCooldownRemaining = rand.Next(
+                            MinDirectionSwitchFrames,
+                            MaxDirectionSwitchFrames
+                        );
+                    }
+                    else
+                    {
+                        directionSwitchCooldownRemaining--;
+                    }
+
+                    speedWobblePhase += SpeedWobbleSpeed;
+                    float speedMultiplier = 1f + SpeedWobbleAmplitude * (float)Math.Sin(speedWobblePhase);
+                    orbitAngle = MathHelper.WrapAngle(
+                        orbitAngle + orbitDirection * BaseAngularSpeed * speedMultiplier
+                    );
+
+                    radiusWobblePhase += RadiusWobbleSpeed;
+                    float radius =
+                        baseOrbitRadius + OrbitRadiusJitterAmplitude * (float)Math.Sin(radiusWobblePhase);
+
+                    Vector2 jitter = rand.NextVector2(0f, PositionJitterMagnitude);
+                    Position = Owner.Position + Extensions.FromPolar(orbitAngle, radius) + jitter;
+                }
+
+                yield return 0;
+            }
         }
 
         // "A star projectile that inflicts Slow" — Player.Slow() via

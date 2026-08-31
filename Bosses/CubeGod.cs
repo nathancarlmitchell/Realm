@@ -54,7 +54,7 @@ namespace Realm.Bosses
         // stuns enemies today, so it isn't modeled as a flag nothing reads.
         private const float SecondFlashThreshold = 2f / 3f;
         private const float ThirdFlashThreshold = 1f / 3f;
-        private const int PhaseInvulnFrames = 60;
+        private const int PhaseInvulnFrames = 60 * 7;
         private bool secondFlashTriggered = false;
         private bool thirdFlashTriggered = false;
 
@@ -64,7 +64,7 @@ namespace Realm.Bosses
         private const int EnrageBurstDamage = 50;
         private const float EnrageBurstSpeed = 4f * 32f / 60f;
 
-        private const int TargetOverseerCount = 3;
+        private const int TargetOverseerCount = 5;
         private const int OverseerRespawnIntervalFrames = 600;
 
         public CubeGod(Vector2 position)
@@ -202,6 +202,7 @@ namespace Realm.Bosses
                             {
                                 Damage = EnrageBurstDamage,
                                 Shape = CollisionShape.Rectangle,
+                                image = Art.BlueMagic,
                             }
                         );
                     }
@@ -221,7 +222,7 @@ namespace Realm.Bosses
                 if (!secondFlashTriggered && HealthFraction <= SecondFlashThreshold)
                 {
                     secondFlashTriggered = true;
-                    FlashRed();
+                    FlashRed(blinkCount: PhaseInvulnFrames / 60);
                     Invulnerable = true;
                     for (int i = 0; i < PhaseInvulnFrames; i++)
                         yield return 0;
@@ -230,7 +231,7 @@ namespace Realm.Bosses
                 else if (!thirdFlashTriggered && HealthFraction <= ThirdFlashThreshold)
                 {
                     thirdFlashTriggered = true;
-                    FlashRed();
+                    FlashRed(blinkCount: PhaseInvulnFrames / 60);
                     Invulnerable = true;
                     AddAttackBehaviour(EnrageBurst());
                     for (int i = 0; i < PhaseInvulnFrames; i++)

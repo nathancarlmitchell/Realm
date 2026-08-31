@@ -47,6 +47,14 @@ namespace Realm
         public static int CountWhere<T>(Func<T, bool> predicate)
             where T : Enemy => enemies.OfType<T>().Count(predicate);
 
+        // Actual live instances of type T, e.g. "find the nearest
+        // CubeOverseer to re-home an orphaned CubeDefender/CubeBlaster to"
+        // (see CubeOverseer.FindNearest()) — CountWhere() above only
+        // returns a count, not enough when a caller needs to inspect or
+        // compare the actual objects themselves.
+        public static IEnumerable<T> OfEnemyType<T>()
+            where T : Enemy => enemies.OfType<T>();
+
         // Direct AoE damage to every live enemy within radius of center —
         // e.g. Priest's Tome Nova (Priest.cs), which explodes on the
         // cursor rather than firing a directional projectile. Bypasses the
