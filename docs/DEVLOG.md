@@ -7062,3 +7062,57 @@ date/time for those individually; don't treat their grouping as meaning they all
      (`git diff --stat Game1.cs` clean — including a stray leftover `using Realm.Bosses;` caught on a
      second look), ran a final clean build + plain boot-check (confirmed the new portal asset builds
      too), and confirmed all twelve real save files were byte-identical to a pre-test backup.
+
+259. **Cube God's minions rebuilt from their own wiki pages** (realmeye.com/wiki/cube-overseer,
+     /cube-defender, /cube-blaster) — entry 257's first-pass guesses for all three were built going
+     only off the boss page's own tips text before these pages were checked, and turned out wrong in
+     a real way for Overseer specifically: the boss page's tips read as "Overseer doesn't fight
+     directly," but its own dedicated page says otherwise.
+     `Bosses/CubeOverseer.cs`: HP 800→1500, Defense 6→0 (real values). Gained a real attack it didn't
+     have at all before — `ShotgunAttack()`, a shotgun of 5 Orange Magic pellets (damage 60,
+     speed/range converted from the wiki's own 10 tiles/sec + 24 tiles) with a running `shotgunCount`
+     (not a coin flip) making "every second shotgun is closely followed by a single Fire Bolt"
+     (damage 100, 8 tiles/sec, 20 tiles) exact rather than probabilistic — same bespoke-coroutine-
+     with-its-own-cooldown shape as `CubeGod.ShotgunVolleys()`, needed for the same reason (a shared
+     cooldown field can only serve one attack). Movement changed from tracking Cube God
+     (`MoveTethered(anchor: owner)`) to self-tethered — "wanders around on one spot," not following
+     the boss as he drifts.
+     `Bosses/CubeDefender.cs`: HP 150→1000, Defense 3→0. Attack changed from a straight
+     `ShootIfInRange` shot to a real wavy shot (damage 50, 10 tiles/sec, 24 tiles) — reuses
+     `WavyProjectile`, the same technique `SandDevil.SpinnerAttack()` already established for
+     identical wiki wording ("Wavy shots"). Movement changed from `FollowPlayer()` (chasing across
+     the map) to `MoveTethered(anchor: owner)` (tethered to its own Overseer) — the wiki's own
+     "Behavior" section is blank ("TBA"), but the boss page's tips ("when their Overseer dies, the
+     protecting Cubes will search for a new Overseer... or stand almost still") only make sense if
+     Defenders normally cluster around one rather than chasing the player independently.
+     `Bosses/CubeBlaster.cs`: HP 100→500, Defense 1→0. Gained a second attack: `StarAttack()`, a
+     slow-inflicting "star" shot (damage 10 + `SlowsOnHit`, 6 tiles/sec, 16.2 tiles — same
+     `SlowsOnHit` mechanism `SthenoPet.TrailOrbs()` already uses) alongside its own wavy shot
+     (damage 40, 10 tiles/sec, 24 tiles) — two independent bespoke coroutines with their own cooldown
+     fields, same reasoning as Overseer's two-part attack. Movement changed to
+     `MoveTethered(anchor: owner)`, same reasoning as Defender.
+     All three keep `PointValue = 0`/`DropsLoot = false` despite the wiki's own real EXP values (15/
+     10/5) — a deliberate engine-side choice already established for continuously-replenished escorts
+     (`SthenoPet`/`SthenoSwarm`'s own convention), not something the wiki's real-game numbers should
+     override.
+     New art wired in for the three new/changed attacks — the 5 previously-unwired projectile files
+     from entry 258 turn out to be exactly what these attacks needed: `Art.OrangeMagic`/`FireBolt`
+     (Overseer's shotgun), `Art.GreenStar` (Blaster's slow star), and `Art.CyanMagic`/`YellowMagic`
+     (Defender's/Blaster's own wavy shots respectively — picked by matching each sprite's own
+     dominant color to Defender's blue/cyan palette and Blaster's yellow/orange palette, since
+     neither wiki page names a color for its wavy shot). New `Content.mgcb` blocks for all 5 files
+     (none existed yet), new `Art.cs` properties/loads.
+     Verified via a temporary `Game1.StartGame()` test (isolated throwaway `Player.Instance`
+     positioned to match the test entities, so `Enemy.Update()`'s on-screen attack gate actually
+     passes — restored after; reflected only `int`/`bool`/`List<T>` fields this time, per entry 258's
+     access-violation writeup, never a `Texture2D`-typed one): (1) all 5 art assets load; (2) a real
+     `CubeOverseer` has the correct HP/Defense and its shotgun fires exactly 5 Orange Magic on the
+     1st shotgun (no Fire Bolt), 10 total + exactly 1 Fire Bolt after the 2nd (caught and fixed a real
+     off-by-one in the test itself along the way — a cooldown reset to C takes C+1 more `Update()`
+     calls to fire again, not C, since the cooldown check runs before that call's own decrement, the
+     same shape as the already-known 60-frame spawn-fade-in off-by-one); (3) a standalone
+     `CubeDefender` has the correct HP/Defense and fires a `WavyProjectile` with the right damage;
+     (4) a standalone `CubeBlaster` has the correct HP/Defense and fires both its slow star
+     (`SlowsOnHit`) and its wavy shot. All four passed. Reverted the temp code (`git diff --stat
+     Game1.cs` clean), ran a final clean build + plain boot-check, and confirmed all twelve real save
+     files were byte-identical to a pre-test backup.

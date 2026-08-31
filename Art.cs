@@ -34,6 +34,11 @@ namespace Realm
         public static Texture2D CubeDefender { get; private set; }
         public static Texture2D CubeBlaster { get; private set; }
         public static Texture2D BlueMagic { get; private set; }
+        public static Texture2D OrangeMagic { get; private set; }
+        public static Texture2D FireBolt { get; private set; }
+        public static Texture2D GreenStar { get; private set; }
+        public static Texture2D CyanMagic { get; private set; }
+        public static Texture2D YellowMagic { get; private set; }
         public static Texture2D SwordSlash { get; private set; }
         public static Texture2D RedFire { get; private set; }
         public static Texture2D PurpleMagic { get; private set; }
@@ -318,6 +323,11 @@ namespace Realm
             CubeDefender = content.Load<Texture2D>("Enemies/Cube God/Cube Defender");
             CubeBlaster = content.Load<Texture2D>("Enemies/Cube God/Cube Blaster");
             BlueMagic = content.Load<Texture2D>("Projectiles/blue_magic");
+            OrangeMagic = content.Load<Texture2D>("Projectiles/Orange Magic");
+            FireBolt = content.Load<Texture2D>("Projectiles/Fire Bolt");
+            GreenStar = content.Load<Texture2D>("Projectiles/Green Star");
+            CyanMagic = content.Load<Texture2D>("Projectiles/Cyan Magic");
+            YellowMagic = content.Load<Texture2D>("Projectiles/Yellow Magic");
             SwordSlash = content.Load<Texture2D>("Projectiles/sword_slash");
             RedFire = content.Load<Texture2D>("Projectiles/red_fire");
             PurpleMagic = content.Load<Texture2D>("Projectiles/purple_magic");

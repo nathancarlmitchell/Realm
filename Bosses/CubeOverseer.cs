@@ -2,42 +2,71 @@ using System;
 using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using Realm;
+using Realm.Projectiles;
 
 namespace Realm.Bosses
 {
-    // Cube God's own escort — doesn't fight directly, matching the wiki's
-    // own framing ("Overseer" spawns Cube Defender/Cube Blaster rather than
-    // attacking itself). Replenished by CubeGod.MaintainOverseers(), and in
-    // turn maintains its own small cluster of minions via MaintainMinions()
-    // below — the "cube system" the real fight scatters across the arena.
+    // Cube God's own escort (https://www.realmeye.com/wiki/cube-overseer).
+    // Real stats/attack this time, replacing entry 257's first-pass guess
+    // (which — before this page was checked — assumed Overseer didn't
+    // fight at all, going only off the boss page's own tips text). It does
+    // fight: "wanders around on one spot... shooting a shotgun of 5 Orange
+    // Magic projectiles towards the nearest player, every second shotgun is
+    // closely followed by a single Fire Bolt." Replenished by
+    // CubeGod.MaintainOverseers(), and in turn maintains its own small
+    // cluster of minions via MaintainMinions() below — the "cube system"
+    // the real fight scatters across the arena.
     class CubeOverseer : Enemy
     {
         private static readonly Random rand = new();
 
-        // Orbits/wanders near the live Cube God rather than a fixed point —
-        // MoveTethered's own anchor parameter already tracks another
-        // Enemy's live Position every frame, no custom orbit method needed
-        // (contrast SthenoPet.Orbit(), written before anchor existed).
-        private const float WanderDistance = 150f;
-        private const float WanderSpeed = 0.1f;
+        // "Wanders around on one spot" — self-tethered to its own spawn
+        // point (MoveTethered's default anchor), not tracking Cube God as
+        // he drifts — same "only wanders in place" shape as
+        // ScorpionQueen's own wander.
+        private const float WanderDistance = 60f;
+        private const float WanderSpeed = 0.05f;
+
+        // Speed/range converted from the wiki's own tiles/sec and tiles
+        // values (32px/tile, 60 ticks/sec) — real numbers, not guesses.
+        // No explicit cadence given for "every second shotgun" beyond the
+        // ordering itself — ShotgunCooldown is a first-pass tunable.
+        private int shotgunCooldownRemaining = 0;
+        private const int ShotgunCooldown = 80;
+        private int shotgunCount = 0;
+        private const int OrangeMagicPelletCount = 5;
+        private const int OrangeMagicDamage = 60;
+        private const float OrangeMagicSpread = 0.3f; // total fan width, radians
+        private const float OrangeMagicSpeed = 10f * 32f / 60f; // 10 tiles/sec
+        private const int OrangeMagicDuration = 144; // 24-tile range / speed
+        private const int FireBoltDamage = 100;
+        private const float FireBoltSpeed = 8f * 32f / 60f; // 8 tiles/sec
+        private const int FireBoltDuration = 150; // 20-tile range / speed
 
         private const int TargetDefenderCount = 2;
         private const int TargetBlasterCount = 2;
         private const int MinionRespawnIntervalFrames = 450;
 
+        // `owner` isn't stored/used for movement (see WanderDistance's own
+        // comment — Overseer wanders in place, not tracking Cube God) but
+        // stays a required parameter so CubeGod's own spawn calls stay
+        // typed to a real CubeGod, matching every other escort constructor
+        // in this codebase (e.g. LittleScorpion(ScorpionQueen owner, ...)),
+        // and leaves room for a future "search for a new Overseer when
+        // mine dies" behavior (see the boss page's own tips) without
+        // another signature change.
         public CubeOverseer(CubeGod owner, Vector2 position)
             : base(Art.CubeOverseer, position)
         {
-            health = 800;
-            healthMax = 800;
-            Defense = 6;
+            health = 1500;
+            healthMax = 1500;
+            Defense = 0;
             PointValue = 0;
             DropsLoot = false;
 
-            AddBehaviour(
-                MoveTethered(wanderDistance: WanderDistance, speed: WanderSpeed, anchor: owner)
-            );
+            AddBehaviour(MoveTethered(wanderDistance: WanderDistance, speed: WanderSpeed));
             AddBehaviour(MaintainMinions());
+            AddAttackBehaviour(ShotgunAttack());
 
             // Spawns its full Defender/Blaster complement immediately, per
             // direct request ("several of the minions spawn instantly in
@@ -50,6 +79,66 @@ namespace Realm.Bosses
                 EntityManager.Add(new CubeDefender(this, Position + rand.NextVector2(0f, 40f)));
             for (int i = 0; i < TargetBlasterCount; i++)
                 EntityManager.Add(new CubeBlaster(this, Position + rand.NextVector2(0f, 40f)));
+        }
+
+        // "Shooting a shotgun of 5 Orange Magic projectiles towards the
+        // nearest player, every second shotgun is closely followed by a
+        // single Fire Bolt" — a running shotgunCount (not a coin flip)
+        // makes that "every second" literal rather than probabilistic.
+        private IEnumerable<int> ShotgunAttack()
+        {
+            while (true)
+            {
+                if (!Invulnerable && shotgunCooldownRemaining <= 0)
+                {
+                    Vector2 aim = Player.Instance.Position - Position;
+                    if (aim.LengthSquared() > 0)
+                    {
+                        shotgunCooldownRemaining = ShotgunCooldown;
+                        float aimAngle = aim.ToAngle();
+
+                        float start = aimAngle - OrangeMagicSpread / 2f;
+                        float step =
+                            OrangeMagicPelletCount > 1
+                                ? OrangeMagicSpread / (OrangeMagicPelletCount - 1)
+                                : 0f;
+                        for (int i = 0; i < OrangeMagicPelletCount; i++)
+                        {
+                            float angle = start + i * step;
+                            EntityManager.Add(
+                                new EnemyProjectile(
+                                    Position,
+                                    Extensions.FromPolar(angle, OrangeMagicSpeed),
+                                    Art.OrangeMagic
+                                )
+                                {
+                                    Damage = OrangeMagicDamage,
+                                    duration = OrangeMagicDuration,
+                                }
+                            );
+                        }
+
+                        shotgunCount++;
+                        if (shotgunCount % 2 == 0)
+                            EntityManager.Add(
+                                new EnemyProjectile(
+                                    Position,
+                                    Extensions.FromPolar(aimAngle, FireBoltSpeed),
+                                    Art.FireBolt
+                                )
+                                {
+                                    Damage = FireBoltDamage,
+                                    duration = FireBoltDuration,
+                                }
+                            );
+                    }
+                }
+
+                if (shotgunCooldownRemaining > 0)
+                    shotgunCooldownRemaining--;
+
+                yield return 0;
+            }
         }
 
         // Tops this Overseer's own Defender/Blaster counts back up,
