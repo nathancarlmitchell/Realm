@@ -68,6 +68,13 @@ namespace Realm
             "BowData.json"
         );
 
+        // Swords live in their own catalog file, separate from
+        // WeaponData.json — see Data/SwordData.cs and LoadSwordData() below.
+        private static string swordDataLocation = Path.Combine(
+            AppContext.BaseDirectory,
+            "SwordData.json"
+        );
+
         private static string armorDataLocation = Path.Combine(
             AppContext.BaseDirectory,
             "ArmorData.json"
@@ -637,6 +644,75 @@ namespace Realm
             }
 
             return bows;
+        }
+
+        // Swords live in their own catalog file (see Data/SwordData.cs)
+        // rather than WeaponData.json — the only WeaponData-backed type
+        // with a per-tier XpBonusPercent (see Equipment.XpBonusPercent),
+        // matching the real wiki's "XP Bonus" column
+        // (https://www.realmeye.com/wiki/swords), which no other type
+        // currently needs. Returns plain Weapon.WeaponType.Sword entries,
+        // meant to be merged into the same combined Weapons list as
+        // LoadWeaponData()'s/LoadBowData()'s results (see Game1.StartGame())
+        // — Weapon.LoadWeapon() and Player.cs's EquipHighestTierWeapon()
+        // both search that one list by Name, unaware of which file an
+        // entry originally came from.
+        public static List<Weapon> LoadSwordData()
+        {
+            List<SwordData> swordData = [];
+            List<Weapon> swords = [];
+
+            try
+            {
+                using (StreamReader r = new(swordDataLocation))
+                {
+                    Debug.WriteLine(swordDataLocation + ": reading data.");
+                    string json = r.ReadToEnd();
+                    Debug.WriteLine(json);
+                    try
+                    {
+                        swordData = JsonSerializer.Deserialize<List<SwordData>>(json);
+                    }
+                    catch (System.Text.Json.JsonException)
+                    {
+                        Debug.WriteLine($"Error loading sword data: {json}");
+                    }
+                }
+
+                for (int i = 0; i < swordData.Count; i++)
+                {
+                    Texture2D swordTexture = Game1.Instance.Content.Load<Texture2D>(
+                        swordData[i].ImageName
+                    );
+
+                    Texture2D projectileTexture = Game1.Instance.Content.Load<Texture2D>(
+                        swordData[i].ProjectileImageName
+                    );
+
+                    swords.Add(
+                        new Weapon(swordTexture, projectileTexture)
+                        {
+                            Type = Weapon.WeaponType.Sword,
+                            Name = swordData[i].Name,
+                            Description = swordData[i].Description,
+                            Tier = swordData[i].Tier,
+                            DamageMin = swordData[i].DamageMin,
+                            DamageMax = swordData[i].DamageMax,
+                            ProjectileMagnitude = swordData[i].ProjectileMagnitude,
+                            ProjectileDuration = swordData[i].ProjectileDuration,
+                            XpBonusPercent = swordData[i].XpBonusPercent,
+                            ImageName = swordData[i].ImageName,
+                            ProjectileImageName = swordData[i].ProjectileImageName,
+                        }
+                    );
+                }
+            }
+            catch (System.IO.FileNotFoundException)
+            {
+                Debug.WriteLine(swordDataLocation + ": file not found.");
+            }
+
+            return swords;
         }
 
         public static List<Armor> LoadArmorData()

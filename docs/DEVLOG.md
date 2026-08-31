@@ -7212,3 +7212,26 @@ date/time for those individually; don't treat their grouping as meaning they all
      Verified with a plain `dotnet build` (0 errors, same two pre-existing/external warnings) — the
      Content Pipeline rebuilt cleanly with no complaint about the two newly-referenced projectile
      assets. No scripted test, per the standing no-test-unless-asked convention.
+
+264. **Swords split into their own `Data/SwordData.json` catalog, with real per-tier XP Bonus values
+     added.** Same reasoning `Data/BowData.cs`'s own doc comment already gives for why Bows got split
+     out of `WeaponData.json` — swords needed a field (`XpBonusPercent`, the existing
+     `Equipment.XpBonusPercent`/`Player.EquipmentXpBonusPercent` mechanism `TomeData.cs` already
+     uses) that no other `WeaponData`-backed type needs, so a parallel `SwordData.cs`/
+     `Util.LoadSwordData()` pair was added instead of growing `WeaponData`'s shared shape. The 15
+     sword entries moved out of `WeaponData.json` into the new `Data/SwordData.json` verbatim (same
+     names/damage/projectile values from entry 263), losing their now-redundant `"Type": 2` field
+     (hardcoded to `Weapon.WeaponType.Sword` by the loader instead, same as `LoadBowData()` already
+     does for Bow) and gaining `XpBonusPercent` from the wiki's own "XP Bonus" column, in tier order:
+     0% for tiers 0-6, then 1% per tier from 7 up to 8% at tier 14 — matching the real "Golden Sword"
+     through "Sword of Majesty" progression exactly. `Game1.StartGame()` now calls
+     `Weapons.AddRange(Util.LoadSwordData())` alongside the existing `LoadBowData()` call, merging
+     into the same combined list `Weapon.LoadWeapon()`/`EquipHighestTierWeapon()` already search by
+     Name — real save files referencing swords by name (e.g. `PlayerData_Knight.json`'s equipped
+     "Iron Sword") resolve unaffected, since the names didn't change. `Data/SwordData.json` needed no
+     `.csproj` edit — `<None Update="Data\*.json">`'s existing wildcard glob picked it up
+     automatically (confirmed post-build: `bin/Debug/net8.0-windows/SwordData.json` exists alongside
+     `WeaponData.json`).
+     Verified with a plain `dotnet build` (0 errors, same two pre-existing/external warnings) plus a
+     manual check that the new JSON file landed in the build output. No scripted test, per the
+     standing no-test-unless-asked convention.
