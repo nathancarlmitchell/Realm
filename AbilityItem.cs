@@ -26,7 +26,7 @@ namespace Realm
         }
 
         // Tier 0 ability item matching the current class (Spell/Quiver/
-        // Shield/Tome) — shown greyed out in an empty slot as a placeholder,
+        // Shield/Tome/Cloak) — shown greyed out in an empty slot as a placeholder,
         // same idea as Weapon.PlaceholderImage. Unlike Weapon/Armor there's
         // no shared "Type" enum to filter on (each class's ability item is
         // its own C# subclass), so this checks each catalog's Tier 0 entry
@@ -38,6 +38,7 @@ namespace Realm
                 .Concat(Game1.Instance.Quivers)
                 .Concat(Game1.Instance.Shields)
                 .Concat(Game1.Instance.Tomes)
+                .Concat(Game1.Instance.Cloaks)
                 .FirstOrDefault(item => item.Tier == 0 && Player.Instance.CanEquipAbilityItem(item))
                 ?.image;
 
@@ -89,7 +90,16 @@ namespace Realm
 
         private string AbilitySummary()
         {
-            List<string> parts = [$"Damage: {MinDamage} - {MaxDamage}"];
+            // Cloak (Rogue) has no direct damage roll of its own — its
+            // ability is Invisibility, not a projectile burst — so
+            // MinDamage/MaxDamage stay 0/0 for every tier. Showing
+            // "Damage: 0 - 0" there would be misleading, so the line is
+            // skipped rather than always shown like every other AbilityItem
+            // subtype (Spell/Quiver/Shield/Tome), none of which hit this
+            // case.
+            List<string> parts = [];
+            if (MinDamage != 0 || MaxDamage != 0)
+                parts.Add($"Damage: {MinDamage} - {MaxDamage}");
 
             if (ManaCost != 0)
                 parts.Add($"{ManaCost} Mana Cost");
@@ -110,17 +120,23 @@ namespace Realm
             var lines = HeaderLines();
             lines.AddRange(BonusComparisonLines(equipped));
 
-            float mineDamage = (MinDamage + MaxDamage) / 2f;
-            float theirDamage = (equippedItem.MinDamage + equippedItem.MaxDamage) / 2f;
-            lines.Add(
-                (
-                    $"Damage: {MinDamage} - {MaxDamage}",
-                    !CanEquipByCurrentClass ? TooltipComparison.WrongClass
-                        : mineDamage > theirDamage ? TooltipComparison.Better
-                        : mineDamage < theirDamage ? TooltipComparison.Worse
-                        : TooltipComparison.Same
-                )
-            );
+            // Same "Cloak has no damage roll" reasoning as AbilitySummary()
+            // above — skip the comparison line entirely rather than show a
+            // meaningless "Damage: 0 - 0 (Same)" for every Cloak tier.
+            if (MinDamage != 0 || MaxDamage != 0 || equippedItem.MinDamage != 0 || equippedItem.MaxDamage != 0)
+            {
+                float mineDamage = (MinDamage + MaxDamage) / 2f;
+                float theirDamage = (equippedItem.MinDamage + equippedItem.MaxDamage) / 2f;
+                lines.Add(
+                    (
+                        $"Damage: {MinDamage} - {MaxDamage}",
+                        !CanEquipByCurrentClass ? TooltipComparison.WrongClass
+                            : mineDamage > theirDamage ? TooltipComparison.Better
+                            : mineDamage < theirDamage ? TooltipComparison.Worse
+                            : TooltipComparison.Same
+                    )
+                );
+            }
 
             if (ManaCost != 0)
             {

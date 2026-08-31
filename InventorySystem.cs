@@ -803,9 +803,9 @@ namespace Realm
                 return true;
             }
 
-            // Swap AbilityItem — only a Spell, Quiver, Shield, or Tome can
-            // be equipped this way; which factory to call depends on the
-            // dragged item's concrete type (all four are valid drag
+            // Swap AbilityItem — only a Spell, Quiver, Shield, Tome, or Cloak
+            // can be equipped this way; which factory to call depends on the
+            // dragged item's concrete type (all five are valid drag
             // sources onto this one slot).
             if (
                 draggedRecord.InventoryItem is AbilityItem
@@ -819,6 +819,7 @@ namespace Realm
                     Quiver q => Quiver.LoadQuiver(q.Name),
                     Shield sh => Shield.LoadShield(sh.Name),
                     Tome t => Tome.LoadTome(t.Name),
+                    Cloak c => Cloak.LoadCloak(c.Name),
                     _ => null,
                 };
 

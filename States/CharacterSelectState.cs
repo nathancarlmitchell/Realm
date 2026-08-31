@@ -59,20 +59,30 @@ namespace Realm.States
 
         // Unlock chain: Wizard starts unlocked; each class after it needs
         // this many stars earned in the class immediately to its left below
-        // (Wizard -> Priest -> Archer -> Knight) — see Slot.PreviousClass.
+        // (Wizard -> Priest -> Archer -> Knight -> Rogue) — see
+        // Slot.PreviousClass. Rogue is appended to the end of this same
+        // stars-based chain rather than the real game's own "unlocked by
+        // reaching level 5 on Archer" condition — this project already
+        // fully replaced real RotMG's per-class unlock conditions with this
+        // one uniform mechanism for every existing class, so a second,
+        // different unlock-condition type (checking Level on a specific
+        // save file) solely for Rogue would be inconsistent with that
+        // already-established design, not more faithful to it.
         private const int RequiredStarsPerUnlock = 3;
 
         private const int PortraitSize = 80;
         private const int BorderPadding = 14;
 
-        // Four evenly-spaced slots (Wizard/Priest/Archer/Knight, left to
-        // right — the same order as the unlock chain above), 150px between
-        // adjacent centers — replaces the old 3-slot layout's single
-        // SlotOffsetFromCenter (195, dead-center + two flanking slots), which
-        // has no even-count equivalent. Outer is the two end slots'
-        // distance from center, Inner the two middle slots'.
-        private const int SlotOffsetFromCenterOuter = 225;
-        private const int SlotOffsetFromCenterInner = 75;
+        // Five evenly-spaced slots (Wizard/Priest/Archer/Knight/Rogue, left
+        // to right — the same order as the unlock chain above), 150px
+        // between adjacent centers — extends the old 4-slot layout's
+        // Outer/Inner pair (225/75) with a third offset (Mid) for the new
+        // dead-center 5th slot, keeping the same 150px spacing. Outer is the
+        // two end slots' distance from center, Inner the two slots flanking
+        // center, Mid (0) the new center slot itself.
+        private const int SlotOffsetFromCenterOuter = 300;
+        private const int SlotOffsetFromCenterInner = 150;
+        private const int SlotOffsetFromCenterMid = 0;
         private const int PreviewGap = 10;
 
         private readonly List<Slot> slots;
@@ -139,7 +149,7 @@ namespace Realm.States
                     PlayerClass = Player.Class.Archer,
                     Portrait = Art.Archer,
                     PortraitRect = new Rectangle(
-                        CenterWidth + SlotOffsetFromCenterInner - PortraitSize / 2,
+                        CenterWidth + SlotOffsetFromCenterMid - PortraitSize / 2,
                         y,
                         PortraitSize,
                         PortraitSize
@@ -151,12 +161,24 @@ namespace Realm.States
                     PlayerClass = Player.Class.Knight,
                     Portrait = Art.Knight,
                     PortraitRect = new Rectangle(
-                        CenterWidth + SlotOffsetFromCenterOuter - PortraitSize / 2,
+                        CenterWidth + SlotOffsetFromCenterInner - PortraitSize / 2,
                         y,
                         PortraitSize,
                         PortraitSize
                     ),
                     PreviousClass = Player.Class.Archer,
+                },
+                new Slot
+                {
+                    PlayerClass = Player.Class.Rogue,
+                    Portrait = Art.Rogue,
+                    PortraitRect = new Rectangle(
+                        CenterWidth + SlotOffsetFromCenterOuter - PortraitSize / 2,
+                        y,
+                        PortraitSize,
+                        PortraitSize
+                    ),
+                    PreviousClass = Player.Class.Knight,
                 },
             ];
 
@@ -717,6 +739,7 @@ namespace Realm.States
                 Player.Class.Archer => BuildPreviewText(1, 150, 100, 17, 0, 22, 15, 5, 15),
                 Player.Class.Knight => BuildPreviewText(1, 200, 50, 17, 10, 13, 15, 10, 8),
                 Player.Class.Priest => BuildPreviewText(1, 100, 150, 26, 0, 22, 23, 5, 17),
+                Player.Class.Rogue => BuildPreviewText(1, 150, 100, 16, 0, 26, 17, 5, 15),
                 _ => string.Empty,
             };
         }

@@ -7235,3 +7235,122 @@ date/time for those individually; don't treat their grouping as meaning they all
      Verified with a plain `dotnet build` (0 errors, same two pre-existing/external warnings) plus a
      manual check that the new JSON file landed in the build output. No scripted test, per the
      standing no-test-unless-asked convention.
+
+265. **5th playable class: Rogue**, using Daggers (weapon) and Cloaks (ability item) — real stats
+     from https://www.realmeye.com/wiki/rogue, https://www.realmeye.com/wiki/rogue-class-guide,
+     https://www.realmeye.com/wiki/daggers, https://www.realmeye.com/wiki/cloaks (fetched via `curl`
+     with a browser user-agent + a real HTML table parser, since both WebFetch and browser-navigate
+     failed against realmeye directly). `CharacterClasses/Rogue.cs` mirrors `Wizard.cs`'s shape
+     exactly: real base/growth-per-level/cap stats (every "Average at 20" value on the wiki's own
+     stats table reconciles exactly against `base + 19*rate`, confirming the rates used), `WeaponType
+     = Dagger` (new 5th `Weapon.WeaponType`), `ArmorType = Leather` — **not** a new armor type; the
+     Rogue Class Guide states outright "the armor of choice for the Rogue is the Leather Armor," so
+     Rogue starts with the exact same "Leather Vest" Archer already has, exactly mirroring how Priest
+     reuses Wizard's "Cloth Robe." Starter gear: "Rusty Dagger" (T0 dagger) / "Leather Vest" /
+     "Tattered Cloak" (T0 cloak).
+
+     **Daggers** — 15 tiers, `Data/DaggerData.cs`/`.json` + `Util.LoadDaggerData()`, mirroring
+     `SwordData`/`LoadSwordData()`'s own split-out-of-WeaponData reasoning (a per-tier
+     `XpBonusPercent` the wiki's own "XP Bonus" column needs, that plain `WeaponData` has no field
+     for). Real damage/XP-bonus per tier from the wiki; "projectile speed of 14 tiles per second,
+     range of 5.6 tiles" converted via this codebase's usual 32px/tile, 60-ticks/sec arithmetic to
+     `ProjectileMagnitude = 7.466667`, `ProjectileDuration = 24`. New fictional tier names (same
+     invented-fantasy-name convention as every other Weapon/Sword/Armor entry — never the real
+     trademarked RotMG names), using `Projectiles/Green Bolt` (newly wired) as the default art and
+     handing the two flagship top tiers the two still-unused staged bolts from the Sword work —
+     tier 13 "Dagger of Creeping Darkness" → `Darkness Bolt`, tier 14 "Dagger of the Void Reaver" →
+     `Purple Bolt` — same treatment Sword's own top two tiers got with Splendor/Majesty Bolt.
+     `Weapon.Shoot()` needed **no new branch** for Dagger — it already falls through the same generic
+     single-shot path Sword uses with zero special-casing.
+
+     **Cloaks** — Rogue's ability item (`Cloak.cs`, `Data/CloakData.cs`/`.json` (8 tiers) +
+     `Util.LoadCloakData()`, mirroring `Tome.cs`/`LoadTomeData()`'s shape exactly). Confirmed via the
+     wiki's own nav tree that "Cloaks" sits under Ability Items (alongside Quivers/Spells/Tomes/
+     Shields), not Armor. Real per-tier `ManaCost`/`InvisibilityDurationFrames` (300 = 5s for all 8)
+     and stat bonuses (`SpeedBonus`/`DexterityBonus`/`MaxHealthBonus`/`MaxManaBonus`, all pre-existing
+     generic `Equipment` fields — no new fields needed there) straight from the wiki's main table;
+     the wiki's own "Comparative Cloaks Table" gives Lethal Strike's exact damage formula per tier
+     (flat + percent, each with a further bonus scaling off Wisdom past 34) — stored on `CloakData`/
+     `Cloak` and computed by `Cloak.ComputeLethalStrikeBonus()`. New fictional tier names again (e.g.
+     "Tattered Cloak" T0 through "Cloak of the Void Walker" T7). `AbilityItem.AbilitySummary()`/
+     `ComparisonLines()` now skip the "Damage: X - Y" tooltip line when both are 0 — Cloak has no
+     direct damage roll of its own (unlike Spell/Quiver/Shield/Tome), so it would otherwise show a
+     misleading "Damage: 0 - 0"; no existing item tier ever hits this case, so no other tooltip
+     changed.
+
+     **Invisibility + Lethal Strike mechanic** — "The rogue's cloak will grant the user invisibility,
+     preventing most enemies from seeing (and targeting) the player... Shooting removes the
+     invisibility granting Lethal Strike, which adds flat + percent bonus damage and extra
+     projectiles... shooting only cancels Invisibility after 1 second." Implemented as generic
+     `Player` infrastructure (harmless no-ops for the 4 existing classes) rather than a Rogue-only
+     override, since two pieces were already sitting there unused: `Player.Opacity` (multiplied into
+     the sprite's draw color, but nothing ever changed it before now — perfect for a "semi-
+     transparent while invisible" visual with zero new rendering code) and `Entity`'s
+     `DebuffType`/`ApplyDebuff`/`HasDebuff` system (inherited by `Player`, already ticked/drawn every
+     frame, but never actually applied to the player before now — `DebuffType.LethalStrike` +
+     `Art.LethalStrike` mapped to the staged `leathal strike.png` icon is its first real use).
+     `Player.EnterInvisibility()` starts a timer + dims `Opacity`; `Shoot()` cancels it and applies
+     `LethalStrike` once `invisibilityElapsedFrames >= 60` (the wiki's own "1 second grace" rule).
+     `Weapon.Shoot()` checks `HasDebuff(LethalStrike)` right alongside its existing
+     `HasDebuff(Unstable)` check (same precedent for a generic Player-state check living there) to
+     add `Cloak.ComputeLethalStrikeBonus()`'s bonus onto the shot's damage and fire one extra
+     projectile — drawn with the previously-unused `Black Magic.png` instead of the weapon's own art,
+     so it reads as a distinct bonus shot. The real game's Lethal Strike percent scales off the
+     *target's* Defense; here it scales off the shot's own rolled damage instead, since the
+     projectile architecture doesn't know which enemy it'll hit at fire-time (Defense is only known
+     at collision) — flagging this substitution directly rather than modeling something the engine
+     can't actually resolve yet.
+
+     Real un-targetability (not a damage-reduction stand-in) was a direct ask: confirmed
+     `hitPlayer.Hit(...)` in `EntityManager.cs` is the *only* call site for player damage in the whole
+     codebase, and it only ever fires from an enemy *projectile* colliding with the player — so
+     gating attacks centrally was enough. `Enemy.cs`'s `Update()` already funnels *every* enemy's
+     attack coroutines through one `if` (on-screen + not Stunned) before calling
+     `ApplyAttackBehaviours()` — added `&& !Player.Instance.IsInvisible` there, which silently covers
+     every enemy and boss in the game (`Boss : Enemy`) with one line, no per-file sweep. Chasing got
+     the same treatment at its own single chokepoint, `FollowPlayer()` — the one shared "accelerate
+     toward the player" coroutine reused by every pursuing enemy (Seeker, Brute, Limon, others) — so
+     enemies stop pursuing an invisible player too, without touching ambient/idle movement
+     (`MoveRandomly`/`MoveSnake`/non-player `MoveTethered`) or `FleePlayer()` at all. Already-in-
+     flight projectiles fired before cloaking still land normally (no change to collision code) —
+     which happens to match the wiki's own caveat verbatim: "cloaked rogues are still vulnerable to
+     being hit with any projectile."
+
+     Every other "hardcoded 4-class enumeration" site got a 5th arm, mirroring its existing 4th
+     exactly: `Util.ResetPlayer`, `EraseAllAccountData`, `DetermineLastPlayedClass`,
+     `AnyCharacterHasBeenPlayed`, `LoadOrCreatePlayer`'s ability-item chain (now checking `Cloak`
+     too), `BuildPlayerData` (`Data/PlayerData.cs` gained a `Cloak` field alongside Spell/Quiver/
+     Shield/Tome), `Player.EquipHighestTierAbilityItem`'s switch + concat + Cloak-only field-copy
+     block, `InventorySystem.cs`'s ability-item swap-switch, `AbilityItem.PlaceholderImage`'s
+     `.Concat(...)` chain, `ItemSpawner.cs`'s two `.Concat(...)` chains (weapon drops needed **no**
+     change at all — Dagger already flows through the single shared `Game1.Instance.Weapons` list).
+     `CharacterSelectState.cs` gained a 5th `Slot` (Rogue, `PreviousClass = Knight`) — the unlock
+     chain was extended rather than modeling the real game's "unlocked by reaching level 5 on Archer"
+     condition, since this project already fully replaced real RotMG's per-class unlock conditions
+     with its own uniform stars/`HighScore` system for the other 4 classes, and a second, different
+     kind of unlock condition solely for Rogue would be inconsistent with that, not more faithful to
+     it. The old 4-slot layout math (`SlotOffsetFromCenterOuter`/`Inner`, ±225/±75) extended to 5
+     slots (±300/±150/0) keeping the same 150px between-adjacent spacing.
+
+     Also skipped, both flagged directly rather than silently absent: no explicit ability-cooldown
+     timer (every existing class's `UseAbility()` is purely mana-gated with no per-item cooldown —
+     Cloak stays consistent with that instead of introducing a new subsystem nothing else has), and
+     no Silenced/Quiet debuffs (mentioned on the class guide as dangerous to Rogues, but this engine
+     has no such debuffs on anything for them to interact with).
+
+     Rogue's own hit/death sound (`Rogue_hit.ogg`/`Rogue_death.ogg`) was staged alongside the rest of
+     this class's art but is **not wired in** — this codebase's sound pipeline only supports
+     `SoundEffect` via `.wav` (`WavImporter`/`SoundEffectProcessor`, confirmed against every other
+     class's own `Sounds/Player/*_hit.wav` and the pre-existing orphaned `level_up.mp3`/`no_mana.mp3`,
+     which hit this exact `.ogg`/`.mp3`-vs-`.wav` mismatch before and were simply never wired either).
+     Convert both to `.wav` to give Rogue a real hit/death sound.
+
+     Verified with a plain `dotnet build` (0 errors on a full `--no-incremental` rebuild, same two
+     pre-existing/external warnings) plus one plain minimized boot-check (launched, confirmed
+     genuinely minimized via `IsIconic()`, stayed running 4+ seconds with no crash, stopped) — no
+     scripted `Game1.cs` test, no save-file backup, per the standing no-test-unless-asked convention;
+     this change adds new code paths and a brand-new per-class save file that doesn't exist yet, and
+     never touches existing save data. Flagging directly, not verifiable by script: Rogue's balance
+     numbers are first-pass, ported straight from the real wiki's own numbers the same way every
+     other class/boss's numbers were when first ported this session — not validated through actual
+     play.

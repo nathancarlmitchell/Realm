@@ -422,9 +422,9 @@ namespace Realm
             {
                 // Same "wrong class is possible" spirit as weapon/armor drops
                 // above — not filtered to the player's own class. Spell,
-                // Quiver, Shield, and Tome are separate catalogs (not a
-                // single shared list like Weapons/Armors), so concatenate
-                // all four next-tier results before picking at random.
+                // Quiver, Shield, Tome, and Cloak are separate catalogs (not
+                // a single shared list like Weapons/Armors), so concatenate
+                // all five next-tier results before picking at random.
                 int tier = ResolveDropTier(pointValue, Player.Instance.AbilityItem.Tier, maxTierJump, TierRangeFor(dropTierRanges, LootCategory.AbilityItem));
                 List<AbilityItem> nextTierAbilityItems = Game1
                     .Instance.Spells.Where(x => x.Tier == tier)
@@ -432,6 +432,7 @@ namespace Realm
                     .Concat(Game1.Instance.Quivers.Where(x => x.Tier == tier))
                     .Concat(Game1.Instance.Shields.Where(x => x.Tier == tier))
                     .Concat(Game1.Instance.Tomes.Where(x => x.Tier == tier))
+                    .Concat(Game1.Instance.Cloaks.Where(x => x.Tier == tier))
                     .ToList();
 
                 if (nextTierAbilityItems.Count > 0)
@@ -624,6 +625,7 @@ namespace Realm
                     .Concat(Game1.Instance.Quivers)
                     .Concat(Game1.Instance.Shields)
                     .Concat(Game1.Instance.Tomes)
+                    .Concat(Game1.Instance.Cloaks)
                     .ToList();
                 (int Min, int Max)? abilityItemTierRange = TierRangeFor(dropTierRanges, LootCategory.AbilityItem);
                 List<AbilityItem> nextTierAbilityItems = abilityItemTierRange.HasValue

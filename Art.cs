@@ -77,6 +77,7 @@ namespace Realm
         public static Texture2D Archer { get; private set; }
         public static Texture2D Knight { get; private set; }
         public static Texture2D Priest { get; private set; }
+        public static Texture2D Rogue { get; private set; }
         public static Texture2D ArcherProjectile { get; private set; }
         public static Texture2D ShieldProjectile { get; private set; }
         public static AnimatedTexture Portal { get; private set; }
@@ -229,6 +230,9 @@ namespace Realm
         public static Texture2D Slowed { get; private set; }
         public static Texture2D Healing { get; private set; }
         public static Texture2D Unstable { get; private set; }
+        public static Texture2D LethalStrike { get; private set; }
+        public static Texture2D GreenBolt { get; private set; }
+        public static Texture2D BlackMagic { get; private set; }
 
         public static void Load(ContentManager content)
         {
@@ -306,6 +310,7 @@ namespace Realm
             ShieldProjectile = content.Load<Texture2D>("Projectiles/shield");
 
             Priest = content.Load<Texture2D>("Classes/priest");
+            Rogue = content.Load<Texture2D>("Classes/Rogue");
 
             Inventory = content.Load<Texture2D>("inventory");
 
@@ -386,6 +391,9 @@ namespace Realm
             Slowed = content.Load<Texture2D>("StatusEffects/slowed");
             Healing = content.Load<Texture2D>("StatusEffects/healing");
             Unstable = content.Load<Texture2D>("StatusEffects/unstable");
+            LethalStrike = content.Load<Texture2D>("StatusEffects/leathal strike");
+            GreenBolt = content.Load<Texture2D>("Projectiles/Green Bolt");
+            BlackMagic = content.Load<Texture2D>("Projectiles/Black Magic");
 
             // Fonts.
             HudFont = content.Load<SpriteFont>("Fonts/HudFont");

@@ -548,6 +548,7 @@ namespace Realm
             Archer, // 1
             Knight, // 2
             Priest, // 3
+            Rogue, // 4
         }
 
         public static Class PlayerClass { get; set; }
@@ -639,6 +640,21 @@ namespace Realm
                 return;
             }
 
+            // Rogue's Cloak: "shooting only cancels Invisibility if done
+            // after 1 second of being Invisible has passed." Written
+            // generically rather than a Rogue-only override — a harmless
+            // no-op for every other class, since invisibilityFramesRemaining
+            // is only ever nonzero after EnterInvisibility() (Rogue-only).
+            if (
+                invisibilityFramesRemaining > 0
+                && invisibilityElapsedFrames >= InvisibilityShootGraceFrames
+            )
+            {
+                invisibilityFramesRemaining = 0;
+                Opacity = 1f;
+                ApplyDebuff(DebuffType.LethalStrike, LethalStrikeDurationFrames);
+            }
+
             Weapon.Shoot();
         }
 
@@ -713,6 +729,37 @@ namespace Realm
         public void Destabilize(int durationFrames = 180)
         {
             ApplyDebuff(DebuffType.Unstable, durationFrames);
+        }
+
+        // Rogue's Cloak (see CharacterClasses/Rogue.cs/Cloak.cs) — written
+        // generically here rather than as a Rogue-only override, since it's
+        // a harmless no-op for every other class (invisibilityFramesRemaining
+        // stays 0 unless this is called). Real un-targetability lives in
+        // Enemy.cs (IsInvisible gates both ApplyAttackBehaviours() and
+        // FollowPlayer()); this method only owns the timer and the visual
+        // (Opacity, already-existing but previously unused — see
+        // Player.Draw()).
+        private int invisibilityFramesRemaining;
+        private int invisibilityElapsedFrames;
+
+        // "Shooting only cancels Invisibility if done after 1 second of
+        // being Invisible has passed" — see Shoot() below.
+        private const int InvisibilityShootGraceFrames = 60;
+
+        // "Temporarily" per the wiki, with no concrete number given — a flat
+        // engine constant rather than new per-Cloak-tier data (see the
+        // plan's simplification #3).
+        private const int LethalStrikeDurationFrames = 120;
+
+        private const float InvisibleOpacity = 0.35f;
+
+        public bool IsInvisible => invisibilityFramesRemaining > 0;
+
+        public void EnterInvisibility(int durationFrames)
+        {
+            invisibilityFramesRemaining = durationFrames;
+            invisibilityElapsedFrames = 0;
+            Opacity = InvisibleOpacity;
         }
 
         public void EquipWeapon(Weapon newWeapon)
@@ -908,6 +955,7 @@ namespace Realm
                 .Concat(Game1.Instance.Quivers)
                 .Concat(Game1.Instance.Shields)
                 .Concat(Game1.Instance.Tomes)
+                .Concat(Game1.Instance.Cloaks)
                 .Where(item => CanEquipAbilityItem(item))
                 .OrderByDescending(item => item.Tier)
                 .FirstOrDefault();
@@ -921,6 +969,7 @@ namespace Realm
                 Quiver => new Quiver(texture),
                 Shield => new Shield(texture),
                 Tome => new Tome(texture),
+                Cloak => new Cloak(texture),
                 _ => null,
             };
             if (copy == null)
@@ -971,6 +1020,17 @@ namespace Realm
                 tomeCopy.HealAmount = tomeBest.HealAmount;
                 tomeCopy.HealingAmountPerSecond = tomeBest.HealingAmountPerSecond;
                 tomeCopy.HealingDurationSeconds = tomeBest.HealingDurationSeconds;
+            }
+
+            // Cloak-only — its Invisibility/Lethal Strike fields. See
+            // Data/CloakData.cs.
+            if (copy is Cloak cloakCopy && best is Cloak cloakBest)
+            {
+                cloakCopy.InvisibilityDurationFrames = cloakBest.InvisibilityDurationFrames;
+                cloakCopy.BaseFlatDamage = cloakBest.BaseFlatDamage;
+                cloakCopy.FlatDamagePerWisOver34 = cloakBest.FlatDamagePerWisOver34;
+                cloakCopy.BasePercentDamage = cloakBest.BasePercentDamage;
+                cloakCopy.PercentDamagePerWisOver34 = cloakBest.PercentDamagePerWisOver34;
             }
 
             EquipAbilityItem(copy);
@@ -1554,10 +1614,24 @@ namespace Realm
             // Slam), expiring whichever hit zero this frame.
             UpdateTemporaryBonuses();
 
-            // Tick down any active debuffs (Entity's general system — nothing
-            // currently applies one to the player, but this keeps it live for
-            // whenever something does).
+            // Tick down any active debuffs (Entity's general system — Rogue's
+            // Lethal Strike, applied from Shoot() below, is the first thing
+            // that actually uses this on the player).
             UpdateDebuffs();
+
+            // Tick down Invisibility (Rogue's Cloak) — a plain countdown
+            // rather than the ApplyDebuff/DebuffType system above, since
+            // Invisible has no icon to draw (the visual is the sprite's own
+            // Opacity instead — see EnterInvisibility()). invisibilityElapsedFrames
+            // counts up in parallel, for Shoot()'s own "1 second grace" check.
+            if (invisibilityFramesRemaining > 0)
+            {
+                invisibilityElapsedFrames++;
+                if (--invisibilityFramesRemaining <= 0)
+                {
+                    Opacity = 1f;
+                }
+            }
         }
     }
 }

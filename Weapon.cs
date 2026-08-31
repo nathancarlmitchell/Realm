@@ -18,6 +18,7 @@ namespace Realm
             Bow, // 1
             Sword, // 2
             Staff, // 3
+            Dagger, // 4
         }
 
         public WeaponType Type { get; set; }
@@ -153,6 +154,25 @@ namespace Realm
             double damgeModifier = (0.5 + Player.Instance.Attack / 50.0);
             double damage = rand.Next(DamageMin, DamageMax) * damgeModifier;
 
+            // Rogue's Lethal Strike (see Cloak.cs) — a generic Player-state
+            // check living here rather than gated by WeaponType, same
+            // precedent as the Unstable spread check below (only Rogue's
+            // Cloak ever applies this debuff, so it's a no-op for every
+            // other class). Flat + %-of-this-shot's-own-damage bonus, per
+            // the equipped Cloak's own tier — see Cloak.ComputeLethalStrikeBonus's
+            // own comment for why "% of the shot's own damage" replaces the
+            // real game's "% of the target's Defense" here.
+            if (
+                Player.Instance.HasDebuff(Entity.DebuffType.LethalStrike)
+                && Player.Instance.AbilityItem is Cloak lethalStrikeCloak
+            )
+            {
+                damage += lethalStrikeCloak.ComputeLethalStrikeBonus(
+                    (int)damage,
+                    Player.Instance.Wisdom
+                );
+            }
+
             var aim = Input.GetMouseAimDirection();
 
             if (aim.LengthSquared() > 0)
@@ -241,6 +261,28 @@ namespace Realm
                         ExpiresOnHit = expiresOnHit,
                     }
                 );
+
+                // "While having Lethal Strike, you also fire extra
+                // projectiles" — one extra shot at a small angular offset,
+                // reusing this attack's own damage/expiry but drawn with
+                // Black Magic instead of the weapon's own art so it reads
+                // as a distinct bonus shot rather than a duplicate.
+                if (Player.Instance.HasDebuff(Entity.DebuffType.LethalStrike))
+                {
+                    Vector2 lethalStrikeVel = Extensions.FromPolar(
+                        aimAngle + randomSpread + MathHelper.ToRadians(10f),
+                        this.ProjectileMagnitude
+                    );
+
+                    EntityManager.Add(
+                        new Projectile(spawnPosition, lethalStrikeVel)
+                        {
+                            image = Art.BlackMagic,
+                            Damage = (int)damage,
+                            ExpiresOnHit = expiresOnHit,
+                        }
+                    );
+                }
 
                 if (this.Type == WeaponType.Bow)
                 {

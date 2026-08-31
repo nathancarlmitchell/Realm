@@ -102,6 +102,7 @@ namespace Realm
         public List<Quiver> Quivers { get; set; }
         public List<Shield> Shields { get; set; }
         public List<Tome> Tomes { get; set; }
+        public List<Cloak> Cloaks { get; set; }
         public List<BiomeData> Biomes { get; set; }
 
         public Game1()
@@ -155,12 +156,14 @@ namespace Realm
             Weapons = Util.LoadWeaponData();
             Weapons.AddRange(Util.LoadBowData());
             Weapons.AddRange(Util.LoadSwordData());
+            Weapons.AddRange(Util.LoadDaggerData());
             Armors = Util.LoadArmorData();
             Rings = Util.LoadRingData();
             Spells = Util.LoadSpellData();
             Quivers = Util.LoadQuiverData();
             Shields = Util.LoadShieldData();
             Tomes = Util.LoadTomeData();
+            Cloaks = Util.LoadCloakData();
             Biomes = Util.LoadBiomeData();
 
             Util.LoadBankData();
@@ -172,8 +175,8 @@ namespace Realm
             // Must run after LoadOrCreatePlayer(), not alongside the other
             // Load*Data() calls above — ResetPlayer() (called from inside
             // LoadOrCreatePlayer()) constructs a brand new Player.Instance
-            // (Wizard/Archer/Knight), which would silently discard whatever
-            // this set if it ran first.
+            // (Wizard/Archer/Knight/Priest/Rogue), which would silently
+            // discard whatever this set if it ran first.
             Util.LoadGameSettingsData();
 
             EntityManager.Add(Player.Instance);

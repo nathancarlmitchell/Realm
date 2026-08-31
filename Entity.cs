@@ -60,6 +60,7 @@ namespace Realm
             Slow,
             Healing,
             Unstable,
+            LethalStrike,
         }
 
         private readonly Dictionary<DebuffType, int> activeDebuffs = new();
@@ -147,6 +148,7 @@ namespace Realm
                 DebuffType.Slow => Art.Slowed,
                 DebuffType.Healing => Art.Healing,
                 DebuffType.Unstable => Art.Unstable,
+                DebuffType.LethalStrike => Art.LethalStrike,
                 _ => null,
             };
 

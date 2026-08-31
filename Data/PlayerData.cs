@@ -56,6 +56,7 @@ public class PlayerData
     public Quiver Quiver { get; set; }
     public Shield Shield { get; set; }
     public Tome Tome { get; set; }
+    public Cloak Cloak { get; set; }
     public int HealthPotionCharges { get; set; }
     public int ManaPotionCharges { get; set; }
 

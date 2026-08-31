@@ -75,6 +75,21 @@ namespace Realm
             "SwordData.json"
         );
 
+        // Daggers live in their own catalog file, separate from
+        // WeaponData.json — see Data/DaggerData.cs and LoadDaggerData()
+        // below.
+        private static string daggerDataLocation = Path.Combine(
+            AppContext.BaseDirectory,
+            "DaggerData.json"
+        );
+
+        // Rogue's ability item — see Data/CloakData.cs and LoadCloakData()
+        // below.
+        private static string cloakDataLocation = Path.Combine(
+            AppContext.BaseDirectory,
+            "CloakData.json"
+        );
+
         private static string armorDataLocation = Path.Combine(
             AppContext.BaseDirectory,
             "ArmorData.json"
@@ -220,6 +235,7 @@ namespace Realm
                     Player.Class.Archer,
                     Player.Class.Knight,
                     Player.Class.Priest,
+                    Player.Class.Rogue,
                 }
             )
             {
@@ -265,6 +281,7 @@ namespace Realm
                 (Player.Class.Archer, PlayerDataLocation(Player.Class.Archer)),
                 (Player.Class.Knight, PlayerDataLocation(Player.Class.Knight)),
                 (Player.Class.Priest, PlayerDataLocation(Player.Class.Priest)),
+                (Player.Class.Rogue, PlayerDataLocation(Player.Class.Rogue)),
             ];
 
             Player.Class? mostRecent = null;
@@ -298,7 +315,8 @@ namespace Realm
             (PeekPlayerData(Player.Class.Wizard)?.HasBeenPlayed ?? false)
             || (PeekPlayerData(Player.Class.Archer)?.HasBeenPlayed ?? false)
             || (PeekPlayerData(Player.Class.Knight)?.HasBeenPlayed ?? false)
-            || (PeekPlayerData(Player.Class.Priest)?.HasBeenPlayed ?? false);
+            || (PeekPlayerData(Player.Class.Priest)?.HasBeenPlayed ?? false)
+            || (PeekPlayerData(Player.Class.Rogue)?.HasBeenPlayed ?? false);
 
         // Constructs the given class at its base stats, discarding whatever the
         // current Player.Instance is — no save is read or applied.
@@ -319,6 +337,9 @@ namespace Realm
                     break;
                 case Player.Class.Priest:
                     _ = new Priest();
+                    break;
+                case Player.Class.Rogue:
+                    _ = new Rogue();
                     break;
             }
         }
@@ -397,16 +418,16 @@ namespace Realm
                         Player.Instance.EquipRing(new Ring());
                 }
 
-                // Spell/Quiver/Shield/Tome are only populated when actually
-                // equipped (see SavePlayerData's `as Spell`/`as Quiver`/
-                // `as Shield`/`as Tome` — a blank AbilityItem casts to none
-                // of them), so all four being null unambiguously means
-                // "unequipped" — same signal Weapon/Armor/Ring get from a
-                // null Name. Without this else, ResetPlayer's
-                // constructor-equipped default Tier-0 ability item was
-                // never cleared, so it stayed equipped alongside whatever
-                // the player had actually dragged into inventory — the
-                // reported duplicate ability item.
+                // Spell/Quiver/Shield/Tome/Cloak are only populated when
+                // actually equipped (see SavePlayerData's `as Spell`/
+                // `as Quiver`/`as Shield`/`as Tome`/`as Cloak` — a blank
+                // AbilityItem casts to none of them), so all five being null
+                // unambiguously means "unequipped" — same signal Weapon/
+                // Armor/Ring get from a null Name. Without this else,
+                // ResetPlayer's constructor-equipped default Tier-0 ability
+                // item was never cleared, so it stayed equipped alongside
+                // whatever the player had actually dragged into inventory —
+                // the reported duplicate ability item.
                 if (saved.Spell != null && saved.Spell.Name != null)
                     Spell.LoadSpell(saved.Spell.Name);
                 else if (saved.Quiver != null && saved.Quiver.Name != null)
@@ -415,6 +436,8 @@ namespace Realm
                     Shield.LoadShield(saved.Shield.Name);
                 else if (saved.Tome != null && saved.Tome.Name != null)
                     Tome.LoadTome(saved.Tome.Name);
+                else if (saved.Cloak != null && saved.Cloak.Name != null)
+                    Cloak.LoadCloak(saved.Cloak.Name);
                 else
                     Player.Instance.EquipAbilityItem(new AbilityItem());
 
@@ -471,6 +494,7 @@ namespace Realm
                 Quiver = Player.Instance.AbilityItem as Quiver,
                 Shield = Player.Instance.AbilityItem as Shield,
                 Tome = Player.Instance.AbilityItem as Tome,
+                Cloak = Player.Instance.AbilityItem as Cloak,
                 HealthPotionCharges = Player.Instance.Inventory.HealthPotionCharges,
                 ManaPotionCharges = Player.Instance.Inventory.ManaPotionCharges,
                 PotionAttackBonus = Player.Instance.PotionAttackBonus,
@@ -713,6 +737,138 @@ namespace Realm
             }
 
             return swords;
+        }
+
+        // Daggers live in their own catalog file (see Data/DaggerData.cs)
+        // rather than WeaponData.json — same reasoning as LoadSwordData()
+        // above (a per-tier XpBonusPercent no other WeaponData-backed type
+        // needs). Returns plain Weapon.WeaponType.Dagger entries, meant to
+        // be merged into the same combined Weapons list as LoadWeaponData()'s/
+        // LoadBowData()'s/LoadSwordData()'s results (see Game1.StartGame())
+        // — Weapon.LoadWeapon() and Player.cs's EquipHighestTierWeapon() both
+        // search that one list by Name, unaware of which file an entry
+        // originally came from.
+        public static List<Weapon> LoadDaggerData()
+        {
+            List<DaggerData> daggerData = [];
+            List<Weapon> daggers = [];
+
+            try
+            {
+                using (StreamReader r = new(daggerDataLocation))
+                {
+                    Debug.WriteLine(daggerDataLocation + ": reading data.");
+                    string json = r.ReadToEnd();
+                    Debug.WriteLine(json);
+                    try
+                    {
+                        daggerData = JsonSerializer.Deserialize<List<DaggerData>>(json);
+                    }
+                    catch (System.Text.Json.JsonException)
+                    {
+                        Debug.WriteLine($"Error loading dagger data: {json}");
+                    }
+                }
+
+                for (int i = 0; i < daggerData.Count; i++)
+                {
+                    Texture2D daggerTexture = Game1.Instance.Content.Load<Texture2D>(
+                        daggerData[i].ImageName
+                    );
+
+                    Texture2D projectileTexture = Game1.Instance.Content.Load<Texture2D>(
+                        daggerData[i].ProjectileImageName
+                    );
+
+                    daggers.Add(
+                        new Weapon(daggerTexture, projectileTexture)
+                        {
+                            Type = Weapon.WeaponType.Dagger,
+                            Name = daggerData[i].Name,
+                            Description = daggerData[i].Description,
+                            Tier = daggerData[i].Tier,
+                            DamageMin = daggerData[i].DamageMin,
+                            DamageMax = daggerData[i].DamageMax,
+                            ProjectileMagnitude = daggerData[i].ProjectileMagnitude,
+                            ProjectileDuration = daggerData[i].ProjectileDuration,
+                            XpBonusPercent = daggerData[i].XpBonusPercent,
+                            ImageName = daggerData[i].ImageName,
+                            ProjectileImageName = daggerData[i].ProjectileImageName,
+                        }
+                    );
+                }
+            }
+            catch (System.IO.FileNotFoundException)
+            {
+                Debug.WriteLine(daggerDataLocation + ": file not found.");
+            }
+
+            return daggers;
+        }
+
+        // Rogue's ability item, own catalog file (see Data/CloakData.cs) —
+        // same shape as LoadSpellData()/LoadQuiverData()/LoadShieldData()/
+        // LoadTomeData() below.
+        public static List<Cloak> LoadCloakData()
+        {
+            List<CloakData> cloakData = [];
+            List<Cloak> cloaks = [];
+
+            try
+            {
+                using (StreamReader r = new(cloakDataLocation))
+                {
+                    Debug.WriteLine(cloakDataLocation + ": reading data.");
+                    string json = r.ReadToEnd();
+                    Debug.WriteLine(json);
+                    try
+                    {
+                        cloakData = JsonSerializer.Deserialize<List<CloakData>>(json);
+                    }
+                    catch (System.Text.Json.JsonException)
+                    {
+                        Debug.WriteLine($"Error loading cloak data: {json}");
+                    }
+                }
+
+                for (int i = 0; i < cloakData.Count; i++)
+                {
+                    Texture2D cloakTexture = Game1.Instance.Content.Load<Texture2D>(
+                        cloakData[i].ImageName
+                    );
+
+                    cloaks.Add(
+                        new Cloak(cloakTexture)
+                        {
+                            Name = cloakData[i].Name,
+                            Description = cloakData[i].Description,
+                            Tier = cloakData[i].Tier,
+                            MaxHealthBonus = cloakData[i].MaxHealthBonus,
+                            MaxManaBonus = cloakData[i].MaxManaBonus,
+                            AttackBonus = cloakData[i].AttackBonus,
+                            DefenseBonus = cloakData[i].DefenseBonus,
+                            SpeedBonus = cloakData[i].SpeedBonus,
+                            DexterityBonus = cloakData[i].DexterityBonus,
+                            VitalityBonus = cloakData[i].VitalityBonus,
+                            WisdomBonus = cloakData[i].WisdomBonus,
+                            ManaCost = cloakData[i].ManaCost,
+                            ImageName = cloakData[i].ImageName,
+                            XpBonusPercent = cloakData[i].XpBonusPercent,
+                            InvisibilityDurationFrames = cloakData[i].InvisibilityDurationFrames,
+                            BaseFlatDamage = cloakData[i].BaseFlatDamage,
+                            FlatDamagePerWisOver34 = cloakData[i].FlatDamagePerWisOver34,
+                            BasePercentDamage = cloakData[i].BasePercentDamage,
+                            PercentDamagePerWisOver34 = cloakData[i].PercentDamagePerWisOver34,
+                        }
+                    );
+                }
+            }
+            catch (System.IO.FileNotFoundException)
+            {
+                Debug.WriteLine(cloakDataLocation + ": file not found.");
+            }
+
+            return cloaks;
         }
 
         public static List<Armor> LoadArmorData()

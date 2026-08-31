@@ -165,9 +165,14 @@ namespace Realm
 
                 // Attack if on screen, or just slightly off it. Stunned
                 // blocks this (Paralyzed doesn't — it only blocks movement
-                // below).
+                // below). Rogue's Cloak (see Player.IsInvisible) blocks it
+                // too — "many enemies will stop shooting entirely if they
+                // can't see any players" — a single centralized check here
+                // covers every enemy/boss in the game, since every attack
+                // funnels through this one call.
                 if (
                     !HasDebuff(DebuffType.Stunned)
+                    && !Player.Instance.IsInvisible
                     && Game1.GetWorldBounds(1.25f).Contains(Position.ToPoint())
                 )
                 {
@@ -653,7 +658,18 @@ namespace Realm
                 // Brute, Limon) since it's a no-op unless the vector is
                 // already exactly zero.
                 Vector2 toPlayer = Player.Instance.Position - Position;
-                if (toPlayer != Vector2.Zero && toPlayer.LengthSquared() <= AggroRadiusSquared)
+
+                // Rogue's Cloak (see Player.IsInvisible) — "do not follow
+                // the player when invisible." Ambient/idle movement
+                // (MoveRandomly/MoveSnake/MoveTethered to a non-player
+                // anchor) is untouched; only this shared player-chasing
+                // coroutine is gated, so pursuit stops without freezing
+                // unrelated motion.
+                if (
+                    !Player.Instance.IsInvisible
+                    && toPlayer != Vector2.Zero
+                    && toPlayer.LengthSquared() <= AggroRadiusSquared
+                )
                     Velocity += toPlayer.ScaleTo(
                         acceleration * Difficulty.EnemyChaseSpeedMultiplier
                     );
