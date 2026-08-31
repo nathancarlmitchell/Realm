@@ -7176,3 +7176,16 @@ date/time for those individually; don't treat their grouping as meaning they all
      passed. Reverted the temp code (`git diff --stat Game1.cs` clean), ran a final clean build +
      plain boot-check, and confirmed all twelve real save files were byte-identical to a pre-test
      backup.
+
+262. **Cube Blaster no longer teleports when it re-homes to a new Overseer.** The previous entry's
+     `OrbitOwner()` recomputed `Position` from the *new* Owner's location the very next tick after
+     re-homing — a visible snap if the new Overseer was any real distance away. `CubeBlaster.cs` now
+     eases from wherever it actually is toward the freshly-computed orbit target over
+     `RehomeTransitionFrames` (30 ticks, 0.5s) via a plain `Vector2.Lerp`, captured the instant
+     `MaintainOwner()` reassigns `Owner`, rather than jumping there instantly. `CubeDefender` wasn't
+     touched — its movement (`ErraticDash()`) is purely player-relative and never reads `Owner`'s
+     position at all, so re-homing was never able to move it in the first place; there was nothing to
+     fix there.
+     Per direct instruction, no scripted `Game1.cs` test this time — going forward, that step only
+     happens when specifically asked (see the new project note this same instruction prompted).
+     Verified with a plain `dotnet build` (0 errors, same two pre-existing/external warnings) only.

@@ -33,7 +33,7 @@ namespace Realm.Bosses
         // just look like a smooth drift.
         private const int MinDashPauseFrames = 20;
         private const int MaxDashPauseFrames = 50;
-        private const float DashImpulse = 16f;
+        private const float DashImpulse = 8f;
 
         // Speed/range converted from the wiki's own tiles/sec and tiles
         // values (32px/tile, 60 ticks/sec) — real numbers, not guesses. No
@@ -96,7 +96,8 @@ namespace Realm.Bosses
                 Vector2 toPlayer = Player.Instance.Position - Position;
                 if (toPlayer.LengthSquared() > 0)
                 {
-                    Vector2 direction = Vector2.Normalize(toPlayer) * (rand.Next(2) == 0 ? 1f : -1f);
+                    Vector2 direction =
+                        Vector2.Normalize(toPlayer) * (rand.Next(2) == 0 ? 1f : -1f);
                     Velocity += direction * DashImpulse;
                 }
             }

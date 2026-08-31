@@ -49,6 +49,16 @@ namespace Realm.Bosses
         private const int MinDirectionSwitchFrames = 180; // 3s
         private const int MaxDirectionSwitchFrames = 420; // 7s
 
+        // Re-homing to a new (possibly distant) Overseer would otherwise
+        // make the next orbit tick snap Position straight to the new
+        // parent's own orbit point — a visible teleport. Instead, the
+        // moment Owner changes, OrbitOwner() below eases from wherever this
+        // Blaster actually is toward the freshly-computed orbit target over
+        // RehomeTransitionFrames, rather than jumping there instantly.
+        private const int RehomeTransitionFrames = 30; // 0.5s
+        private int rehomeTransitionRemaining = 0;
+        private Vector2 rehomeTransitionStart;
+
         // Speed/range converted from the wiki's own tiles/sec and tiles
         // values (32px/tile, 60 ticks/sec) — real numbers, not guesses. No
         // cadence is given for either shot — the two Cooldown consts below
@@ -105,7 +115,11 @@ namespace Realm.Bosses
                 {
                     var nearest = CubeOverseer.FindNearest(Position);
                     if (nearest != null)
+                    {
+                        rehomeTransitionStart = Position;
+                        rehomeTransitionRemaining = RehomeTransitionFrames;
                         Owner = nearest;
+                    }
                 }
 
                 yield return 0;
@@ -142,7 +156,18 @@ namespace Realm.Bosses
                         baseOrbitRadius + OrbitRadiusJitterAmplitude * (float)Math.Sin(radiusWobblePhase);
 
                     Vector2 jitter = rand.NextVector2(0f, PositionJitterMagnitude);
-                    Position = Owner.Position + Extensions.FromPolar(orbitAngle, radius) + jitter;
+                    Vector2 targetPosition = Owner.Position + Extensions.FromPolar(orbitAngle, radius) + jitter;
+
+                    if (rehomeTransitionRemaining > 0)
+                    {
+                        float t = 1f - (rehomeTransitionRemaining / (float)RehomeTransitionFrames);
+                        Position = Vector2.Lerp(rehomeTransitionStart, targetPosition, t);
+                        rehomeTransitionRemaining--;
+                    }
+                    else
+                    {
+                        Position = targetPosition;
+                    }
                 }
 
                 yield return 0;
