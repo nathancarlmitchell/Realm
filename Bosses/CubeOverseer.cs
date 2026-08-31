@@ -26,7 +26,7 @@ namespace Realm.Bosses
         private const int MinionRespawnIntervalFrames = 450;
 
         public CubeOverseer(CubeGod owner, Vector2 position)
-            : base(Art.HealthBar, position)
+            : base(Art.CubeOverseer, position)
         {
             health = 800;
             healthMax = 800;
@@ -34,14 +34,22 @@ namespace Realm.Bosses
             PointValue = 0;
             DropsLoot = false;
 
-            drawScale = 48f;
-            Radius = 24f;
-            tint = Color.CornflowerBlue;
-
             AddBehaviour(
                 MoveTethered(wanderDistance: WanderDistance, speed: WanderSpeed, anchor: owner)
             );
             AddBehaviour(MaintainMinions());
+
+            // Spawns its full Defender/Blaster complement immediately, per
+            // direct request ("several of the minions spawn instantly in
+            // the fight") — same "instant burst, then MaintainX() only
+            // handles replacements" shape as
+            // ScorpionQueen.MaintainScorpions(). Combined with CubeGod's own
+            // constructor spawning every Overseer instantly too, the whole
+            // "cube system" is present from the moment the fight starts.
+            for (int i = 0; i < TargetDefenderCount; i++)
+                EntityManager.Add(new CubeDefender(this, Position + rand.NextVector2(0f, 40f)));
+            for (int i = 0; i < TargetBlasterCount; i++)
+                EntityManager.Add(new CubeBlaster(this, Position + rand.NextVector2(0f, 40f)));
         }
 
         // Tops this Overseer's own Defender/Blaster counts back up,

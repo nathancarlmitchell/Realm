@@ -29,6 +29,11 @@ namespace Realm
         public static Texture2D SthenoSwarm { get; private set; }
         public static Texture2D SthenoSwarmProjectile { get; private set; }
         public static Texture2D SthenoBladeProjectile { get; private set; }
+        public static Texture2D CubeGod { get; private set; }
+        public static Texture2D CubeOverseer { get; private set; }
+        public static Texture2D CubeDefender { get; private set; }
+        public static Texture2D CubeBlaster { get; private set; }
+        public static Texture2D BlueMagic { get; private set; }
         public static Texture2D SwordSlash { get; private set; }
         public static Texture2D RedFire { get; private set; }
         public static Texture2D PurpleMagic { get; private set; }
@@ -75,6 +80,12 @@ namespace Realm
         // the plain swirl above.
         public static AnimatedTexture SpriteWorldPortal { get; private set; }
         public static AnimatedTexture SnakePitPortal { get; private set; }
+
+        // Cube God's own dungeon portal — a single static frame (like
+        // NexusPortal/BankPortal/RealmPortal below) rather than an
+        // animated strip like SpriteWorldPortal/SnakePitPortal above, since
+        // that's the art actually supplied for it.
+        public static AnimatedTexture ThirdDimensionPortal { get; private set; }
 
         // The boss arena's own exit portal (see
         // Portal.Destination.NexusDestination) — a single static frame, not
@@ -229,6 +240,9 @@ namespace Realm
             SnakePitPortal = new AnimatedTexture(Vector2.Zero, 0f, 1.0f, 0.5f);
             SnakePitPortal.Load(content, "Snake Pit Portal", 7, 8, 5);
 
+            ThirdDimensionPortal = new AnimatedTexture(Vector2.Zero, 0f, 1.0f, 0.5f);
+            ThirdDimensionPortal.Load(content, "Portal to The Third Dimension", 1, 1);
+
             NexusPortal = new AnimatedTexture(Vector2.Zero, 0f, 1.0f, 0.5f);
             NexusPortal.Load(content, "Portal to Nexus", 1, 1);
 
@@ -299,6 +313,11 @@ namespace Realm
             SthenoSwarm = content.Load<Texture2D>("Enemies/Stheno Swarm");
             SthenoSwarmProjectile = content.Load<Texture2D>("Projectiles/Stheno Swarm");
             SthenoBladeProjectile = content.Load<Texture2D>("Projectiles/Stheno Blade");
+            CubeGod = content.Load<Texture2D>("Enemies/Cube God/Cube God");
+            CubeOverseer = content.Load<Texture2D>("Enemies/Cube God/Cube Overseer");
+            CubeDefender = content.Load<Texture2D>("Enemies/Cube God/Cube Defender");
+            CubeBlaster = content.Load<Texture2D>("Enemies/Cube God/Cube Blaster");
+            BlueMagic = content.Load<Texture2D>("Projectiles/blue_magic");
             SwordSlash = content.Load<Texture2D>("Projectiles/sword_slash");
             RedFire = content.Load<Texture2D>("Projectiles/red_fire");
             PurpleMagic = content.Load<Texture2D>("Projectiles/purple_magic");

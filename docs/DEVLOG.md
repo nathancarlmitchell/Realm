@@ -7016,3 +7016,49 @@ date/time for those individually; don't treat their grouping as meaning they all
      save data) were byte-identical to a pre-test backup. Not independently verified: an actual
      in-game walk to the new TEMP portal and a real playthrough of the fight — flagged directly to
      the user, same as every other boss's own first-pass numbers were when first shipped.
+
+258. **Cube God: real art wired in, and several minions now spawn instantly when the fight starts.**
+     User-supplied art for `Bosses/CubeGod.cs`/`CubeOverseer.cs`/`CubeDefender.cs`/`CubeBlaster.cs`
+     (`Content/Enemies/Cube God/*.png`), the Blue Magic projectile (`Content/Projectiles/
+     blue_magic.png`, an `Art.cs` load the user's own earlier mgcb entry was still missing), and a
+     bespoke dungeon portal skin (`Content/Portal to The Third Dimension.png`) — new
+     `Content.mgcb` `#begin`/`#build` blocks for the four enemy sprites (already present for
+     `blue_magic.png`), new `Art.cs` properties/loads for all five, and a new `Art.ThirdDimensionPortal`
+     (single-static-frame `AnimatedTexture`, same `NexusPortal`/`BankPortal`/`RealmPortal` shape,
+     not the 7-frame strip `SpriteWorldPortal`/`SnakePitPortal` use) wired into
+     `Portal.Destination.CubeGodBossRealm`'s `getPortalArt`, replacing the generic default swirl.
+     Each Cube-family class's `base(Art.HealthBar, position)` placeholder + manual `drawScale`/
+     `Radius`/`tint` overrides from entry 257 were removed — `Enemy`'s own base constructor now
+     derives the right `Radius` straight from each real sprite's actual size (96px/49px), and no
+     tint is needed with real distinct art per entity.
+     Also, per direct follow-up: `CubeGod`'s constructor now spawns its full 3-Overseer complement
+     immediately (not gated behind `MaintainOverseers()`'s own 600-frame first cooldown), and each
+     `CubeOverseer`'s constructor does the same for its own 2 `CubeDefender` + 2 `CubeBlaster` —
+     same "instant burst, then MaintainX() only handles replacements" shape
+     `ScorpionQueen.MaintainScorpions()` already established — so the whole "cube system" (1 boss +
+     3 Overseers + 12 minions = 16 entities) is present from tick zero instead of trickling in over
+     the opening ~30 seconds.
+     **A real bug found and fixed along the way, worth recording**: reflecting a `Texture2D`-typed
+     field via `FieldInfo.GetValue()` on a live entity — `imageField.GetValue(cubeGod)`, reading
+     `Entity`'s protected `image` field, the exact pattern several earlier entries this session used
+     freely for other field types (`int`, `bool`, `List<T>`) — reproducibly triggers a native access
+     violation (0xC0000005) in this MonoGame/DesktopGL setup, crashing the whole process with no
+     managed exception or stack trace at all. Bisected down to this exact statement across roughly a
+     dozen boot-check attempts (each ruling out one variable: the new art, the instant-spawn nested
+     construction, `EntityManager.CountWhere<T>()`, reflecting `EntityManager`'s private `entities`
+     list directly) before finally isolating it with a step-by-step flush-after-every-line log.
+     Fixed by never reflecting `image` again — verifying "the right sprite reached the constructor"
+     indirectly instead, via the already-public `Radius` field (`Enemy`'s own constructor derives it
+     as `image.Width / 2f`, so a matching `Radius` proves the right `Texture2D` was actually used).
+     Flagging this as a new hazard for any future scripted test in this codebase: reflecting a
+     `Texture2D`/other `GraphicsResource`-typed field on a live entity is unsafe and should be
+     avoided; reflecting `int`/`bool`/`List<T>`/enum-typed fields (as done throughout this session)
+     remains fine.
+     Verified via a temporary `Game1.StartGame()` test (rewritten from scratch after the crash
+     investigation above): (1) all 5 new art assets load non-null; (2) a real `CubeGod` uses the
+     correct sprite (via the `Radius`-derived check) and spawns exactly 3 `CubeOverseer`s with zero
+     `Update()` calls; (3) a standalone `CubeOverseer` uses the correct sprite and spawns exactly 2
+     `CubeDefender` + 2 `CubeBlaster`, scoped to itself. All three passed. Reverted the temp code
+     (`git diff --stat Game1.cs` clean — including a stray leftover `using Realm.Bosses;` caught on a
+     second look), ran a final clean build + plain boot-check (confirmed the new portal asset builds
+     too), and confirmed all twelve real save files were byte-identical to a pre-test backup.

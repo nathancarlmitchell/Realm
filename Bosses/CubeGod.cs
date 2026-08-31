@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
 using Realm;
 using Realm.Projectiles;
 
@@ -13,14 +14,6 @@ namespace Realm.Bosses
     // split across a whole party) — numbers below are a single-player-scaled
     // first pass, not a 1:1 port, same adaptation Limon/Stheno's own source
     // material already got.
-    //
-    // No dedicated art exists for the "cube system" — every entity in this
-    // family (this boss, CubeOverseer, CubeDefender, CubeBlaster, and the
-    // CreateCube() trigger enemy) draws itself as a plain tinted square via
-    // Art.HealthBar (a runtime-generated 1x1 pixel, the same "stretch into a
-    // shape" primitive Util.DrawFilledCircle/GrenadeProjectile already
-    // reuse) — on-theme rather than a placeholder compromise for something
-    // literally named "Cube."
     class CubeGod : Boss
     {
         private static readonly Random rand = new();
@@ -75,7 +68,7 @@ namespace Realm.Bosses
         private const int OverseerRespawnIntervalFrames = 600;
 
         public CubeGod(Vector2 position)
-            : base(Art.HealthBar, position)
+            : base(Art.CubeGod, position)
         {
             Name = "Cube God";
             Description =
@@ -92,14 +85,21 @@ namespace Realm.Bosses
             deathSound = Sound.DefaultHit;
             hitSound = Sound.DefaultHit;
 
-            drawScale = 96f;
-            Radius = 48f;
-            tint = Color.MediumBlue;
-
             AddBehaviour(MoveTethered(wanderDistance: WanderDistance, speed: WanderSpeed));
             AddBehaviour(PhaseWatcher());
             AddBehaviour(MaintainOverseers());
             AddAttackBehaviour(ShotgunVolleys());
+
+            // Spawns the full Overseer complement immediately, per direct
+            // request ("several of the minions spawn instantly in the
+            // fight") — same "instant burst, then MaintainX() only handles
+            // replacements" shape as ScorpionQueen.MaintainScorpions(). Each
+            // Overseer's own constructor does the same for its Defender/
+            // Blaster minions, so this alone seeds the whole "cube system"
+            // at once rather than it slowly filling in over the opening
+            // ~30 seconds.
+            for (int i = 0; i < TargetOverseerCount; i++)
+                EntityManager.Add(new CubeOverseer(this, Position + rand.NextVector2(0f, 80f)));
 
             GuaranteedPotionChances = new() { [Potions.Life] = 1.0f, [Potions.Defense] = 0.5f };
         }
@@ -122,7 +122,8 @@ namespace Realm.Bosses
                             BlueMagicSpread,
                             BlueMagicSpeed,
                             BlueMagicDamage,
-                            BlueMagicDuration
+                            BlueMagicDuration,
+                            Art.BlueMagic
                         );
 
                         if (rand.NextDouble() < ChainedBoltsChance)
@@ -132,7 +133,8 @@ namespace Realm.Bosses
                                 BlueBoltsSpread,
                                 BlueBoltsSpeed,
                                 BlueBoltsDamage,
-                                BlueBoltsDuration
+                                BlueBoltsDuration,
+                                Art.BlueBolt
                             );
                     }
                 }
@@ -158,7 +160,8 @@ namespace Realm.Bosses
             float totalSpread,
             float speed,
             int damage,
-            int duration
+            int duration,
+            Texture2D image
         )
         {
             float start = centerAngle - totalSpread / 2f;
@@ -167,7 +170,7 @@ namespace Realm.Bosses
             {
                 float angle = start + i * step;
                 EntityManager.Add(
-                    new EnemyProjectile(Position, Extensions.FromPolar(angle, speed))
+                    new EnemyProjectile(Position, Extensions.FromPolar(angle, speed), image)
                     {
                         Damage = damage,
                         duration = duration,

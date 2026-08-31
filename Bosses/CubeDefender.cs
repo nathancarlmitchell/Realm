@@ -19,7 +19,7 @@ namespace Realm.Bosses
         private const int AttackCooldownFrames = 40;
 
         public CubeDefender(CubeOverseer owner, Vector2 position)
-            : base(Art.HealthBar, position)
+            : base(Art.CubeDefender, position)
         {
             Owner = owner;
 
@@ -28,10 +28,6 @@ namespace Realm.Bosses
             Defense = 3;
             PointValue = 0;
             DropsLoot = false;
-
-            drawScale = 32f;
-            Radius = 16f;
-            tint = Color.IndianRed;
 
             AddBehaviour(FollowPlayer());
             AddAttackBehaviour(

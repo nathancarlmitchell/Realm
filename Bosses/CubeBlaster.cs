@@ -21,7 +21,7 @@ namespace Realm.Bosses
         private const int AttackCooldownFrames = 70;
 
         public CubeBlaster(CubeOverseer owner, Vector2 position)
-            : base(Art.HealthBar, position)
+            : base(Art.CubeBlaster, position)
         {
             Owner = owner;
 
@@ -30,10 +30,6 @@ namespace Realm.Bosses
             Defense = 1;
             PointValue = 0;
             DropsLoot = false;
-
-            drawScale = 32f;
-            Radius = 16f;
-            tint = Color.Orange;
 
             AddBehaviour(MoveTethered(wanderDistance: WanderDistance, speed: WanderSpeed));
             AddAttackBehaviour(

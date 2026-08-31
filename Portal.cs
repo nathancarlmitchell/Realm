@@ -70,14 +70,12 @@ namespace Realm
 
             // Dropped by the new "Cube" trigger enemy on death (see
             // Enemy.CreateCube()) — same shape as BossRealm/SthenoBossRealm
-            // above, carrying the third boss. Reuses the plain default
-            // portal swirl (getPortalArt) rather than a bespoke skin — only
-            // Limon/Stheno got their own unique portal art so far.
+            // above, carrying the third boss.
             public static readonly Destination CubeGodBossRealm = new BossDestination(
                 "Cube God",
                 "The Third Dimension",
                 position => new CubeGod(position),
-                () => Art.Portal
+                () => Art.ThirdDimensionPortal
             );
 
             // The boss arena's own exit portal. No other portal currently
