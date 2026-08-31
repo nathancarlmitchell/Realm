@@ -7116,3 +7116,25 @@ date/time for those individually; don't treat their grouping as meaning they all
      (`SlowsOnHit`) and its wavy shot. All four passed. Reverted the temp code (`git diff --stat
      Game1.cs` clean), ran a final clean build + plain boot-check, and confirmed all twelve real save
      files were byte-identical to a pre-test backup.
+
+260. **Removed the next-level XP cap once a player reaches Level 20**, per direct request — a
+     follow-up to the previous turn's `HasReachedLevel20`/F4 investigation. `Enemy.WasShot()`'s XP
+     calc previously capped every kill's granted XP to `NextLevelXpCapFraction` (10%) of the XP
+     needed for the player's *next* level, applied even at Level 20 itself (where "next level" is a
+     theoretical, never-reachable 21) — meaning a high-`PointValue` kill like Cube God (`PointValue`
+     25000, per the last entry's own real-wiki update) only ever granted ~205 XP to a Level-20
+     character, throttling `BaseFame`/Class Quest progress (both driven by live `ExperienceTotal`
+     past 20) down to a small fraction of what the kill was actually "worth" for no remaining
+     balance reason once there's no real next level left to cap progress toward. Now: below Level 20,
+     the cap still applies exactly as before (untouched); at Level 20, `cappedBaseXp` is simply the
+     enemy's own `PointValue`, uncapped — the `EquipmentXpBonusPercent` multiplier afterward is
+     unaffected either way.
+     Verified via a temporary `Game1.StartGame()` test (three isolated throwaway `Player.Instance`s,
+     reflecting only `int`-typed `health`/`healthMax`/`PointValue` fields to set up each test enemy —
+     never a `Texture2D`-typed one, per entry 258's access-violation writeup): (1) a Level 1 player
+     killing a 500-`PointValue` enemy still gains exactly 5 XP (10% of the 50 XP `ExperienceRequiredForLevel(1)`
+     needs) — confirms the cap is untouched below 20; (2) a Level 20 player killing the same
+     500-`PointValue` enemy now gains the full 500, uncapped; (3) a Level 20 player killing a
+     25000-`PointValue` enemy (Cube God's own real scale) gains the full 25000. All three passed.
+     Reverted the temp code (`git diff --stat Game1.cs` clean), ran a final clean build + plain
+     boot-check, and confirmed all twelve real save files were byte-identical to a pre-test backup.

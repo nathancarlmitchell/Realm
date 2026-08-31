@@ -322,18 +322,29 @@ namespace Realm
                 // applied, matching the source spec's own worked example
                 // (a low-level player killing a high-value enemy gets only
                 // a fraction of it; a multiplier can still push the final
-                // total back above what the cap alone would allow). Applies
-                // the same way at Level 20, where "next level" is a
-                // theoretical 21 that's never actually reachable — the cap
-                // still meaningfully limits farming a high-PointValue enemy
-                // at the level cap.
-                int xpNeededForNextLevel =
-                    Player.Instance.ExperienceNextLevel
-                    - Player.CumulativeExperienceForLevel(Player.Instance.Level);
-                int cappedBaseXp = Math.Min(
-                    PointValue,
-                    (int)(xpNeededForNextLevel * NextLevelXpCapFraction)
-                );
+                // total back above what the cap alone would allow). Removed
+                // once the player hits Level 20, per direct request — there
+                // is no real "next level" to cap progress toward anymore at
+                // that point (Level 21 is never reachable), and the cap was
+                // otherwise throttling Base Fame/Class Quest progress (both
+                // driven by ExperienceTotal past 20) down to a small
+                // fraction of an enemy's real PointValue for no remaining
+                // balance reason.
+                int cappedBaseXp;
+                if (Player.Instance.Level < 20)
+                {
+                    int xpNeededForNextLevel =
+                        Player.Instance.ExperienceNextLevel
+                        - Player.CumulativeExperienceForLevel(Player.Instance.Level);
+                    cappedBaseXp = Math.Min(
+                        PointValue,
+                        (int)(xpNeededForNextLevel * NextLevelXpCapFraction)
+                    );
+                }
+                else
+                {
+                    cappedBaseXp = PointValue;
+                }
                 // Scaled by any equipped XP-bonus gear (e.g. a Priest's
                 // Tome) — 0% bonus (the default for everything else) leaves
                 // this an exact no-op multiply-by-1.
