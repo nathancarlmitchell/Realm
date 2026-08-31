@@ -39,7 +39,7 @@ namespace Realm
         public static Texture2D GreenStar { get; private set; }
         public static Texture2D CyanMagic { get; private set; }
         public static Texture2D YellowMagic { get; private set; }
-        public static Texture2D SwordSlash { get; private set; }
+        public static Texture2D Blade { get; private set; }
         public static Texture2D RedFire { get; private set; }
         public static Texture2D PurpleMagic { get; private set; }
         public static Texture2D GreenMagic { get; private set; }
@@ -337,7 +337,7 @@ namespace Realm
             GreenStar = content.Load<Texture2D>("Projectiles/Green Star");
             CyanMagic = content.Load<Texture2D>("Projectiles/Cyan Magic");
             YellowMagic = content.Load<Texture2D>("Projectiles/Yellow Magic");
-            SwordSlash = content.Load<Texture2D>("Projectiles/sword_slash");
+            Blade = content.Load<Texture2D>("Projectiles/Blade");
             RedFire = content.Load<Texture2D>("Projectiles/red_fire");
             PurpleMagic = content.Load<Texture2D>("Projectiles/purple_magic");
             GreenMagic = content.Load<Texture2D>("Projectiles/green_magic");

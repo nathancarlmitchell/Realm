@@ -22,7 +22,7 @@ namespace Realm.States
             Game1.Instance.IsMouseVisible = true;
 
             Sound.SongInstance.Stop();
-            Sound.Play(Sound.Death, 0.4f);
+            Sound.Play(Sound.PlayerDeath, 0.4f);
 
             titleFont = Art.RetroFontMedium;
 

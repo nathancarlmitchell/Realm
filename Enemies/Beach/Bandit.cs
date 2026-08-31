@@ -81,7 +81,7 @@ namespace Realm
                             ProjectileSpeed
                         );
                         EntityManager.Add(
-                            new EnemyProjectile(Position, vel, Art.SwordSlash)
+                            new EnemyProjectile(Position, vel, Art.Blade)
                             {
                                 Damage = damage,
                                 Shape = CollisionShape.Rectangle,

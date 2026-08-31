@@ -1,3 +1,5 @@
+using Microsoft.Xna.Framework.Audio;
+
 namespace Realm.CharacterClasses
 {
     // The 5th playable class — https://www.realmeye.com/wiki/rogue,
@@ -17,16 +19,19 @@ namespace Realm.CharacterClasses
 
             image = Art.Rogue;
 
-            // Rogue_hit.ogg/Rogue_death.ogg were staged alongside the rest of
-            // this class's art, but this engine's sound pipeline only
-            // supports SoundEffect via .wav (WavImporter/SoundEffectProcessor
-            // — see every other class's own Sounds/Player/*_hit.wav, and the
-            // pre-existing orphaned level_up.mp3/no_mana.mp3, which hit the
-            // exact same mismatch and were simply never wired in). Left
-            // unwired here for the same reason — Rogue falls back to
-            // whichever PlayerHit sound was last set, same graceful
-            // degradation this codebase already tolerates elsewhere. Convert
-            // both to .wav to give Rogue a real hit/death sound.
+            // Rogue_hit.ogg/Rogue_death.ogg were originally staged as .ogg,
+            // which this engine's sound pipeline can't load as a SoundEffect
+            // (WavImporter/SoundEffectProcessor only accepts .wav — see every
+            // other class's own Sounds/Player/*_hit.wav, and the still-
+            // orphaned level_up.mp3/no_mana.mp3, which hit the same mismatch
+            // and were simply never wired in) — converted to .wav (matching
+            // the existing hit sounds' own mono/16-bit/44.1kHz PCM format)
+            // and wired in here. Rogue is also the first class with its own
+            // death sound — see Sound.PlayerDeath's own comment.
+            Sound.PlayerHit = Game1.Instance.Content.Load<SoundEffect>("Sounds/Player/Rogue_hit");
+            Sound.PlayerDeath = Game1.Instance.Content.Load<SoundEffect>(
+                "Sounds/Player/Rogue_death"
+            );
 
             WeaponType = Weapon.WeaponType.Dagger;
             ArmorType = Armor.ArmorType.Leather;

@@ -264,9 +264,10 @@ namespace Realm
 
                 // "While having Lethal Strike, you also fire extra
                 // projectiles" — one extra shot at a small angular offset,
-                // reusing this attack's own damage/expiry but drawn with
-                // Black Magic instead of the weapon's own art so it reads
-                // as a distinct bonus shot rather than a duplicate.
+                // reusing this attack's own damage/expiry/art (the currently
+                // equipped weapon's own ProjectileImage, same as the main
+                // shot) so it reads as a second copy of the same attack
+                // rather than a mismatched effect.
                 if (Player.Instance.HasDebuff(Entity.DebuffType.LethalStrike))
                 {
                     Vector2 lethalStrikeVel = Extensions.FromPolar(
@@ -277,7 +278,7 @@ namespace Realm
                     EntityManager.Add(
                         new Projectile(spawnPosition, lethalStrikeVel)
                         {
-                            image = Art.BlackMagic,
+                            image = this.ProjectileImage,
                             Damage = (int)damage,
                             ExpiresOnHit = expiresOnHit,
                         }

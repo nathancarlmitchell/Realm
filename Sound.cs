@@ -10,6 +10,7 @@ namespace Realm
             LevelUp,
             NoMana,
             PlayerHit,
+            PlayerDeath,
             MagicShoot,
             LootAppears,
             UsePotion,
@@ -17,7 +18,6 @@ namespace Realm
             Song,
             DefaultHit,
             EnterRealm,
-            Death,
             InventoryMoveItem,
             SpriteGodDeath,
             SpriteGodHit,
@@ -38,13 +38,18 @@ namespace Realm
             LevelUp = content.Load<SoundEffect>("Sounds/Player/level_up");
             NoMana = content.Load<SoundEffect>("Sounds/Player/no_mana");
             PlayerHit = content.Load<SoundEffect>("Sounds/Player/wizard_hit");
+            // No class overrode a death sound of its own before Rogue —
+            // defaults to the same shared Death sound every class already
+            // used via GameOverState.cs, so Wizard/Archer/Knight/Priest are
+            // unaffected. Rogue.cs is the first to set this to something
+            // else.
+            PlayerDeath = content.Load<SoundEffect>("Sounds/Player/death");
             MagicShoot = content.Load<SoundEffect>("Sounds/Player/magic_shoot");
             LootAppears = content.Load<SoundEffect>("Sounds/Player/loot_appears");
             UsePotion = content.Load<SoundEffect>("Sounds/Player/use_potion");
             Blip = content.Load<SoundEffect>("Sounds/blip");
             DefaultHit = content.Load<SoundEffect>("Sounds/Enemy/default_hit");
             EnterRealm = content.Load<SoundEffect>("Sounds/enter_realm");
-            Death = content.Load<SoundEffect>("Sounds/Player/death");
             InventoryMoveItem = content.Load<SoundEffect>("Sounds/Player/inventory_move_item");
             SpriteGodDeath = content.Load<SoundEffect>("Sounds/Enemy/sprite_god_death");
             SpriteGodHit = content.Load<SoundEffect>("Sounds/Enemy/sprite_god_hit");

@@ -56,7 +56,7 @@ namespace Realm.Bosses
                     range: AttackRange,
                     damage: AttackDamage,
                     projectileSpeed: ProjectileSpeed,
-                    projectileImage: Art.SwordSlash,
+                    projectileImage: Art.Blade,
                     cooldownFrames: AttackCooldown,
                     collisionShape: CollisionShape.Rectangle
                 )

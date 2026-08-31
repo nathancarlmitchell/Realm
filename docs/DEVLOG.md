@@ -7354,3 +7354,61 @@ date/time for those individually; don't treat their grouping as meaning they all
      numbers are first-pass, ported straight from the real wiki's own numbers the same way every
      other class/boss's numbers were when first ported this session — not validated through actual
      play.
+
+266. **Rogue's own hit/death sounds wired in, all 56 tiered Rings added, `sword_slash` renamed to
+     `Blade` everywhere, and Dagger projectile art retuned per tier.**
+
+     **Rogue sounds**: `Rogue_hit.ogg`/`Rogue_death.ogg` (entry 265's staged-but-unwired assets) were
+     `.ogg`, which this engine's pipeline can't load as `SoundEffect`. Converted both to `.wav`
+     (mono/16-bit/44.1kHz PCM, matching every existing `Sounds/Player/*_hit.wav` exactly) using a
+     throwaway scratch console app (`NVorbis` NuGet package decoding to raw samples, written out as a
+     plain PCM WAV — no ffmpeg/external binary needed, kept entirely inside the already-trusted
+     NuGet-restore path this repo already uses). `Sound.cs` gained a new `PlayerDeath` field
+     (defaulting to the same shared `Sounds/Player/death.wav` every class already used, so
+     Wizard/Archer/Knight/Priest are unchanged) — Rogue is the first class to override it, alongside
+     `PlayerHit`. The old single-purpose `Sound.Death` field was retired in favor of `PlayerDeath`;
+     `GameOverState.cs` (its only call site) now plays `Sound.PlayerDeath`.
+
+     **Rings**: added all 56 tiered Rings the user staged art for — `Content/Rings/{Attack, Defense,
+     Dexterity, Health, Magic, Speed, Vitality, Wisdom}/{1-7}.png`, real per-tier stat bonuses from
+     each category's own wiki page (e.g. https://www.realmeye.com/wiki/attack-rings) fetched and
+     parsed the same `curl` + HTML-table-parser way as every other data source this session. Unlike
+     every other item catalog in this repo, **these use the real RotMG names verbatim** (Ring of
+     Attack → Greater → Superior → Paramount → Exalted → Unbound → Transcendent, etc.) rather than
+     invented fantasy names — the existing pre-session `Ring of Minor Defense` entry (Tier 0) turned
+     out to already be a verbatim real name with real numbers too (`+5 HP, +5 MP, +1 DEF`, confirmed
+     against the Defense Rings page), so continuing with real names for the new 56 keeps the whole
+     catalog internally consistent, rather than introducing a fictional/real split within Rings
+     specifically. `Data/RingData.json` needed no schema change — `Equipment`'s existing
+     `MaxHealthBonus`/`MaxManaBonus`/`AttackBonus`/etc. fields already cover every column each
+     category's table has (no XP Bonus column exists for these, unlike weapons/ability items, so
+     `RingData.cs` didn't need an `XpBonusPercent` field either). `Ring.cs`/`Util.LoadRingData()`
+     needed zero code changes — adding entries to the existing flat catalog Just Works. Descriptions
+     are new flavor text (not reproduced from the wiki), one template per tier rung (rung 1 "hums
+     faintly," rung 7 "transcended its craft") reused across all 8 stat categories.
+
+     **`sword_slash` → `Blade` rename**: the user renamed `Content/Projectiles/sword_slash.png` to
+     `Blade.png` on disk; updated every reference — the `Content.mgcb` block, `Art.SwordSlash` →
+     `Art.Blade` (plus its 4 non-Sword call sites that already reused the same asset for their own
+     attacks: `Bandit.cs`, `BanditLeader.cs`, `Piratess.cs`, `SandsmanKing.cs`), and all 13
+     `Data/SwordData.json` entries that referenced the old path string.
+
+     **Dagger projectile art retuned per tier**, replacing entry 265's placeholder scheme (Green Bolt
+     for 0-12, Darkness/Purple Bolt for 13-14) with a deliberate per-tier progression: tiers 0-7 now
+     use the newly-renamed `Blade` (matching Sword's own low/mid tiers, appropriate for a melee-range
+     weapon before it starts feeling more "magical"), then 8 `Red Fire`, 9 `White Bolt`, 10 `Green
+     Bolt`, 11 `Blue Magic`, 12 `Purple Magic`, 13 `Orange Magic`, 14 `Black Magic` — reusing existing
+     generic projectile art throughout rather than needing new assets. `Darkness Bolt`/`Purple Bolt`
+     are unused again as a result (still registered in `Art.cs`/`Content.mgcb` from the Sword work,
+     just not currently assigned to anything).
+
+     Also: Lethal Strike's bonus projectile (`Weapon.Shoot()`, entry 265) now draws with
+     `this.ProjectileImage` — the currently equipped weapon's own art — instead of a hardcoded
+     `Art.BlackMagic`, so the bonus shot always matches whatever's actually equipped (a Dagger's
+     current tier art, including tier 14's own now-real use of Black Magic) rather than a fixed,
+     sometimes-mismatched effect.
+
+     Verified with a full `--no-incremental dotnet build` (0 errors, same two pre-existing warnings —
+     the Content Pipeline resolved `Blade.png` and all 56 new ring images with no missing-asset
+     errors) plus a plain minimized boot-check. No scripted test, no save-file backup — no existing
+     save data touched.

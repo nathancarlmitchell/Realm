@@ -31,7 +31,7 @@ namespace Realm
                     range: Range,
                     damage: Damage,
                     projectileSpeed: ProjectileSpeed,
-                    projectileImage: Art.SwordSlash,
+                    projectileImage: Art.Blade,
                     collisionShape: CollisionShape.Rectangle
                 )
             );
