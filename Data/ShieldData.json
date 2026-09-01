@@ -122,7 +122,7 @@
         "ImageName": "AbilityItems/Shields/5",
         "Shots": 4,
         "ArcGapDegrees": 10.0,
-        "XpBonusPercent": 4.0,
+        "XpBonusPercent": 3.0,
         "DamagePerWisOver34": 3.81
     },
     {

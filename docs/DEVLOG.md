@@ -7862,3 +7862,31 @@ date/time for those individually; don't treat their grouping as meaning they all
      No scripted test or real-executable launch — both fixes are narrow (a duration constant, a loop
      over a previously-inlined single projectile spawn) inside a mechanic already implemented and
      boot-checked in entry 265, and neither touches save data.
+
+282. **Reviewed Shields by following each of the 8 tiered Shields to its own dedicated wiki page**,
+     per direct follow-up instruction — entry 272 had only checked the aggregate `/wiki/shields` table
+     (plus its separate WIS-scaling comparative sub-table, itself individually re-verified in entry
+     273), never each tier's own page in full. `ManaCost`, `MinDamage`/`MaxDamage`, `DefenseBonus`/
+     `MaxHealthBonus`/`MaxManaBonus`, `Shots`, and `DamagePerWisOver34` all checked out exactly against
+     every individual page. Projectile Speed (16 tiles/sec), Lifetime (0.2s), and Range (3.2 tiles) —
+     confirmed identical across all 8 — also re-confirmed `Knight.cs`'s existing
+     `ShieldProjectileMagnitude`/`ShieldProjectileDuration` constants exactly, as did "Stunned for 3
+     seconds" against `Enemy.Stun()`'s existing 180-frame default and "Damage Reduction: 75% damage for
+     5 seconds" against `ShieldDamageReductionMultiplier`/`DurationFrames` — none of that needed
+     touching.
+
+     One real mismatch found: **Mithril Shield's (Tier 5) own individual page states its XP Bonus is
+     3%, but the aggregate `/wiki/shields` table entry 272 sourced it from says 4%** — the same kind of
+     aggregate-vs-individual-page conflict entry 277 found on Tome of Hallowed Language's Nova Damage
+     (740 vs. 720), just going the other direction here (aggregate too *high* rather than stale-high on
+     a rework). Trusted the individual page per that same precedent; `Data/ShieldData.json`'s "Runed
+     Shield" (this catalog's fictional name for the wiki's Tier 5) XpBonusPercent corrected from `4.0`
+     to `3.0`.
+
+     Also confirmed "Shots pass through obstacles" (part of every tier's real effect list) has nothing
+     to implement — same reasoning as entry 274's identical finding for Quiver: this engine has no
+     wall/obstacle-blocks-projectiles concept anywhere, for any weapon or ability, so there's nothing
+     for a projectile to "pass through" in the first place.
+
+     Verified with a full `--no-incremental dotnet build` (0 errors, same two pre-existing warnings).
+     No scripted test — a single data-file value correction, no code path or save data touched.
