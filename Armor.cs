@@ -40,9 +40,11 @@ namespace Realm
         {
             Armor armorData = Game1.Instance.Armors.FirstOrDefault(x => (x.Name == armorName));
 
-            // armorData is null if armorName doesn't match anything in ArmorData.json.
-            // A Type mismatch (e.g. an Archer trying to equip a Robe) is also
-            // rejected here, same as Weapon.LoadWeapon does for WeaponType.
+            // armorData is null if armorName doesn't match anything in
+            // Game1.Instance.Armors (the merged Robe/Leather/Heavy catalog —
+            // see Game1.StartGame()). A Type mismatch (e.g. an Archer trying
+            // to equip a Robe) is also rejected here, same as
+            // Weapon.LoadWeapon does for WeaponType.
             if (armorData != null && armorData.Type == Player.Instance.ArmorType)
             {
                 Texture2D armorTexture = Game1.Instance.Content.Load<Texture2D>(
@@ -63,6 +65,7 @@ namespace Realm
                     DexterityBonus = armorData.DexterityBonus,
                     VitalityBonus = armorData.VitalityBonus,
                     WisdomBonus = armorData.WisdomBonus,
+                    XpBonusPercent = armorData.XpBonusPercent,
                     ImageName = armorData.ImageName,
                 };
 

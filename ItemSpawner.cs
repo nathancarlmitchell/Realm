@@ -392,8 +392,11 @@ namespace Realm
             // Drop armor.
             if (dropPool.HasFlag(LootCategory.Armor) && RollsCategory(dropChances, dropWeights, LootCategory.Armor, dropChance))
             {
-                // Same reasoning as the weapon drop above — ArmorData.json
-                // lists every Robe before any Leather piece.
+                // Same reasoning as the weapon drop above — Game1.StartGame()
+                // merges Robe/Leather/Heavy in a fixed order, so
+                // FirstOrDefault would always resolve to whichever
+                // ArmorType loads first regardless of the player's actual
+                // class.
                 int tier = ResolveDropTier(pointValue, Player.Instance.Armor.Tier, maxTierJump, TierRangeFor(dropTierRanges, LootCategory.Armor));
                 List<Armor> nextTierArmors = Game1
                     .Instance.Armors.Where(x => x.Tier == tier)

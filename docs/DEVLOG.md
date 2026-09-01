@@ -8058,3 +8058,53 @@ date/time for those individually; don't treat their grouping as meaning they all
 
      No build needed — no file was touched. Every weapon type (Wand, Bow, Sword, Staff, Dagger) has now
      been checked against its own individual wiki pages at least once.
+
+289. **Reviewed Armor against the wiki for the first time ever** — Robe against
+     https://www.realmeye.com/wiki/robes, Leather against
+     https://www.realmeye.com/wiki/leather-armors, Heavy against
+     https://www.realmeye.com/wiki/heavy-armors — and split all three `ArmorType`s out of the single
+     `Data/ArmorData.json` into their own dedicated catalog files, per direct instruction, mirroring
+     the weapon-type split (Wand/Bow/Sword/Staff/Dagger each already in their own file). Leather and
+     Heavy came back completely clean: every tier's `DefenseBonus`/`DexterityBonus` already matched the
+     real wiki exactly. Robe was clean for 14 of its 15 tiers too, but:
+
+     - **Tier 10 ("Robe of Eternal Flame") had badly wrong stats** — `DefenseBonus: 0` (real: `11`),
+       `AttackBonus: 0` (real: `3`), `WisdomBonus: 50` (real: `6`), `MaxManaBonus: 200` (real: `50`).
+       Confirmed against both the aggregate table and Tier 10's own individual page
+       (https://www.realmeye.com/wiki/robe-of-the-moon-wizard, "+50 MP, +3 ATT, +11 DEF, +6 WIS") —
+       the `WisdomBonus`/`MaxManaBonus` values look like they were transposed with some other tier's
+       numbers at some point, not just a typo on one field. Fixed in the new `Data/RobeData.json`.
+     - **No `XpBonusPercent` field existed on any of the three types** — same gap every weapon type
+       had before its own review. Added it to the shared `Data/ArmorData.cs` shape, populated with the
+       real 0%/1-8% schedule (tiers 7-14, identical across all three types and to every weapon type's
+       own schedule) in all three new JSON files.
+
+     Individual-page verification here was lighter than the ability-item reviews (Spell/Quiver/Shield/
+     Tome/Cloak) rather than a full 45-page sweep — Armor has no active ability or on-hit mechanic to
+     hide (confirmed no page has an `Effect(s)` section at all, unlike those five), so the aggregate
+     table's own risk of *incompleteness* doesn't apply here the way it did there; only its risk of
+     being *wrong* on a given cell does, same category of risk as Sword/Dagger's plain-weapon review.
+     Spot-checked the flagged Tier 10 anomaly directly, plus five more individual pages spread across
+     all three types and both tier extremes (`robe-of-the-neophyte`/`wolfskin-armor`/`iron-mail` at
+     Tier 0, `robe-of-the-ancient-intellect`/`leviathan-armor`/`annihilation-armor` at Tier 14) — all
+     five matched the aggregate table exactly, giving no reason to suspect a second hidden error.
+
+     `Data/ArmorData.cs` lost its `Type` field (each new per-type loader hardcodes
+     `Armor.ArmorType` instead, same reasoning as the weapon-type split) and gained `XpBonusPercent`.
+     New `Util.LoadArmorType(dataLocation, type)` private helper shared by three thin public wrappers —
+     `LoadRobeData()`/`LoadLeatherData()`/`LoadHeavyData()` — replacing the old single
+     `LoadArmorData()`. `Game1.StartGame()`'s `Armors = Util.LoadArmorData();` became three merged
+     calls. `Armor.LoadArmor()` and `Player.EquipHighestTierArmor()` both gained
+     `XpBonusPercent = ....XpBonusPercent,` in their copy initializers — the same missing-field-copy
+     shape as every ability item's own field additions this campaign, except added fresh here rather
+     than caught as a regression. `Equipment.TooltipText()`'s generic `BonusSummary()` already includes
+     XP Bonus and `Armor.cs` never overrides it (unlike `Weapon.cs`, which needed its own fix back in
+     entry 269), so Armor's tooltip picks up the new field with no further change. Swept the two stale
+     comments left by the split (`Armor.cs`'s null-check comment, `ItemSpawner.cs`'s armor-drop
+     comment citing `ArmorData.json`'s old entry order as the ordering hazard its random-pick logic
+     avoids).
+
+     Verified with a full `--no-incremental dotnet build` (0 errors, same two pre-existing warnings)
+     and a manual check that `RobeData.json`/`LeatherData.json`/`HeavyData.json` all landed in the
+     build output while the old `ArmorData.json` did not. No scripted test — real save files reference
+     equipped Armor by Name, which didn't change, only which catalog file backs it.

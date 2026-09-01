@@ -160,7 +160,11 @@ namespace Realm
             Weapons.AddRange(Util.LoadBowData());
             Weapons.AddRange(Util.LoadSwordData());
             Weapons.AddRange(Util.LoadDaggerData());
-            Armors = Util.LoadArmorData();
+            // Every ArmorType lives in its own catalog file now, same as
+            // every weapon type.
+            Armors = Util.LoadRobeData();
+            Armors.AddRange(Util.LoadLeatherData());
+            Armors.AddRange(Util.LoadHeavyData());
             Rings = Util.LoadRingData();
             Spells = Util.LoadSpellData();
             Quivers = Util.LoadQuiverData();

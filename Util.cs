@@ -102,9 +102,20 @@ namespace Realm
             "CloakData.json"
         );
 
-        private static string armorDataLocation = Path.Combine(
+        // Each ArmorType lives in its own catalog file — see Data/ArmorData.cs
+        // (the shared per-tier shape all three use) and LoadRobeData()/
+        // LoadLeatherData()/LoadHeavyData() below.
+        private static string robeDataLocation = Path.Combine(
             AppContext.BaseDirectory,
-            "ArmorData.json"
+            "RobeData.json"
+        );
+        private static string leatherDataLocation = Path.Combine(
+            AppContext.BaseDirectory,
+            "LeatherData.json"
+        );
+        private static string heavyDataLocation = Path.Combine(
+            AppContext.BaseDirectory,
+            "HeavyData.json"
         );
 
         private static string ringDataLocation = Path.Combine(
@@ -939,16 +950,22 @@ namespace Realm
             return cloaks;
         }
 
-        public static List<Armor> LoadArmorData()
+        // Shared by LoadRobeData()/LoadLeatherData()/LoadHeavyData() below —
+        // all three ArmorTypes use the exact same per-tier shape
+        // (Data/ArmorData.cs), differing only in which catalog file backs
+        // them and which Armor.ArmorType gets hardcoded onto the result
+        // (the JSON itself carries no Type field, same reasoning as the
+        // per-weapon-type loaders not reading WeaponType from JSON either).
+        private static List<Armor> LoadArmorType(string dataLocation, Armor.ArmorType type)
         {
             List<ArmorData> armorData = [];
             List<Armor> armors = [];
 
             try
             {
-                using (StreamReader r = new(armorDataLocation))
+                using (StreamReader r = new(dataLocation))
                 {
-                    Debug.WriteLine(armorDataLocation + ": reading data.");
+                    Debug.WriteLine(dataLocation + ": reading data.");
                     string json = r.ReadToEnd();
                     Debug.WriteLine(json);
                     try
@@ -972,7 +989,7 @@ namespace Realm
                         {
                             Name = armorData[i].Name,
                             Description = armorData[i].Description,
-                            Type = armorData[i].Type,
+                            Type = type,
                             Tier = armorData[i].Tier,
                             MaxHealthBonus = armorData[i].MaxHealthBonus,
                             MaxManaBonus = armorData[i].MaxManaBonus,
@@ -982,6 +999,7 @@ namespace Realm
                             DexterityBonus = armorData[i].DexterityBonus,
                             VitalityBonus = armorData[i].VitalityBonus,
                             WisdomBonus = armorData[i].WisdomBonus,
+                            XpBonusPercent = armorData[i].XpBonusPercent,
                             ImageName = armorData[i].ImageName,
                         }
                     );
@@ -989,11 +1007,20 @@ namespace Realm
             }
             catch (System.IO.FileNotFoundException)
             {
-                Debug.WriteLine(armorDataLocation + ": file not found.");
+                Debug.WriteLine(dataLocation + ": file not found.");
             }
 
             return armors;
         }
+
+        public static List<Armor> LoadRobeData() =>
+            LoadArmorType(robeDataLocation, Armor.ArmorType.Robe);
+
+        public static List<Armor> LoadLeatherData() =>
+            LoadArmorType(leatherDataLocation, Armor.ArmorType.Leather);
+
+        public static List<Armor> LoadHeavyData() =>
+            LoadArmorType(heavyDataLocation, Armor.ArmorType.Heavy);
 
         public static List<Ring> LoadRingData()
         {
