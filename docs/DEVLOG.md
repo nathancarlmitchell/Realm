@@ -7670,3 +7670,35 @@ date/time for those individually; don't treat their grouping as meaning they all
 
      Verified with a full `--no-incremental dotnet build` (0 errors, same two pre-existing warnings)
      — the Content Pipeline resolved both newly-referenced assets with no missing-asset errors.
+
+277. **Reviewed Tomes by following each of the 8 tiered Tomes to its own dedicated wiki page**, per
+     direct instruction — found one real value fix and the same "hidden Wisdom-scaling" pattern
+     Shield/Quiver/Spell all had. `ManaCost`, `Range`, `HealAmount`, `HealingAmountPerSecond`,
+     `HealingDurationSeconds`, `VitalityBonus`, the T6/T7 HP/MP bumps, and the existing `XpBonusPercent`
+     values (Tome already had this field, unlike every other catalog reviewed this way) all matched
+     every individual page — except **Tier 7 Tome of Hallowed Language's Nova Damage, which the
+     aggregate `/wiki/tomes` table shows as 740 but the item's own dedicated page shows as 720** —
+     fixed. (Healing Tome's own page history mentions a rework "Before Exalt Version 6.5.0.0 (Jan
+     2026)" — later than the aggregate table's own "Last updated: Sep 2025" stamp, which is almost
+     certainly why that one value drifted out of sync there specifically.)
+
+     **All three of a Tome's effects scale with the Priest's own Wisdom past 70** — a higher
+     threshold than Wizard's 42 or Shield/Quiver's 34, matching Priest's own highest-in-the-game
+     Wisdom cap (75) — confirmed on every individual page's own "+X per WIS over 70" lines:
+     - Instant Heal: `0 (T0, no heal at all) / 0.715 / 0.77 / 0.825 / 0.88 / 0.935 / 0.99 / 1.045`
+     - Red Cross Healing rate: `0.33 / 0.3575 / 0.385 / 0.4125 / 0.44 / 0.4675 / 0.495 / 0.5225`
+     - Nova Damage: `4.8 / 5.2 / 5.6 / 6.0 / 6.4 / 6.8 / 7.2 / 7.6`
+
+     All three are new per-tier `TomeData`/`Tome` fields (`HealAmountPerWisOver70`/
+     `HealingRatePerWisOver70`/`DamagePerWisOver70`), wired into `Tome.LoadTome()` and a new Tome-only
+     block in `Player.EquipHighestTierAbilityItem()`. **Nova Range also scales with Wisdom past 70**,
+     at an identical `+0.05 tiles per WIS` rate on every tier — uniform like Spell Bomb's own shot-
+     count scaling, so it's a plain `Priest.cs` constant (`TomeRangePerWisOver70`) rather than a
+     fourth data field. `Priest.UseAbility()` now computes all four scaled values once per cast (via
+     a shared `wisOverThreshold`) and threads the scaled range into `ComputeClampedCursorOffset()`
+     (now takes a plain `float rangeTiles` instead of the whole `Tome`, so it doesn't need to
+     re-derive Wisdom scaling itself).
+
+     Verified with a full `--no-incremental dotnet build` (0 errors, same two pre-existing warnings)
+     plus a plain minimized boot-check. No scripted test — no save data touched (`PlayerData_Priest.json`
+     doesn't exist yet; Priest has never been played on this install).

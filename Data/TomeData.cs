@@ -43,5 +43,17 @@ namespace Realm.Data
         // % bonus to XP gained while this Tome is equipped — see
         // Equipment.XpBonusPercent.
         public float XpBonusPercent { get; set; }
+
+        // All three of this Tome's own effects scale with the Priest's own
+        // Wisdom past 70 (a higher threshold than Wizard's 42/Shield's and
+        // Quiver's 34, matching Priest's own highest-in-the-game Wisdom
+        // cap) — confirmed against each tiered Tome's own dedicated wiki
+        // page, per-tier like Shield/Quiver/Spell's own scaling stats. Nova
+        // Range *also* scales with Wisdom past 70, but at an identical rate
+        // on every tier (+0.05 tiles per WIS), so that one's a plain
+        // Priest.cs constant instead of a field here.
+        public float HealAmountPerWisOver70 { get; set; }
+        public float HealingRatePerWisOver70 { get; set; }
+        public float DamagePerWisOver70 { get; set; }
     }
 }

@@ -19,7 +19,10 @@
         "HealAmount": 0,
         "HealingAmountPerSecond": 50.0,
         "HealingDurationSeconds": 10.0,
-        "XpBonusPercent": 0.0
+        "XpBonusPercent": 0.0,
+        "HealAmountPerWisOver70": 0.0,
+        "HealingRatePerWisOver70": 0.33,
+        "DamagePerWisOver70": 4.8
     },
     {
         "Name": "Remedy Tome",
@@ -41,7 +44,10 @@
         "HealAmount": 90,
         "HealingAmountPerSecond": 45.0,
         "HealingDurationSeconds": 4.4,
-        "XpBonusPercent": 0.0
+        "XpBonusPercent": 0.0,
+        "HealAmountPerWisOver70": 0.715,
+        "HealingRatePerWisOver70": 0.3575,
+        "DamagePerWisOver70": 5.2
     },
     {
         "Name": "Spirit Salve Tome",
@@ -63,7 +69,10 @@
         "HealAmount": 100,
         "HealingAmountPerSecond": 50.0,
         "HealingDurationSeconds": 4.4,
-        "XpBonusPercent": 0.0
+        "XpBonusPercent": 0.0,
+        "HealAmountPerWisOver70": 0.77,
+        "HealingRatePerWisOver70": 0.385,
+        "DamagePerWisOver70": 5.6
     },
     {
         "Name": "Tome of Rejuvenation",
@@ -85,7 +94,10 @@
         "HealAmount": 110,
         "HealingAmountPerSecond": 55.0,
         "HealingDurationSeconds": 4.4,
-        "XpBonusPercent": 1.0
+        "XpBonusPercent": 1.0,
+        "HealAmountPerWisOver70": 0.825,
+        "HealingRatePerWisOver70": 0.4125,
+        "DamagePerWisOver70": 6.0
     },
     {
         "Name": "Tome of Renewing",
@@ -107,7 +119,10 @@
         "HealAmount": 120,
         "HealingAmountPerSecond": 60.0,
         "HealingDurationSeconds": 4.4,
-        "XpBonusPercent": 2.0
+        "XpBonusPercent": 2.0,
+        "HealAmountPerWisOver70": 0.88,
+        "HealingRatePerWisOver70": 0.44,
+        "DamagePerWisOver70": 6.4
     },
     {
         "Name": "Tome of Divine Favor",
@@ -129,7 +144,10 @@
         "HealAmount": 130,
         "HealingAmountPerSecond": 65.0,
         "HealingDurationSeconds": 4.4,
-        "XpBonusPercent": 4.0
+        "XpBonusPercent": 4.0,
+        "HealAmountPerWisOver70": 0.935,
+        "HealingRatePerWisOver70": 0.4675,
+        "DamagePerWisOver70": 6.8
     },
     {
         "Name": "Tome of Holy Guidance",
@@ -151,7 +169,10 @@
         "HealAmount": 140,
         "HealingAmountPerSecond": 70.0,
         "HealingDurationSeconds": 4.4,
-        "XpBonusPercent": 6.0
+        "XpBonusPercent": 6.0,
+        "HealAmountPerWisOver70": 0.99,
+        "HealingRatePerWisOver70": 0.495,
+        "DamagePerWisOver70": 7.2
     },
     {
         "Name": "Tome of Hallowed Language",
@@ -166,13 +187,16 @@
         "VitalityBonus": 7,
         "WisdomBonus": 0,
         "ManaCost": 190,
-        "MinDamage": 740,
-        "MaxDamage": 740,
+        "MinDamage": 720,
+        "MaxDamage": 720,
         "ImageName": "AbilityItems/Tomes/7",
         "Range": 7.4,
         "HealAmount": 150,
         "HealingAmountPerSecond": 75.0,
         "HealingDurationSeconds": 4.4,
-        "XpBonusPercent": 8.0
+        "XpBonusPercent": 8.0,
+        "HealAmountPerWisOver70": 1.045,
+        "HealingRatePerWisOver70": 0.5225,
+        "DamagePerWisOver70": 7.6
     }
 ]

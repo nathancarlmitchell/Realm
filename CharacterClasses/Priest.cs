@@ -1,3 +1,4 @@
+using System;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Audio;
 using Realm.Particles;
@@ -18,6 +19,19 @@ namespace Realm.CharacterClasses
         // ticks/sec) later. Total Nova Damage from Data/TomeData.cs is
         // split evenly across both.
         private const int NovaPulseDelayFrames = 48;
+
+        // All three of the Tome's own scaling stats (Heal/Healing rate/Nova
+        // damage — see Data/TomeData.cs) key off Wisdom past this same
+        // threshold — higher than Wizard's 42/Shield's and Quiver's 34,
+        // matching Priest's own highest-in-the-game Wisdom cap. Confirmed
+        // identical across every tiered Tome's own dedicated wiki page.
+        private const int TomeWisThreshold = 70;
+
+        // Nova Range *also* scales with Wisdom past the same threshold, but
+        // at an identical "+0.05 tiles per WIS" rate on every tier (unlike
+        // Heal/Healing/Damage, which are per-tier data), so it's a plain
+        // constant here instead of a TomeData field.
+        private const float TomeRangePerWisOver70 = 0.05f;
 
         public Priest()
         {
@@ -181,14 +195,15 @@ namespace Realm.CharacterClasses
             }
         }
 
-        // The cursor's world position, clamped to the Tome's own Range —
+        // The cursor's world position, clamped to the (already
+        // Wisdom-scaled — see UseAbility() below) Nova range in tiles —
         // used by UseAbility() below (Unstable's own direction-
         // randomization is applied on top of this afterward, for the
         // actual cast).
-        private Vector2 ComputeClampedCursorOffset(Tome tome)
+        private Vector2 ComputeClampedCursorOffset(float rangeTiles)
         {
             Vector2 toCursor = Input.GetMousePosition() - Position;
-            float rangePixels = tome.Range * 32f;
+            float rangePixels = rangeTiles * 32f;
             if (toCursor.LengthSquared() > rangePixels * rangePixels)
                 toCursor = Vector2.Normalize(toCursor) * rangePixels;
             return toCursor;
@@ -219,23 +234,31 @@ namespace Realm.CharacterClasses
 
             Tome tome = (Tome)AbilityItem;
 
+            // Heal/Healing rate/Nova damage/Nova range all scale with
+            // Wisdom past TomeWisThreshold — see this class's own constants
+            // and Data/TomeData.cs. A flat addition to an otherwise-fixed
+            // value, same reasoning Shield/Quiver/Spell's own scaling uses.
+            int wisOverThreshold = Math.Max(0, Wisdom - TomeWisThreshold);
+            int effectiveHealAmount =
+                tome.HealAmount + (int)(tome.HealAmountPerWisOver70 * wisOverThreshold);
+            float effectiveHealingRate =
+                tome.HealingAmountPerSecond + tome.HealingRatePerWisOver70 * wisOverThreshold;
+            float effectiveRange = tome.Range + TomeRangePerWisOver70 * wisOverThreshold;
+
             if (Mana >= AbilityCost)
             {
                 Mana -= AbilityCost;
 
-                if (tome.HealAmount > 0)
-                    Heal(tome.HealAmount);
+                if (effectiveHealAmount > 0)
+                    Heal(effectiveHealAmount);
 
-                if (tome.HealingAmountPerSecond > 0)
-                    ApplyHealing(
-                        tome.HealingAmountPerSecond,
-                        (int)(tome.HealingDurationSeconds * 60)
-                    );
+                if (effectiveHealingRate > 0)
+                    ApplyHealing(effectiveHealingRate, (int)(tome.HealingDurationSeconds * 60));
 
                 // Nova center: the cursor's world position, clamped to the
-                // Tome's own Range so it can't be cast further away than
-                // intended.
-                Vector2 toCursor = ComputeClampedCursorOffset(tome);
+                // Tome's own (Wisdom-scaled) Range so it can't be cast
+                // further away than intended.
+                Vector2 toCursor = ComputeClampedCursorOffset(effectiveRange);
 
                 // Unstable: same "keep the distance, randomize the
                 // direction" treatment as Wizard's Spell Bomb — Nova is a
@@ -250,7 +273,9 @@ namespace Realm.CharacterClasses
 
                 Vector2 novaCenter = Position + toCursor;
 
-                int damagePerPulse = tome.MinDamage / 2;
+                int effectiveDamage =
+                    tome.MinDamage + (int)(tome.DamagePerWisOver70 * wisOverThreshold);
+                int damagePerPulse = effectiveDamage / 2;
 
                 EntityManager.DamageEnemiesInRadius(novaCenter, NovaRadius, damagePerPulse);
                 Particle.SpawnBurst(

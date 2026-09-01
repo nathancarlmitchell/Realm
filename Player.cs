@@ -1030,13 +1030,17 @@ namespace Realm
                 shieldCopy.DamagePerWisOver34 = shieldBest.DamagePerWisOver34;
             }
 
-            // Tome-only — its Heal/Healing/Range fields. See Data/TomeData.cs.
+            // Tome-only — its Heal/Healing/Range fields and their
+            // Wisdom-scaling stats. See Data/TomeData.cs.
             if (copy is Tome tomeCopy && best is Tome tomeBest)
             {
                 tomeCopy.Range = tomeBest.Range;
                 tomeCopy.HealAmount = tomeBest.HealAmount;
                 tomeCopy.HealingAmountPerSecond = tomeBest.HealingAmountPerSecond;
                 tomeCopy.HealingDurationSeconds = tomeBest.HealingDurationSeconds;
+                tomeCopy.HealAmountPerWisOver70 = tomeBest.HealAmountPerWisOver70;
+                tomeCopy.HealingRatePerWisOver70 = tomeBest.HealingRatePerWisOver70;
+                tomeCopy.DamagePerWisOver70 = tomeBest.DamagePerWisOver70;
             }
 
             // Cloak-only — its Invisibility/Lethal Strike fields. See

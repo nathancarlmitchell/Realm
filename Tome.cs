@@ -13,6 +13,11 @@ namespace Realm
         public float HealingAmountPerSecond { get; set; }
         public float HealingDurationSeconds { get; set; }
 
+        // Wisdom-scaling stats — see Data/TomeData.cs.
+        public float HealAmountPerWisOver70 { get; set; }
+        public float HealingRatePerWisOver70 { get; set; }
+        public float DamagePerWisOver70 { get; set; }
+
         public Tome(Texture2D image)
         {
             ID = Guid.NewGuid();
@@ -62,6 +67,9 @@ namespace Realm
                     HealAmount = tomeData.HealAmount,
                     HealingAmountPerSecond = tomeData.HealingAmountPerSecond,
                     HealingDurationSeconds = tomeData.HealingDurationSeconds,
+                    HealAmountPerWisOver70 = tomeData.HealAmountPerWisOver70,
+                    HealingRatePerWisOver70 = tomeData.HealingRatePerWisOver70,
+                    DamagePerWisOver70 = tomeData.DamagePerWisOver70,
                 };
 
                 Player.Instance.EquipAbilityItem(tome);
