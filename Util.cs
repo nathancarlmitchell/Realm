@@ -61,6 +61,13 @@ namespace Realm
             "WeaponData.json"
         );
 
+        // Wands live in their own catalog file, separate from
+        // WeaponData.json — see Data/WandData.cs and LoadWandData() below.
+        private static string wandDataLocation = Path.Combine(
+            AppContext.BaseDirectory,
+            "WandData.json"
+        );
+
         // Bows live in their own catalog file, separate from
         // WeaponData.json — see Data/BowData.cs and LoadBowData() below.
         private static string bowDataLocation = Path.Combine(
@@ -598,6 +605,75 @@ namespace Realm
             }
 
             return weapons;
+        }
+
+        // Wands live in their own catalog file (see Data/WandData.cs)
+        // rather than WeaponData.json — same reasoning as
+        // Data/SwordData.cs/Data/BowData.cs: a per-tier XpBonusPercent (see
+        // Equipment.XpBonusPercent) matching the real wiki's "XP Bonus"
+        // column (https://www.realmeye.com/wiki/wands), which plain
+        // WeaponData has no field for. Returns plain Weapon.WeaponType.Wand
+        // entries, meant to be merged into the same combined Weapons list
+        // as LoadWeaponData()'s/LoadBowData()'s/LoadSwordData()'s results
+        // (see Game1.StartGame()) — Weapon.LoadWeapon() and Player.cs's
+        // EquipHighestTierWeapon() both search that one list by Name,
+        // unaware of which file an entry originally came from.
+        public static List<Weapon> LoadWandData()
+        {
+            List<WandData> wandData = [];
+            List<Weapon> wands = [];
+
+            try
+            {
+                using (StreamReader r = new(wandDataLocation))
+                {
+                    Debug.WriteLine(wandDataLocation + ": reading data.");
+                    string json = r.ReadToEnd();
+                    Debug.WriteLine(json);
+                    try
+                    {
+                        wandData = JsonSerializer.Deserialize<List<WandData>>(json);
+                    }
+                    catch (System.Text.Json.JsonException)
+                    {
+                        Debug.WriteLine($"Error loading wand data: {json}");
+                    }
+                }
+
+                for (int i = 0; i < wandData.Count; i++)
+                {
+                    Texture2D wandTexture = Game1.Instance.Content.Load<Texture2D>(
+                        wandData[i].ImageName
+                    );
+
+                    Texture2D projectileTexture = Game1.Instance.Content.Load<Texture2D>(
+                        wandData[i].ProjectileImageName
+                    );
+
+                    wands.Add(
+                        new Weapon(wandTexture, projectileTexture)
+                        {
+                            Type = Weapon.WeaponType.Wand,
+                            Name = wandData[i].Name,
+                            Description = wandData[i].Description,
+                            Tier = wandData[i].Tier,
+                            DamageMin = wandData[i].DamageMin,
+                            DamageMax = wandData[i].DamageMax,
+                            ProjectileMagnitude = wandData[i].ProjectileMagnitude,
+                            ProjectileDuration = wandData[i].ProjectileDuration,
+                            XpBonusPercent = wandData[i].XpBonusPercent,
+                            ImageName = wandData[i].ImageName,
+                            ProjectileImageName = wandData[i].ProjectileImageName,
+                        }
+                    );
+                }
+            }
+            catch (System.IO.FileNotFoundException)
+            {
+                Debug.WriteLine(wandDataLocation + ": file not found.");
+            }
+
+            return wands;
         }
 
         // Bows live in their own catalog file (see Data/BowData.cs) rather

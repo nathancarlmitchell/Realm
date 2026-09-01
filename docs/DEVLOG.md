@@ -7932,3 +7932,42 @@ date/time for those individually; don't treat their grouping as meaning they all
      Verified with a full `--no-incremental dotnet build` (0 errors, same two pre-existing warnings).
      No scripted test — a data-file addition plus one new field copy in an existing loader, no save
      data touched.
+
+285. **Reviewed Wands against the wiki for the first time ever, including each of the 15 tiered Wands'**
+     **own dedicated page** (https://www.realmeye.com/wiki/wands), and split Wands out of
+     `WeaponData.json` into their own `Data/WandData.cs`/`.json` catalog, per direct instruction —
+     mirroring `Data/SwordData.cs`/`Util.LoadSwordData()`'s exact shape. `DamageMin`/`DamageMax`
+     already matched the wiki for tiers 0-10; Projectile Speed (18 tiles/second), Lifetime (0.5s), and
+     Range (9 tiles) — confirmed identical on every individual tier page — already reconciled exactly
+     against the existing `ProjectileMagnitude`/`ProjectileDuration` (9.6/30); and "Shots hit multiple
+     targets" (piercing) was already correctly modeled (`Weapon.Shoot()`'s `expiresOnHit` check already
+     excludes `WeaponType.Wand`).
+
+     Two real gaps found:
+
+     - **Tiers 11-14's damage ranges were wrong** — Tier 11 was `125-170` (wiki: `130-170`), Tier 12
+       was `130-175` (wiki: `135-175`), Tier 13 was `145-180` (wiki: `150-190`), Tier 14 was `150-195`
+       (wiki: `165-205`). All four confirmed on both the aggregate table and each tier's own individual
+       page. Fixed in the new `Data/WandData.json`.
+     - **No `XpBonusPercent` field existed at all** (plain `WeaponData` never had one, same gap entry
+       284 found for Bow before its own split) — every Wand silently gave 0% XP Bonus regardless of
+       tier. Added the field with the real 0%/1-8% schedule (tiers 7-14), identical to Sword/Bow's own
+       schedule, confirmed on every individual page.
+
+     `Data/WeaponData.json` now holds only the 15 `Staff` entries (Wand's own 15 removed verbatim, pure
+     deletion — no Staff entry touched); `Game1.StartGame()` gained a
+     `Weapons.AddRange(Util.LoadWandData())` call alongside the existing Bow/Sword/Dagger ones. No
+     changes needed in `Weapon.LoadWeapon()`/`Player.EquipHighestTierWeapon()` (both already copy
+     `XpBonusPercent` generically per entry 279's fix) or `ItemSpawner.cs` (already reads from the one
+     merged `Game1.Instance.Weapons` list, unaware of which file an entry came from). Real save files
+     referencing an equipped Wand by name resolve unaffected — no name changed, only which catalog file
+     backs it.
+
+     Not reviewed this pass: `Staff` — the other type still living in `WeaponData.json` — since this
+     was scoped to Wands only; flagging it as the next weapon type to check (it currently mirrors
+     Wand's pre-fix damage numbers exactly, tier-for-tier, so it likely carries the same Tier 11-14
+     mismatch and definitely has no `XpBonusPercent` field either).
+
+     Verified with a full `--no-incremental dotnet build` (0 errors, same two pre-existing warnings)
+     plus a manual check that `bin/Debug/net8.0-windows/WandData.json` landed in the build output
+     alongside `WeaponData.json`. No scripted test, per the standing no-test-unless-asked convention.
