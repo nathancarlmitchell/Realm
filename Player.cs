@@ -746,10 +746,13 @@ namespace Realm
         // being Invisible has passed" — see Shoot() below.
         private const int InvisibilityShootGraceFrames = 60;
 
-        // "Temporarily" per the wiki, with no concrete number given — a flat
-        // engine constant rather than new per-Cloak-tier data (see the
-        // plan's simplification #3).
-        private const int LethalStrikeDurationFrames = 120;
+        // 2.4 seconds — confirmed identical across all 8 tiered Cloaks' own
+        // individual wiki pages ("...as additional damage for 2.4 seconds"),
+        // not just "temporarily" as the aggregate /wiki/cloaks table implied
+        // when this was first ported (see the plan's simplification #3). A
+        // flat engine constant rather than new per-Cloak-tier data since
+        // every tier gives the exact same number.
+        private const int LethalStrikeDurationFrames = 144;
 
         private const float InvisibleOpacity = 0.35f;
 

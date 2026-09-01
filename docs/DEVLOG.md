@@ -7827,3 +7827,38 @@ date/time for those individually; don't treat their grouping as meaning they all
      existing, already-correct reconstruction site, mirroring a pattern (`Game1.StartGame()`'s own
      post-`LoadOrCreatePlayer()` reload) already proven correct in this codebase, and none of the four
      sites' surrounding logic was otherwise touched.
+
+281. **Reviewed Cloaks by following each of the 8 tiered Cloaks to its own dedicated wiki page**, per
+     direct follow-up instruction (same "individual pages over the aggregate table" methodology as
+     entries 274/275/277 for Quivers/Spells/Tomes). All the *numeric* per-tier data entry 265 already
+     ported — `ManaCost`, `InvisibilityDurationFrames`, `SpeedBonus`/`DexterityBonus`/
+     `MaxHealthBonus`/`MaxManaBonus`, `XpBonusPercent`, and the Wisdom-scaling Lethal Strike flat+
+     percent formula — checked out exactly against every individual page; the aggregate table and
+     "Comparative Cloaks Table" it was ported from were both already accurate here, unlike the Quiver/
+     Spell/Tome cases. But each individual page's own ability-effect text (not present on the
+     aggregate table at all) revealed two real mechanic details entry 265 got wrong:
+
+     - **Lethal Strike's own damage-bonus window is 2.4 seconds, confirmed identical on all 8 pages**
+       ("...as additional damage for 2.4 seconds") — `Player.LethalStrikeDurationFrames` was `120`
+       (2.0s), a made-up placeholder from when entry 265 only had the aggregate table's "temporarily"
+       to go on. Fixed to `144` (2.4s × 60).
+     - **"Fire 2 additional projectiles," confirmed identical on all 8 pages** — `Weapon.Shoot()`'s
+       `HasDebuff(LethalStrike)` branch only ever spawned 1 extra projectile. Fixed to spawn 2, at
+       symmetric ±10° offsets from the main shot instead of the previous single +10° one, each still
+       carrying the shot's own already-Lethal-Strike-boosted damage and the equipped weapon's own art
+       (unchanged from entry 265/the later Dagger art retune).
+
+     Also confirmed, not fixed (flagging directly, consistent with entry 265's own already-documented
+     simplifications): every page's Effect(s) text also lists "MP Cost: 2 MP/proj" and "Cooldown: 0.1
+     sec" for the bonus projectiles specifically — a continuous per-shot mana drain while Lethal Strike
+     is active, on top of the Cloak's own activation cost. Not modeled; no other class's ability has a
+     per-shot resource cost in this engine (only a flat activation Mana cost, per entry 265's own
+     simplification #2 for the Cloak's 5.5s real-game cooldown, which also stays unmodeled), and adding
+     one here solely for Cloak would be a new, inconsistent subsystem rather than a data fix. The 0.1s
+     figure is moot regardless — this engine's attack-speed formula (`Player.cs`, universal across
+     every weapon) already caps normal fire rate well below once-per-0.1s at any reachable Dexterity.
+
+     Verified with a full `--no-incremental dotnet build` (0 errors, same two pre-existing warnings).
+     No scripted test or real-executable launch — both fixes are narrow (a duration constant, a loop
+     over a previously-inlined single projectile spawn) inside a mechanic already implemented and
+     boot-checked in entry 265, and neither touches save data.

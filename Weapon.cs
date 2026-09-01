@@ -263,27 +263,34 @@ namespace Realm
                     }
                 );
 
-                // "While having Lethal Strike, you also fire extra
-                // projectiles" — one extra shot at a small angular offset,
-                // reusing this attack's own damage/expiry/art (the currently
+                // "Fire 2 additional projectiles dealing damage equal to
+                // your Lethal Strike damage" — confirmed as exactly 2 on
+                // every one of the 8 tiered Cloaks' own individual wiki
+                // pages (the aggregate /wiki/cloaks table this was first
+                // ported from doesn't carry this ability text at all).
+                // Reuses this attack's own damage/expiry/art (the currently
                 // equipped weapon's own ProjectileImage, same as the main
-                // shot) so it reads as a second copy of the same attack
-                // rather than a mismatched effect.
+                // shot) so each reads as another copy of the same attack
+                // rather than a mismatched effect; offset to either side of
+                // the main shot rather than stacked on one side.
                 if (Player.Instance.HasDebuff(Entity.DebuffType.LethalStrike))
                 {
-                    Vector2 lethalStrikeVel = Extensions.FromPolar(
-                        aimAngle + randomSpread + MathHelper.ToRadians(10f),
-                        this.ProjectileMagnitude
-                    );
+                    foreach (float offsetDegrees in new[] { 10f, -10f })
+                    {
+                        Vector2 lethalStrikeVel = Extensions.FromPolar(
+                            aimAngle + randomSpread + MathHelper.ToRadians(offsetDegrees),
+                            this.ProjectileMagnitude
+                        );
 
-                    EntityManager.Add(
-                        new Projectile(spawnPosition, lethalStrikeVel)
-                        {
-                            image = this.ProjectileImage,
-                            Damage = (int)damage,
-                            ExpiresOnHit = expiresOnHit,
-                        }
-                    );
+                        EntityManager.Add(
+                            new Projectile(spawnPosition, lethalStrikeVel)
+                            {
+                                image = this.ProjectileImage,
+                                Damage = (int)damage,
+                                ExpiresOnHit = expiresOnHit,
+                            }
+                        );
+                    }
                 }
 
                 if (this.Type == WeaponType.Bow)
