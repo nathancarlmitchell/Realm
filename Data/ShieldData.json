@@ -12,11 +12,12 @@
         "VitalityBonus": 0,
         "WisdomBonus": 0,
         "ManaCost": 85,
-        "MinDamage": 50,
+        "MinDamage": 55,
         "MaxDamage": 90,
         "ImageName": "AbilityItems/Shields/0",
         "Shots": 1,
-        "ArcGapDegrees": 10.0
+        "ArcGapDegrees": 10.0,
+        "XpBonusPercent": 0.0
     },
     {
         "Name": "Iron Shield",
@@ -35,7 +36,8 @@
         "MaxDamage": 140,
         "ImageName": "AbilityItems/Shields/1",
         "Shots": 2,
-        "ArcGapDegrees": 10.0
+        "ArcGapDegrees": 10.0,
+        "XpBonusPercent": 0.0
     },
     {
         "Name": "Kite Shield",
@@ -54,7 +56,8 @@
         "MaxDamage": 190,
         "ImageName": "AbilityItems/Shields/2",
         "Shots": 3,
-        "ArcGapDegrees": 10.0
+        "ArcGapDegrees": 10.0,
+        "XpBonusPercent": 0.0
     },
     {
         "Name": "Shield of the Vanguard",
@@ -73,7 +76,8 @@
         "MaxDamage": 240,
         "ImageName": "AbilityItems/Shields/3",
         "Shots": 3,
-        "ArcGapDegrees": 10.0
+        "ArcGapDegrees": 10.0,
+        "XpBonusPercent": 1.0
     },
     {
         "Name": "Stormforged Shield",
@@ -92,7 +96,8 @@
         "MaxDamage": 280,
         "ImageName": "AbilityItems/Shields/4",
         "Shots": 4,
-        "ArcGapDegrees": 10.0
+        "ArcGapDegrees": 10.0,
+        "XpBonusPercent": 2.0
     },
     {
         "Name": "Runed Shield",
@@ -111,7 +116,8 @@
         "MaxDamage": 330,
         "ImageName": "AbilityItems/Shields/5",
         "Shots": 4,
-        "ArcGapDegrees": 10.0
+        "ArcGapDegrees": 10.0,
+        "XpBonusPercent": 4.0
     },
     {
         "Name": "Champion's Shield",
@@ -130,7 +136,8 @@
         "MaxDamage": 360,
         "ImageName": "AbilityItems/Shields/6",
         "Shots": 5,
-        "ArcGapDegrees": 10.0
+        "ArcGapDegrees": 10.0,
+        "XpBonusPercent": 6.0
     },
     {
         "Name": "Shield of Legends",
@@ -149,6 +156,7 @@
         "MaxDamage": 400,
         "ImageName": "AbilityItems/Shields/7",
         "Shots": 5,
-        "ArcGapDegrees": 10.0
+        "ArcGapDegrees": 10.0,
+        "XpBonusPercent": 8.0
     }
 ]

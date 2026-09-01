@@ -59,6 +59,7 @@ namespace Realm
                     ImageName = shieldData.ImageName,
                     Shots = shieldData.Shots,
                     ArcGapDegrees = shieldData.ArcGapDegrees,
+                    XpBonusPercent = shieldData.XpBonusPercent,
                 };
 
                 Player.Instance.EquipAbilityItem(shield);

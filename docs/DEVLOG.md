@@ -7535,3 +7535,32 @@ date/time for those individually; don't treat their grouping as meaning they all
      (equip a Quiver, use the ability, hit an enemy), which a boot-check alone doesn't exercise; relying
      on the careful 1:1 mirroring of the already-proven Paralyze/Stun pattern plus the explicit
      null-icon fix instead.
+
+272. **Reviewed Shields against https://www.realmeye.com/wiki/shields; found one real damage value
+     off, added the missing XP Bonus field, and confirmed a couple of things already correct.** Fetched
+     and parsed the real Tiered Shields table (8 tiers) plus its own intro text and its separate
+     WIS-scaling comparative table. `ManaCost` (85→100), `DefenseBonus` (2-14), `Shots` (1/2/3/3/4/4/5/5),
+     and the T6/T7 HP/MP bumps all already matched. One real mismatch found: Tier 0 Wooden Shield's
+     `MinDamage` was `50`, the wiki says `55` — fixed. Also confirmed two things already correct rather
+     than assumed: the wiki's own "Effect Duration: 3 seconds, Projectile Speed: 16, Range: 3.2"
+     baseline matches `Enemy.Stun()`'s 180-frame default and `Knight.cs`'s own
+     `ShieldProjectileMagnitude`/`Duration` constants exactly; and "all tiered shields give the user
+     25% damage reduction for 5 seconds" is the same thing as `Knight.cs`'s existing
+     `ShieldDamageReductionMultiplier = 0.75f` (taking 75% of a hit *is* a 25% reduction — not a bug,
+     just an equivalent phrasing) — no change needed to either.
+
+     Same XP Bonus gap as every other catalog reviewed this way: `ShieldData.cs` had no
+     `XpBonusPercent` field, and `Shield.LoadShield()` never copied it. Added the field, wired it into
+     `LoadShield()`'s initializer, populated the real per-tier schedule (0%/0%/0%/1%/2%/4%/6%/8% for
+     T0-T7).
+
+     **Flagging, not implementing**: the wiki's own intro text says "most shields received a statMod
+     that increases base damage," and its separate "Tiered Shields" comparative table gives the exact
+     formula — each tier's displayed damage range scales upward as the Knight's Wisdom exceeds 34 (a
+     `DamagePerStat` value per tier, e.g. Wooden Shield +2 damage per point of WIS over 34). `Knight.
+     UseAbility()` currently rolls a flat `rand.Next(AbilityItem.MinDamage, AbilityItem.MaxDamage)`
+     with no Wisdom scaling at all — not modeled, same as Quiver's Vulnerable was left unmodeled until
+     asked for directly. Left open rather than building it unprompted.
+
+     Verified with a full `--no-incremental dotnet build` (0 errors, same two pre-existing warnings).
+     No scripted test — no save data touched.

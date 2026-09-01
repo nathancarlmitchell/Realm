@@ -24,5 +24,9 @@ namespace Realm.Data
         // the shot's other stats.
         public int Shots { get; set; }
         public float ArcGapDegrees { get; set; }
+
+        // % bonus to XP gained while this Shield is equipped — see
+        // Equipment.XpBonusPercent.
+        public float XpBonusPercent { get; set; }
     }
 }
