@@ -8325,3 +8325,14 @@ date/time for those individually; don't treat their grouping as meaning they all
      then reverted the temporary code (`git diff --stat Game1.cs` clean). Checked file timestamps
      afterward to confirm the render-only test hadn't written anything — the real save files that had
      changed were all several minutes old already, from the user's own continued use, not this test.
+
+297. **Fixed ring drops always resolving to the same stat ring for a tier** — reported directly as
+     "the attack ring is the only ring to ever drop." `ItemSpawner.cs`'s per-kill drop-roll method used
+     `FirstOrDefault` for its Ring category while Weapon/Armor/AbilityItem in that same method already
+     picked randomly among every same-tier candidate — Ring was the one category that missed it, so
+     every tier's several different stat rings collapsed to whichever one happens to be listed first in
+     `RingData.json`. Fixed to the identical `.Where(...).ToList()` + `rand.Next(...)` pattern the
+     sibling categories already use. A second, separate ring-drop method elsewhere in the file already
+     randomized correctly, confirming this was an isolated miss, not a design gap. Plain `dotnet build`
+     (0 errors, same two pre-existing warnings); no scripted test. See [BUGFIXES.md](BUGFIXES.md)
+     entry 60.

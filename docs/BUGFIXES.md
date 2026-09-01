@@ -913,3 +913,18 @@ happened at once.
     `CharacterSlotsData.json`'s slot list, almost certainly a symptom of this exact bug from before the
     fix. It's inert (the manifest doesn't reference it, so the game never reads or shows it) and wasn't
     deleted — flagging it for the user rather than removing real files on my own judgment.
+
+60. **Ring drops always resolved to whichever stat ring happens to be listed first for a tier in**
+    **`RingData.json` (in practice, always the Attack ring)** — reported directly as "the attack ring
+    is the only ring to ever drop." `ItemSpawner.cs`'s per-kill drop-roll method used
+    `Game1.Instance.Rings.FirstOrDefault(x => x.Tier == tier)` for its Ring category, while the Weapon/
+    Armor/AbilityItem categories in that exact same method already picked randomly among every same-
+    tier candidate (`nextTierWeapons[rand.Next(nextTierWeapons.Count)]`, etc.) — Ring was the one
+    category that never got this treatment, so every tier's ~8 different stat rings (Attack/Defense/
+    Speed/etc. — see entry 266's 56-tiered-ring review) collapsed to always the same one. A second,
+    separate ring-drop method elsewhere in `ItemSpawner.cs` already randomized correctly, confirming
+    this was an isolated miss in one method, not a design gap. Fixed to the identical
+    `.Where(...).ToList()` + `rand.Next(...)` pattern already used by every sibling category in the
+    same method. Plain `dotnet build` (0 errors, same two pre-existing warnings); no scripted test —
+    a one-method fix mirroring an already-proven pattern used three other places in the same file, no
+    save data touched. See [DEVLOG.md](DEVLOG.md) entry 297.

@@ -412,12 +412,20 @@ namespace Realm
             // Drop ring.
             if (dropPool.HasFlag(LootCategory.Ring) && RollsCategory(dropChances, dropWeights, LootCategory.Ring, dropChance))
             {
+                // Picked at random among every ring at the resolved tier,
+                // same reasoning as the weapon/armor drops above —
+                // RingData.json lists several different stat rings per
+                // tier (Attack/Defense/Speed/etc.), so FirstOrDefault
+                // always resolved to whichever one happens to be listed
+                // first for that tier, regardless of which stat rings
+                // actually exist there.
                 int tier = ResolveDropTier(pointValue, Player.Instance.Ring.Tier, maxTierJump, TierRangeFor(dropTierRanges, LootCategory.Ring));
-                if (Game1.Instance.Rings.Exists(x => x.Tier == tier))
+                List<Ring> nextTierRings = Game1.Instance.Rings.Where(x => x.Tier == tier).ToList();
+
+                if (nextTierRings.Count > 0)
                 {
                     TrackBestBagRank(ref bestEquipmentRank, BagRankForRing(tier));
-                    Ring nextRing = Game1.Instance.Rings.FirstOrDefault(x => x.Tier == tier);
-                    items.Add(nextRing);
+                    items.Add(nextTierRings[rand.Next(nextTierRings.Count)]);
                 }
             }
 
