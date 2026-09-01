@@ -1,20 +1,5 @@
 [
     {
-        "Name": "Ring of Minor Defense",
-        "Description": "A silver ring that buzzes with a faint magical hum.",
-        "Tier": 0,
-        "MaxHealthBonus": 5,
-        "MaxManaBonus": 5,
-        "AttackBonus": 0,
-        "DefenseBonus": 1,
-        "SpeedBonus": 0,
-        "DexterityBonus": 0,
-        "VitalityBonus": 0,
-        "WisdomBonus": 0,
-        "XpBonusPercent": 0.0,
-        "ImageName": "Rings/Defense/0"
-    },
-    {
         "Name": "Ring of Attack",
         "Description": "A plain band that hums faintly with attack.",
         "Tier": 1,
@@ -118,6 +103,21 @@
         "WisdomBonus": 0,
         "XpBonusPercent": 8.0,
         "ImageName": "Rings/Attack/7"
+    },
+    {
+        "Name": "Ring of Minor Defense",
+        "Description": "A silver ring that buzzes with a faint magical hum.",
+        "Tier": 0,
+        "MaxHealthBonus": 5,
+        "MaxManaBonus": 5,
+        "AttackBonus": 0,
+        "DefenseBonus": 1,
+        "SpeedBonus": 0,
+        "DexterityBonus": 0,
+        "VitalityBonus": 0,
+        "WisdomBonus": 0,
+        "XpBonusPercent": 0.0,
+        "ImageName": "Rings/Defense/0"
     },
     {
         "Name": "Ring of Defense",

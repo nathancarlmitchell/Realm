@@ -387,6 +387,17 @@ namespace Realm
             if (Type == WeaponType.Bow)
                 text += $"{Environment.NewLine}Side Damage: {SideDamageMin} - {SideDamageMax}";
 
+            // BonusSummary() (Equipment's shared "+X% XP"/stat-bonus block —
+            // only XpBonusPercent is ever actually nonzero for a Weapon
+            // today, e.g. Sword/Dagger's real per-tier XP Bonus) was never
+            // included here before, unlike every other Equipment subtype's
+            // own TooltipText() override — this full replacement of the
+            // base implementation had silently dropped it. Appended
+            // unconditionally (even when it's just "No bonuses"), matching
+            // Armor/Ring/AbilityItem's own existing TooltipText()/
+            // BonusSummary() usage exactly.
+            text += $"{Environment.NewLine}{BonusSummary()}";
+
             return text;
         }
 
@@ -407,6 +418,12 @@ namespace Realm
                         : TooltipComparison.Same
                 )
             );
+
+            // Same gap as TooltipText() above — BonusComparisonLines()
+            // (XP Bonus and the other shared stat bonuses) was never
+            // included here either.
+            lines.AddRange(BonusComparisonLines(equipped));
+
             return lines;
         }
     }

@@ -7459,3 +7459,24 @@ date/time for those individually; don't treat their grouping as meaning they all
      Verified with a `dotnet build` (0 errors, same two pre-existing warnings). No scripted test — no
      save file was directly touched by this change, only referenced by name from data that no longer
      exists.
+
+269. **Fixed a real gap: `Weapon`'s tooltip never showed XP Bonus at all.** Prompted by a direct
+     "make sure all item tooltips display the XP Bonus" ask — audited every `Equipment` subtype's
+     `TooltipText()`/`ComparisonLines()` override, since `Equipment.cs`'s own `BonusSummary()`/
+     `BonusComparisonLines()` already handle `XpBonusPercent` generically (`if (XpBonusPercent != 0)
+     parts.Add($"+{XpBonusPercent}% XP")`) and every subtype needs to actually call them. `Armor`/
+     `Ring` don't override either method at all, so they already inherit this for free. `AbilityItem`
+     overrides both but still calls `BonusSummary()`/`BonusComparisonLines()` alongside its own
+     Damage/Mana Cost lines, so Spell/Quiver/Shield/Tome/Cloak were already correct too. `Weapon`,
+     however, fully replaced both methods with its own Damage-only content and never called either
+     helper — meaning **every Sword and Dagger's real per-tier XP Bonus (entries 263-266) has been
+     invisible in its tooltip this whole time**, in both the flat equip-slot hover
+     (`Weapon.TooltipText()`) and the colored inventory/bank/loot-bag comparison view
+     (`Weapon.ComparisonLines()`). Fixed by appending `BonusSummary()` to `TooltipText()`'s returned
+     string and `BonusComparisonLines(equipped)` to `ComparisonLines()`'s returned list, unconditionally
+     — matching exactly how `Armor`/`Ring`/`AbilityItem` already surface a bonus-less item as "No
+     bonuses" rather than special-casing Weapon to hide it.
+
+     Verified with a full `--no-incremental dotnet build` (0 errors, same two pre-existing warnings)
+     plus a plain minimized boot-check. No scripted test — pure tooltip-text change, no save data
+     touched.
