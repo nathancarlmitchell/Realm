@@ -7412,3 +7412,24 @@ date/time for those individually; don't treat their grouping as meaning they all
      the Content Pipeline resolved `Blade.png` and all 56 new ring images with no missing-asset
      errors) plus a plain minimized boot-check. No scripted test, no save-file backup — no existing
      save data touched.
+
+267. **Verified entry 266's 56 tiered Rings against a fresh re-fetch of all 8 wiki pages (all matched,
+     0 mismatches) and added real per-tier XP Bonus values.** Prompted by a general "which JSON data
+     files are missing XP Bonus values" sweep, which found `RingData.cs` has no `XpBonusPercent`
+     field at all (unlike `SwordData`/`DaggerData`/`CloakData`/`TomeData`, which already have it).
+     Re-fetched and re-parsed all 8 category pages fresh (not reused from entry 266's own fetch) and
+     diffed programmatically against the current `RingData.json` — every one of the 56 stat/HP/MP
+     values already matched exactly, so no data was wrong, just missing this one column.
+
+     Added `XpBonusPercent` to `Data/RingData.cs`, wired it into `Ring.LoadRing()` and
+     `Player.EquipHighestTierRing()`'s object initializers (mirroring every other equipment type's
+     copy-from-catalog pattern) — `Player.EquipmentXpBonusPercent` already summed `Ring.
+     XpBonusPercent` into the total from when it was first written, so this alone makes it live with
+     no other code changes. Populated per the given schedule (0%/0%/1%/2%/4%/6%/8% for T1-T7) across
+     all 56 of entry 266's real-named per-stat Rings. Scoped only to those 56, per direct instruction
+     — the two pre-existing entries ("Ring of Minor Defense" T0, "Ring of Vigor" T1) were left without
+     the field entirely (defaults to 0 via deserialization) rather than guessed at, since they weren't
+     part of this ask.
+
+     Verified with a `dotnet build` (0 errors, same two pre-existing warnings). No scripted test, no
+     save-file backup — data-only change plus three small, mechanical code additions.

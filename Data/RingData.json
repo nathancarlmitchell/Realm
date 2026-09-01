@@ -39,6 +39,7 @@
         "DexterityBonus": 0,
         "VitalityBonus": 0,
         "WisdomBonus": 0,
+        "XpBonusPercent": 0.0,
         "ImageName": "Rings/Attack/1"
     },
     {
@@ -53,6 +54,7 @@
         "DexterityBonus": 0,
         "VitalityBonus": 0,
         "WisdomBonus": 0,
+        "XpBonusPercent": 0.0,
         "ImageName": "Rings/Attack/2"
     },
     {
@@ -67,6 +69,7 @@
         "DexterityBonus": 0,
         "VitalityBonus": 0,
         "WisdomBonus": 0,
+        "XpBonusPercent": 1.0,
         "ImageName": "Rings/Attack/3"
     },
     {
@@ -81,6 +84,7 @@
         "DexterityBonus": 0,
         "VitalityBonus": 0,
         "WisdomBonus": 0,
+        "XpBonusPercent": 2.0,
         "ImageName": "Rings/Attack/4"
     },
     {
@@ -95,6 +99,7 @@
         "DexterityBonus": 0,
         "VitalityBonus": 0,
         "WisdomBonus": 0,
+        "XpBonusPercent": 4.0,
         "ImageName": "Rings/Attack/5"
     },
     {
@@ -109,6 +114,7 @@
         "DexterityBonus": 0,
         "VitalityBonus": 0,
         "WisdomBonus": 0,
+        "XpBonusPercent": 6.0,
         "ImageName": "Rings/Attack/6"
     },
     {
@@ -123,6 +129,7 @@
         "DexterityBonus": 0,
         "VitalityBonus": 0,
         "WisdomBonus": 0,
+        "XpBonusPercent": 8.0,
         "ImageName": "Rings/Attack/7"
     },
     {
@@ -137,6 +144,7 @@
         "DexterityBonus": 0,
         "VitalityBonus": 0,
         "WisdomBonus": 0,
+        "XpBonusPercent": 0.0,
         "ImageName": "Rings/Defense/1"
     },
     {
@@ -151,6 +159,7 @@
         "DexterityBonus": 0,
         "VitalityBonus": 0,
         "WisdomBonus": 0,
+        "XpBonusPercent": 0.0,
         "ImageName": "Rings/Defense/2"
     },
     {
@@ -165,6 +174,7 @@
         "DexterityBonus": 0,
         "VitalityBonus": 0,
         "WisdomBonus": 0,
+        "XpBonusPercent": 1.0,
         "ImageName": "Rings/Defense/3"
     },
     {
@@ -179,6 +189,7 @@
         "DexterityBonus": 0,
         "VitalityBonus": 0,
         "WisdomBonus": 0,
+        "XpBonusPercent": 2.0,
         "ImageName": "Rings/Defense/4"
     },
     {
@@ -193,6 +204,7 @@
         "DexterityBonus": 0,
         "VitalityBonus": 0,
         "WisdomBonus": 0,
+        "XpBonusPercent": 4.0,
         "ImageName": "Rings/Defense/5"
     },
     {
@@ -207,6 +219,7 @@
         "DexterityBonus": 0,
         "VitalityBonus": 0,
         "WisdomBonus": 0,
+        "XpBonusPercent": 6.0,
         "ImageName": "Rings/Defense/6"
     },
     {
@@ -221,6 +234,7 @@
         "DexterityBonus": 0,
         "VitalityBonus": 0,
         "WisdomBonus": 0,
+        "XpBonusPercent": 8.0,
         "ImageName": "Rings/Defense/7"
     },
     {
@@ -235,6 +249,7 @@
         "DexterityBonus": 0,
         "VitalityBonus": 0,
         "WisdomBonus": 0,
+        "XpBonusPercent": 0.0,
         "ImageName": "Rings/Speed/1"
     },
     {
@@ -249,6 +264,7 @@
         "DexterityBonus": 0,
         "VitalityBonus": 0,
         "WisdomBonus": 0,
+        "XpBonusPercent": 0.0,
         "ImageName": "Rings/Speed/2"
     },
     {
@@ -263,6 +279,7 @@
         "DexterityBonus": 0,
         "VitalityBonus": 0,
         "WisdomBonus": 0,
+        "XpBonusPercent": 1.0,
         "ImageName": "Rings/Speed/3"
     },
     {
@@ -277,6 +294,7 @@
         "DexterityBonus": 0,
         "VitalityBonus": 0,
         "WisdomBonus": 0,
+        "XpBonusPercent": 2.0,
         "ImageName": "Rings/Speed/4"
     },
     {
@@ -291,6 +309,7 @@
         "DexterityBonus": 0,
         "VitalityBonus": 0,
         "WisdomBonus": 0,
+        "XpBonusPercent": 4.0,
         "ImageName": "Rings/Speed/5"
     },
     {
@@ -305,6 +324,7 @@
         "DexterityBonus": 0,
         "VitalityBonus": 0,
         "WisdomBonus": 0,
+        "XpBonusPercent": 6.0,
         "ImageName": "Rings/Speed/6"
     },
     {
@@ -319,6 +339,7 @@
         "DexterityBonus": 0,
         "VitalityBonus": 0,
         "WisdomBonus": 0,
+        "XpBonusPercent": 8.0,
         "ImageName": "Rings/Speed/7"
     },
     {
@@ -333,6 +354,7 @@
         "DexterityBonus": 3,
         "VitalityBonus": 0,
         "WisdomBonus": 0,
+        "XpBonusPercent": 0.0,
         "ImageName": "Rings/Dexterity/1"
     },
     {
@@ -347,6 +369,7 @@
         "DexterityBonus": 6,
         "VitalityBonus": 0,
         "WisdomBonus": 0,
+        "XpBonusPercent": 0.0,
         "ImageName": "Rings/Dexterity/2"
     },
     {
@@ -361,6 +384,7 @@
         "DexterityBonus": 7,
         "VitalityBonus": 0,
         "WisdomBonus": 0,
+        "XpBonusPercent": 1.0,
         "ImageName": "Rings/Dexterity/3"
     },
     {
@@ -375,6 +399,7 @@
         "DexterityBonus": 8,
         "VitalityBonus": 0,
         "WisdomBonus": 0,
+        "XpBonusPercent": 2.0,
         "ImageName": "Rings/Dexterity/4"
     },
     {
@@ -389,6 +414,7 @@
         "DexterityBonus": 9,
         "VitalityBonus": 0,
         "WisdomBonus": 0,
+        "XpBonusPercent": 4.0,
         "ImageName": "Rings/Dexterity/5"
     },
     {
@@ -403,6 +429,7 @@
         "DexterityBonus": 10,
         "VitalityBonus": 0,
         "WisdomBonus": 0,
+        "XpBonusPercent": 6.0,
         "ImageName": "Rings/Dexterity/6"
     },
     {
@@ -417,6 +444,7 @@
         "DexterityBonus": 11,
         "VitalityBonus": 0,
         "WisdomBonus": 0,
+        "XpBonusPercent": 8.0,
         "ImageName": "Rings/Dexterity/7"
     },
     {
@@ -431,6 +459,7 @@
         "DexterityBonus": 0,
         "VitalityBonus": 3,
         "WisdomBonus": 0,
+        "XpBonusPercent": 0.0,
         "ImageName": "Rings/Vitality/1"
     },
     {
@@ -445,6 +474,7 @@
         "DexterityBonus": 0,
         "VitalityBonus": 6,
         "WisdomBonus": 0,
+        "XpBonusPercent": 0.0,
         "ImageName": "Rings/Vitality/2"
     },
     {
@@ -459,6 +489,7 @@
         "DexterityBonus": 0,
         "VitalityBonus": 7,
         "WisdomBonus": 0,
+        "XpBonusPercent": 1.0,
         "ImageName": "Rings/Vitality/3"
     },
     {
@@ -473,6 +504,7 @@
         "DexterityBonus": 0,
         "VitalityBonus": 8,
         "WisdomBonus": 0,
+        "XpBonusPercent": 2.0,
         "ImageName": "Rings/Vitality/4"
     },
     {
@@ -487,6 +519,7 @@
         "DexterityBonus": 0,
         "VitalityBonus": 9,
         "WisdomBonus": 0,
+        "XpBonusPercent": 4.0,
         "ImageName": "Rings/Vitality/5"
     },
     {
@@ -501,6 +534,7 @@
         "DexterityBonus": 0,
         "VitalityBonus": 10,
         "WisdomBonus": 0,
+        "XpBonusPercent": 6.0,
         "ImageName": "Rings/Vitality/6"
     },
     {
@@ -515,6 +549,7 @@
         "DexterityBonus": 0,
         "VitalityBonus": 11,
         "WisdomBonus": 0,
+        "XpBonusPercent": 8.0,
         "ImageName": "Rings/Vitality/7"
     },
     {
@@ -529,6 +564,7 @@
         "DexterityBonus": 0,
         "VitalityBonus": 0,
         "WisdomBonus": 3,
+        "XpBonusPercent": 0.0,
         "ImageName": "Rings/Wisdom/1"
     },
     {
@@ -543,6 +579,7 @@
         "DexterityBonus": 0,
         "VitalityBonus": 0,
         "WisdomBonus": 6,
+        "XpBonusPercent": 0.0,
         "ImageName": "Rings/Wisdom/2"
     },
     {
@@ -557,6 +594,7 @@
         "DexterityBonus": 0,
         "VitalityBonus": 0,
         "WisdomBonus": 7,
+        "XpBonusPercent": 1.0,
         "ImageName": "Rings/Wisdom/3"
     },
     {
@@ -571,6 +609,7 @@
         "DexterityBonus": 0,
         "VitalityBonus": 0,
         "WisdomBonus": 8,
+        "XpBonusPercent": 2.0,
         "ImageName": "Rings/Wisdom/4"
     },
     {
@@ -585,6 +624,7 @@
         "DexterityBonus": 0,
         "VitalityBonus": 0,
         "WisdomBonus": 9,
+        "XpBonusPercent": 4.0,
         "ImageName": "Rings/Wisdom/5"
     },
     {
@@ -599,6 +639,7 @@
         "DexterityBonus": 0,
         "VitalityBonus": 0,
         "WisdomBonus": 10,
+        "XpBonusPercent": 6.0,
         "ImageName": "Rings/Wisdom/6"
     },
     {
@@ -613,6 +654,7 @@
         "DexterityBonus": 0,
         "VitalityBonus": 0,
         "WisdomBonus": 11,
+        "XpBonusPercent": 8.0,
         "ImageName": "Rings/Wisdom/7"
     },
     {
@@ -627,6 +669,7 @@
         "DexterityBonus": 0,
         "VitalityBonus": 0,
         "WisdomBonus": 0,
+        "XpBonusPercent": 0.0,
         "ImageName": "Rings/Health/1"
     },
     {
@@ -641,6 +684,7 @@
         "DexterityBonus": 0,
         "VitalityBonus": 0,
         "WisdomBonus": 0,
+        "XpBonusPercent": 0.0,
         "ImageName": "Rings/Health/2"
     },
     {
@@ -655,6 +699,7 @@
         "DexterityBonus": 0,
         "VitalityBonus": 0,
         "WisdomBonus": 0,
+        "XpBonusPercent": 1.0,
         "ImageName": "Rings/Health/3"
     },
     {
@@ -669,6 +714,7 @@
         "DexterityBonus": 0,
         "VitalityBonus": 0,
         "WisdomBonus": 0,
+        "XpBonusPercent": 2.0,
         "ImageName": "Rings/Health/4"
     },
     {
@@ -683,6 +729,7 @@
         "DexterityBonus": 0,
         "VitalityBonus": 0,
         "WisdomBonus": 0,
+        "XpBonusPercent": 4.0,
         "ImageName": "Rings/Health/5"
     },
     {
@@ -697,6 +744,7 @@
         "DexterityBonus": 0,
         "VitalityBonus": 0,
         "WisdomBonus": 0,
+        "XpBonusPercent": 6.0,
         "ImageName": "Rings/Health/6"
     },
     {
@@ -711,6 +759,7 @@
         "DexterityBonus": 0,
         "VitalityBonus": 0,
         "WisdomBonus": 0,
+        "XpBonusPercent": 8.0,
         "ImageName": "Rings/Health/7"
     },
     {
@@ -725,6 +774,7 @@
         "DexterityBonus": 0,
         "VitalityBonus": 0,
         "WisdomBonus": 0,
+        "XpBonusPercent": 0.0,
         "ImageName": "Rings/Magic/1"
     },
     {
@@ -739,6 +789,7 @@
         "DexterityBonus": 0,
         "VitalityBonus": 0,
         "WisdomBonus": 0,
+        "XpBonusPercent": 0.0,
         "ImageName": "Rings/Magic/2"
     },
     {
@@ -753,6 +804,7 @@
         "DexterityBonus": 0,
         "VitalityBonus": 0,
         "WisdomBonus": 0,
+        "XpBonusPercent": 1.0,
         "ImageName": "Rings/Magic/3"
     },
     {
@@ -767,6 +819,7 @@
         "DexterityBonus": 0,
         "VitalityBonus": 0,
         "WisdomBonus": 0,
+        "XpBonusPercent": 2.0,
         "ImageName": "Rings/Magic/4"
     },
     {
@@ -781,6 +834,7 @@
         "DexterityBonus": 0,
         "VitalityBonus": 0,
         "WisdomBonus": 0,
+        "XpBonusPercent": 4.0,
         "ImageName": "Rings/Magic/5"
     },
     {
@@ -795,6 +849,7 @@
         "DexterityBonus": 0,
         "VitalityBonus": 0,
         "WisdomBonus": 0,
+        "XpBonusPercent": 6.0,
         "ImageName": "Rings/Magic/6"
     },
     {
@@ -809,6 +864,7 @@
         "DexterityBonus": 0,
         "VitalityBonus": 0,
         "WisdomBonus": 0,
+        "XpBonusPercent": 8.0,
         "ImageName": "Rings/Magic/7"
     }
 ]

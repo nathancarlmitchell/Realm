@@ -937,6 +937,7 @@ namespace Realm
                 DexterityBonus = best.DexterityBonus,
                 VitalityBonus = best.VitalityBonus,
                 WisdomBonus = best.WisdomBonus,
+                XpBonusPercent = best.XpBonusPercent,
                 ImageName = best.ImageName,
             };
 

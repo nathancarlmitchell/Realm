@@ -47,6 +47,7 @@ namespace Realm
                     DexterityBonus = ringData.DexterityBonus,
                     VitalityBonus = ringData.VitalityBonus,
                     WisdomBonus = ringData.WisdomBonus,
+                    XpBonusPercent = ringData.XpBonusPercent,
                     ImageName = ringData.ImageName,
                 };
 
