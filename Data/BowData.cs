@@ -30,5 +30,12 @@
         public string ImageName { get; set; }
         public string MainProjectileImageName { get; set; }
         public string SideProjectileImageName { get; set; }
+
+        // % bonus to XP gained while this Bow is equipped — see
+        // Equipment.XpBonusPercent. Missing entirely until reviewed against
+        // each tiered Bow's own dedicated wiki page — every other
+        // WeaponData-backed type with a real per-tier XP Bonus (Sword,
+        // Dagger) already had this field.
+        public float XpBonusPercent { get; set; }
     }
 }

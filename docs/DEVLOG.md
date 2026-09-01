@@ -7905,3 +7905,30 @@ date/time for those individually; don't treat their grouping as meaning they all
      item reviewed so far. No changes made.
 
      No build needed — no file was touched.
+
+284. **Reviewed Bows against the wiki for the first time ever, including each of the 15 tiered Bows'**
+     **own dedicated page** (https://www.realmeye.com/wiki/bows) — unlike Sword/Shield/Quiver/Spell/
+     Tome/Cloak/Ring, `Data/BowData.cs` had never been checked against any wiki source before. Found
+     `Main`/`SideDamageMin`/`Max` already correct for all 15 tiers (matches the aggregate table's
+     "Damage (Average)" column exactly), and confirmed on every individual tier page that Main and Side
+     shots both fire at "16 tiles/second, 0.44 second lifetime, 7.04 tile range" and Side shots fire in
+     a fixed "arc gap: 14°" fan — all of which already matches `BowData.json`'s existing
+     `ProjectileMagnitude`/`ProjectileDuration`/`ArcGapDegrees` (8.533333/26/14.0) exactly. Also
+     confirmed two effects already correctly modeled: "Shots hit multiple targets" (Main and Side both
+     pierce — `Weapon.Shoot()`'s existing `expiresOnHit` check already excludes `WeaponType.Bow`) and
+     Side shots' own "Ignores defense of target" (Bow's Armor Piercing effect — `Weapon.Shoot()`'s Bow
+     branch already sets `IgnoresDefense = true` only on the Side projectiles, never Main).
+
+     One real gap found: **`BowData` had no `XpBonusPercent` field at all** — unlike Sword/Dagger, which
+     both got a dedicated field for this exact reason, Bow was never given one, so every Bow silently
+     gave 0% XP Bonus regardless of tier. Confirmed via the aggregate table and every individual page
+     that the real schedule is identical to Sword's own: 0% for tiers 0-6, then 1% per tier from 7 up to
+     8% at tier 14. Added the field to `Data/BowData.cs`, populated `Data/BowData.json`, and wired it
+     into `Util.LoadBowData()`'s `Weapon` initializer — `Weapon.LoadWeapon()`/
+     `Player.EquipHighestTierWeapon()` needed no changes at all, since entry 279's fix already made both
+     copy `XpBonusPercent` generically off whatever `Weapon` object is passed in, regardless of which
+     catalog it came from.
+
+     Verified with a full `--no-incremental dotnet build` (0 errors, same two pre-existing warnings).
+     No scripted test — a data-file addition plus one new field copy in an existing loader, no save
+     data touched.

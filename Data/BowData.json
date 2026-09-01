@@ -12,7 +12,8 @@
         "ArcGapDegrees": 14.0,
         "ImageName": "Weapons/Bows/0",
         "MainProjectileImageName": "Weapons/Bows/Projectiles/Main/0",
-        "SideProjectileImageName": "Weapons/Bows/Projectiles/Side/0"
+        "SideProjectileImageName": "Weapons/Bows/Projectiles/Side/0",
+        "XpBonusPercent": 0.0
     },
     {
         "Name": "Reinforced Bow",
@@ -27,7 +28,8 @@
         "ArcGapDegrees": 14.0,
         "ImageName": "Weapons/Bows/1",
         "MainProjectileImageName": "Weapons/Bows/Projectiles/Main/0",
-        "SideProjectileImageName": "Weapons/Bows/Projectiles/Side/1"
+        "SideProjectileImageName": "Weapons/Bows/Projectiles/Side/1",
+        "XpBonusPercent": 0.0
     },
     {
         "Name": "Hardwood Bow",
@@ -42,7 +44,8 @@
         "ArcGapDegrees": 14.0,
         "ImageName": "Weapons/Bows/2",
         "MainProjectileImageName": "Weapons/Bows/Projectiles/Main/0",
-        "SideProjectileImageName": "Weapons/Bows/Projectiles/Side/2"
+        "SideProjectileImageName": "Weapons/Bows/Projectiles/Side/2",
+        "XpBonusPercent": 0.0
     },
     {
         "Name": "Greywood Bow",
@@ -57,7 +60,8 @@
         "ArcGapDegrees": 14.0,
         "ImageName": "Weapons/Bows/3",
         "MainProjectileImageName": "Weapons/Bows/Projectiles/Main/0",
-        "SideProjectileImageName": "Weapons/Bows/Projectiles/Side/0"
+        "SideProjectileImageName": "Weapons/Bows/Projectiles/Side/0",
+        "XpBonusPercent": 0.0
     },
     {
         "Name": "Ironwood Bow",
@@ -72,7 +76,8 @@
         "ArcGapDegrees": 14.0,
         "ImageName": "Weapons/Bows/4",
         "MainProjectileImageName": "Weapons/Bows/Projectiles/Main/0",
-        "SideProjectileImageName": "Weapons/Bows/Projectiles/Side/4"
+        "SideProjectileImageName": "Weapons/Bows/Projectiles/Side/4",
+        "XpBonusPercent": 0.0
     },
     {
         "Name": "Fire Bow",
@@ -87,7 +92,8 @@
         "ArcGapDegrees": 14.0,
         "ImageName": "Weapons/Bows/5",
         "MainProjectileImageName": "Weapons/Bows/Projectiles/Main/0",
-        "SideProjectileImageName": "Weapons/Bows/Projectiles/Side/5"
+        "SideProjectileImageName": "Weapons/Bows/Projectiles/Side/5",
+        "XpBonusPercent": 0.0
     },
     {
         "Name": "Sharpshooter Bow",
@@ -102,7 +108,8 @@
         "ArcGapDegrees": 14.0,
         "ImageName": "Weapons/Bows/6",
         "MainProjectileImageName": "Weapons/Bows/Projectiles/Main/0",
-        "SideProjectileImageName": "Weapons/Bows/Projectiles/Side/0"
+        "SideProjectileImageName": "Weapons/Bows/Projectiles/Side/0",
+        "XpBonusPercent": 0.0
     },
     {
         "Name": "Redwood Bow",
@@ -117,7 +124,8 @@
         "ArcGapDegrees": 14.0,
         "ImageName": "Weapons/Bows/7",
         "MainProjectileImageName": "Weapons/Bows/Projectiles/Main/7",
-        "SideProjectileImageName": "Weapons/Bows/Projectiles/Side/7"
+        "SideProjectileImageName": "Weapons/Bows/Projectiles/Side/7",
+        "XpBonusPercent": 1.0
     },
     {
         "Name": "Golden Bow",
@@ -132,7 +140,8 @@
         "ArcGapDegrees": 14.0,
         "ImageName": "Weapons/Bows/8",
         "MainProjectileImageName": "Weapons/Bows/Projectiles/Main/8",
-        "SideProjectileImageName": "Weapons/Bows/Projectiles/Side/8"
+        "SideProjectileImageName": "Weapons/Bows/Projectiles/Side/8",
+        "XpBonusPercent": 2.0
     },
     {
         "Name": "Verdant Bow",
@@ -147,7 +156,8 @@
         "ArcGapDegrees": 14.0,
         "ImageName": "Weapons/Bows/9",
         "MainProjectileImageName": "Weapons/Bows/Projectiles/Main/9",
-        "SideProjectileImageName": "Weapons/Bows/Projectiles/Side/9"
+        "SideProjectileImageName": "Weapons/Bows/Projectiles/Side/9",
+        "XpBonusPercent": 3.0
     },
     {
         "Name": "Bow of Fey Magic",
@@ -162,7 +172,8 @@
         "ArcGapDegrees": 14.0,
         "ImageName": "Weapons/Bows/10",
         "MainProjectileImageName": "Weapons/Bows/Projectiles/Main/10",
-        "SideProjectileImageName": "Weapons/Bows/Projectiles/Side/10"
+        "SideProjectileImageName": "Weapons/Bows/Projectiles/Side/10",
+        "XpBonusPercent": 4.0
     },
     {
         "Name": "Bow of Innocent Blood",
@@ -177,7 +188,8 @@
         "ArcGapDegrees": 14.0,
         "ImageName": "Weapons/Bows/11",
         "MainProjectileImageName": "Weapons/Bows/Projectiles/Main/11",
-        "SideProjectileImageName": "Weapons/Bows/Projectiles/Side/11"
+        "SideProjectileImageName": "Weapons/Bows/Projectiles/Side/11",
+        "XpBonusPercent": 5.0
     },
     {
         "Name": "Bow of Covert Havens",
@@ -192,7 +204,8 @@
         "ArcGapDegrees": 14.0,
         "ImageName": "Weapons/Bows/12",
         "MainProjectileImageName": "Weapons/Bows/Projectiles/Main/12",
-        "SideProjectileImageName": "Weapons/Bows/Projectiles/Side/12"
+        "SideProjectileImageName": "Weapons/Bows/Projectiles/Side/12",
+        "XpBonusPercent": 6.0
     },
     {
         "Name": "Bow of Mystical Energy",
@@ -207,7 +220,8 @@
         "ArcGapDegrees": 14.0,
         "ImageName": "Weapons/Bows/13",
         "MainProjectileImageName": "Weapons/Bows/Projectiles/Main/13",
-        "SideProjectileImageName": "Weapons/Bows/Projectiles/Side/13"
+        "SideProjectileImageName": "Weapons/Bows/Projectiles/Side/13",
+        "XpBonusPercent": 7.0
     },
     {
         "Name": "Bow of Deep Enchantment",
@@ -222,6 +236,7 @@
         "ArcGapDegrees": 14.0,
         "ImageName": "Weapons/Bows/14",
         "MainProjectileImageName": "Weapons/Bows/Projectiles/Main/14",
-        "SideProjectileImageName": "Weapons/Bows/Projectiles/Side/14"
+        "SideProjectileImageName": "Weapons/Bows/Projectiles/Side/14",
+        "XpBonusPercent": 8.0
     }
 ]

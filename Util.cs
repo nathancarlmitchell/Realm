@@ -663,6 +663,7 @@ namespace Realm
                             SideProjectileImage = sideProjectileTexture,
                             SideProjectileImageName = bowData[i].SideProjectileImageName,
                             ArcGapDegrees = bowData[i].ArcGapDegrees,
+                            XpBonusPercent = bowData[i].XpBonusPercent,
                         }
                     );
                 }
