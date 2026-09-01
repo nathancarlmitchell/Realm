@@ -61,6 +61,10 @@ namespace Realm
             Healing,
             Unstable,
             LethalStrike,
+
+            // No icon (see DebuffIcon()'s own comment) — per direct
+            // request, this debuff has no visual indicator at all.
+            Vulnerable,
         }
 
         private readonly Dictionary<DebuffType, int> activeDebuffs = new();
@@ -112,9 +116,20 @@ namespace Realm
             if (activeDebuffs.Count == 0)
                 return;
 
+            // A debuff type with no icon (e.g. Vulnerable — see its own enum
+            // comment) is skipped entirely here rather than leaving a gap in
+            // the row or passing a null texture to spriteBatch.Draw(), which
+            // would throw.
             List<Texture2D> activeIcons = [];
             foreach (var type in activeDebuffs.Keys)
-                activeIcons.Add(DebuffIcon(type));
+            {
+                Texture2D icon = DebuffIcon(type);
+                if (icon != null)
+                    activeIcons.Add(icon);
+            }
+
+            if (activeIcons.Count == 0)
+                return;
 
             int step = DebuffIconDrawSize + DebuffIconSpacing;
             float totalWidth = (step * activeIcons.Count) - DebuffIconSpacing;
@@ -149,6 +164,11 @@ namespace Realm
                 DebuffType.Healing => Art.Healing,
                 DebuffType.Unstable => Art.Unstable,
                 DebuffType.LethalStrike => Art.LethalStrike,
+                // Vulnerable deliberately has no icon — see its own enum
+                // comment. Falls through to the same null the default arm
+                // below returns; DrawDebuffIndicators() skips null icons
+                // rather than trying to draw them.
+                DebuffType.Vulnerable => null,
                 _ => null,
             };
 

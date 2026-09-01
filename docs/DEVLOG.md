@@ -7506,3 +7506,32 @@ date/time for those individually; don't treat their grouping as meaning they all
 
      Verified with a `dotnet build` (0 errors, same two pre-existing warnings). No scripted test — no
      save data touched.
+
+271. **Implemented the Vulnerable debuff flagged (not built) in entry 270**, per direct follow-up
+     request — "targets receive 110% damage for 3 seconds after being hit," Quiver's real per-tier
+     effect. New `Entity.DebuffType.Vulnerable` — explicitly **no icon**, per direct instruction —
+     which required actually hardening the debuff-icon pipeline rather than just omitting a
+     `DebuffIcon()` case: `DrawDebuffIndicators()` previously built its icon list unconditionally from
+     every active debuff and handed the result straight to `spriteBatch.Draw()`, so an unmapped type
+     (a null icon) would have thrown the moment it was applied. Fixed generically — icons that resolve
+     to `null` are filtered out before layout/draw, so any *future* icon-less debuff is safe too, not
+     just this one.
+
+     `Enemy.Vulnerable(durationFrames = 180)` mirrors `Paralyze()`/`Stun()`'s exact shape (`ApplyDebuff`,
+     same 3-second default), but — unlike those two — doesn't block movement or attacks at all; it's
+     purely a damage multiplier. `Enemy.WasShot()` applies a flat `VulnerableDamageMultiplier` (1.1f)
+     to the raw hit while the debuff is active, layered before Defense's own reduction — same
+     ordering `Player.Hit()`'s own `DamageTakenMultiplier` already uses for the reverse direction.
+     Applied via a new `Projectile.VulnerableOnHit` flag (mirroring `ParalyzesOnHit`/`StunsOnHit`
+     exactly) checked in `EntityManager.cs`'s existing hit-resolution block, right alongside those
+     two — since it's checked *after* `WasShot()` already ran for that hit, Vulnerable never affects
+     the hit that applies it, only ones that land during its following 3 seconds, matching the wiki's
+     own "...after being hit" wording precisely. `Archer.cs`'s Quiver ability shot now sets
+     `VulnerableOnHit = true` alongside its existing `ParalyzesOnHit = true`.
+
+     Verified with a full `--no-incremental dotnet build` (0 errors, same two pre-existing warnings)
+     plus a plain minimized boot-check. No scripted test, per the standing convention — this doesn't
+     touch save/persistence code, and the mechanic only ever triggers via actual Archer gameplay
+     (equip a Quiver, use the ability, hit an enemy), which a boot-check alone doesn't exercise; relying
+     on the careful 1:1 mirroring of the already-proven Paralyze/Stun pattern plus the explicit
+     null-icon fix instead.

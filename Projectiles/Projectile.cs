@@ -37,6 +37,14 @@ namespace Realm.Projectiles
         // e.g. Knight's Shield Slam.
         public bool StunsOnHit = false;
 
+        // Whether this projectile makes the enemy it hits Vulnerable
+        // (Enemy.Vulnerable(), using that method's default duration) — a
+        // flat increase to all damage the enemy takes while active, not a
+        // movement/attack-blocking debuff like the two above. False for
+        // everything except whatever a class explicitly opts in — e.g.
+        // Archer's Quiver ability.
+        public bool VulnerableOnHit = false;
+
         // Whether this projectile's damage skips the target's Defense
         // reduction entirely (Enemy.WasShot()'s Armor Piercing path). False
         // for everything except whatever a class explicitly opts in — e.g.

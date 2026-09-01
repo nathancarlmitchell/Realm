@@ -506,6 +506,10 @@ namespace Realm
                     {
                         enemies[i].Stun();
                     }
+                    if (bullets[j].VulnerableOnHit)
+                    {
+                        enemies[i].Vulnerable();
+                    }
                     if (bullets[j].ExpiresOnHit)
                     {
                         bullets[j].IsExpired = true;

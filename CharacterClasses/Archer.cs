@@ -163,7 +163,10 @@ namespace Realm.CharacterClasses
                 // -gap/0/+gap). Same shot for every position: piercing
                 // (ExpiresOnHit=false — "Piercing Shots hit multiple
                 // targets"), paralyzing, using the Quiver's own independent
-                // speed/lifetime/art rather than the equipped Bow's.
+                // speed/lifetime/art rather than the equipped Bow's. Also
+                // Vulnerable ("Targets receive 110% damage for 3 seconds
+                // after being hit") — the real wiki's own tiered-Quiver
+                // effect, alongside Paralyzed.
                 for (int i = 0; i < quiver.Shots; i++)
                 {
                     float angle = aimAngle + (i - (quiver.Shots - 1) / 2f) * arcGapRad;
@@ -177,6 +180,7 @@ namespace Realm.CharacterClasses
                             image = quiver.ProjectileImage,
                             ExpiresOnHit = false,
                             ParalyzesOnHit = true,
+                            VulnerableOnHit = true,
                         }
                     );
                 }

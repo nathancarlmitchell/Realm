@@ -103,6 +103,22 @@ namespace Realm
             ApplyDebuff(DebuffType.Stunned, durationFrames);
         }
 
+        // Makes this enemy Vulnerable, increasing all damage it takes
+        // (WasShot() below) by VulnerableDamageMultiplier for durationFrames
+        // — unlike Paralyze()/Stun() above, this doesn't block movement or
+        // attacks at all. No icon (see DebuffIcon()'s own comment) — per
+        // direct request, this debuff has no visual indicator. Default is 3
+        // seconds at 60fps, matching the real wiki's own "receive 110%
+        // damage for 3 seconds after being hit."
+        public void Vulnerable(int durationFrames = 180)
+        {
+            ApplyDebuff(DebuffType.Vulnerable, durationFrames);
+        }
+
+        // "Targets receive 110% damage... after being hit" — a flat +10%
+        // multiplier, applied in WasShot() below.
+        private const float VulnerableDamageMultiplier = 1.1f;
+
         // Permanent tint applied to this enemy's sprite, multiplied into
         // the same fade-in alpha every enemy already gets on spawn (see
         // Update() below) — lets a factory reuse an existing texture as a
@@ -292,6 +308,12 @@ namespace Realm
                 return;
 
             Debug.WriteLine(damage);
+
+            // Vulnerable (see Vulnerable() above) — applied to the raw hit,
+            // before Defense's own reduction below, same layering
+            // Player.Hit()'s own DamageTakenMultiplier uses.
+            if (HasDebuff(DebuffType.Vulnerable))
+                damage = (int)(damage * VulnerableDamageMultiplier);
 
             // Defense reduces damage 1-for-1 but caps at 90% reduction — a
             // shot always deals at least 10% of its raw damage, matching
