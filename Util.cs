@@ -970,6 +970,7 @@ namespace Realm
                             VitalityBonus = ringData[i].VitalityBonus,
                             WisdomBonus = ringData[i].WisdomBonus,
                             ImageName = ringData[i].ImageName,
+                            XpBonusPercent = ringData[i].XpBonusPercent,
                         }
                     );
                 }
@@ -1009,6 +1010,9 @@ namespace Realm
                     Texture2D spellTexture = Game1.Instance.Content.Load<Texture2D>(
                         spellData[i].ImageName
                     );
+                    Texture2D projectileTexture = Game1.Instance.Content.Load<Texture2D>(
+                        spellData[i].ProjectileImageName
+                    );
 
                     spells.Add(
                         new Spell(spellTexture)
@@ -1028,6 +1032,12 @@ namespace Realm
                             MinDamage = spellData[i].MinDamage,
                             MaxDamage = spellData[i].MaxDamage,
                             ImageName = spellData[i].ImageName,
+                            ProjectileMagnitude = spellData[i].ProjectileMagnitude,
+                            ProjectileDuration = spellData[i].ProjectileDuration,
+                            ProjectileImage = projectileTexture,
+                            ProjectileImageName = spellData[i].ProjectileImageName,
+                            DamagePerWisOver42 = spellData[i].DamagePerWisOver42,
+                            XpBonusPercent = spellData[i].XpBonusPercent,
                         }
                     );
                 }
@@ -1095,6 +1105,8 @@ namespace Realm
                             ProjectileDuration = quiverData[i].ProjectileDuration,
                             ProjectileImage = projectileTexture,
                             ProjectileImageName = quiverData[i].ProjectileImageName,
+                            XpBonusPercent = quiverData[i].XpBonusPercent,
+                            DamagePerWisOver34 = quiverData[i].DamagePerWisOver34,
                         }
                     );
                 }
@@ -1155,6 +1167,8 @@ namespace Realm
                             ImageName = shieldData[i].ImageName,
                             Shots = shieldData[i].Shots,
                             ArcGapDegrees = shieldData[i].ArcGapDegrees,
+                            XpBonusPercent = shieldData[i].XpBonusPercent,
+                            DamagePerWisOver34 = shieldData[i].DamagePerWisOver34,
                         }
                     );
                 }
@@ -1218,6 +1232,9 @@ namespace Realm
                             HealAmount = tomeData[i].HealAmount,
                             HealingAmountPerSecond = tomeData[i].HealingAmountPerSecond,
                             HealingDurationSeconds = tomeData[i].HealingDurationSeconds,
+                            HealAmountPerWisOver70 = tomeData[i].HealAmountPerWisOver70,
+                            HealingRatePerWisOver70 = tomeData[i].HealingRatePerWisOver70,
+                            DamagePerWisOver70 = tomeData[i].DamagePerWisOver70,
                         }
                     );
                 }

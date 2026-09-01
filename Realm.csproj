@@ -22,7 +22,6 @@
     <Folder Include="Content\AbilityItems\Quivers\" />
     <Folder Include="Content\Armor\Heavy\" />
     <Folder Include="Content\Controls\" />
-    <Folder Include="Content\Projectiles\Spells\" />
     <Folder Include="Content\Weapons\Swords\" />
     <Folder Include="Content\Weapons\Wands\Projectiles\" />
     <Folder Include="Enemies\Beach\" />

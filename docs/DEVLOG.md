@@ -7702,3 +7702,69 @@ date/time for those individually; don't treat their grouping as meaning they all
      Verified with a full `--no-incremental dotnet build` (0 errors, same two pre-existing warnings)
      plus a plain minimized boot-check. No scripted test — no save data touched (`PlayerData_Priest.json`
      doesn't exist yet; Priest has never been played on this install).
+
+278. **Fixed a real crash on selecting Wizard, introduced by entries 275/270/272/277 and never caught
+     before now** — reported as "a crash loading the current archer related to image name," tracked
+     down and reproduced. Root cause: every time a *new* per-tier field was added to an
+     already-existing ability-item type this session (Ring's `XpBonusPercent`; Quiver's
+     `XpBonusPercent`/`DamagePerWisOver34`; Shield's same two; Spell's whole
+     `ProjectileMagnitude`/`Duration`/`ImageName`/`DamagePerWisOver42`/`XpBonusPercent`; Tome's
+     `HealAmountPerWisOver70`/`HealingRatePerWisOver70`/`DamagePerWisOver70`), the fix correctly wired
+     the new field into that type's `Load<Type>()` (the "equip a fresh copy by name" method) and into
+     `Player.EquipHighestTierAbilityItem()`'s per-type copy block — but never into
+     `Util.Load<Type>Data()`, the method that actually builds the in-memory catalog
+     (`Game1.Instance.Spells`/`Quivers`/etc.) those two other methods search by name. Every one of
+     those 5 loaders was missing the new fields entirely, so the catalog's own copies always had them
+     at their C# default (`0f` for the float scaling stats — a silent, wrong-value bug for Ring/Quiver/
+     Shield/Tome's Wisdom scaling and XP Bonus; `null` for Spell's new *string* `ProjectileImageName`
+     — which crashes outright, since `ContentManager.Load<T>(null)` throws
+     `ArgumentNullException`). Confirmed via a temporary `Game1.StartGame()` test forcing
+     `Util.LoadOrCreatePlayer(Player.Class.Wizard)` directly (bypassing Character Select) — reliably
+     reproduced `Spell.LoadSpell()` throwing at `Content.Load<Texture2D>(spellData.ProjectileImageName)`
+     with the exact reported stack trace, confirming this fires for *any* boot that selects/loads
+     Wizard, not something Archer-specific (the user's own report likely meant whichever class ended
+     up loaded when they hit it, or misremembered which; the underlying bug is class-agnostic).
+
+     Fixed all 5: added the missing field copies to `Util.LoadRingData()`, `LoadQuiverData()`,
+     `LoadShieldData()`, `LoadSpellData()` (also needed a new `projectileTexture` load, mirroring
+     `LoadQuiverData()`'s own shape, since Spell's catalog objects never loaded their projectile art
+     at all before this), and `LoadTomeData()`. Re-ran the same forced-Wizard test after the fix — no
+     crash. Also force-loaded Archer directly the same way, confirming that path was never actually
+     broken (Quiver's fields are floats, not strings, so its own version of this bug was silently
+     wrong rather than crashing).
+
+     **Testing incident, reported in full**: verifying this required actually launching the real
+     `Realm.exe` (backed up all real save files first, per standing practice). A `timeout 12
+     ./Realm.exe` run from this session's own Bash tool did **not** actually terminate the process
+     when `timeout` expired — `Realm.exe` (a WinForms/MonoGame GUI app) kept running orphaned in the
+     background, undetected, for an unknown further stretch of real time while later tool calls in
+     this same turn continued. A subsequent `dotnet build` then failed outright with a file-lock error
+     naming that exact orphaned PID, which is what first surfaced it. In that unsupervised window, the
+     real, live Wizard character (Level 20, ~2.98M XP, full Tier-14 gear) actually **died in-game**,
+     triggering `Kill()` → `StateManager.GameOver()` → `Util.ResetPlayer()`'s real, unconditional
+     death-save — silently overwriting `PlayerData_Wizard.json` back to a fresh Level-1-equivalent
+     character, salvaging its Base Fame into `FameData.json` (+1500) in the process; `PlayerData_
+     Knight.json` also picked up regenerated equipment GUIDs (cosmetic — a `Load*()` factory always
+     mints a fresh GUID, not itself data loss) and `InventoryData_Wizard.json` was briefly missing
+     from disk entirely at one intermediate check (likely `Stop-Process -Force` interrupting an
+     in-progress `File.WriteAllText()`), later confirmed to already have been all-empty slots. Exactly
+     why the real character died while sitting unattended wasn't tracked down.
+
+     All affected files (`PlayerData_Wizard.json`, `PlayerData_Knight.json`, `FameData.json`,
+     `InventoryData_Wizard.json`) were restored from the pre-test backup after confirming zero
+     `Realm.exe` processes remained running, and re-verified byte-identical against that backup twice
+     more (including after an additional 3-second wait) before continuing. No further real-executable
+     launches were done for the rest of this fix's own verification — the crash reproduction/fix-
+     confirmation itself had already completed cleanly using two earlier, short, directly-observed
+     runs *before* this orphaned-process incident. Flagging this as a genuine, reproduced instance of
+     exactly the hazard CLAUDE.md's own save-backup rule exists for — not hypothetical — and as a
+     concrete lesson for this session's own tooling: `timeout <n> ./Realm.exe` is not a reliable way to
+     bound a GUI app's lifetime; always explicitly verify the process actually exited (e.g.
+     `Get-Process`) rather than trusting the timeout, and prefer the already-established
+     `Start-Process -WindowStyle Minimized` + explicit `Stop-Process` pattern for every future
+     real-executable test.
+
+     Verified with a full `--no-incremental dotnet build` (0 errors, same two pre-existing warnings)
+     and the two forced-class-load repro/fix-confirmation runs described above. Also sweeps in an
+     external, non-functional `Realm.csproj` change (a stale empty-folder `<Folder Include>` entry
+     for `Content\Projectiles\Spells\` removed) noticed alongside this fix.
