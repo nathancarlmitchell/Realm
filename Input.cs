@@ -144,6 +144,17 @@ public static class Input
                 Player.Instance.DebugMaxLevelAndEquipTopGear();
                 Player.Instance.DebugGrantThreeStarsFame();
             }
+
+            // Testing only: tops off every stat (Attack/Defense/Speed/
+            // Dexterity/Vitality/Wisdom/HealthMax/ManaMax) at its true cap,
+            // independent of Level or equipped gear — unlike F4 above,
+            // doesn't touch Level, XP, HighScore, or equipment at all, so it
+            // can be used on its own to test max-stat behavior on whatever
+            // gear/level the character already has.
+            if (WasKeyPressed(Keys.F5))
+            {
+                Player.Instance.DebugMaxAllStats();
+            }
         }
 
         if (currentState is RealmState)

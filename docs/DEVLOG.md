@@ -8108,3 +8108,29 @@ date/time for those individually; don't treat their grouping as meaning they all
      and a manual check that `RobeData.json`/`LeatherData.json`/`HeavyData.json` all landed in the
      build output while the old `ArmorData.json` did not. No scripted test — real save files reference
      equipped Armor by Name, which didn't change, only which catalog file backs it.
+
+290. **New debug key: F5 tops off every stat at its true cap**, complementing F4's "max Level + equip
+     top gear." Requested directly as "grants the current character all max stats." `Player.
+     DebugMaxAllStats()` adds `Math.Max(0, MaxX - X)` onto each of `PotionAttackBonus`/
+     `PotionDefenseBonus`/`PotionSpeedBonus`/`PotionDexterityBonus`/`PotionVitalityBonus`/
+     `PotionWisdomBonus`/`PotionHealthMaxBonus`/`PotionManaMaxBonus` (0 if the stat is already at or
+     above its cap from gear/a temporary buff) rather than setting the derived stat field directly —
+     the same "proper input to `RecalculateStats()`, not a raw stat mutation" reasoning the existing
+     `Temporary*Bonus` fields already follow (see their own doc comment); setting `Attack` itself would
+     only last until the next `RecalculateStats()` call (leveling, equipping, potion use), which would
+     silently overwrite it back down. The delta approach is class-agnostic — it only needs the gap
+     between the current computed stat and its `MaxX` cap, not any class's specific base/growth-rate
+     formula, so one method works unchanged for all five classes. Calls `RecalculateStats()` once after
+     setting every delta, then tops off `Health`/`Mana` to the newly-maxed `HealthMax`/`ManaMax`, same
+     as `DebugMaxLevelAndEquipTopGear()`'s own last step.
+
+     Deliberately scoped narrower than F4: doesn't touch Level, XP, HighScore, or equipped gear at all,
+     so it works standalone to test max-stat behavior (UI display, combat math) on whatever level/gear
+     the character currently has, or combined with F4 for a fully-maxed character. Wired into
+     `Input.cs`'s existing "testing/dev keys" block (`RealmState`/`NexusState` only, same gating as F4/
+     Level up/down), no keybinding conflicts (`Keys.F5` wasn't used anywhere else in the codebase).
+
+     Verified with a full `--no-incremental dotnet build` (0 errors, same two pre-existing warnings).
+     No scripted test, per the standing no-test-unless-asked convention — this is a debug-only method
+     with no save-triggering call inside it (same as F4's own methods), gated the same way as every
+     other testing/dev key already in that block.

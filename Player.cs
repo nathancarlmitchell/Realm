@@ -830,6 +830,38 @@ namespace Realm
             HasReachedLevel20 = true;
         }
 
+        // Debug/testing only (F5 in Input.cs) — tops every stat off at its
+        // true cap (MaxAttack/MaxDefense/etc.), independent of Level or
+        // equipped gear, by adding onto the matching Potion*Bonus field
+        // rather than setting the derived stat directly — the same "proper
+        // input to RecalculateStats(), not a raw stat mutation" reasoning
+        // the Temporary*Bonus fields above already follow. Setting Attack
+        // itself would only last until the next RecalculateStats() call
+        // (leveling, equipping, potion use), which would silently overwrite
+        // it back down. Each delta is `Math.Max(0, Max - current)`, so a
+        // stat already pushed past its cap by gear or a timed buff (see
+        // PermanentAttack's own comment below on how that can happen) is
+        // left alone rather than lowered — this only ever raises a stat,
+        // never reduces one. Class-agnostic: doesn't need to know any
+        // class's specific base/growth-rate formula, just the gap between
+        // the current computed value and its cap.
+        public void DebugMaxAllStats()
+        {
+            PotionAttackBonus += Math.Max(0, MaxAttack - Attack);
+            PotionDefenseBonus += Math.Max(0, MaxDefense - Defense);
+            PotionSpeedBonus += Math.Max(0f, MaxSpeed - Speed);
+            PotionDexterityBonus += Math.Max(0, MaxDexterity - Dexterity);
+            PotionVitalityBonus += Math.Max(0, MaxVitality - Vitality);
+            PotionWisdomBonus += Math.Max(0, MaxWisdom - Wisdom);
+            PotionHealthMaxBonus += Math.Max(0, MaxHealth - HealthMax);
+            PotionManaMaxBonus += Math.Max(0, MaxMana - ManaMax);
+
+            RecalculateStats();
+
+            Health = HealthMax;
+            Mana = ManaMax;
+        }
+
         // Debug/testing only (F4 in Input.cs) — sets ExperienceTotal (and
         // HighScore, so Character Select's permanent star record reflects
         // it immediately, without needing an actual RealmState.Update()
