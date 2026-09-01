@@ -28,5 +28,12 @@ namespace Realm.Data
         // % bonus to XP gained while this Shield is equipped — see
         // Equipment.XpBonusPercent.
         public float XpBonusPercent { get; set; }
+
+        // Shield Slam's damage scales with the Knight's own Wisdom past 34
+        // — the real wiki's own per-tier "Damage: X-Y (+Z per WIS over 34)"
+        // stat, confirmed against each tiered Shield's own dedicated wiki
+        // page (not just the aggregate comparison table). Added directly
+        // onto the rolled MinDamage-MaxDamage result in Knight.UseAbility().
+        public float DamagePerWisOver34 { get; set; }
     }
 }

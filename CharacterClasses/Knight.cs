@@ -1,3 +1,4 @@
+using System;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Audio;
 using Realm.Projectiles;
@@ -159,8 +160,17 @@ namespace Realm.CharacterClasses
                 return;
             }
 
-            int damage = rand.Next(AbilityItem.MinDamage, AbilityItem.MaxDamage);
             Shield shield = (Shield)AbilityItem;
+
+            // Shield Slam's damage scales with the Knight's own Wisdom past
+            // 34 — the real wiki's own per-tier "+X per WIS over 34" stat
+            // (Data/ShieldData.cs), added directly onto the rolled base
+            // range rather than shifting Min/Max before rolling — a flat
+            // addition to a uniform roll produces the exact same
+            // distribution either way.
+            int damage =
+                rand.Next(AbilityItem.MinDamage, AbilityItem.MaxDamage)
+                + (int)(shield.DamagePerWisOver34 * Math.Max(0, Wisdom - 34));
 
             if (Mana >= AbilityCost)
             {

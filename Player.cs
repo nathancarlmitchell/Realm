@@ -1007,11 +1007,13 @@ namespace Realm
                 quiverCopy.ProjectileImageName = quiverBest.ProjectileImageName;
             }
 
-            // Shield-only — Shield Slam's shot fan. See Data/ShieldData.cs.
+            // Shield-only — Shield Slam's shot fan and Wisdom-scaling
+            // damage. See Data/ShieldData.cs.
             if (copy is Shield shieldCopy && best is Shield shieldBest)
             {
                 shieldCopy.Shots = shieldBest.Shots;
                 shieldCopy.ArcGapDegrees = shieldBest.ArcGapDegrees;
+                shieldCopy.DamagePerWisOver34 = shieldBest.DamagePerWisOver34;
             }
 
             // Tome-only — its Heal/Healing/Range fields. See Data/TomeData.cs.

@@ -11,6 +11,9 @@ namespace Realm
         public int Shots { get; set; }
         public float ArcGapDegrees { get; set; }
 
+        // Shield Slam's damage-scales-with-Wisdom stat — see Data/ShieldData.cs.
+        public float DamagePerWisOver34 { get; set; }
+
         public Shield(Texture2D image)
         {
             ID = Guid.NewGuid();
@@ -60,6 +63,7 @@ namespace Realm
                     Shots = shieldData.Shots,
                     ArcGapDegrees = shieldData.ArcGapDegrees,
                     XpBonusPercent = shieldData.XpBonusPercent,
+                    DamagePerWisOver34 = shieldData.DamagePerWisOver34,
                 };
 
                 Player.Instance.EquipAbilityItem(shield);

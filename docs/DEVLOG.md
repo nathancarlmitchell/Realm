@@ -7564,3 +7564,26 @@ date/time for those individually; don't treat their grouping as meaning they all
 
      Verified with a full `--no-incremental dotnet build` (0 errors, same two pre-existing warnings).
      No scripted test — no save data touched.
+
+273. **Implemented Shield Slam's Wisdom-scaling damage** (entry 272's flagged gap), per direct
+     follow-up. Per direct instruction, verified each of the 8 tiered Shields' `DamagePerWisOver34`
+     value against its own dedicated wiki page (not just entry 272's aggregate comparison table) —
+     https://www.realmeye.com/wiki/wooden-shield through /shield-of-orcish-regalia each show the
+     exact same per-tier stat in their own "Damage: X-Y (+Z per WIS over 34)" line, confirming the
+     aggregate table's numbers were already precise: `2 / 1.56 / 2.13 / 2.69 / 3.25 / 3.81 / 4.38 / 5`
+     for T0-T7.
+
+     New `DamagePerWisOver34` field on `Data/ShieldData.cs`/`Shield.cs`, wired into
+     `Shield.LoadShield()` and `Player.EquipHighestTierAbilityItem()`'s existing Shield-only
+     field-copy block (alongside `Shots`/`ArcGapDegrees`). `Knight.UseAbility()` now adds
+     `shield.DamagePerWisOver34 * Math.Max(0, Wisdom - 34)` directly onto the rolled
+     `MinDamage`-`MaxDamage` result — mathematically identical to shifting Min/Max before rolling
+     (a flat addition to a uniform roll produces the same output distribution either way), so no
+     separate scaled-range logic was needed. Needed a `using System;` added to `Knight.cs` for
+     `Math.Max` (caught immediately by the build, not a hidden gap).
+
+     Verified with a full `--no-incremental dotnet build` (0 errors, same two pre-existing warnings)
+     plus a plain minimized boot-check. No scripted test, per the standing convention — this doesn't
+     touch save/persistence code, and the mechanic only triggers via actual Knight gameplay (equip a
+     Shield, use the ability at Wisdom > 34), which a boot-check alone doesn't exercise; relying on
+     the direct per-item wiki verification plus the mathematically-equivalent implementation instead.
