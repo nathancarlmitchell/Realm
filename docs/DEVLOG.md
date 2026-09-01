@@ -8134,3 +8134,23 @@ date/time for those individually; don't treat their grouping as meaning they all
      No scripted test, per the standing no-test-unless-asked convention — this is a debug-only method
      with no save-triggering call inside it (same as F4's own methods), gated the same way as every
      other testing/dev key already in that block.
+
+291. **Fixed F5 (entry 290) undercounting its own potion deltas whenever equipped gear already had a
+     positive stat bonus** — reported directly right after it shipped, as "the defense bonus from
+     armor prevents the base level from reaching the actual max stat cap." `DebugMaxAllStats()` had
+     computed each delta against the *full* stat (`MaxDefense - Defense`), which already has gear
+     folded in — so an armor's own `DefenseBonus` silently covered part of the gap to `MaxDefense`
+     instead of potions doing it, leaving `PotionDefenseBonus` short of what it actually takes to reach
+     the cap on its own. Invisible while that armor stayed equipped (the full `Defense` still read as
+     `MaxDefense`), but the underlying permanent value never actually got there — unequipping the
+     armor would have revealed it. Fixed by computing each delta against the existing
+     `PermanentAttack`/`PermanentDefense`/etc. properties instead (already used elsewhere for potion-
+     gating logic) — the gear/temporary-excluded value is exactly what a stat potion actually raises.
+
+     Verified algebraically against the bug report's own scenario: base+level Defense 5, a +20
+     `DefenseBonus` armor, `MaxDefense` 25 — old code read `Defense` as already 25 and added 0 potion
+     Defense, leaving `PermanentDefense` at 5; the fix reads `PermanentDefense` as 5 and adds 20,
+     landing `PermanentDefense` at exactly 25 regardless of whether that armor stays equipped.
+
+     Full `--no-incremental dotnet build` (0 errors, same two pre-existing warnings). No scripted test,
+     same reasoning as entry 290's own verification. See [BUGFIXES.md](BUGFIXES.md) entry 57.

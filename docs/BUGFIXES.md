@@ -831,3 +831,24 @@ happened at once.
     six real save files matched a pre-test backup (Level/`ExperienceTotal` identical; refreshed
     anyway per this session's established handling of the user's own concurrent live play). See
     [DEVLOG.md](DEVLOG.md) entry 239.
+
+57. **The new F5 "max all stats" debug key (entry 290) undercounted its own potion deltas whenever
+    the equipped gear already had a positive stat bonus** — reported directly right after it shipped,
+    as "the defense bonus from armor prevents the base level from reaching the actual max stat cap."
+    `Player.DebugMaxAllStats()` computed each delta as `Math.Max(0, MaxDefense - Defense)`, but
+    `Defense` is the *full* stat, gear included — so part of the gap to `MaxDefense` was already being
+    "covered" by the equipped armor's own `DefenseBonus` instead of by potions, leaving
+    `PotionDefenseBonus` short of what it actually takes to reach the cap on its own. The bug was
+    invisible while that armor stayed equipped (the full `Defense` value did read as `MaxDefense`,
+    since gear + the undersized potion bonus happened to add up correctly together), but the
+    *permanent* (level + potion) component never actually reached its cap — unequipping that armor,
+    or swapping to weaker gear, would have revealed `Defense` sitting below `MaxDefense`. Fixed by
+    computing each delta against the existing `PermanentAttack`/`PermanentDefense`/etc. properties
+    (`Player.cs`, already used elsewhere for potion-gating logic) instead of the full stat — the
+    gear/temporary-excluded value is exactly what a stat potion actually raises in the first place.
+    Verified by re-deriving the fix algebraically against the same worked example from the bug report
+    (base+level Defense 5, armor `DefenseBonus` +20, `MaxDefense` 25: the old code added 0 potion
+    Defense since `Defense` already read 25, leaving `PermanentDefense` at 5; the fix adds 20, bringing
+    `PermanentDefense` to 25 exactly, matching `MaxDefense` with or without that armor equipped).
+    Clean `dotnet build`, no scripted test — same reasoning as entry 290's own verification (a
+    debug-only method with no save-triggering call). See [DEVLOG.md](DEVLOG.md) entries 290/291.
