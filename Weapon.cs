@@ -126,6 +126,7 @@ namespace Realm
                     SideProjectileImage = sideProjectileTexture,
                     SideProjectileImageName = weaponData.SideProjectileImageName,
                     ArcGapDegrees = weaponData.ArcGapDegrees,
+                    XpBonusPercent = weaponData.XpBonusPercent,
                 };
 
                 Player.Instance.EquipWeapon(weapon);

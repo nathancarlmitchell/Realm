@@ -7768,3 +7768,27 @@ date/time for those individually; don't treat their grouping as meaning they all
      and the two forced-class-load repro/fix-confirmation runs described above. Also sweeps in an
      external, non-functional `Realm.csproj` change (a stale empty-folder `<Folder Include>` entry
      for `Content\Projectiles\Spells\` removed) noticed alongside this fix.
+
+279. **Follow-up audit for entry 278's exact bug pattern found two more instances of it**, this time
+     outside `Util.cs`'s catalog loaders: `Player.EquipHighestTierWeapon()` (the F4 debug "equip best
+     gear" command) was missing `XpBonusPercent = best.XpBonusPercent,` in its `Weapon copy = new(...)`
+     initializer, and `Weapon.LoadWeapon(string weaponName)` — the "equip by name" factory used for
+     every normal Sword/Dagger equip (drag-and-drop, and loading a saved character's equipped weapon,
+     not just the F4 shortcut) — was missing the same `XpBonusPercent = weaponData.XpBonusPercent,`
+     copy. The `LoadWeapon()` one is the more consequential of the two, since it fires on every normal
+     equip rather than only a debug command. Both defaulted silently to `0f` (a wrong-value bug, not a
+     crash, since `XpBonusPercent` is a float) rather than reproducing entry 278's crash outright.
+
+     Root cause of why the earlier audit script missed these: that script cross-checked each
+     `Load<Type>Data()` loader's field copies against its own DTO class's declared field list — correct
+     for the catalog loaders, but `Weapon.LoadWeapon()`'s local variable named `weaponData` is actually
+     typed `Weapon` (a runtime object pulled from the already-merged `Game1.Instance.Weapons` catalog,
+     which for a Sword/Dagger entry already carries a real `XpBonusPercent`), not a `WeaponData` DTO
+     instance — so the DTO's own (shorter) field list was the wrong list to check it against, and the
+     script silently passed it. No further instances of this specific mismatch (a copy site whose
+     source variable is a richer subtype than what its own declared type says) were found elsewhere.
+
+     Verified with a full `--no-incremental dotnet build` (0 errors, same two pre-existing warnings).
+     No scripted test or real-executable launch — both fixes are single-field additions to an existing,
+     already-tested copy pattern, and entry 278's own incident is reason enough not to spin up another
+     real-save-touching test run for a change this narrow.

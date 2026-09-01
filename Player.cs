@@ -881,6 +881,7 @@ namespace Realm
                 SideProjectileImage = sideProjectileTexture,
                 SideProjectileImageName = best.SideProjectileImageName,
                 ArcGapDegrees = best.ArcGapDegrees,
+                XpBonusPercent = best.XpBonusPercent,
             };
 
             EquipWeapon(copy);
