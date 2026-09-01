@@ -88,6 +88,14 @@ namespace Realm.States
             Util.SaveInventoryData();
             Util.SaveBankData();
             Util.SaveFameData();
+
+            // ClassRecordSystem tracks this class's permanent star record
+            // continuously (RealmState.cs's HighScore-bump block calls
+            // RecordHighScore() on every new high), but only writes it to
+            // disk on an actual star-threshold crossing — flushing it here
+            // too catches any remaining unsaved rise between the last
+            // crossing and the moment of death.
+            Util.SaveClassRecordsData();
         }
 
         public override void Draw(GameTime gameTime, SpriteBatch spriteBatch)

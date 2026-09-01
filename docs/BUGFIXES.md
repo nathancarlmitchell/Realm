@@ -872,3 +872,44 @@ happened at once.
     with an empty stderr and no crash — reverted the temporary code immediately after
     (`git diff --stat Game1.cs` confirmed clean), then a full `--no-incremental dotnet build` and one
     more plain boot-check with the temp code gone. See [DEVLOG.md](DEVLOG.md) entry 293.
+
+59. **F4/F5 (and, less obviously, any other unsaved change) silently didn't persist when leaving**
+    **gameplay via the new character-slots screen (entry 292)** — reported directly as "pressing the
+    F4, F5 debug keys does not save the character slot data." Root cause: `StateManager.CharacterSlots()`
+    (entered from the in-world Character Select portal or the Main Menu button) had deliberately been
+    written to skip `Util.SavePlayerData()`/`SaveInventoryData()`, to dodge a narrow edge case (deleting
+    your own live character on that same screen leaves `Player.Instance` a throwaway with a fresh ID —
+    saving it would write a small orphan file pair for it). That trade was wrong: it silently discarded
+    *any* real unsaved change — not just F4/F5, but a level-up, an equipment drag, anything — on every
+    other visit to the screen, in exchange for avoiding one small, genuinely harmless stray file in one
+    narrow sequence. Reverted to the same unconditional save every other exit point (`Nexus()`/
+    `MainMenu()`/`NewGame()`) already uses.
+
+    Also found and fixed the same gap for the new `ClassRecordsData.json` (the account-wide permanent
+    per-class star record added in entry 292): `RealmState.cs`'s live HighScore-bump code updates it
+    continuously but only *saves* it to disk on a star-threshold crossing, and `Player.
+    DebugGrantThreeStarsFame()` (F4's other half) updates it directly with no save at all — so a
+    debug-granted star, or any HighScore rise between two threshold crossings, could go unsaved through
+    `Nexus()`/`MainMenu()`/`NewGame()`/`GameOverState`, none of which saved this new file. Added
+    `Util.SaveClassRecordsData()` alongside the existing `Util.SaveFameData()` call at all four.
+
+    Verified for real without risking the account's actual characters (three real, currently-in-use
+    save files were on disk at the time): temporarily swapped `Player.Instance` to a fresh throwaway
+    character via `Util.ResetPlayer()` (a brand-new random ID, never registered in the slot manifest,
+    so nothing existing could be touched), ran the real F4 action
+    (`DebugMaxLevelAndEquipTopGear()`) on it, then called the fixed `StateManager.CharacterSlots()` —
+    confirmed a new `PlayerData_{throwaway-id}.json` appeared on disk reading `Level: 20` (proving the
+    save now actually fires), then diffed all three real `PlayerData`/`InventoryData` pairs plus
+    `BankData.json`/`FameData.json`/`CharacterSlotsData.json`/`ClassRecordsData.json`/
+    `GameSettingsData.json`/`KeyBindingsData.json` against a pre-test backup — all twelve confirmed
+    byte-identical, untouched. Deleted the throwaway `PlayerData`/`InventoryData` pair immediately
+    after (not a real character, would otherwise just be new clutter), reverted the temporary
+    `Game1.cs` test code (`git diff --stat` confirmed clean), and did a final `--no-incremental dotnet
+    build` plus one more plain boot-check with no temp code, re-diffing the real files once more
+    afterward. See [DEVLOG.md](DEVLOG.md) entry 294.
+
+    **Noted in passing, not touched**: this account already has one pre-existing orphaned save —
+    `PlayerData_b5ae2a10-....json` (a Level 1, never-played-looking Wizard) with no matching entry in
+    `CharacterSlotsData.json`'s slot list, almost certainly a symptom of this exact bug from before the
+    fix. It's inert (the manifest doesn't reference it, so the game never reads or shows it) and wasn't
+    deleted — flagging it for the user rather than removing real files on my own judgment.

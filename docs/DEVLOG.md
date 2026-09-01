@@ -8261,3 +8261,22 @@ date/time for those individually; don't treat their grouping as meaning they all
      stable running with an empty stderr, then fully reverted the temporary code
      (`git diff --stat Game1.cs` clean) and did a final `--no-incremental dotnet build` plus one more
      plain boot-check with no temp code in place. See [BUGFIXES.md](BUGFIXES.md) entry 58.
+
+294. **Fixed F4/F5 (and any other unsaved change) silently not persisting when leaving gameplay via**
+     **the character-slots screen** — reported directly. `StateManager.CharacterSlots()` had
+     deliberately skipped `SavePlayerData()`/`SaveInventoryData()` to dodge a narrow self-delete-then-
+     back edge case (see entry 292); that skip discarded *any* real unsaved change on every other visit
+     to the screen, a far worse trade than the one small harmless orphan file it was avoiding. Reverted
+     to the same unconditional save `Nexus()`/`MainMenu()`/`NewGame()` already use. Also added the
+     missing `Util.SaveClassRecordsData()` to those same three methods plus `GameOverState` — the new
+     per-class star record updates live but only saves on a star-threshold crossing, and F4's
+     `DebugGrantThreeStarsFame()` updates it with no save at all, so it had the identical gap.
+
+     Verified without touching the account's three real, currently-in-use characters: swapped
+     `Player.Instance` to a fresh throwaway via `Util.ResetPlayer()`, ran the real F4 action on it, then
+     called the fixed `CharacterSlots()` — confirmed a new throwaway `PlayerData` file appeared reading
+     `Level: 20`, then diffed all real save files against a pre-test backup (all identical) and deleted
+     the throwaway files. Reverted the temporary `Game1.cs` test code, final clean build, one more plain
+     boot-check. See [BUGFIXES.md](BUGFIXES.md) entry 59 for the full account, including a pre-existing
+     orphaned save file noticed (not touched) that's almost certainly a symptom of this same bug from
+     before the fix.

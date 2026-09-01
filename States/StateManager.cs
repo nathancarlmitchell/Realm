@@ -36,6 +36,7 @@
             Util.SaveInventoryData();
             Util.SaveBankData();
             Util.SaveFameData();
+            Util.SaveClassRecordsData();
 
             Game1.Instance.ChangeState(
                 new NexusState(
@@ -54,6 +55,7 @@
             Util.SaveInventoryData();
             Util.SaveBankData();
             Util.SaveFameData();
+            Util.SaveClassRecordsData();
 
             Game1.Instance.ChangeState(
                 new MenuState(Game1.Instance, Game1.Instance.GraphicsDevice, Game1.Instance.Content)
@@ -65,18 +67,27 @@
         // reached only by clicking an empty slot from here). Mirrors
         // Nexus()/MainMenu() — this is also a "leaving gameplay" exit point
         // (the in-world Character Select portal, and the main menu's
-        // Character Select button) — except it deliberately does NOT call
-        // Util.SavePlayerData()/SaveInventoryData(): if the player just
-        // deleted their own live character from this same screen,
-        // Player.Instance is a throwaway with a freshly-generated ID (see
-        // CharacterSlotsState's delete handler), and saving it here would
-        // write a small, harmless-but-untracked orphan save pair for that
-        // throwaway. The account-wide files still need saving, same
-        // reasoning as every other exit point here.
+        // Character Select button, but ALSO now the debug F4/F5 keys'
+        // testing route to actually seeing a change persist), so it needs
+        // the same save as those or whatever was last changed in-memory
+        // (an F4/F5 test, a level-up, an equipment drag, anything) is
+        // silently discarded the next time this character is loaded, while
+        // every other exit point correctly persists it — a real
+        // inconsistency, not just a missed no-op. This was tried once as a
+        // skip-these-two-saves special case, to dodge a narrow edge case
+        // (deleting your own live character on CharacterSlotsState leaves
+        // Player.Instance a throwaway with a fresh ID — saving it here
+        // would write a small orphan file pair for it) — that traded a
+        // genuinely harmless side effect (one small untracked extra file,
+        // only in that one delete-then-back sequence) for silently losing
+        // real, common changes on every other visit to this screen. Not
+        // worth it; reverted.
         public static void CharacterSlots()
         {
             EntityManager.Reset();
 
+            Util.SavePlayerData();
+            Util.SaveInventoryData();
             Util.SaveBankData();
             Util.SaveFameData();
             Util.SaveCharacterSlotsData();
@@ -120,6 +131,7 @@
             Util.SaveInventoryData();
             Util.SaveBankData();
             Util.SaveFameData();
+            Util.SaveClassRecordsData();
 
             Game1.Instance.ChangeState(
                 new NexusState(
