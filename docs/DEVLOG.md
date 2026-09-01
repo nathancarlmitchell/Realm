@@ -8039,3 +8039,22 @@ date/time for those individually; don't treat their grouping as meaning they all
      exists post-build (MSBuild's incremental output tracking removed it on its own once the source
      file was gone). No scripted test — pure removal of dead code plus comment accuracy fixes, no
      behavior change, no save data touched.
+
+288. **Independently re-verified Daggers by following each of the 15 tiered Daggers to its own**
+     **dedicated wiki page** (https://www.realmeye.com/wiki/daggers) — entry 265 had ported Dagger's
+     data straight from the aggregate table during the Rogue class build, never re-checked against
+     individual pages the way every other item type in this campaign has been. Came back completely
+     clean, same result as Sword's own re-check (entry 283): `DamageMin`/`DamageMax` and
+     `XpBonusPercent` matched exactly for all 15 tiers, and "Projectile Speed: 14 tiles/second,
+     Lifetime: 0.4 seconds, Range: 5.6 tiles" — confirmed identical on every individual page —
+     reconciles exactly against `Data/DaggerData.json`'s existing `ProjectileMagnitude`/
+     `ProjectileDuration` (7.466667/24; unlike several other weapon types' conversions, this one lands
+     on a clean whole-frame value with no rounding call needed: `0.4 * 60 = 24` exactly). No individual
+     page lists an `Effect(s)`/on-hit section at all (confirmed by grepping the raw HTML of all 15
+     pages) — Dagger correctly doesn't pierce, matching `Weapon.Shoot()`'s existing `expiresOnHit`
+     check (only `Wand`/`Bow` are excluded from it). Every page's own "Rate of Fire: 105%" stays
+     unmodeled, same already-documented reasoning as every other weapon type: this engine has no
+     per-weapon-type fire-rate concept anywhere. No changes made.
+
+     No build needed — no file was touched. Every weapon type (Wand, Bow, Sword, Staff, Dagger) has now
+     been checked against its own individual wiki pages at least once.
