@@ -7890,3 +7890,18 @@ date/time for those individually; don't treat their grouping as meaning they all
 
      Verified with a full `--no-incremental dotnet build` (0 errors, same two pre-existing warnings).
      No scripted test — a single data-file value correction, no code path or save data touched.
+
+283. **Reviewed Swords by following each of the 15 tiered Swords to its own dedicated wiki page** —
+     entries 263/264 had only checked the aggregate `/wiki/swords` table. Unlike every other item type
+     re-checked this way so far (Shield's Mithril XP Bonus, Quiver's Wisdom scaling, Tome's stale Nova
+     Damage, Cloak's Lethal Strike details), this one came back completely clean: `DamageMin`/
+     `DamageMax` and `XpBonusPercent` matched exactly for all 15 tiers, and "Projectile Speed: 10
+     tiles/second, Lifetime: 0.35 seconds, Range: 3.5 tiles" — confirmed identical on every single tier
+     page — reconciles exactly against `Data/SwordData.json`'s existing `ProjectileMagnitude`/
+     `ProjectileDuration` (5.333333/21; `21 / 60 = 0.35s`, `5.333333 * 21 = 112px = 3.5 tiles`), which
+     entry 263 had already derived correctly from the aggregate table alone. No individual page for any
+     tier lists an `Effect(s)`/`On Hit` section at all (confirmed by grepping the raw HTML of all 15
+     pages) — Sword genuinely has no per-tier ability or on-hit mechanic to find, unlike every ability
+     item reviewed so far. No changes made.
+
+     No build needed — no file was touched.
