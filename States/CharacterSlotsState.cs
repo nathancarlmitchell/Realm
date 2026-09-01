@@ -534,7 +534,13 @@ namespace Realm.States
             DrawRowFrame(spriteBatch, row, row.Hover ? Color.Gold : Color.DarkGray);
 
             int cost = CharacterSlotSystem.CostForNextSlot();
-            string text = $"Locked — Unlock for {cost} Fame";
+            // Plain hyphen, not an em dash — the game's SpriteFonts only
+            // bake in the standard ASCII range (32-126, see
+            // Content/Fonts/*.spritefont), so an em dash here throws
+            // ArgumentException the instant this row is hovered/drawn,
+            // same class of bug CharacterCreationState.BuildStarsText()'s
+            // own comment already warns about for a literal star glyph.
+            string text = $"Locked - Unlock for {cost} Fame";
             Vector2 textSize = Art.RetroFont.MeasureString(text);
             Util.DrawOutlinedText(
                 spriteBatch,

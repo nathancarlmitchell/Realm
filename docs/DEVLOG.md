@@ -8245,3 +8245,19 @@ date/time for those individually; don't treat their grouping as meaning they all
      real boot/migration cycle, not by interactively playing it, since that's not something this
      session can do for a MonoGame desktop app. Flagging this directly rather than implying full manual
      QA happened.
+
+293. **Fixed a real crash on the new character-slots screen (entry 292)** — reported directly as
+     `System.ArgumentException: 'Text contains characters that cannot be resolved by this SpriteFont.'`
+     Root cause: `CharacterSlotsState.DrawLockedRow()` used a real em dash in
+     `$"Locked — Unlock for {cost} Fame"` instead of a plain hyphen — the game's SpriteFonts only bake
+     in ASCII 32-126, and the locked "next" slot row is always present on this screen by design, so
+     this fired on every single visit. Fixed to `$"Locked - Unlock for {cost} Fame"`. Swept every file
+     entry 292 touched for any other non-ASCII character outside a comment (a Python scan of each
+     file's non-comment code) — this was the only one.
+
+     Verified for real rather than just by re-reading the fix: temporarily forced
+     `Game1.StartGame()` straight into `CharacterSlotsState` (the crashing row draws unconditionally,
+     no click needed to reach it), launched the real `Realm.exe` minimized, confirmed 5 seconds of
+     stable running with an empty stderr, then fully reverted the temporary code
+     (`git diff --stat Game1.cs` clean) and did a final `--no-incremental dotnet build` plus one more
+     plain boot-check with no temp code in place. See [BUGFIXES.md](BUGFIXES.md) entry 58.

@@ -852,3 +852,23 @@ happened at once.
     `PermanentDefense` to 25 exactly, matching `MaxDefense` with or without that armor equipped).
     Clean `dotnet build`, no scripted test — same reasoning as entry 290's own verification (a
     debug-only method with no save-triggering call). See [DEVLOG.md](DEVLOG.md) entries 290/291.
+
+58. **The new character-slots screen (entry 292) crashed instantly with `System.ArgumentException:**
+    **'Text contains characters that cannot be resolved by this SpriteFont.'`** — reported directly
+    right after it shipped. Root cause: `CharacterSlotsState.DrawLockedRow()`'s
+    `$"Locked — Unlock for {cost} Fame"` string used a real em dash (`—`, U+2014) instead of a plain
+    hyphen — this codebase's SpriteFonts only bake in the standard ASCII range (32-126, per
+    `Content/Fonts/*.spritefont`, the same reason `CharacterCreationState.BuildStarsText()` renders
+    stars as `*` instead of a real ★ glyph), so `Art.RetroFont.MeasureString()`/`DrawString()` throws
+    the instant that text is measured or drawn — and the locked "next" slot row is always present on
+    this screen (exactly one is guaranteed to show per entry 292's own design), so the crash fired on
+    every single visit, not just some code path. Fixed by using a plain `-` instead. Grepped every
+    file touched by entry 292's commit for any other non-ASCII character outside a comment (a Python
+    scan over each file's non-comment code) — confirmed this was the only one.
+
+    Verified for real: temporarily forced `Game1.StartGame()` to open straight into
+    `CharacterSlotsState` (the locked row draws unconditionally, so no click simulation was needed to
+    reach the crash), launched the real `Realm.exe` minimized, and confirmed it ran a full 5 seconds
+    with an empty stderr and no crash — reverted the temporary code immediately after
+    (`git diff --stat Game1.cs` confirmed clean), then a full `--no-incremental dotnet build` and one
+    more plain boot-check with the temp code gone. See [DEVLOG.md](DEVLOG.md) entry 293.
