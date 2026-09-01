@@ -73,6 +73,8 @@ namespace Realm
         public static Texture2D MajestyBolt { get; private set; }
         public static Texture2D PurpleBolt { get; private set; }
         public static Texture2D SplendorBolt { get; private set; }
+        public static Texture2D PinkBolt { get; private set; }
+        public static Texture2D RedBolt { get; private set; }
         public static Texture2D Wizard { get; private set; }
         public static Texture2D Archer { get; private set; }
         public static Texture2D Knight { get; private set; }
@@ -371,6 +373,8 @@ namespace Realm
             MajestyBolt = content.Load<Texture2D>("Projectiles/Majesty Bolt");
             PurpleBolt = content.Load<Texture2D>("Projectiles/Purple Bolt");
             SplendorBolt = content.Load<Texture2D>("Projectiles/Splendor Bolt");
+            PinkBolt = content.Load<Texture2D>("Projectiles/pink_bolt");
+            RedBolt = content.Load<Texture2D>("Projectiles/Red Bolt");
 
             // Weapons.
             Wand = content.Load<Texture2D>("Weapons/Wands/wand");

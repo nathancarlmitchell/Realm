@@ -2393,6 +2393,18 @@
 /processorParam:TextureFormat=Color
 /build:Projectiles/pink_bolt.png
 
+#begin Projectiles/Red Bolt.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:Projectiles/Red Bolt.png
+
 #begin Projectiles/purple_magic.png
 /importer:TextureImporter
 /processor:TextureProcessor

@@ -17,7 +17,7 @@
         "ImageName": "AbilityItems/Spells/0",
         "ProjectileMagnitude": 8.533333,
         "ProjectileDuration": 60,
-        "ProjectileImageName": "projectile",
+        "ProjectileImageName": "Projectiles/Fire Bolt",
         "DamagePerWisOver42": 0.5,
         "XpBonusPercent": 0.0
     },
@@ -39,7 +39,7 @@
         "ImageName": "AbilityItems/Spells/1",
         "ProjectileMagnitude": 8.533333,
         "ProjectileDuration": 60,
-        "ProjectileImageName": "projectile",
+        "ProjectileImageName": "Projectiles/Green Bolt",
         "DamagePerWisOver42": 0.75,
         "XpBonusPercent": 0.0
     },
@@ -61,7 +61,7 @@
         "ImageName": "AbilityItems/Spells/2",
         "ProjectileMagnitude": 8.533333,
         "ProjectileDuration": 60,
-        "ProjectileImageName": "projectile",
+        "ProjectileImageName": "Projectiles/Blue Bolt",
         "DamagePerWisOver42": 1.0,
         "XpBonusPercent": 0.0
     },
@@ -83,7 +83,7 @@
         "ImageName": "AbilityItems/Spells/3",
         "ProjectileMagnitude": 8.533333,
         "ProjectileDuration": 60,
-        "ProjectileImageName": "projectile",
+        "ProjectileImageName": "Projectiles/pink_bolt",
         "DamagePerWisOver42": 1.25,
         "XpBonusPercent": 1.0
     },
@@ -105,7 +105,7 @@
         "ImageName": "AbilityItems/Spells/4",
         "ProjectileMagnitude": 8.533333,
         "ProjectileDuration": 60,
-        "ProjectileImageName": "projectile",
+        "ProjectileImageName": "Projectiles/Darkness Bolt",
         "DamagePerWisOver42": 1.5,
         "XpBonusPercent": 2.0
     },
@@ -127,7 +127,7 @@
         "ImageName": "AbilityItems/Spells/5",
         "ProjectileMagnitude": 8.533333,
         "ProjectileDuration": 60,
-        "ProjectileImageName": "projectile",
+        "ProjectileImageName": "Projectiles/white_bolt",
         "DamagePerWisOver42": 1.75,
         "XpBonusPercent": 4.0
     },
@@ -149,7 +149,7 @@
         "ImageName": "AbilityItems/Spells/6",
         "ProjectileMagnitude": 8.533333,
         "ProjectileDuration": 60,
-        "ProjectileImageName": "projectile",
+        "ProjectileImageName": "Projectiles/Purple Bolt",
         "DamagePerWisOver42": 2.0,
         "XpBonusPercent": 6.0
     },
@@ -171,7 +171,7 @@
         "ImageName": "AbilityItems/Spells/7",
         "ProjectileMagnitude": 8.533333,
         "ProjectileDuration": 60,
-        "ProjectileImageName": "projectile",
+        "ProjectileImageName": "Projectiles/Red Bolt",
         "DamagePerWisOver42": 2.25,
         "XpBonusPercent": 8.0
     }

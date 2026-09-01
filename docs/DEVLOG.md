@@ -7660,3 +7660,13 @@ date/time for those individually; don't treat their grouping as meaning they all
 
      Verified with a full `--no-incremental dotnet build` (0 errors, same two pre-existing warnings)
      plus a plain minimized boot-check. No scripted test — no save data touched.
+
+276. **Retuned Spell Bomb's per-tier projectile art** to Fire/Green/Blue/Pink/Darkness/White/Purple/
+     Red Bolt for T0-T7, per direct instruction — same "assign a distinct bolt per tier" treatment
+     Dagger already got. Two of the eight (`pink_bolt.png`, already registered in `Content.mgcb` but
+     never given an `Art.cs` property, and the newly-added `Red Bolt.png`, not registered at all)
+     needed wiring in first — added `Art.PinkBolt`/`Art.RedBolt` plus a new `Content.mgcb` block for
+     `Red Bolt.png`. `SpellData.json`'s 8 `ProjectileImageName` values updated to match.
+
+     Verified with a full `--no-incremental dotnet build` (0 errors, same two pre-existing warnings)
+     — the Content Pipeline resolved both newly-referenced assets with no missing-asset errors.
