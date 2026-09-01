@@ -88,9 +88,9 @@ namespace Realm.States
         // Set while waiting for the next key press to bind to a row —
         // blocks every other row/button/tab from reacting to input until
         // it resolves (a key pressed, or Escape to cancel), same reasoning
-        // as CharacterSelectState's ConfirmingDelete gating out normal
-        // clicks. Since this also blocks tab clicks, there's no need to
-        // separately cancel a pending rebind when switching tabs — it's
+        // as CharacterSlotsState's confirmingDeleteSlotIndex gating out
+        // normal clicks. Since this also blocks tab clicks, there's no need
+        // to separately cancel a pending rebind when switching tabs — it's
         // simply not possible to switch while one is in progress.
         private KeyBindings.Action? listeningFor;
 

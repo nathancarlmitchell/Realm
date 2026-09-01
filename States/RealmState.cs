@@ -275,6 +275,15 @@ namespace Realm.States
 
                 Player.Instance.HighScore = Player.Instance.ExperienceTotal;
 
+                // Keeps the permanent per-class star record current on
+                // every new high, not just star-threshold crossings — a
+                // class's stars (CharacterCreationState.cs) are read from
+                // this record now, not from any one character's own save
+                // file (a class can have zero, one, or many characters), so
+                // it needs to track the true best-ever value between
+                // thresholds too, not just jump at each one.
+                ClassRecordSystem.RecordHighScore(Player.PlayerClass, Player.Instance.HighScore);
+
                 int starsAfter = Player.ComputeStars(Player.Instance.HighScore);
 
                 // Persisted immediately when crossing a star threshold —
@@ -291,6 +300,7 @@ namespace Realm.States
                     Util.SaveInventoryData();
                     Util.SaveBankData();
                     Util.SaveFameData();
+                    Util.SaveClassRecordsData();
                 }
             }
         }

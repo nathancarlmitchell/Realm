@@ -501,15 +501,17 @@ namespace Realm
 
         // "Class Quests" — five tiers, attained purely by cumulative Fame
         // earned during a character's lifetime (no Level-20 gate, unlike the
-        // star system this replaced). Fed by ComputeBaseFame(HighScore) —
-        // HighScore is the permanent best-ever ExperienceTotal (survives
-        // death/delete), and Base Fame is a monotonic function of XP, so
-        // "the most Base Fame this character ever displayed" is exactly
-        // ComputeBaseFame(HighScore), with no separate persisted star count
-        // needed. Public/static — shared by CharacterSelectState (display,
-        // permanent record) and RealmState (detecting a threshold crossing
-        // to persist immediately, see UpdateHighScore() below) rather than
-        // living only in the UI.
+        // star system this replaced). Fed by ComputeBaseFame(HighScore), a
+        // monotonic function of XP — for a single live character, HighScore
+        // is that character's own best-ever ExperienceTotal; a class's
+        // permanent star rating (shown in CharacterCreationState.cs) is
+        // instead computed from ClassRecordSystem.GetBestHighScore(class),
+        // the account-wide best across every character of that class past
+        // or present, updated live alongside HighScore itself (see
+        // RealmState's HighScore-bump block) — a single character's
+        // HighScore no longer survives its own deletion the way it used to
+        // when every class had exactly one character, but the class's
+        // record does, independently.
         //
         // Note this means a character can now earn Star 1 (20 Fame, ≈18,000
         // XP under the current leveling curve) slightly before actually
@@ -872,20 +874,26 @@ namespace Realm
             Mana = ManaMax;
         }
 
-        // Debug/testing only (F4 in Input.cs) — sets ExperienceTotal (and
-        // HighScore, so Character Select's permanent star record reflects
-        // it immediately, without needing an actual RealmState.Update()
-        // tick to sync HighScore from ExperienceTotal the way real play
-        // does) to the exact XP needed for 3 stars — ClassQuestFameThresholds
-        // index 2, "3 stars" per ComputeStars() above. Handy for testing the
-        // class-unlock chain (CharacterSelectState.cs), which requires 3
-        // stars in the previous class to unlock the next one. Never lowers
-        // either value if this character already has more.
+        // Debug/testing only (F4 in Input.cs) — sets ExperienceTotal and
+        // HighScore to the exact XP needed for 3 stars —
+        // ClassQuestFameThresholds index 2, "3 stars" per ComputeStars()
+        // above — and also feeds that straight into ClassRecordSystem
+        // directly, so this class's permanent star record (what
+        // CharacterCreationState.cs's unlock chain actually reads) reflects
+        // it immediately. Needed because the record is otherwise only ever
+        // updated by RealmState's own live HighScore-bump code, which this
+        // debug shortcut deliberately bypasses (it can be used from the
+        // Nexus, not just an active dungeon — see Input.cs's own gating).
+        // Handy for testing the class-unlock chain, which requires 3 stars
+        // in the previous class to unlock the next one. Never lowers either
+        // value if this character (or its class's own record) already has
+        // more.
         public void DebugGrantThreeStarsFame()
         {
             int requiredXp = ExperienceForBaseFame(ClassQuestFameThresholds[2]);
             ExperienceTotal = Math.Max(ExperienceTotal, requiredXp);
             HighScore = Math.Max(HighScore, ExperienceTotal);
+            ClassRecordSystem.RecordHighScore(PlayerClass, HighScore);
         }
 
         private void EquipHighestTierWeapon()

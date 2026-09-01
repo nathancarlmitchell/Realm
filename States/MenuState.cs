@@ -62,7 +62,7 @@ namespace Realm.States
 
         private void ClassButton_Click(object sender, EventArgs e)
         {
-            StateManager.SelectClass();
+            StateManager.CharacterSlots();
         }
 
         public override void Draw(GameTime gameTime, SpriteBatch spriteBatch)

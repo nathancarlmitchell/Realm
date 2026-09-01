@@ -96,7 +96,7 @@ namespace Realm
             {
                 public override string DisplayName => "Character Select";
 
-                public override void Enter() => StateManager.SelectClass();
+                public override void Enter() => StateManager.CharacterSlots();
 
                 internal override AnimatedTexture PortalArt() => Art.CharacterSelectPortal.Clone();
             }

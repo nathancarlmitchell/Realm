@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Text;
 using System.Text.Json;
 using System.Xml.Linq;
@@ -16,15 +17,36 @@ namespace Realm
 {
     public static class Util
     {
-        private static string PlayerDataLocation(Player.Class playerClass) =>
-            Path.Combine(AppContext.BaseDirectory, $"PlayerData_{playerClass}.json");
+        // Keyed by the character's own ID (a Guid — see Player.ID), not by
+        // class name — a class can now have zero, one, or many characters
+        // (see Systems CharacterSlotSystem.cs/ClassRecordSystem.cs), so
+        // class name alone no longer identifies a save file. The old
+        // class-named paths (PlayerData_{ClassName}.json) are only ever
+        // referenced now by MigrateLegacySavesIfNeeded() below, via its own
+        // private legacy-path helper, to pick up real pre-existing saves
+        // exactly once.
+        private static string PlayerDataLocation(Guid characterId) =>
+            Path.Combine(AppContext.BaseDirectory, $"PlayerData_{characterId}.json");
 
-        private static string playerDataLocation => PlayerDataLocation(Player.PlayerClass);
+        private static string playerDataLocation => PlayerDataLocation(Player.Instance.ID);
 
-        private static string InventoryDataLocation(Player.Class playerClass) =>
-            Path.Combine(AppContext.BaseDirectory, $"InventoryData_{playerClass}.json");
+        private static string InventoryDataLocation(Guid characterId) =>
+            Path.Combine(AppContext.BaseDirectory, $"InventoryData_{characterId}.json");
 
-        private static string inventoryDataLocation => InventoryDataLocation(Player.PlayerClass);
+        private static string inventoryDataLocation => InventoryDataLocation(Player.Instance.ID);
+
+        // Not per-character — the slot manifest and the permanent per-class
+        // star record are both account-wide, same reasoning as
+        // bankDataLocation/fameDataLocation below.
+        private static string characterSlotsDataLocation = Path.Combine(
+            AppContext.BaseDirectory,
+            "CharacterSlotsData.json"
+        );
+
+        private static string classRecordsDataLocation = Path.Combine(
+            AppContext.BaseDirectory,
+            "ClassRecordsData.json"
+        );
 
         // Not per-class like PlayerData/InventoryData — the bank is shared
         // across every class's save.
@@ -148,19 +170,20 @@ namespace Realm
             "BiomeData.json"
         );
 
-        // Read-only peek at a class's save data, without touching Player.Instance or
-        // Player.PlayerClass. Returns null if that class has no save yet.
+        // Read-only peek at a character's save data, without touching
+        // Player.Instance or Player.PlayerClass. Returns null if that
+        // character ID has no save (shouldn't normally happen for an
+        // occupied slot, but defensively handled the same way).
         //
-        // CharacterSelectState.Update() calls this for every class slot on
-        // every single frame, so a missing save file (never-played class,
-        // or right after Erase All Data) is a routine, expected outcome
-        // here — not something to detect via a caught exception. Checking
-        // File.Exists() first avoids throwing (and a debugger reporting) a
-        // FileNotFoundException every frame for as long as that screen
-        // stays open with a locked/never-played class showing.
-        public static PlayerData PeekPlayerData(Player.Class playerClass)
+        // CharacterSlotsState.Update() calls this for every occupied slot
+        // on every single frame, so a missing save file is a routine,
+        // expected outcome here — not something to detect via a caught
+        // exception. Checking File.Exists() first avoids throwing (and a
+        // debugger reporting) a FileNotFoundException every frame for as
+        // long as that screen stays open.
+        public static PlayerData PeekPlayerData(Guid characterId)
         {
-            string path = PlayerDataLocation(playerClass);
+            string path = PlayerDataLocation(characterId);
             if (!File.Exists(path))
                 return null;
 
@@ -176,97 +199,61 @@ namespace Realm
             }
         }
 
-        // Resets a class's save data (stats, level, equipment, inventory) back to a
-        // fresh Level-1 character, the same as a never-played class — except its
-        // High Score persists, since that's meant to survive a character's death or
-        // deletion rather than reset with everything else. Does not touch
-        // Player.Instance if that class happens to be currently loaded in memory —
-        // callers that care (e.g. deleting the character you're actively playing)
-        // need to reset the live instance themselves, or a later autosave would
-        // silently recreate the file from stale in-memory stats.
-        public static void DeleteCharacterData(Player.Class playerClass)
+        // Permanently deletes a character: awards its Fame (same conversion
+        // GameOverState applies on an actual death — Base Fame from
+        // ExperienceTotal, plus BonusFame), removes its PlayerData/
+        // InventoryData files outright, and clears it from the slot
+        // manifest. Simpler than it used to be — this no longer needs to
+        // preserve a "fresh default character" stub to keep HighScore
+        // around, since a class's permanent star record is now tracked
+        // independently by ClassRecordSystem (updated live as HighScore
+        // rises — see RealmState.cs — not read off this character's own
+        // file), and a deleted slot should genuinely become empty again,
+        // ready for any class, not silently repopulated with a Level-1
+        // stub of the same class.
+        public static void DeleteCharacterData(Guid characterId)
         {
-            PlayerData existing = PeekPlayerData(playerClass);
-            int highScore = existing?.HighScore ?? 0;
-            bool hasReachedLevel20 = existing?.HasReachedLevel20 ?? false;
+            PlayerData existing = PeekPlayerData(characterId);
 
-            // Whatever Base Fame + Bonus Fame this character had built up is
-            // about to be wiped either way (file deleted outright, or reset
-            // back to defaults below) — salvage it into the account-level
-            // Fame total before that happens, same conversion GameOverState
-            // applies on an actual death. Unlike HighScore, neither of these
-            // is otherwise preserved by a delete, so there's no
-            // double-counting risk here.
             FameSystem.AddFame(
                 Player.ComputeBaseFame(existing?.ExperienceTotal ?? 0) + (existing?.BonusFame ?? 0)
             );
             SaveFameData();
 
-            string inventoryPath = InventoryDataLocation(playerClass);
+            string inventoryPath = InventoryDataLocation(characterId);
             if (File.Exists(inventoryPath))
                 File.Delete(inventoryPath);
 
-            string playerPath = PlayerDataLocation(playerClass);
+            string playerPath = PlayerDataLocation(characterId);
+            if (File.Exists(playerPath))
+                File.Delete(playerPath);
 
-            if (highScore <= 0 && !hasReachedLevel20)
-            {
-                if (File.Exists(playerPath))
-                    File.Delete(playerPath);
-                return;
-            }
-
-            // Preserve the High Score (and the permanent star-rating flag —
-            // see Player.HasReachedLevel20) by writing back a fresh default
-            // character instead of deleting the file outright. LoadOrCreatePlayer
-            // always reconstructs the class from scratch first (ResetPlayer) and
-            // then copies several fields (Level, Experience, etc.) straight from
-            // the save with no null-check, so this has to be a fully valid Level-1
-            // snapshot, not a blank/zeroed one — BuildPlayerData against a
-            // just-reset Player.Instance gives exactly that. The swap is safe
-            // because nothing else runs on this thread between saving and
-            // restoring Player.Instance/PlayerClass. ResetPlayer's freshly
-            // constructed instance also naturally has HasBeenPlayed = false,
-            // which is what should land in the file here (unlike HighScore,
-            // that flag is meant to reset on delete).
-            Player previousInstance = Player.Instance;
-            Player.Class previousClass = Player.PlayerClass;
-
-            ResetPlayer(playerClass);
-            PlayerData defaultData = BuildPlayerData();
-            defaultData.HighScore = highScore;
-            defaultData.HasReachedLevel20 = hasReachedLevel20;
-
-            Player.Instance = previousInstance;
-            Player.PlayerClass = previousClass;
-
-            string json = JsonSerializer.Serialize(defaultData);
-            File.WriteAllText(playerPath, json);
+            CharacterSlotSystem.RemoveCharacterFromSlot(characterId);
+            SaveCharacterSlotsData();
         }
 
-        // Full account wipe — every class's PlayerData/InventoryData, the
-        // shared BankData, and account-wide FameData. Deliberately does NOT
-        // preserve anything (unlike DeleteCharacterData, which keeps a
-        // class's HighScore/HasReachedLevel20 on purpose) — the caller is
-        // expected to have gotten explicit, doubly-confirmed user intent
-        // first, since this is irreversible and there's no separate backup.
+        // Full account wipe — every character slot's PlayerData/
+        // InventoryData, the shared BankData, account-wide FameData, the
+        // slot manifest, and the permanent per-class star records.
+        // Deliberately does NOT preserve anything (unlike
+        // DeleteCharacterData, which — before this rework's simplification
+        // — used to keep a class's HighScore/HasReachedLevel20 on purpose)
+        // — the caller is expected to have gotten explicit, doubly-confirmed
+        // user intent first, since this is irreversible and there's no
+        // separate backup.
         public static void EraseAllAccountData()
         {
-            foreach (
-                Player.Class playerClass in new[]
-                {
-                    Player.Class.Wizard,
-                    Player.Class.Archer,
-                    Player.Class.Knight,
-                    Player.Class.Priest,
-                    Player.Class.Rogue,
-                }
-            )
+            // Copy the list before iterating — nothing here mutates
+            // CharacterSlotSystem.Entries mid-loop today, but
+            // CharacterSlotSystem.Reset() a few lines down does, and a
+            // defensive copy costs nothing.
+            foreach (CharacterSlotEntryData entry in CharacterSlotSystem.Entries.ToList())
             {
-                string playerPath = PlayerDataLocation(playerClass);
+                string playerPath = PlayerDataLocation(entry.CharacterId);
                 if (File.Exists(playerPath))
                     File.Delete(playerPath);
 
-                string inventoryPath = InventoryDataLocation(playerClass);
+                string inventoryPath = InventoryDataLocation(entry.CharacterId);
                 if (File.Exists(inventoryPath))
                     File.Delete(inventoryPath);
             }
@@ -277,15 +264,24 @@ namespace Realm
             if (File.Exists(fameDataLocation))
                 File.Delete(fameDataLocation);
 
+            if (File.Exists(characterSlotsDataLocation))
+                File.Delete(characterSlotsDataLocation);
+
+            if (File.Exists(classRecordsDataLocation))
+                File.Delete(classRecordsDataLocation);
+
             // Clear in-memory state too — Records is a fixed-size array
             // (readonly reference, mutable contents), and class unlocks/
             // Fame-gated UI read FameSystem.Fame live rather than from a
             // separate "unlocked" flag, so zeroing it here is what actually
             // re-locks Archer/Knight immediately. Without clearing both, a
             // later autosave (e.g. entering the Nexus) would silently
-            // resurrect the just-deleted data from stale memory.
+            // resurrect the just-deleted data from stale memory. Same
+            // reasoning now extends to the slot manifest and class records.
             Array.Clear(BankSystem.Records, 0, BankSystem.Records.Length);
             FameSystem.Fame = 0;
+            CharacterSlotSystem.Reset();
+            ClassRecordSystem.Reset();
 
             Player.Class currentClass = Player.PlayerClass;
             EntityManager.RemovePlayer();
@@ -293,58 +289,32 @@ namespace Realm
             // ResetPlayer() just built a brand new Player.Instance —
             // GameSettingsData's fields live on it directly, so reload them
             // here too (GameSettingsData.json itself isn't touched by this
-            // wipe, only PlayerData/InventoryData/BankData/FameData are).
+            // wipe, only PlayerData/InventoryData/BankData/FameData/the two
+            // new account-wide files are).
             LoadGameSettingsData();
             EntityManager.Add(Player.Instance);
         }
 
-        // There's no single save file to read a "last played class" from anymore now
-        // that saves are per-class, so infer it from whichever class's save file was
-        // written most recently. Falls back to Wizard if neither exists yet.
-        public static Player.Class DetermineLastPlayedClass()
-        {
-            (Player.Class playerClass, string path)[] candidates =
-            [
-                (Player.Class.Wizard, PlayerDataLocation(Player.Class.Wizard)),
-                (Player.Class.Archer, PlayerDataLocation(Player.Class.Archer)),
-                (Player.Class.Knight, PlayerDataLocation(Player.Class.Knight)),
-                (Player.Class.Priest, PlayerDataLocation(Player.Class.Priest)),
-                (Player.Class.Rogue, PlayerDataLocation(Player.Class.Rogue)),
-            ];
-
-            Player.Class? mostRecent = null;
-            DateTime mostRecentWriteTime = DateTime.MinValue;
-
-            foreach (var (playerClass, path) in candidates)
-            {
-                if (!File.Exists(path))
-                    continue;
-
-                // Strictly greater (not >=) on later candidates so an exact
-                // tie keeps whichever class was checked first — matches the
-                // original two-class comparison, which favored Wizard on a
-                // tie against Archer.
-                DateTime writeTime = File.GetLastWriteTimeUtc(path);
-                if (mostRecent == null || writeTime > mostRecentWriteTime)
-                {
-                    mostRecent = playerClass;
-                    mostRecentWriteTime = writeTime;
-                }
-            }
-
-            return mostRecent ?? Player.Class.Wizard;
-        }
+        // Replaces the old DetermineLastPlayedClass() — there's no fixed
+        // set of 5 class-named files to scan anymore (a class can have
+        // zero, one, or many characters), so this reads the slot
+        // manifest's own LastPlayedUtc instead of File.GetLastWriteTimeUtc.
+        // Returns null when no character exists yet (a fresh account, or
+        // right after Erase All Data) — callers must handle that instead of
+        // falling back to a hardcoded class, since there's no character to
+        // actually load in that case.
+        public static CharacterSlotEntryData DetermineLastPlayedCharacter() =>
+            CharacterSlotSystem.MostRecentlyPlayed();
 
         // Used by the main menu's Nexus button to decide whether jumping straight
-        // into gameplay makes sense, or no class has ever actually been played yet
-        // (Player.Instance defaults to a fresh Wizard at boot regardless — see
-        // DetermineLastPlayedClass — so that alone can't answer this).
+        // into gameplay makes sense, or no character has ever actually been played
+        // yet (Player.Instance defaults to a fresh in-memory Wizard at boot
+        // regardless when there's nothing to load — see Game1.StartGame() — so
+        // that alone can't answer this).
         public static bool AnyCharacterHasBeenPlayed() =>
-            (PeekPlayerData(Player.Class.Wizard)?.HasBeenPlayed ?? false)
-            || (PeekPlayerData(Player.Class.Archer)?.HasBeenPlayed ?? false)
-            || (PeekPlayerData(Player.Class.Knight)?.HasBeenPlayed ?? false)
-            || (PeekPlayerData(Player.Class.Priest)?.HasBeenPlayed ?? false)
-            || (PeekPlayerData(Player.Class.Rogue)?.HasBeenPlayed ?? false);
+            CharacterSlotSystem.Entries.Any(entry =>
+                PeekPlayerData(entry.CharacterId)?.HasBeenPlayed ?? false
+            );
 
         // Constructs the given class at its base stats, discarding whatever the
         // current Player.Instance is — no save is read or applied.
@@ -372,15 +342,22 @@ namespace Realm
             }
         }
 
-        // Constructs the given class and, if it has a save, layers that save's stats
-        // (and inventory) on top. Used both at game boot and when a character is
-        // chosen from Character Select, so there's exactly one place that knows how
-        // to do this correctly (construct first, then apply save data — not the
-        // other way around, which discards the loaded stats as soon as the
-        // constructor resets them to base values).
-        public static void LoadOrCreatePlayer(Player.Class playerClass)
+        // Constructs the given class and, if characterId names an existing
+        // save, layers that save's stats (and inventory) on top. Used both
+        // at game boot (loading the last-played character) and when a
+        // character is chosen from a populated slot, so there's exactly one
+        // place that knows how to do this correctly (construct first, then
+        // apply save data — not the other way around, which discards the
+        // loaded stats as soon as the constructor resets them to base
+        // values). Pass characterId: null for a brand-new character (an
+        // empty slot in Character Creation) — there's no save to layer, and
+        // Player.Instance.ID stays whatever ResetPlayer's constructor
+        // freshly generated, which becomes that character's permanent
+        // identity from here on (the caller reads it back afterward to
+        // register the new slot — see CharacterCreationState.SelectCharacter()).
+        public static void LoadOrCreatePlayer(Player.Class playerClass, Guid? characterId)
         {
-            PlayerData saved = PeekPlayerData(playerClass);
+            PlayerData saved = characterId.HasValue ? PeekPlayerData(characterId.Value) : null;
 
             ResetPlayer(playerClass);
 
@@ -487,10 +464,9 @@ namespace Realm
             Debug.WriteLine("GameData Saved.");
         }
 
-        // Snapshots Player.Instance/Player.PlayerClass into a PlayerData DTO. Shared
-        // by SavePlayerData (snapshotting the live, currently-playing character) and
-        // DeleteCharacterData (snapshotting a freshly-constructed default character,
-        // to write back after wiping a save while preserving its High Score).
+        // Snapshots Player.Instance/Player.PlayerClass into a PlayerData DTO,
+        // used by SavePlayerData to persist the live, currently-playing
+        // character.
         private static PlayerData BuildPlayerData()
         {
             return new PlayerData
@@ -1561,6 +1537,170 @@ namespace Realm
             catch (System.IO.FileNotFoundException)
             {
                 Debug.WriteLine(fameDataLocation + ": file not found.");
+            }
+        }
+
+        public static void SaveCharacterSlotsData()
+        {
+            string json = JsonSerializer.Serialize(CharacterSlotSystem.ToData());
+            File.WriteAllText(characterSlotsDataLocation, json);
+            Debug.WriteLine("CharacterSlotsData Saved.");
+        }
+
+        public static void LoadCharacterSlotsData()
+        {
+            try
+            {
+                using StreamReader r = new(characterSlotsDataLocation);
+                string json = r.ReadToEnd();
+                CharacterSlotsData data = JsonSerializer.Deserialize<CharacterSlotsData>(json);
+                CharacterSlotSystem.LoadFromData(data);
+            }
+            catch (System.IO.FileNotFoundException)
+            {
+                Debug.WriteLine(characterSlotsDataLocation + ": file not found.");
+
+                // No manifest yet — either a genuinely fresh account, or an
+                // install that predates the character-slot rework and still
+                // has real characters saved under the old
+                // PlayerData_{ClassName}.json naming. Runs exactly once:
+                // after this, CharacterSlotsData.json exists either way.
+                MigrateLegacySavesIfNeeded();
+            }
+        }
+
+        public static void SaveClassRecordsData()
+        {
+            string json = JsonSerializer.Serialize(ClassRecordSystem.ToData());
+            File.WriteAllText(classRecordsDataLocation, json);
+            Debug.WriteLine("ClassRecordsData Saved.");
+        }
+
+        public static void LoadClassRecordsData()
+        {
+            try
+            {
+                using StreamReader r = new(classRecordsDataLocation);
+                string json = r.ReadToEnd();
+                ClassRecordsData data = JsonSerializer.Deserialize<ClassRecordsData>(json);
+                ClassRecordSystem.LoadFromData(data);
+            }
+            catch (System.IO.FileNotFoundException)
+            {
+                Debug.WriteLine(classRecordsDataLocation + ": file not found.");
+            }
+        }
+
+        // The pre-slot-system save naming — one PlayerData/InventoryData
+        // pair per class, keyed by class name instead of by character ID.
+        // Only ever referenced here, by the one-time migration below.
+        private static string LegacyPlayerDataLocation(Player.Class playerClass) =>
+            Path.Combine(AppContext.BaseDirectory, $"PlayerData_{playerClass}.json");
+
+        private static string LegacyInventoryDataLocation(Player.Class playerClass) =>
+            Path.Combine(AppContext.BaseDirectory, $"InventoryData_{playerClass}.json");
+
+        // One-time migration from the old "one save per class name" scheme
+        // to the new per-character-ID one — see LoadCharacterSlotsData()
+        // above, the only caller. Copies (never moves, until every migrated
+        // character and both new account-wide files are confirmed written)
+        // each existing legacy PlayerData_{Class}.json/
+        // InventoryData_{Class}.json pair to its new PlayerData_{ID}.json/
+        // InventoryData_{ID}.json name (ID taken from the legacy file's own
+        // already-populated PlayerData.ID — every real save already has
+        // one, just never used as the file's own key before now), registers
+        // a slot for it, and seeds ClassRecordSystem from its HighScore so
+        // the star-unlock chain doesn't regress. Grandfathers
+        // UnlockedSlotCount up to however many real characters were found
+        // (floored at the normal starting 2) — an existing player who
+        // legitimately already has up to 5 characters under the old model
+        // isn't asked to re-buy slots they already earned. If anything
+        // throws partway through, every old file is left untouched and no
+        // manifest is written — fails toward "nothing happened" rather than
+        // a half-migrated account.
+        private static void MigrateLegacySavesIfNeeded()
+        {
+            try
+            {
+                List<CharacterSlotEntryData> migratedEntries = [];
+                int slotIndex = 0;
+
+                foreach (
+                    Player.Class playerClass in new[]
+                    {
+                        Player.Class.Wizard,
+                        Player.Class.Archer,
+                        Player.Class.Knight,
+                        Player.Class.Priest,
+                        Player.Class.Rogue,
+                    }
+                )
+                {
+                    string legacyPlayerPath = LegacyPlayerDataLocation(playerClass);
+                    if (!File.Exists(legacyPlayerPath))
+                        continue;
+
+                    PlayerData legacyData;
+                    using (StreamReader r = new(legacyPlayerPath))
+                    {
+                        legacyData = JsonSerializer.Deserialize<PlayerData>(r.ReadToEnd());
+                    }
+
+                    if (legacyData == null)
+                        continue;
+
+                    Guid characterId = legacyData.ID;
+                    DateTime lastPlayedUtc = File.GetLastWriteTimeUtc(legacyPlayerPath);
+
+                    File.Copy(legacyPlayerPath, PlayerDataLocation(characterId), overwrite: true);
+
+                    string legacyInventoryPath = LegacyInventoryDataLocation(playerClass);
+                    if (File.Exists(legacyInventoryPath))
+                    {
+                        File.Copy(
+                            legacyInventoryPath,
+                            InventoryDataLocation(characterId),
+                            overwrite: true
+                        );
+                    }
+
+                    migratedEntries.Add(
+                        new CharacterSlotEntryData
+                        {
+                            SlotIndex = slotIndex++,
+                            CharacterId = characterId,
+                            PlayerClass = playerClass,
+                            LastPlayedUtc = lastPlayedUtc,
+                        }
+                    );
+
+                    ClassRecordSystem.RecordHighScore(playerClass, legacyData.HighScore);
+                }
+
+                CharacterSlotSystem.Entries = migratedEntries;
+                CharacterSlotSystem.UnlockedSlotCount = Math.Max(2, migratedEntries.Count);
+
+                SaveCharacterSlotsData();
+                SaveClassRecordsData();
+
+                // Only delete the old files once every copy and both new
+                // account-wide files are confirmed written.
+                foreach (CharacterSlotEntryData entry in migratedEntries)
+                {
+                    string legacyPlayerPath = LegacyPlayerDataLocation(entry.PlayerClass);
+                    if (File.Exists(legacyPlayerPath))
+                        File.Delete(legacyPlayerPath);
+
+                    string legacyInventoryPath = LegacyInventoryDataLocation(entry.PlayerClass);
+                    if (File.Exists(legacyInventoryPath))
+                        File.Delete(legacyInventoryPath);
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine("Legacy save migration failed, leaving old files untouched: " + ex);
+                CharacterSlotSystem.Reset();
+                ClassRecordSystem.Reset();
             }
         }
 

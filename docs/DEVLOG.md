@@ -8154,3 +8154,94 @@ date/time for those individually; don't treat their grouping as meaning they all
 
      Full `--no-incremental dotnet build` (0 errors, same two pre-existing warnings). No scripted test,
      same reasoning as entry 290's own verification. See [BUGFIXES.md](BUGFIXES.md) entry 57.
+
+292. **Character slot system — reworked Character Select into a vertical, purchasable list of**
+     **character slots**, per direct request. A fresh account gets 2 free slots; a 3rd always shows
+     locked with its Fame cost, purchasing it reveals a locked 4th, and so on (500 Fame for the 3rd,
+     doubling each slot after — `CharacterSlotSystem.CostForNextSlot()`, uncapped). Each occupied slot
+     shows class/portrait/equipped-item icons/Fame, with a small "X" delete icon (inline Yes/No
+     confirm, awards Fame exactly as before). Clicking an empty slot opens what used to be the whole
+     Character Select screen, renamed **`CharacterCreationState`** (from `CharacterSelectState`), to
+     pick a class — still gated by the existing 3-stars-in-the-previous-class unlock chain.
+
+     This required a real identity change, not just new UI: the old save scheme was exactly one file
+     per class name (`PlayerData_{ClassName}.json`), so "two characters of the same class in two
+     slots" — confirmed explicitly as a requirement — had nowhere to live on disk. `Player.ID` (a
+     `Guid`, already on both `Player` and `Data/PlayerData.cs`, already round-tripped every save/load
+     but never actually used to address a file) becomes the real per-character key:
+     `Util.PlayerDataLocation`/`InventoryDataLocation` now interpolate a `Guid` into the filename
+     instead of a `Player.Class`, and the no-arg `playerDataLocation`/`inventoryDataLocation`
+     properties (used by ~20 other call sites across `StateManager`/`RealmState`/`GameOverState`/
+     `Player.LevelUp()`/`InventorySystem`/`BankSystem`, none of which pass an explicit class today)
+     now resolve via `Player.Instance.ID` instead of the old static `Player.PlayerClass` — meaning
+     every one of those ~20 sites needed zero changes.
+
+     **New account-wide files**: `Data/CharacterSlotsData.cs`/`CharacterSlotsData.json` (the slot
+     manifest — `UnlockedSlotCount` plus a list of `{SlotIndex, CharacterId, PlayerClass,
+     LastPlayedUtc}` entries for occupied slots; an index at or above `UnlockedSlotCount` is locked,
+     below it with no entry is empty) and `Data/ClassRecordsData.cs`/`ClassRecordsData.json` (flat
+     `WizardBestHighScore`/etc. fields — the permanent best-HighScore-ever-achieved per class,
+     independent of any single character's file). The second one exists because a class's star rating
+     used to just be read off "the one save file for that class" — once a class can have zero, one, or
+     many characters, that stops meaning anything, so the star-unlock chain
+     (`CharacterCreationState.cs`) now reads `ClassRecordSystem.GetBestHighScore(class)` instead,
+     updated live in `RealmState.cs`'s existing HighScore-bump block (every new high, not just star
+     crossings, so a later character of the same class starts from the right baseline) and preserved
+     through deletion. Two new static systems mirror `FameSystem`/`BankSystem`'s existing
+     "in-memory state + `Util.cs` load/save" shape: `CharacterSlotSystem.cs` (slot manifest + purchase
+     logic) and `ClassRecordSystem.cs` (the per-class record). `FameSystem.cs` gained its first-ever
+     spend method, `TrySpendFame(amount)` (confirmed via repo-wide grep that nothing like it existed
+     before).
+
+     `Util.DeleteCharacterData()` **simplifies** as a result — the old "preserve HighScore by writing
+     back a fresh Level-1 stub file" trick existed only because the star chain read HighScore straight
+     from that file; now that `ClassRecordSystem` tracks it independently, a delete just awards Fame
+     (unchanged formula) and removes both files outright, leaving the slot genuinely empty for any
+     class rather than silently repopulating it with a stub of the same one. `EraseAllAccountData()`,
+     `DetermineLastPlayedClass()` (renamed `DetermineLastPlayedCharacter()`, now returns a nullable
+     slot entry instead of falling back to a hardcoded Wizard), and `AnyCharacterHasBeenPlayed()` all
+     moved off their old hardcoded 5-class enumerations onto the slot manifest.
+
+     **Critical fix caught during implementation, not after**: `GameOverState`'s constructor calls
+     `Util.ResetPlayer(diedClass)` on death, which constructs a brand-new `Player.Instance` with a
+     fresh random `Guid` — since save paths are now ID-keyed, the very next unconditional
+     `SavePlayerData()` in that same constructor would have silently written the death-reset stats to
+     a new, unrelated file, orphaning the character that actually died. Fixed by capturing
+     `Guid diedCharacterId = Player.Instance.ID;` alongside the existing `highScore`/
+     `hasReachedLevel20` captures and restoring it right after `ResetPlayer()`, same pattern those two
+     already use. Also caught while sweeping comments: `Player.DebugGrantThreeStarsFame()` (F4's "grant
+     3 stars" testing shortcut) set `HighScore` directly but never fed `ClassRecordSystem` — since the
+     unlock chain reads that record now, not `HighScore` itself, the debug key would have silently
+     stopped working; added the missing `ClassRecordSystem.RecordHighScore()` call. And, found during
+     a second self-review pass after the initial implementation built and booted clean: a real Fame
+     bug — `CharacterSlotsState`'s purchase-confirm handler spent Fame via `TryPurchaseNextSlot()` but
+     never called `Util.SaveFameData()` afterward, so a successful purchase would have silently
+     reverted (Fame back up, slot back to locked) on next boot unless some unrelated event happened to
+     trigger a save first. Fixed by saving both `FameData.json` and `CharacterSlotsData.json`
+     immediately on a successful purchase.
+
+     **Migration**: the account had five real, fully-played characters (all 5 stars, `HighScore` ≈
+     2.9-3.0M each) under the old naming. `Util.MigrateLegacySavesIfNeeded()` (hooked into
+     `LoadCharacterSlotsData()`'s `FileNotFoundException` branch, so it runs exactly once — the first
+     time no `CharacterSlotsData.json` exists yet) reads each old `PlayerData_{ClassName}.json`'s
+     already-populated `ID`, copies (never moves, until everything is confirmed written) both its
+     files to the new ID-named paths, registers a slot entry, and seeds `ClassRecordSystem` from its
+     `HighScore` — only then deletes the old files, and leaves everything untouched if any step throws.
+     Grandfathered `UnlockedSlotCount = Math.Max(2, migratedCount)` (5, here) rather than asking an
+     existing player to re-buy slots they already earned.
+
+     **Verified for real, per this repo's own CLAUDE.md save-file-safety rule** (this migration is
+     exactly the "genuine, intended real-save-file mutation" that rule exists for): backed up every
+     real JSON file first. Full `--no-incremental dotnet build` (0 errors, same two pre-existing
+     warnings). Launched the real `Realm.exe` minimized (`IsIconic()`-confirmed, `Get-Process`-confirmed
+     clean exit both times, not a `timeout` wrapper — see entry 278's own lesson about that) twice: once
+     to trigger the migration, once more to confirm it's idempotent (no re-migration, no duplicate
+     files, manifest unchanged). Diffed every migrated `PlayerData_{guid}.json`/
+     `InventoryData_{guid}.json` against the pre-migration backup — all five byte-identical to the
+     originals; `ClassRecordsData.json`'s five fields matched each original `HighScore` exactly;
+     `BankData.json`/`FameData.json`/`GameSettingsData.json`/`KeyBindingsData.json` all confirmed
+     untouched. **Not verified**: the actual click-through UI (scrolling, the purchase/delete inline
+     confirms, Character Creation reached from an empty slot) — this was checked by code review and a
+     real boot/migration cycle, not by interactively playing it, since that's not something this
+     session can do for a MonoGame desktop app. Flagging this directly rather than implying full manual
+     QA happened.

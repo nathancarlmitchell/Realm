@@ -16,5 +16,20 @@ namespace Realm
             if (amount > 0)
                 Fame += amount;
         }
+
+        // First-ever Fame-spending method — added for character-slot
+        // purchases (see CharacterSlotSystem.TryPurchaseNextSlot()).
+        // Doesn't mutate Fame or play any sound on failure — deliberately
+        // kept as pure state, same as AddFame() above; the caller decides
+        // what a blocked purchase looks/sounds like (e.g. Sound.Error),
+        // same as every other blocked-click case in this codebase.
+        public static bool TrySpendFame(int amount)
+        {
+            if (amount < 0 || amount > Fame)
+                return false;
+
+            Fame -= amount;
+            return true;
+        }
     }
 }

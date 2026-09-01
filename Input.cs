@@ -138,7 +138,7 @@ public static class Input
             // the current class's highest-tier gear for every slot
             // (replacing whatever was equipped), and grant enough XP/
             // HighScore for 3 stars — handy for testing the class-unlock
-            // chain in CharacterSelectState.cs.
+            // chain in CharacterCreationState.cs.
             if (WasKeyPressed(Keys.F4))
             {
                 Player.Instance.DebugMaxLevelAndEquipTopGear();

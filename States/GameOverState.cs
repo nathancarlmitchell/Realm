@@ -53,9 +53,9 @@ namespace Realm.States
             // (and permanent star-rating flag, HasReachedLevel20) are kept as a
             // permanent record, but nothing else carries over (including
             // HasBeenPlayed), so a death leaves the save looking the same as an
-            // explicit Delete: back to defaults, with Character Select correctly
-            // hiding the Delete link again until this class is played some more.
+            // explicit Delete: back to defaults, still occupying the same slot.
             Player.Class diedClass = Player.PlayerClass;
+            Guid diedCharacterId = Player.Instance.ID;
             int highScore = Player.Instance.HighScore;
             bool hasReachedLevel20 = Player.Instance.HasReachedLevel20;
 
@@ -64,6 +64,17 @@ namespace Realm.States
             Util.ResetPlayer(diedClass);
             Player.Instance.HighScore = highScore;
             Player.Instance.HasReachedLevel20 = hasReachedLevel20;
+
+            // ResetPlayer() just built a brand new Player.Instance, whose
+            // constructor assigns a fresh random ID — but save files are now
+            // keyed by that ID (see Util.cs's playerDataLocation/
+            // inventoryDataLocation), so without restoring it here, the
+            // unconditional SavePlayerData() below would silently write this
+            // death-reset character to a brand new, unrelated file instead
+            // of the real one, orphaning the character that actually died
+            // and leaving the slot manifest pointing at a file that stops
+            // getting updated.
+            Player.Instance.ID = diedCharacterId;
 
             // ResetPlayer() just built a brand new Player.Instance —
             // GameSettingsData's fields live on it directly, not a separate

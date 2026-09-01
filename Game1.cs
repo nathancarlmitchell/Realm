@@ -177,13 +177,33 @@ namespace Realm
             Util.LoadFameData();
             Util.LoadKeyBindingsData();
 
-            Util.LoadOrCreatePlayer(Util.DetermineLastPlayedClass());
+            // Loads (or, on an install that predates the character-slot
+            // system, migrates) the slot manifest and the permanent
+            // per-class star records — must run before
+            // DetermineLastPlayedCharacter() below, which reads the
+            // manifest LoadCharacterSlotsData() just populated.
+            Util.LoadCharacterSlotsData();
+            Util.LoadClassRecordsData();
 
-            // Must run after LoadOrCreatePlayer(), not alongside the other
-            // Load*Data() calls above — ResetPlayer() (called from inside
-            // LoadOrCreatePlayer()) constructs a brand new Player.Instance
-            // (Wizard/Archer/Knight/Priest/Rogue), which would silently
-            // discard whatever this set if it ran first.
+            // No fixed "always exists" character anymore (a class can have
+            // zero characters) — DetermineLastPlayedCharacter() returns null
+            // on a genuinely fresh account or right after Erase All Data.
+            // In that case, leave Player.Instance as whatever its own lazy
+            // getter defaults to (a plain Wizard — see Player.Instance) and
+            // never save it; the player lands on the Main Menu regardless
+            // (currentState is already set to MenuState above), and picking
+            // Character Select from there routes into CharacterSlotsState,
+            // not straight into gameplay.
+            var lastPlayed = Util.DetermineLastPlayedCharacter();
+            if (lastPlayed != null)
+                Util.LoadOrCreatePlayer(lastPlayed.PlayerClass, lastPlayed.CharacterId);
+            else
+                Util.ResetPlayer(Player.Class.Wizard);
+
+            // Must run after LoadOrCreatePlayer()/ResetPlayer() above, not
+            // alongside the other Load*Data() calls — constructing a new
+            // Player.Instance (Wizard/Archer/Knight/Priest/Rogue) would
+            // silently discard whatever this set if it ran first.
             Util.LoadGameSettingsData();
 
             EntityManager.Add(Player.Instance);

@@ -192,6 +192,15 @@ prioritized or scheduled — the user asked to keep these noted for later rather
   `HasReachedLevel20`, or a character-creation-time choice) once picked up, plus UI to actually
   choose it. Purely an idea for now — not scoped or scheduled.
 
+- **Playtest the character-slots screen** (`States/CharacterSlotsState.cs` — see [DEVLOG.md](DEVLOG.md)
+  entry 292). Verified so far by code review, a clean build, and two real boot/migration cycles
+  (confirming the actual save-file migration is correct and idempotent) — but the click-through UI
+  itself (scrolling with more than a screenful of slots, the purchase and delete inline confirms,
+  reaching Character Creation from an empty slot, layout/readability of the equipped-item icon row)
+  hasn't been interactively played yet. The delete "X" icon is currently just an outlined "X"
+  character drawn at icon size (no dedicated art asset exists for it) — worth a real icon if it reads
+  as too plain in play.
+
 ## Completed
 
 Moved to a dedicated log so it isn't duplicated here — see
