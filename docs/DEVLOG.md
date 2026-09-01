@@ -7620,3 +7620,43 @@ date/time for those individually; don't treat their grouping as meaning they all
 
      Verified with a full `--no-incremental dotnet build` (0 errors, same two pre-existing warnings)
      plus a plain minimized boot-check. No scripted test — no save data touched.
+
+275. **Reviewed Spells by following each of the 8 tiered Spells to its own dedicated wiki page**,
+     per direct instruction — and found the biggest gap yet: Spell Bomb's shot count and damage
+     *both* scale with the Wizard's own Wisdom, and the ability's projectile physics were still
+     silently borrowed from whatever Weapon happened to be equipped. `ManaCost`, `MinDamage`/
+     `MaxDamage`, `WisdomBonus`, and the T6/T7 HP/MP bumps in `SpellData.json` all already matched
+     every individual page exactly — same pattern as Sword/Dagger/Ring/Quiver/Shield before it.
+
+     **Shots scale with Wisdom too** (not just damage) — every one of the 8 pages shows the identical
+     "16 (+1 per 15 WIS over 42) (arc gap: 22.5°)" line: base 16 shots regardless of tier, +1 extra
+     shot per 15 points of Wisdom past 42 (a higher threshold than Shield/Quiver's 34, matching
+     Wizard's own much higher Wisdom cap). Since this rate is uniform across every tier (not per-item
+     data), it's a plain `Wizard.cs` constant (`SpellBombBaseShots`/`SpellBombWisPerExtraShot`) rather
+     than a new `SpellData` field. No separate "arc gap" field was needed either — Spell Bomb already
+     distributes its shots evenly around a full circle (`2π / shotCount`), which already reduces to
+     the wiki's 22.5° at the base 16-shot case and stays evenly spaced automatically as Wisdom adds
+     more.
+
+     **Damage also scales with Wisdom past 42**, per-tier this time (`0.5/0.75/1.0/1.25/1.5/1.75/2.0/
+     2.25` for T0-T7, confirmed on each item's own "+X per WIS over 42" line) — new `DamagePerWisOver42`
+     field on `Data/SpellData.cs`/`Spell.cs`, same shape as Shield's/Quiver's own scaling stat.
+
+     **Spell Bomb's projectile physics were still borrowed from the equipped Weapon** — unlike
+     Quiver/Shield, which already got their own independent stats fixed earlier this session,
+     `Wizard.UseAbility()` still read `Instance.Weapon.ProjectileMagnitude` directly, meaning the
+     ability's actual speed silently changed depending on which Wand/Staff was equipped instead of
+     matching the wiki's own fixed "Projectile Speed: 16 tiles/second, Lifetime: 1 second" for every
+     tier. Added `ProjectileMagnitude`/`ProjectileDuration`/`ProjectileImageName` to `Data/SpellData.cs`/
+     `Spell.cs` (real values: `8.533333`/`60`, i.e. 16 tiles/sec and 1s converted the usual way) and
+     wired them into `Spell.LoadSpell()` plus a new Spell-only field-copy block in
+     `Player.EquipHighestTierAbilityItem()` (Spell never had one before — every other AbilityItem
+     subtype already did). `ProjectileImageName` defaults to `"projectile"` (`Art.Projectile`) for
+     every tier — the exact same generic bolt Spell Bomb already rendered as before this field
+     existed, not a visual change.
+
+     Same XP Bonus gap as every catalog reviewed this way: added `XpBonusPercent` to `SpellData.cs`,
+     wired into `LoadSpell()`, populated `0%/0%/0%/1%/2%/4%/6%/8%` for T0-T7.
+
+     Verified with a full `--no-incremental dotnet build` (0 errors, same two pre-existing warnings)
+     plus a plain minimized boot-check. No scripted test — no save data touched.

@@ -14,7 +14,12 @@
         "ManaCost": 20,
         "MinDamage": 20,
         "MaxDamage": 25,
-        "ImageName": "AbilityItems/Spells/0"
+        "ImageName": "AbilityItems/Spells/0",
+        "ProjectileMagnitude": 8.533333,
+        "ProjectileDuration": 60,
+        "ProjectileImageName": "projectile",
+        "DamagePerWisOver42": 0.5,
+        "XpBonusPercent": 0.0
     },
     {
         "Name": "Tome of Embers",
@@ -31,7 +36,12 @@
         "ManaCost": 30,
         "MinDamage": 35,
         "MaxDamage": 50,
-        "ImageName": "AbilityItems/Spells/1"
+        "ImageName": "AbilityItems/Spells/1",
+        "ProjectileMagnitude": 8.533333,
+        "ProjectileDuration": 60,
+        "ProjectileImageName": "projectile",
+        "DamagePerWisOver42": 0.75,
+        "XpBonusPercent": 0.0
     },
     {
         "Name": "Grimoire of Sparks",
@@ -48,7 +58,12 @@
         "ManaCost": 40,
         "MinDamage": 50,
         "MaxDamage": 80,
-        "ImageName": "AbilityItems/Spells/2"
+        "ImageName": "AbilityItems/Spells/2",
+        "ProjectileMagnitude": 8.533333,
+        "ProjectileDuration": 60,
+        "ProjectileImageName": "projectile",
+        "DamagePerWisOver42": 1.0,
+        "XpBonusPercent": 0.0
     },
     {
         "Name": "Runeforged Tome",
@@ -65,7 +80,12 @@
         "ManaCost": 50,
         "MinDamage": 60,
         "MaxDamage": 110,
-        "ImageName": "AbilityItems/Spells/3"
+        "ImageName": "AbilityItems/Spells/3",
+        "ProjectileMagnitude": 8.533333,
+        "ProjectileDuration": 60,
+        "ProjectileImageName": "projectile",
+        "DamagePerWisOver42": 1.25,
+        "XpBonusPercent": 1.0
     },
     {
         "Name": "Codex of Whispers",
@@ -82,7 +102,12 @@
         "ManaCost": 60,
         "MinDamage": 70,
         "MaxDamage": 140,
-        "ImageName": "AbilityItems/Spells/4"
+        "ImageName": "AbilityItems/Spells/4",
+        "ProjectileMagnitude": 8.533333,
+        "ProjectileDuration": 60,
+        "ProjectileImageName": "projectile",
+        "DamagePerWisOver42": 1.5,
+        "XpBonusPercent": 2.0
     },
     {
         "Name": "Tome of the Tempest",
@@ -99,7 +124,12 @@
         "ManaCost": 70,
         "MinDamage": 85,
         "MaxDamage": 170,
-        "ImageName": "AbilityItems/Spells/5"
+        "ImageName": "AbilityItems/Spells/5",
+        "ProjectileMagnitude": 8.533333,
+        "ProjectileDuration": 60,
+        "ProjectileImageName": "projectile",
+        "DamagePerWisOver42": 1.75,
+        "XpBonusPercent": 4.0
     },
     {
         "Name": "Grimoire of the Void",
@@ -116,7 +146,12 @@
         "ManaCost": 80,
         "MinDamage": 95,
         "MaxDamage": 200,
-        "ImageName": "AbilityItems/Spells/6"
+        "ImageName": "AbilityItems/Spells/6",
+        "ProjectileMagnitude": 8.533333,
+        "ProjectileDuration": 60,
+        "ProjectileImageName": "projectile",
+        "DamagePerWisOver42": 2.0,
+        "XpBonusPercent": 6.0
     },
     {
         "Name": "Codex of Ascendance",
@@ -133,6 +168,11 @@
         "ManaCost": 90,
         "MinDamage": 115,
         "MaxDamage": 220,
-        "ImageName": "AbilityItems/Spells/7"
+        "ImageName": "AbilityItems/Spells/7",
+        "ProjectileMagnitude": 8.533333,
+        "ProjectileDuration": 60,
+        "ProjectileImageName": "projectile",
+        "DamagePerWisOver42": 2.25,
+        "XpBonusPercent": 8.0
     }
 ]

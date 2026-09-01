@@ -1,4 +1,5 @@
-﻿using Microsoft.Xna.Framework;
+﻿using System;
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Audio;
 using Realm.Projectiles;
 using static Realm.Weapon;
@@ -7,6 +8,18 @@ namespace Realm.CharacterClasses
 {
     public class Wizard : Player
     {
+        // Spell Bomb's shot-count and damage both scale with Wisdom past
+        // this threshold — higher than Shield/Quiver's 34, matching
+        // Wizard's own much higher Wisdom cap. Confirmed identical across
+        // every tiered Spell's own dedicated wiki page.
+        private const int SpellWisThreshold = 42;
+
+        // "16 (+1 per 15 WIS over 42)" — uniform across every tier (unlike
+        // damage, which is per-tier data — see Data/SpellData.cs's
+        // DamagePerWisOver42), so this is a plain constant here instead.
+        private const int SpellBombBaseShots = 16;
+        private const int SpellBombWisPerExtraShot = 15;
+
         public Wizard()
         {
             PlayerClass = Class.Wizard;
@@ -140,13 +153,24 @@ namespace Realm.CharacterClasses
                 return;
             }
 
-            int damage = rand.Next(AbilityItem.MinDamage, AbilityItem.MaxDamage);
+            Spell spell = (Spell)AbilityItem;
+
+            // Both scale with the Wizard's own Wisdom past SpellWisThreshold
+            // — shots by a uniform engine-level rate (SpellBombWisPerExtraShot),
+            // damage by this Spell's own per-tier DamagePerWisOver42. A flat
+            // addition to a uniform roll is mathematically identical to
+            // shifting the range before rolling, same reasoning as Shield/
+            // Quiver's own scaling.
+            int wisOverThreshold = Math.Max(0, Wisdom - SpellWisThreshold);
+            int spellBombProjectileCount =
+                SpellBombBaseShots + wisOverThreshold / SpellBombWisPerExtraShot;
+            int damage =
+                rand.Next(AbilityItem.MinDamage, AbilityItem.MaxDamage)
+                + (int)(spell.DamagePerWisOver42 * wisOverThreshold);
 
             if (Mana >= AbilityCost)
             {
                 Mana -= AbilityCost;
-
-                int SpellBombProjectileCount = 16;
 
                 // Spell Bomb radiates evenly in every direction already, so
                 // "fire in random directions" (see DebuffType.Unstable) has
@@ -171,17 +195,28 @@ namespace Realm.CharacterClasses
                 // Spell bomb. Always expires on hit regardless of what the
                 // currently-equipped weapon's own basic attack does (e.g.
                 // Wand's pass-through) — an ability shot, not a basic
-                // attack bolt.
-                for (int i = 0; i < SpellBombProjectileCount; i++)
+                // attack bolt. Uses the Spell's own independent projectile
+                // speed/lifetime/art (Data/SpellData.cs) rather than the
+                // equipped Weapon's — previously borrowed the Weapon's,
+                // drifting with whatever Wand/Staff was equipped instead of
+                // the real, fixed 16 tiles/sec every tiered Spell's own wiki
+                // page gives, same fix Quiver/Shield already got. Shots
+                // stay evenly spaced around the full circle regardless of
+                // count, so a higher-Wisdom Wizard's extra shots (see
+                // spellBombProjectileCount above) still radiate symmetrically
+                // rather than overlapping the base 16.
+                for (int i = 0; i < spellBombProjectileCount; i++)
                 {
                     Vector2 vel = Extensions.FromPolar(
-                        i * (MathHelper.TwoPi / SpellBombProjectileCount),
-                        Instance.Weapon.ProjectileMagnitude
+                        i * (MathHelper.TwoPi / spellBombProjectileCount),
+                        spell.ProjectileMagnitude
                     );
                     EntityManager.Add(
                         new Projectile(spawnPosition, vel)
                         {
                             Damage = damage,
+                            Duration = spell.ProjectileDuration,
+                            image = spell.ProjectileImage,
                             ExpiresOnHit = true,
                         }
                     );

@@ -993,6 +993,19 @@ namespace Realm
             copy.ImageName = best.ImageName;
             copy.XpBonusPercent = best.XpBonusPercent;
 
+            // Spell-only — Spell Bomb's own shot and Wisdom-scaling damage.
+            // See Data/SpellData.cs.
+            if (copy is Spell spellCopy && best is Spell spellBest)
+            {
+                spellCopy.ProjectileMagnitude = spellBest.ProjectileMagnitude;
+                spellCopy.ProjectileDuration = spellBest.ProjectileDuration;
+                spellCopy.ProjectileImage = Game1.Instance.Content.Load<Texture2D>(
+                    spellBest.ProjectileImageName
+                );
+                spellCopy.ProjectileImageName = spellBest.ProjectileImageName;
+                spellCopy.DamagePerWisOver42 = spellBest.DamagePerWisOver42;
+            }
+
             // Quiver-only — its ability shot's own fields, not shared by
             // Spell/Shield. See Data/QuiverData.cs.
             if (copy is Quiver quiverCopy && best is Quiver quiverBest)

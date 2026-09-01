@@ -7,6 +7,15 @@ namespace Realm
 {
     public class Spell : AbilityItem
     {
+        // Spell Bomb's own shot — see Data/SpellData.cs.
+        public float ProjectileMagnitude { get; set; }
+        public int ProjectileDuration { get; set; }
+        public Texture2D ProjectileImage;
+        public string ProjectileImageName { get; set; }
+
+        // Damage-scales-with-Wisdom stat — see Data/SpellData.cs.
+        public float DamagePerWisOver42 { get; set; }
+
         public Spell(Texture2D image)
         {
             ID = Guid.NewGuid();
@@ -35,6 +44,9 @@ namespace Realm
                 Texture2D spellTexture = Game1.Instance.Content.Load<Texture2D>(
                     spellData.ImageName
                 );
+                Texture2D projectileTexture = Game1.Instance.Content.Load<Texture2D>(
+                    spellData.ProjectileImageName
+                );
 
                 Spell spell = new(spellTexture)
                 {
@@ -53,6 +65,12 @@ namespace Realm
                     MinDamage = spellData.MinDamage,
                     MaxDamage = spellData.MaxDamage,
                     ImageName = spellData.ImageName,
+                    ProjectileMagnitude = spellData.ProjectileMagnitude,
+                    ProjectileDuration = spellData.ProjectileDuration,
+                    ProjectileImage = projectileTexture,
+                    ProjectileImageName = spellData.ProjectileImageName,
+                    DamagePerWisOver42 = spellData.DamagePerWisOver42,
+                    XpBonusPercent = spellData.XpBonusPercent,
                 };
 
                 Player.Instance.EquipAbilityItem(spell);
