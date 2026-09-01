@@ -484,6 +484,12 @@ namespace Realm.States
                 new Vector2(CenterWidth - titleSize.X / 2, 40),
                 Color.White
             );
+
+            // Reuses the same account-wide Fame display already shown
+            // top-left during actual gameplay (Overlay.cs) — relevant here
+            // too, since it's exactly what a slot purchase spends.
+            Overlay.DrawFame(spriteBatch);
+
             spriteBatch.End();
 
             DrawRows(spriteBatch);

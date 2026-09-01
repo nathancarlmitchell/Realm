@@ -8280,3 +8280,29 @@ date/time for those individually; don't treat their grouping as meaning they all
      boot-check. See [BUGFIXES.md](BUGFIXES.md) entry 59 for the full account, including a pre-existing
      orphaned save file noticed (not touched) that's almost certainly a symptom of this same bug from
      before the fix.
+
+295. **Deleted the orphaned save file entry 294 noticed and flagged** (`PlayerData_b5ae2a10-....json`/
+     its matching `InventoryData`), per direct request. Re-confirmed immediately before deleting that it
+     was still absent from `CharacterSlotsData.json`'s slot list and still a trivial Level 1/0 XP/
+     `HasBeenPlayed: true` stub — nothing of value lost.
+
+     **Also added the account-wide Fame display to the character-slots screen**, per direct request.
+     Reused the existing `Overlay.DrawFame(spriteBatch)` (already built for the Nexus/dungeon sidebar —
+     icon + "Fame: N" text, top-left) rather than writing a second copy of the same display — directly
+     relevant here too, since it's exactly what a slot purchase spends. Verified by forcing
+     `Game1.StartGame()` to open straight into `CharacterSlotsState` and confirming it rendered for 5
+     seconds with no crash and an empty stderr, then reverted the temporary code
+     (`git diff --stat Game1.cs` clean).
+
+     Noticed during that verification run: `UnlockedSlotCount` had risen to 3 and a real Priest/Wizard
+     pair (different IDs than the original migrated set) now occupy the two original slots — the user
+     has been actively using the feature (creating characters, purchasing a slot) in parallel with this
+     session's own fixes, which is also almost certainly how entry 294's orphan and this entry's own
+     find happened. A save-file write burst observed mid-verification (PlayerData/InventoryData/
+     BankData/FameData/ClassRecordsData all within the same second, `CharacterSlotsData.json` a second
+     before) matches `StateManager.CharacterSlots()`'s own full save bundle exactly — real evidence the
+     entry 294 fix is working, from the user's own concurrent use, not from anything this session's test
+     did (confirmed no scripted interaction of this session's own ever simulated a click, and the
+     manifest's `LastPlayedUtc` — only ever touched by an actual row click — was unchanged). Deliberately
+     did not launch another real `Realm.exe` test instance after noticing this, to avoid any risk of two
+     processes writing the same save files at once while the user's own session might still be live.
