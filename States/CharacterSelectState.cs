@@ -441,6 +441,10 @@ namespace Realm.States
             {
                 EntityManager.RemovePlayer();
                 Util.ResetPlayer(slot.PlayerClass);
+                // Same reasoning as SelectCharacter() above — ResetPlayer()
+                // just handed us a brand new Player.Instance, so the account-
+                // wide settings living on it need reloading too.
+                Util.LoadGameSettingsData();
                 EntityManager.Add(Player.Instance);
             }
 
@@ -454,6 +458,15 @@ namespace Realm.States
             EntityManager.RemovePlayer();
 
             Util.LoadOrCreatePlayer(playerClass);
+
+            // LoadOrCreatePlayer() reconstructs Player.Instance from scratch
+            // (see Util.ResetPlayer()) — GameSettingsData's fields live
+            // directly on Player.Instance, not a separate object, so a fresh
+            // instance drops every account-wide setting back to its C#
+            // default until this reloads them, same as Game1.StartGame()
+            // does after its own initial LoadOrCreatePlayer() call. Without
+            // this, every setting silently resets on every character switch.
+            Util.LoadGameSettingsData();
 
             EntityManager.Add(Player.Instance);
 

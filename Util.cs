@@ -267,6 +267,11 @@ namespace Realm
             Player.Class currentClass = Player.PlayerClass;
             EntityManager.RemovePlayer();
             ResetPlayer(currentClass);
+            // ResetPlayer() just built a brand new Player.Instance —
+            // GameSettingsData's fields live on it directly, so reload them
+            // here too (GameSettingsData.json itself isn't touched by this
+            // wipe, only PlayerData/InventoryData/BankData/FameData are).
+            LoadGameSettingsData();
             EntityManager.Add(Player.Instance);
         }
 

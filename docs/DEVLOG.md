@@ -7792,3 +7792,38 @@ date/time for those individually; don't treat their grouping as meaning they all
      No scripted test or real-executable launch — both fixes are single-field additions to an existing,
      already-tested copy pattern, and entry 278's own incident is reason enough not to spin up another
      real-save-touching test run for a change this narrow.
+
+280. **Fixed account-wide game settings (Settings menu toggles, music/SFX volume, etc.) silently
+     resetting to their C# defaults on every character switch, save-delete-while-active, account wipe,
+     and death** — reported directly as "game settings are being reset when switching characters."
+     Root cause: `GameSettingsData`'s fields live directly on `Player.Instance` itself (not a separate
+     standalone object — see `Data/GameSettingsData.cs`'s own doc comment calling it "account-wide, not
+     per-class"), and `Util.LoadGameSettingsData()`, which copies the saved JSON onto whichever instance
+     is currently live, was only ever called once, at initial game boot (`Game1.StartGame()`, after its
+     own `LoadOrCreatePlayer()` call — see entry ~mid-`docs/DEVLOG.md` covering that ordering fix).
+     Every place that reconstructs `Player.Instance` afterward (`Util.ResetPlayer()`/
+     `LoadOrCreatePlayer()` always build a brand new class instance from its constructor, which is
+     where every settings field sits back at its bare C# default — `false` for most, except the ones
+     given an explicit `= true`) never re-applied the saved settings onto the new instance, so picking
+     a character from Character Select, deleting the currently-active character's save, wiping the
+     whole account, or simply dying all silently reset every toggle and the music/SFX volume back to
+     default — not just the one reported "switching characters" path.
+
+     Fixed by adding the same `Util.LoadGameSettingsData()` call (mirroring `Game1.StartGame()`'s own
+     pattern exactly) immediately after each of the four other call sites that leave a freshly-
+     constructed instance as the live `Player.Instance`: `CharacterSelectState.SelectCharacter()`,
+     `CharacterSelectState.DeleteCharacter()`'s in-place reset branch, `Util.EraseAllAccountData()`,
+     and `GameOverState`'s constructor (the death path). Deliberately left `Util.DeleteCharacterData()`'s
+     own internal `ResetPlayer()` call (line ~211) untouched — that one swaps `Player.Instance` back to
+     the real previous instance immediately afterward to build a throwaway default-stats snapshot for
+     the save file, so the live instance (and its live settings) are never actually replaced there.
+     `LoadGameSettingsData()` already handles a missing `GameSettingsData.json` gracefully (catches
+     `FileNotFoundException`, leaves the fresh instance's own defaults in place), so this is safe to
+     call unconditionally at all four sites, including a brand new account's very first character
+     selection.
+
+     Verified with a full `--no-incremental dotnet build` (0 errors, same two pre-existing warnings).
+     No scripted test or real-executable launch — every change is a single additive method call at an
+     existing, already-correct reconstruction site, mirroring a pattern (`Game1.StartGame()`'s own
+     post-`LoadOrCreatePlayer()` reload) already proven correct in this codebase, and none of the four
+     sites' surrounding logic was otherwise touched.

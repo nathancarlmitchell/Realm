@@ -65,6 +65,12 @@ namespace Realm.States
             Player.Instance.HighScore = highScore;
             Player.Instance.HasReachedLevel20 = hasReachedLevel20;
 
+            // ResetPlayer() just built a brand new Player.Instance —
+            // GameSettingsData's fields live on it directly, not a separate
+            // object, so every account-wide setting silently reset back to
+            // its C# default on death until this reloads them.
+            Util.LoadGameSettingsData();
+
             EntityManager.Add(Player.Instance);
 
             Util.SavePlayerData();
