@@ -68,6 +68,18 @@ namespace Realm
             "WandData.json"
         );
 
+        // Staves live in their own catalog file, separate from
+        // WeaponData.json — see Data/StaffData.cs and LoadStaffData() below.
+        // WeaponData.json itself is now empty — Staff was the last type
+        // still using it after Bow/Sword/Dagger/Wand were each already
+        // split out; kept around rather than removed outright, since
+        // deleting the whole generic WeaponData/LoadWeaponData() path is a
+        // bigger call than "move this one type's data."
+        private static string staffDataLocation = Path.Combine(
+            AppContext.BaseDirectory,
+            "StaffData.json"
+        );
+
         // Bows live in their own catalog file, separate from
         // WeaponData.json — see Data/BowData.cs and LoadBowData() below.
         private static string bowDataLocation = Path.Combine(
@@ -605,6 +617,79 @@ namespace Realm
             }
 
             return weapons;
+        }
+
+        // Staves live in their own catalog file (see Data/StaffData.cs)
+        // rather than WeaponData.json — same reasoning as
+        // Data/WandData.cs/Data/SwordData.cs: a per-tier XpBonusPercent (see
+        // Equipment.XpBonusPercent) matching the real wiki's "XP Bonus"
+        // column (https://www.realmeye.com/wiki/staves), which plain
+        // WeaponData has no field for. Keeps the Amplitude/Frequency fields
+        // WeaponData already had, since Staff is still the only type that
+        // uses them. Returns plain Weapon.WeaponType.Staff entries, meant to
+        // be merged into the same combined Weapons list as the other
+        // Load*Data() results (see Game1.StartGame()) — Weapon.LoadWeapon()
+        // and Player.cs's EquipHighestTierWeapon() both search that one
+        // list by Name, unaware of which file an entry originally came
+        // from.
+        public static List<Weapon> LoadStaffData()
+        {
+            List<StaffData> staffData = [];
+            List<Weapon> staves = [];
+
+            try
+            {
+                using (StreamReader r = new(staffDataLocation))
+                {
+                    Debug.WriteLine(staffDataLocation + ": reading data.");
+                    string json = r.ReadToEnd();
+                    Debug.WriteLine(json);
+                    try
+                    {
+                        staffData = JsonSerializer.Deserialize<List<StaffData>>(json);
+                    }
+                    catch (System.Text.Json.JsonException)
+                    {
+                        Debug.WriteLine($"Error loading staff data: {json}");
+                    }
+                }
+
+                for (int i = 0; i < staffData.Count; i++)
+                {
+                    Texture2D staffTexture = Game1.Instance.Content.Load<Texture2D>(
+                        staffData[i].ImageName
+                    );
+
+                    Texture2D projectileTexture = Game1.Instance.Content.Load<Texture2D>(
+                        staffData[i].ProjectileImageName
+                    );
+
+                    staves.Add(
+                        new Weapon(staffTexture, projectileTexture)
+                        {
+                            Type = Weapon.WeaponType.Staff,
+                            Name = staffData[i].Name,
+                            Description = staffData[i].Description,
+                            Tier = staffData[i].Tier,
+                            DamageMin = staffData[i].DamageMin,
+                            DamageMax = staffData[i].DamageMax,
+                            ProjectileMagnitude = staffData[i].ProjectileMagnitude,
+                            ProjectileDuration = staffData[i].ProjectileDuration,
+                            Amplitude = staffData[i].Amplitude,
+                            Frequency = staffData[i].Frequency,
+                            XpBonusPercent = staffData[i].XpBonusPercent,
+                            ImageName = staffData[i].ImageName,
+                            ProjectileImageName = staffData[i].ProjectileImageName,
+                        }
+                    );
+                }
+            }
+            catch (System.IO.FileNotFoundException)
+            {
+                Debug.WriteLine(staffDataLocation + ": file not found.");
+            }
+
+            return staves;
         }
 
         // Wands live in their own catalog file (see Data/WandData.cs)

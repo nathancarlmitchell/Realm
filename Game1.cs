@@ -155,6 +155,7 @@ namespace Realm
 
             Weapons = Util.LoadWeaponData();
             Weapons.AddRange(Util.LoadWandData());
+            Weapons.AddRange(Util.LoadStaffData());
             Weapons.AddRange(Util.LoadBowData());
             Weapons.AddRange(Util.LoadSwordData());
             Weapons.AddRange(Util.LoadDaggerData());

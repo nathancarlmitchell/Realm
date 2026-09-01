@@ -7971,3 +7971,45 @@ date/time for those individually; don't treat their grouping as meaning they all
      Verified with a full `--no-incremental dotnet build` (0 errors, same two pre-existing warnings)
      plus a manual check that `bin/Debug/net8.0-windows/WandData.json` landed in the build output
      alongside `WeaponData.json`. No scripted test, per the standing no-test-unless-asked convention.
+
+286. **Reviewed Staves against the wiki for the first time ever, including each of the 15 tiered**
+     **Staves' own dedicated page** (https://www.realmeye.com/wiki/staves), and split Staff out of
+     `WeaponData.json` into its own `Data/StaffData.cs`/`.json` catalog, per direct instruction —
+     confirming entry 285's own prediction exactly. Projectile Speed (18 tiles/second), Lifetime
+     (0.475s — the same "genuine half-tick boundary" already called out and correctly rounded to `29`
+     back in entry 177), Range (8.55 tiles), Amplitude (0.5 tile = 16px), and Frequency (2 cycles/shot)
+     were all already correct, confirmed identical across every individual tier page — no physics
+     values needed touching. Also confirmed Staff correctly does *not* pierce (no individual page lists
+     an `Effect(s)`/"Shots hit multiple targets" line the way Wand/Bow do) — `Weapon.Shoot()`'s
+     `expiresOnHit` check already only excludes `Wand`/`Bow`, so Staff was already right.
+
+     Both gaps entry 285 predicted were confirmed, for every one of the 15 tiers:
+
+     - **Every tier's damage range was wrong** — `WeaponData.json`'s Staff entries were a verbatim
+       copy of Wand's own numbers (e.g. Tier 0 `30-55`, Tier 14 `150-195`), never actually replaced
+       with Staff's real, much lower per-shot numbers (confirmed on both the aggregate table and every
+       individual page): Tier 0 `10-30`, Tier 14 `90-135`, etc. — full corrected table now in
+       `Data/StaffData.json`.
+     - **No `XpBonusPercent` field existed at all** — same gap as Bow/Wand. Added it with the real
+       0%/1-8% schedule (tiers 7-14), identical to every other weapon type's own schedule, confirmed on
+       every individual page.
+
+     `Data/WeaponData.json` is now an empty `[]` — Staff was the last type still using it, after
+     Bow/Sword/Dagger/Wand were each already split out in earlier entries. Deliberately left
+     `Data/WeaponData.cs`/`Util.LoadWeaponData()`/`weaponDataLocation` in place rather than deleting
+     them outright — removing that whole generic (now-unused) loading path is a bigger call than "move
+     this one type's data," so it's flagged here rather than decided unilaterally; it's harmless as-is
+     (`LoadWeaponData()` just returns an empty list). `Game1.StartGame()` gained a
+     `Weapons.AddRange(Util.LoadStaffData())` call. No changes needed in `Weapon.LoadWeapon()`/
+     `Player.EquipHighestTierWeapon()`/`ItemSpawner.cs` — all three already work generically off the one
+     merged `Game1.Instance.Weapons` list. Real save files referencing an equipped Staff by name
+     resolve unaffected — no name changed, only which catalog file backs it, and Wizard's starting
+     "Gnarled Staff" still resolves the same way.
+
+     Every weapon type (Wand, Bow, Sword, Staff, Dagger) now lives in its own dedicated data file — no
+     type is still sharing `WeaponData.json`'s generic shape with another.
+
+     Verified with a full `--no-incremental dotnet build` (0 errors, same two pre-existing warnings)
+     plus a manual check that `bin/Debug/net8.0-windows/StaffData.json` landed in the build output and
+     that `WeaponData.json` there deserializes cleanly as `[]`. No scripted test, per the standing
+     no-test-unless-asked convention.
