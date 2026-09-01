@@ -8306,3 +8306,22 @@ date/time for those individually; don't treat their grouping as meaning they all
      manifest's `LastPlayedUtc` — only ever touched by an actual row click — was unchanged). Deliberately
      did not launch another real `Realm.exe` test instance after noticing this, to avoid any risk of two
      processes writing the same save files at once while the user's own session might still be live.
+
+296. **Character-slots screen: reordered the equipped-item icon row to match the real in-game**
+     **equipment row, and added each item's tier number**, per direct request. Order is now Weapon,
+     AbilityItem, Armor, Ring — confirmed against `Weapon.cs`/`AbilityItem.cs`/`Armor.cs`/`Ring.cs`'s
+     own `x` slot constants (`SidebarX+20`/`+60`/`+80`/`+120`), not just assumed. `ResolveIcon<T>()`/
+     `ResolveAbilityIcon()` now return the resolved `Equipment`/`AbilityItem` object itself (previously
+     just its `Texture2D`), so each icon can call the item's own existing `Equipment.DrawTierLabel()` —
+     the same "T{Tier}" bottom-right overlay already used on every real equipment slot/inventory/bank
+     icon in the game — instead of writing a second copy of that label logic. Still a pure read-only
+     catalog lookup (never through `LoadWeapon()`/`LoadArmor()`/etc., which equip onto the live
+     `Player.Instance`), so browsing this list still can't mutate whichever character is actually
+     loaded.
+
+     Verified by forcing `Game1.StartGame()` to open straight into `CharacterSlotsState` (confirmed no
+     `Realm.exe` instance was already running first, since the user has been actively using this screen
+     in parallel with this session's own fixes) and confirming 5 stable seconds with an empty stderr,
+     then reverted the temporary code (`git diff --stat Game1.cs` clean). Checked file timestamps
+     afterward to confirm the render-only test hadn't written anything — the real save files that had
+     changed were all several minutes old already, from the user's own continued use, not this test.

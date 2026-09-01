@@ -624,16 +624,19 @@ namespace Realm.States
             // Weapon.LoadWeapon()/Armor.LoadArmor()/etc., which equip onto
             // the live Player.Instance) so browsing this list never mutates
             // whichever character actually happens to be loaded right now.
+            // Order matches the in-game equipment row (Weapon, then
+            // AbilityItem, then Armor, then Ring — see Weapon.cs/
+            // AbilityItem.cs/Armor.cs/Ring.cs's own x/y slot constants).
             int iconY = row.Bounds.Y + (int)(RowPadding + classNameSize.Y + 8);
-            Texture2D[] itemIcons =
+            Equipment[] items =
             [
                 ResolveIcon(Game1.Instance.Weapons, row.Saved?.Weapon?.Name),
+                ResolveAbilityIcon(row.Saved),
                 ResolveIcon(Game1.Instance.Armors, row.Saved?.Armor?.Name),
                 ResolveIcon(Game1.Instance.Rings, row.Saved?.Ring?.Name),
-                ResolveAbilityIcon(row.Saved),
             ];
 
-            for (int i = 0; i < itemIcons.Length; i++)
+            for (int i = 0; i < items.Length; i++)
             {
                 Rectangle iconRect = new(
                     textX + i * (ItemIconSize + ItemIconGap),
@@ -642,8 +645,11 @@ namespace Realm.States
                     ItemIconSize
                 );
                 spriteBatch.Draw(Art.Border, iconRect, Color.Gray);
-                if (itemIcons[i] != null)
-                    spriteBatch.Draw(itemIcons[i], iconRect, Color.White);
+                if (items[i] != null)
+                {
+                    spriteBatch.Draw(items[i].image, iconRect, Color.White);
+                    items[i].DrawTierLabel(spriteBatch, iconRect);
+                }
             }
 
             string fameText =
@@ -707,21 +713,21 @@ namespace Realm.States
                 _ => null,
             };
 
-        // Resolves an equipped item's icon purely from the shared catalog
-        // list — Game1.Instance.Weapons/Armors/Rings already hold live,
-        // pre-loaded textures on each entry's own `image` field (see
-        // Equipment.cs/Entity.cs) — never through the item's own
-        // LoadX(name) factory, which equips onto Player.Instance as a side
-        // effect. Returns null for an unequipped slot (itemName null) or an
-        // item that no longer resolves (e.g. removed/renamed since this
-        // character last saved), same as an unequipped slot visually.
-        private static Texture2D ResolveIcon<T>(List<T> catalog, string itemName)
-            where T : Entity
+        // Resolves an equipped item purely from the shared catalog list —
+        // Game1.Instance.Weapons/Armors/Rings already hold live, pre-loaded
+        // Equipment instances (image + Tier, for the icon and its "T{Tier}"
+        // label — see Equipment.cs/Entity.cs) — never through the item's
+        // own LoadX(name) factory, which equips onto Player.Instance as a
+        // side effect. Returns null for an unequipped slot (itemName null)
+        // or an item that no longer resolves (e.g. removed/renamed since
+        // this character last saved), same as an unequipped slot visually.
+        private static T ResolveIcon<T>(List<T> catalog, string itemName)
+            where T : Equipment
         {
             if (itemName == null)
                 return null;
 
-            return catalog.FirstOrDefault(item => NameOf(item) == itemName)?.image;
+            return catalog.FirstOrDefault(item => NameOf(item) == itemName);
         }
 
         private static string NameOf(Entity entity) =>
@@ -739,25 +745,21 @@ namespace Realm.States
         // equip logic already uses) rather than a single field like Weapon/
         // Armor/Ring, so it needs its own resolution instead of going
         // through the generic ResolveIcon<T>() above.
-        private static Texture2D ResolveAbilityIcon(PlayerData saved)
+        private static AbilityItem ResolveAbilityIcon(PlayerData saved)
         {
             if (saved == null)
                 return null;
 
             if (saved.Spell?.Name != null)
-                return Game1.Instance.Spells.FirstOrDefault(s => s.Name == saved.Spell.Name)?.image;
+                return Game1.Instance.Spells.FirstOrDefault(s => s.Name == saved.Spell.Name);
             if (saved.Quiver?.Name != null)
-                return Game1
-                    .Instance.Quivers.FirstOrDefault(q => q.Name == saved.Quiver.Name)
-                    ?.image;
+                return Game1.Instance.Quivers.FirstOrDefault(q => q.Name == saved.Quiver.Name);
             if (saved.Shield?.Name != null)
-                return Game1
-                    .Instance.Shields.FirstOrDefault(s => s.Name == saved.Shield.Name)
-                    ?.image;
+                return Game1.Instance.Shields.FirstOrDefault(s => s.Name == saved.Shield.Name);
             if (saved.Tome?.Name != null)
-                return Game1.Instance.Tomes.FirstOrDefault(t => t.Name == saved.Tome.Name)?.image;
+                return Game1.Instance.Tomes.FirstOrDefault(t => t.Name == saved.Tome.Name);
             if (saved.Cloak?.Name != null)
-                return Game1.Instance.Cloaks.FirstOrDefault(c => c.Name == saved.Cloak.Name)?.image;
+                return Game1.Instance.Cloaks.FirstOrDefault(c => c.Name == saved.Cloak.Name);
 
             return null;
         }
