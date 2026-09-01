@@ -19,7 +19,8 @@
         "ArcGapDegrees": 7.0,
         "ProjectileMagnitude": 8.0,
         "ProjectileDuration": 60,
-        "ProjectileImageName": "AbilityItems/Quivers/Projectiles/0"
+        "ProjectileImageName": "AbilityItems/Quivers/Projectiles/0",
+        "XpBonusPercent": 0.0
     },
     {
         "Name": "Hunter's Quiver",
@@ -41,7 +42,8 @@
         "ArcGapDegrees": 7.0,
         "ProjectileMagnitude": 8.0,
         "ProjectileDuration": 60,
-        "ProjectileImageName": "AbilityItems/Quivers/Projectiles/0"
+        "ProjectileImageName": "AbilityItems/Quivers/Projectiles/0",
+        "XpBonusPercent": 0.0
     },
     {
         "Name": "Falcon's Quiver",
@@ -63,7 +65,8 @@
         "ArcGapDegrees": 7.0,
         "ProjectileMagnitude": 8.0,
         "ProjectileDuration": 60,
-        "ProjectileImageName": "AbilityItems/Quivers/Projectiles/2"
+        "ProjectileImageName": "AbilityItems/Quivers/Projectiles/2",
+        "XpBonusPercent": 0.0
     },
     {
         "Name": "Quiver of the Vanguard",
@@ -85,7 +88,8 @@
         "ArcGapDegrees": 7.0,
         "ProjectileMagnitude": 8.0,
         "ProjectileDuration": 60,
-        "ProjectileImageName": "AbilityItems/Quivers/Projectiles/3"
+        "ProjectileImageName": "AbilityItems/Quivers/Projectiles/3",
+        "XpBonusPercent": 1.0
     },
     {
         "Name": "Stormtouched Quiver",
@@ -107,7 +111,8 @@
         "ArcGapDegrees": 7.0,
         "ProjectileMagnitude": 8.0,
         "ProjectileDuration": 60,
-        "ProjectileImageName": "AbilityItems/Quivers/Projectiles/4"
+        "ProjectileImageName": "AbilityItems/Quivers/Projectiles/4",
+        "XpBonusPercent": 2.0
     },
     {
         "Name": "Shadowstep Quiver",
@@ -129,7 +134,8 @@
         "ArcGapDegrees": 7.0,
         "ProjectileMagnitude": 8.0,
         "ProjectileDuration": 60,
-        "ProjectileImageName": "AbilityItems/Quivers/Projectiles/5"
+        "ProjectileImageName": "AbilityItems/Quivers/Projectiles/5",
+        "XpBonusPercent": 4.0
     },
     {
         "Name": "Quiver of the Wilds",
@@ -151,7 +157,8 @@
         "ArcGapDegrees": 7.0,
         "ProjectileMagnitude": 8.0,
         "ProjectileDuration": 60,
-        "ProjectileImageName": "AbilityItems/Quivers/Projectiles/6"
+        "ProjectileImageName": "AbilityItems/Quivers/Projectiles/6",
+        "XpBonusPercent": 6.0
     },
     {
         "Name": "Quiver of Legends",
@@ -173,6 +180,7 @@
         "ArcGapDegrees": 7.0,
         "ProjectileMagnitude": 8.0,
         "ProjectileDuration": 60,
-        "ProjectileImageName": "AbilityItems/Quivers/Projectiles/7"
+        "ProjectileImageName": "AbilityItems/Quivers/Projectiles/7",
+        "XpBonusPercent": 8.0
     }
 ]

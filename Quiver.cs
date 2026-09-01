@@ -70,6 +70,7 @@ namespace Realm
                     ProjectileDuration = quiverData.ProjectileDuration,
                     ProjectileImage = projectileTexture,
                     ProjectileImageName = quiverData.ProjectileImageName,
+                    XpBonusPercent = quiverData.XpBonusPercent,
                 };
 
                 Player.Instance.EquipAbilityItem(quiver);

@@ -27,5 +27,9 @@ namespace Realm.Data
         public float ProjectileMagnitude { get; set; }
         public int ProjectileDuration { get; set; }
         public string ProjectileImageName { get; set; }
+
+        // % bonus to XP gained while this Quiver is equipped — see
+        // Equipment.XpBonusPercent.
+        public float XpBonusPercent { get; set; }
     }
 }

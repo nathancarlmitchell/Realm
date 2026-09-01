@@ -7480,3 +7480,29 @@ date/time for those individually; don't treat their grouping as meaning they all
      Verified with a full `--no-incremental dotnet build` (0 errors, same two pre-existing warnings)
      plus a plain minimized boot-check. No scripted test — pure tooltip-text change, no save data
      touched.
+
+270. **Reviewed Quivers against https://www.realmeye.com/wiki/quivers; added the missing XP Bonus
+     field.** Fetched and parsed the real Tiered Quivers table (8 tiers) and cross-checked every
+     field already in `Data/QuiverData.json` — `ManaCost` (45→80), `MinDamage`/`MaxDamage`, `Shots`
+     (2/2/2/3/3/3/4/4), `ArcGapDegrees` (7° throughout), `DexterityBonus` (0-7), and the T6/T7
+     `MaxHealthBonus`/`MaxManaBonus` bumps all **already matched the wiki exactly** — this catalog was
+     evidently already built from real numbers before this session. Also confirmed `Enemy.
+     Paralyze()`'s default duration (180 frames = 3s) already matches the wiki's "Paralyzed... for 3
+     seconds" exactly.
+
+     The one real gap was the same one found across the earlier XP Bonus sweep: `QuiverData.cs` had
+     no `XpBonusPercent` field at all, and `Quiver.LoadQuiver()` never copied it even generically.
+     Added the field, wired it into `LoadQuiver()`'s object initializer (mirroring
+     Sword/Dagger/Cloak/Tome/Ring), and populated the real per-tier schedule from the wiki (0%/0%/0%/
+     1%/2%/4%/6%/8% for T0-T7) — `AbilityItem`'s shared `TooltipText()`/`ComparisonLines()` already
+     call `BonusSummary()`/`BonusComparisonLines()` (confirmed in entry 269's audit), so this alone
+     makes Quiver tooltips show it correctly with no further changes.
+
+     **Flagging, not implementing**: the wiki's own tiered-Quiver effect text also includes
+     "Vulnerable: Targets receive 110% damage for 3 seconds after being hit" on every tier — this
+     engine has no equivalent enemy-side "increased damage taken" debuff/mechanic anywhere (checked;
+     nothing named `Vulnerable` or an enemy `DamageTakenMultiplier` exists), so it isn't modeled.
+     Left as an open gap for a future ask rather than building a new mechanic unprompted.
+
+     Verified with a `dotnet build` (0 errors, same two pre-existing warnings). No scripted test — no
+     save data touched.
