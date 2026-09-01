@@ -15,6 +15,9 @@ namespace Realm
         public Texture2D ProjectileImage;
         public string ProjectileImageName { get; set; }
 
+        // Damage-scales-with-Wisdom stat — see Data/QuiverData.cs.
+        public float DamagePerWisOver34 { get; set; }
+
         public Quiver(Texture2D image)
         {
             ID = Guid.NewGuid();
@@ -71,6 +74,7 @@ namespace Realm
                     ProjectileImage = projectileTexture,
                     ProjectileImageName = quiverData.ProjectileImageName,
                     XpBonusPercent = quiverData.XpBonusPercent,
+                    DamagePerWisOver34 = quiverData.DamagePerWisOver34,
                 };
 
                 Player.Instance.EquipAbilityItem(quiver);

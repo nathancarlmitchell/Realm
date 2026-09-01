@@ -31,5 +31,14 @@ namespace Realm.Data
         // % bonus to XP gained while this Quiver is equipped — see
         // Equipment.XpBonusPercent.
         public float XpBonusPercent { get; set; }
+
+        // The Quiver ability's damage scales with the Archer's own Wisdom
+        // past 34 — the real wiki's own per-tier "Damage: X-Y (+Z per WIS
+        // over 34)" stat, confirmed against each tiered Quiver's own
+        // dedicated wiki page (not just the aggregate tiered-quivers table,
+        // which doesn't show this at all). Added directly onto the rolled
+        // MinDamage-MaxDamage result in Archer.UseAbility(), same as
+        // Shield's DamagePerWisOver34.
+        public float DamagePerWisOver34 { get; set; }
     }
 }

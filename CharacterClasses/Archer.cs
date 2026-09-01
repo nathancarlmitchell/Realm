@@ -1,4 +1,5 @@
-﻿using Microsoft.Xna.Framework;
+﻿using System;
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Audio;
 using Realm.Projectiles;
 
@@ -136,8 +137,16 @@ namespace Realm.CharacterClasses
                 return;
             }
 
-            int damage = rand.Next(AbilityItem.MinDamage, AbilityItem.MaxDamage);
             Quiver quiver = (Quiver)AbilityItem;
+
+            // The Quiver ability's damage scales with the Archer's own
+            // Wisdom past 34 — same shape as Shield's DamagePerWisOver34,
+            // added directly onto the rolled base range rather than
+            // shifting Min/Max before rolling (a flat addition to a uniform
+            // roll produces the exact same distribution either way).
+            int damage =
+                rand.Next(AbilityItem.MinDamage, AbilityItem.MaxDamage)
+                + (int)(quiver.DamagePerWisOver34 * Math.Max(0, Wisdom - 34));
 
             if (Mana >= AbilityCost)
             {

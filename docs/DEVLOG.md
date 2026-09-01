@@ -7587,3 +7587,36 @@ date/time for those individually; don't treat their grouping as meaning they all
      touch save/persistence code, and the mechanic only triggers via actual Knight gameplay (equip a
      Shield, use the ability at Wisdom > 34), which a boot-check alone doesn't exercise; relying on
      the direct per-item wiki verification plus the mathematically-equivalent implementation instead.
+
+274. **Re-reviewed Quivers by following each of the 8 tiered Quivers to its own dedicated wiki page**
+     (entry 270 had only checked the aggregate `/wiki/quivers` table), per direct instruction — and
+     found a real gap entry 270 missed entirely, since the aggregate table doesn't show it at all:
+     every tiered Quiver's damage **also scales with the Archer's Wisdom past 34**, exactly like
+     Shield's own stat (entry 273) — each individual page's own "Damage: X-Y (+Z per WIS over 34)"
+     line gives it directly: `0.5 / 1.56 / 1.63 / 2.19 / 2.75 / 3.31 / 3.88 / 4.5` for T0-T7 (Magic
+     Quiver through Quiver of the Autumn King).
+
+     The individual pages also confirmed real values the aggregate table left blank: **Projectile
+     Speed 15 tiles/sec, Lifetime 1 second** for every tier — converted, `8*32/60 = 8.0` px/tick and
+     `1s*60 = 60` ticks, which is exactly what `QuiverData.json`'s existing
+     `ProjectileMagnitude`/`ProjectileDuration` (8.0/60) already had, so no correction was actually
+     needed there — just confirmation from a real source instead of an unverified guess. Every other
+     field (`ManaCost`, `MinDamage`/`MaxDamage`, `Shots`/`ArcGapDegrees`, DEX/HP/MP bonuses, and even
+     one spot-checked `XpBonusPercent`, Elvencraft Quiver's real "XP Bonus: 1%") re-confirmed exactly
+     against entry 270's own numbers too.
+
+     New `DamagePerWisOver34` field on `Data/QuiverData.cs`/`Quiver.cs`, wired into
+     `Quiver.LoadQuiver()` and `Player.EquipHighestTierAbilityItem()`'s existing Quiver-only
+     field-copy block, exactly mirroring Shield's own implementation from entry 273.
+     `Archer.UseAbility()` now adds `quiver.DamagePerWisOver34 * Math.Max(0, Wisdom - 34)` onto the
+     rolled `MinDamage`-`MaxDamage` result — same reasoning as Shield: a flat addition to a uniform
+     roll is mathematically identical to shifting the range before rolling. Needed a `using System;`
+     added to `Archer.cs` for `Math.Max`, same as `Knight.cs` needed in the last entry.
+
+     Also confirmed "Shots pass through obstacles" (part of every tiered Quiver's real effect list)
+     has nothing to implement here — this engine has no wall/obstacle-blocks-projectiles concept
+     anywhere at all, for any weapon type, so there's nothing for a projectile to "pass through" in
+     the first place; not a Quiver-specific gap.
+
+     Verified with a full `--no-incremental dotnet build` (0 errors, same two pre-existing warnings)
+     plus a plain minimized boot-check. No scripted test — no save data touched.

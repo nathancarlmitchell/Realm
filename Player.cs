@@ -1005,6 +1005,7 @@ namespace Realm
                     quiverBest.ProjectileImageName
                 );
                 quiverCopy.ProjectileImageName = quiverBest.ProjectileImageName;
+                quiverCopy.DamagePerWisOver34 = quiverBest.DamagePerWisOver34;
             }
 
             // Shield-only — Shield Slam's shot fan and Wisdom-scaling
