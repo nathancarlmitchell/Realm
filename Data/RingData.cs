@@ -15,10 +15,7 @@ namespace Realm.Data
         public int WisdomBonus { get; set; }
 
         // % bonus to XP gained while this Ring is equipped — see
-        // Equipment.XpBonusPercent. Only populated for the tiered per-stat
-        // Rings (Attack/Defense/Dexterity/Health/Magic/Speed/Vitality/
-        // Wisdom Rings, T1-T7) for now — the pre-existing "Ring of Minor
-        // Defense"/"Ring of Vigor" entries are out of scope until asked.
+        // Equipment.XpBonusPercent.
         public float XpBonusPercent { get; set; }
         public string ImageName { get; set; }
     }

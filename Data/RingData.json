@@ -11,21 +11,8 @@
         "DexterityBonus": 0,
         "VitalityBonus": 0,
         "WisdomBonus": 0,
-        "ImageName": "Rings/0"
-    },
-    {
-        "Name": "Ring of Vigor",
-        "Description": "A faintly warm ring that quickens the body.",
-        "Tier": 1,
-        "MaxHealthBonus": 0,
-        "MaxManaBonus": 0,
-        "AttackBonus": 0,
-        "DefenseBonus": 0,
-        "SpeedBonus": 0,
-        "DexterityBonus": 5,
-        "VitalityBonus": 5,
-        "WisdomBonus": 0,
-        "ImageName": "Rings/1"
+        "XpBonusPercent": 0.0,
+        "ImageName": "Rings/Defense/0"
     },
     {
         "Name": "Ring of Attack",

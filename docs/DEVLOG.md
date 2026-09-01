@@ -7433,3 +7433,29 @@ date/time for those individually; don't treat their grouping as meaning they all
 
      Verified with a `dotnet build` (0 errors, same two pre-existing warnings). No scripted test, no
      save-file backup — data-only change plus three small, mechanical code additions.
+
+268. **Removed "Ring of Vigor"; moved "Ring of Minor Defense" into `Rings/Defense/` as the only Tier
+     0 ring in the game.** `Data/RingData.json` lost the "Ring of Vigor" entry entirely, along with
+     its `Content/Rings/1.png` art and `Content.mgcb` block. Re-confirmed "Ring of Minor Defense"'s
+     stats directly against its own dedicated wiki page
+     (https://www.realmeye.com/wiki/ring-of-minor-defense) — `+1 DEF, +5 HP, +5 MP`, matching the
+     existing entry exactly (its description, "A silver ring that buzzes with a faint magical hum.",
+     was already the real wiki text verbatim), and set its `XpBonusPercent` explicitly to `0.0` per
+     direct instruction rather than leaving the field absent. Moved its art from the flat
+     `Content/Rings/0.png` to `Content/Rings/Defense/0.png` (`git mv`, `Content.mgcb` block renamed
+     and relocated next to the rest of the Defense Rings' tiers) and updated its `ImageName` to
+     `Rings/Defense/0` — it's now Tier 0 of the Defense Rings line rather than a standalone flat
+     entry, matching how the wiki itself lists it on the Defense Rings page above Tier 1. The flat
+     `Content/Rings/` folder is now empty (only subfolders remain) since both of its former direct
+     entries are gone.
+
+     **Real-save consequence, flagged directly**: `PlayerData_Wizard.json` currently has "Ring of
+     Vigor" equipped. `Ring.LoadRing()` already handles a since-removed name gracefully — the same
+     `null`-lookup-and-skip pattern every other equipment loader uses for a renamed/removed item (see
+     `Weapon.LoadWeapon()`'s own comment) — so this doesn't crash, it just silently leaves the Ring
+     slot unequipped for that character next time it loads, dropping its +5 DEX/+5 VIT until a new
+     ring is equipped. Not worked around, since the removal was the explicit ask.
+
+     Verified with a `dotnet build` (0 errors, same two pre-existing warnings). No scripted test — no
+     save file was directly touched by this change, only referenced by name from data that no longer
+     exists.
