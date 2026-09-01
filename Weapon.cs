@@ -88,8 +88,10 @@ namespace Realm
         {
             Weapon weaponData = Game1.Instance.Weapons.FirstOrDefault(x => (x.Name == weaponName));
 
-            // weaponData is null if weaponName doesn't match anything in WeaponData.json —
-            // e.g. a save referencing a weapon that's since been renamed or removed.
+            // weaponData is null if weaponName doesn't match anything in
+            // Game1.Instance.Weapons (the merged Wand/Bow/Sword/Staff/Dagger
+            // catalog — see Game1.StartGame()) — e.g. a save referencing a
+            // weapon that's since been renamed or removed.
             if (weaponData != null && weaponData.Type == Player.Instance.WeaponType)
             {
                 Texture2D weaponTexture = Game1.Instance.Content.Load<Texture2D>(

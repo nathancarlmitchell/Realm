@@ -372,10 +372,11 @@ namespace Realm
             if (dropPool.HasFlag(LootCategory.Weapon) && RollsCategory(dropChances, dropWeights, LootCategory.Weapon, dropChance))
             {
                 // Picked at random among every catalog entry at the resolved
-                // tier (both WeaponTypes), not just the first match.
-                // WeaponData.json lists every Wand before any Bow, so
-                // FirstOrDefault would always resolve to a Wand regardless
-                // of the player's actual class.
+                // tier (every WeaponType), not just the first match —
+                // Game1.StartGame() merges Wand/Staff/Bow/Sword/Dagger in a
+                // fixed order, so FirstOrDefault would always resolve to
+                // whichever type loads first regardless of the player's
+                // actual class.
                 int tier = ResolveDropTier(pointValue, Player.Instance.Weapon.Tier, maxTierJump, TierRangeFor(dropTierRanges, LootCategory.Weapon));
                 List<Weapon> nextTierWeapons = Game1
                     .Instance.Weapons.Where(x => x.Tier == tier)

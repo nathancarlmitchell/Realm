@@ -153,8 +153,9 @@ namespace Realm
         {
             currentState = new MenuState(this, Graphics.GraphicsDevice, Content);
 
-            Weapons = Util.LoadWeaponData();
-            Weapons.AddRange(Util.LoadWandData());
+            // Every weapon type lives in its own catalog file now — no more
+            // shared WeaponData.json base list to start this off with.
+            Weapons = Util.LoadWandData();
             Weapons.AddRange(Util.LoadStaffData());
             Weapons.AddRange(Util.LoadBowData());
             Weapons.AddRange(Util.LoadSwordData());

@@ -8013,3 +8013,29 @@ date/time for those individually; don't treat their grouping as meaning they all
      plus a manual check that `bin/Debug/net8.0-windows/StaffData.json` landed in the build output and
      that `WeaponData.json` there deserializes cleanly as `[]`. No scripted test, per the standing
      no-test-unless-asked convention.
+
+287. **Removed the now-fully-unused `WeaponData`/`LoadWeaponData()` infrastructure**, per direct
+     follow-up to entry 286 flagging it. Deleted `Data/WeaponData.cs` and `Data/WeaponData.json`
+     outright, and from `Util.cs`: `weaponDataLocation`, `LoadWeaponData()`, and — found only while
+     doing this, not itself flagged before — `SaveWeaponData()`, a method with **zero call sites
+     anywhere in the codebase** (confirmed via search before removing it) that would otherwise have
+     failed to compile once the `WeaponData` type it referenced was gone. `Game1.StartGame()`'s
+     `Weapons = Util.LoadWeaponData();` seed call became `Weapons = Util.LoadWandData();` (the first of
+     the five `AddRange`-chained loaders takes over as the base list instead).
+
+     Swept the handful of comments left factually wrong by the removal — anything that named
+     `LoadWeaponData()` as a real method to merge alongside (`Data/WandData.cs`'s, `Data/BowData.cs`'s,
+     `Data/SwordData.cs`'s, and `Data/DaggerData.cs`'s own loader doc-comments in `Util.cs`;
+     `Weapon.LoadWeapon()`'s null-check comment; `ItemSpawner.cs`'s weapon-drop comment, which cited
+     "WeaponData.json lists every Wand before any Bow" as the ordering hazard `.Where().ToList()`
+     avoids — now points at `Game1.StartGame()`'s fixed Wand/Staff/Bow/Sword/Dagger merge order
+     instead, same underlying hazard). Left the three remaining `bowDataLocation`/`swordDataLocation`/
+     `daggerDataLocation` field comments' passing "separate from WeaponData.json" mentions alone — still
+     true in spirit (explaining why each type split out of that now-gone shared shape) and don't name a
+     method that no longer exists.
+
+     Verified with a full `--no-incremental dotnet build` (0 errors, same two pre-existing warnings) and
+     confirmed the stale `bin/Debug/net8.0-windows/WeaponData.json` from the previous build no longer
+     exists post-build (MSBuild's incremental output tracking removed it on its own once the source
+     file was gone). No scripted test — pure removal of dead code plus comment accuracy fixes, no
+     behavior change, no save data touched.

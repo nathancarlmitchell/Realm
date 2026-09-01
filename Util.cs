@@ -56,25 +56,18 @@ namespace Realm
             "GameSettingsData.json"
         );
 
-        private static string weaponDataLocation = Path.Combine(
-            AppContext.BaseDirectory,
-            "WeaponData.json"
-        );
-
-        // Wands live in their own catalog file, separate from
-        // WeaponData.json — see Data/WandData.cs and LoadWandData() below.
+        // Every weapon type now lives in its own catalog file — see
+        // Data/WandData.cs/LoadWandData() below. There is no more shared
+        // WeaponData.json/WeaponData.cs; Staff (see staffDataLocation just
+        // below) was the last type still using that generic shape, removed
+        // once it was split out too.
         private static string wandDataLocation = Path.Combine(
             AppContext.BaseDirectory,
             "WandData.json"
         );
 
-        // Staves live in their own catalog file, separate from
-        // WeaponData.json — see Data/StaffData.cs and LoadStaffData() below.
-        // WeaponData.json itself is now empty — Staff was the last type
-        // still using it after Bow/Sword/Dagger/Wand were each already
-        // split out; kept around rather than removed outright, since
-        // deleting the whole generic WeaponData/LoadWeaponData() path is a
-        // bigger call than "move this one type's data."
+        // Staves live in their own catalog file — see Data/StaffData.cs and
+        // LoadStaffData() below.
         private static string staffDataLocation = Path.Combine(
             AppContext.BaseDirectory,
             "StaffData.json"
@@ -532,104 +525,16 @@ namespace Realm
             };
         }
 
-        public static void SaveWeaponData()
-        {
-            List<WeaponData> weaponData = [];
-
-            Weapon playerWeapon = Player.Instance.Weapon;
-
-            WeaponData weapon = new()
-            {
-                Type = playerWeapon.Type,
-                Description = playerWeapon.Description,
-                Tier = playerWeapon.Tier,
-                DamageMin = playerWeapon.DamageMin,
-                DamageMax = playerWeapon.DamageMax,
-                ProjectileMagnitude = playerWeapon.ProjectileMagnitude,
-                ProjectileDuration = playerWeapon.ProjectileDuration,
-                Name = playerWeapon.Name,
-                ImageName = playerWeapon.ImageName,
-                ProjectileImageName = playerWeapon.ProjectileImageName,
-            };
-
-            weaponData.Add(weapon);
-
-            string json = JsonSerializer.Serialize(weaponData);
-            Debug.WriteLine(json);
-            File.WriteAllText(weaponDataLocation, json);
-            Debug.WriteLine("WeaponData Saved.");
-        }
-
-        public static List<Weapon> LoadWeaponData()
-        {
-            List<WeaponData> weaponData = [];
-            List<Weapon> weapons = [];
-
-            try
-            {
-                using (StreamReader r = new(weaponDataLocation))
-                {
-                    Debug.WriteLine(weaponDataLocation + ": reading data.");
-                    string json = r.ReadToEnd();
-                    Debug.WriteLine(json);
-                    try
-                    {
-                        weaponData = JsonSerializer.Deserialize<List<WeaponData>>(json);
-                    }
-                    catch (System.Text.Json.JsonException)
-                    {
-                        Debug.WriteLine($"Error loading weapon data: {json}");
-                    }
-                }
-
-                for (int i = 0; i < weaponData.Count; i++)
-                {
-                    Texture2D weaponTexture = Game1.Instance.Content.Load<Texture2D>(
-                        weaponData[i].ImageName
-                    );
-
-                    Texture2D projectileTexture = Game1.Instance.Content.Load<Texture2D>(
-                        weaponData[i].ProjectileImageName
-                    );
-
-                    weapons.Add(
-                        new Weapon(weaponTexture, projectileTexture)
-                        {
-                            Type = weaponData[i].Type,
-                            Name = weaponData[i].Name,
-                            Description = weaponData[i].Description,
-                            Tier = weaponData[i].Tier,
-                            DamageMin = weaponData[i].DamageMin,
-                            DamageMax = weaponData[i].DamageMax,
-                            ProjectileMagnitude = weaponData[i].ProjectileMagnitude,
-                            ProjectileDuration = weaponData[i].ProjectileDuration,
-                            ImageName = weaponData[i].ImageName,
-                            ProjectileImageName = weaponData[i].ProjectileImageName,
-                            Amplitude = weaponData[i].Amplitude,
-                            Frequency = weaponData[i].Frequency,
-                        }
-                    );
-                }
-            }
-            catch (System.IO.FileNotFoundException)
-            {
-                Debug.WriteLine(weaponDataLocation + ": file not found.");
-            }
-
-            return weapons;
-        }
-
         // Staves live in their own catalog file (see Data/StaffData.cs)
-        // rather than WeaponData.json — same reasoning as
-        // Data/WandData.cs/Data/SwordData.cs: a per-tier XpBonusPercent (see
-        // Equipment.XpBonusPercent) matching the real wiki's "XP Bonus"
-        // column (https://www.realmeye.com/wiki/staves), which plain
-        // WeaponData has no field for. Keeps the Amplitude/Frequency fields
-        // WeaponData already had, since Staff is still the only type that
-        // uses them. Returns plain Weapon.WeaponType.Staff entries, meant to
-        // be merged into the same combined Weapons list as the other
-        // Load*Data() results (see Game1.StartGame()) — Weapon.LoadWeapon()
-        // and Player.cs's EquipHighestTierWeapon() both search that one
+        // with a per-tier XpBonusPercent (see Equipment.XpBonusPercent)
+        // matching the real wiki's "XP Bonus" column
+        // (https://www.realmeye.com/wiki/staves). Keeps its own
+        // Amplitude/Frequency fields, since Staff is still the only weapon
+        // type that uses them. Returns plain Weapon.WeaponType.Staff
+        // entries, meant to be merged into the same combined Weapons list
+        // as the other Load*Data() results (see Game1.StartGame()) —
+        // Weapon.LoadWeapon() and Player.cs's EquipHighestTierWeapon() both
+        // search that one
         // list by Name, unaware of which file an entry originally came
         // from.
         public static List<Weapon> LoadStaffData()
@@ -692,15 +597,14 @@ namespace Realm
             return staves;
         }
 
-        // Wands live in their own catalog file (see Data/WandData.cs)
-        // rather than WeaponData.json — same reasoning as
-        // Data/SwordData.cs/Data/BowData.cs: a per-tier XpBonusPercent (see
-        // Equipment.XpBonusPercent) matching the real wiki's "XP Bonus"
-        // column (https://www.realmeye.com/wiki/wands), which plain
-        // WeaponData has no field for. Returns plain Weapon.WeaponType.Wand
-        // entries, meant to be merged into the same combined Weapons list
-        // as LoadWeaponData()'s/LoadBowData()'s/LoadSwordData()'s results
-        // (see Game1.StartGame()) — Weapon.LoadWeapon() and Player.cs's
+        // Wands live in their own catalog file (see Data/WandData.cs) with
+        // a per-tier XpBonusPercent (see Equipment.XpBonusPercent) matching
+        // the real wiki's "XP Bonus" column
+        // (https://www.realmeye.com/wiki/wands). Returns plain
+        // Weapon.WeaponType.Wand entries, meant to be merged into the same
+        // combined Weapons list as LoadStaffData()'s/LoadBowData()'s/
+        // LoadSwordData()'s/LoadDaggerData()'s results (see
+        // Game1.StartGame()) — Weapon.LoadWeapon() and Player.cs's
         // EquipHighestTierWeapon() both search that one list by Name,
         // unaware of which file an entry originally came from.
         public static List<Weapon> LoadWandData()
@@ -761,15 +665,15 @@ namespace Realm
             return wands;
         }
 
-        // Bows live in their own catalog file (see Data/BowData.cs) rather
-        // than WeaponData.json — unlike every other weapon type, a Bow
-        // needs two independent damage ranges and two independent
-        // projectile textures (Main/Side), not the single pair WeaponData
-        // has. Returns plain Weapon.WeaponType.Bow entries, meant to be
-        // merged into the same combined Weapons list as LoadWeaponData()'s
-        // result (see Game1.StartGame()) — Weapon.LoadWeapon() and
-        // Player.cs's EquipHighestTierWeapon() both search that one list by
-        // Name, unaware of which file an entry originally came from.
+        // Bows live in their own catalog file (see Data/BowData.cs) —
+        // unlike every other weapon type, a Bow needs two independent
+        // damage ranges and two independent projectile textures
+        // (Main/Side). Returns plain Weapon.WeaponType.Bow entries, meant
+        // to be merged into the same combined Weapons list as the other
+        // Load*Data() results (see Game1.StartGame()) — Weapon.LoadWeapon()
+        // and Player.cs's EquipHighestTierWeapon() both search that one
+        // list by Name, unaware of which file an entry originally came
+        // from.
         public static List<Weapon> LoadBowData()
         {
             List<BowData> bowData = [];
@@ -838,16 +742,14 @@ namespace Realm
         }
 
         // Swords live in their own catalog file (see Data/SwordData.cs)
-        // rather than WeaponData.json — the only WeaponData-backed type
-        // with a per-tier XpBonusPercent (see Equipment.XpBonusPercent),
+        // with a per-tier XpBonusPercent (see Equipment.XpBonusPercent)
         // matching the real wiki's "XP Bonus" column
-        // (https://www.realmeye.com/wiki/swords), which no other type
-        // currently needs. Returns plain Weapon.WeaponType.Sword entries,
-        // meant to be merged into the same combined Weapons list as
-        // LoadWeaponData()'s/LoadBowData()'s results (see Game1.StartGame())
-        // — Weapon.LoadWeapon() and Player.cs's EquipHighestTierWeapon()
-        // both search that one list by Name, unaware of which file an
-        // entry originally came from.
+        // (https://www.realmeye.com/wiki/swords). Returns plain
+        // Weapon.WeaponType.Sword entries, meant to be merged into the same
+        // combined Weapons list as the other Load*Data() results (see
+        // Game1.StartGame()) — Weapon.LoadWeapon() and Player.cs's
+        // EquipHighestTierWeapon() both search that one list by Name,
+        // unaware of which file an entry originally came from.
         public static List<Weapon> LoadSwordData()
         {
             List<SwordData> swordData = [];
@@ -906,13 +808,12 @@ namespace Realm
             return swords;
         }
 
-        // Daggers live in their own catalog file (see Data/DaggerData.cs)
-        // rather than WeaponData.json — same reasoning as LoadSwordData()
-        // above (a per-tier XpBonusPercent no other WeaponData-backed type
-        // needs). Returns plain Weapon.WeaponType.Dagger entries, meant to
-        // be merged into the same combined Weapons list as LoadWeaponData()'s/
-        // LoadBowData()'s/LoadSwordData()'s results (see Game1.StartGame())
-        // — Weapon.LoadWeapon() and Player.cs's EquipHighestTierWeapon() both
+        // Daggers live in their own catalog file (see Data/DaggerData.cs) —
+        // same reasoning as LoadSwordData() above (a per-tier
+        // XpBonusPercent). Returns plain Weapon.WeaponType.Dagger entries,
+        // meant to be merged into the same combined Weapons list as the
+        // other Load*Data() results (see Game1.StartGame()) —
+        // Weapon.LoadWeapon() and Player.cs's EquipHighestTierWeapon() both
         // search that one list by Name, unaware of which file an entry
         // originally came from.
         public static List<Weapon> LoadDaggerData()
