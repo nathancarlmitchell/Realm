@@ -31,59 +31,51 @@ namespace Realm.States
             // every fresh Nexus entry starts with the bank closed.
             BankSystem.IsOpen = false;
 
-            var portalPos = new Vector2(
-                Player.Instance.Position.X - 25,
-                Player.Instance.Position.Y - 100
-            );
+            // Every Nexus portal laid out on one tight grid centered on the
+            // player's spawn point, rather than each one picking its own
+            // one-off offset (the previous layout spread the later test
+            // portals out in a single line 100-200px apart, trailing 700px
+            // below the player) — a column of the two "real" portals
+            // (Character Select/Bank) plus a 3-wide grid of every test
+            // shortcut below it, all within a couple hundred px of the
+            // player and each other.
+            const float columnSpacing = 175f;
+            const float rowSpacing = 150f;
+            Vector2 origin = Player.Instance.Position;
 
-            var bankPortalPos = new Vector2(
-                Player.Instance.Position.X + 150,
-                Player.Instance.Position.Y - 100
-            );
+            var characterSelectPos = origin + new Vector2(-columnSpacing / 2, -150);
+            var bankPortalPos = origin + new Vector2(columnSpacing / 2, -150);
 
-            // TEMP: direct shortcuts into the boss arenas for testing, so
-            // they don't have to be reached by finding and killing a
-            // SpriteGod/BigSnake/Cube every time. Remove once all three boss
-            // fights have been tested.
-            var bossTestPortalPos = new Vector2(
-                Player.Instance.Position.X - 150,
-                Player.Instance.Position.Y - 100
-            );
+            // TEMP: direct shortcuts into the boss arenas/dungeons for
+            // testing, so they don't have to be reached by finding and
+            // killing a SpriteGod/BigSnake/Cube, or generating/clearing a
+            // dungeon, every time. Remove once every fight/dungeon has been
+            // tested. Laid out as a 3-column grid below the two portals
+            // above, growing downward a row at a time.
+            var bossTestPortalPos = origin + new Vector2(-columnSpacing, 0);
+            var sthenoTestPortalPos = origin + new Vector2(0, 0);
+            var cubeTestPortalPos = origin + new Vector2(columnSpacing, 0);
 
-            var sthenoTestPortalPos = new Vector2(
-                Player.Instance.Position.X - 150,
-                Player.Instance.Position.Y + 100
-            );
+            var dungeonTestPortalPos = origin + new Vector2(-columnSpacing, rowSpacing);
+            var pirateCaveTestPortalPos = origin + new Vector2(0, rowSpacing);
 
-            var cubeTestPortalPos = new Vector2(
-                Player.Instance.Position.X - 150,
-                Player.Instance.Position.Y + 300
-            );
-
-            // TEMP: same "fixed test portal" precedent as the three boss
-            // portals above — lowest-risk way to reach a real DungeonState
-            // before any in-world discovery mechanic (e.g. a rare drop)
-            // exists for it.
-            var dungeonTestPortalPos = new Vector2(
-                Player.Instance.Position.X - 150,
-                Player.Instance.Position.Y + 500
-            );
-
-            var pirateCaveTestPortalPos = new Vector2(
-                Player.Instance.Position.X - 150,
-                Player.Instance.Position.Y + 700
-            );
+            // TEMP: same shortcut precedent as the rest of this grid — leads
+            // straight into BossRealmState with Dreadstump already spawned,
+            // skipping having to generate a Pirate Cave and walk to its
+            // farthest room's own boss portal every time.
+            var dreadstumpTestPortalPos = origin + new Vector2(columnSpacing, rowSpacing);
 
             portalList =
             [
                 new Portal(),
-                new Portal(portalPos, Portal.Destination.CharacterSelect),
+                new Portal(characterSelectPos, Portal.Destination.CharacterSelect),
                 new Portal(bankPortalPos, Portal.Destination.Bank),
                 new Portal(bossTestPortalPos, Portal.Destination.BossRealm),
                 new Portal(sthenoTestPortalPos, Portal.Destination.SthenoBossRealm),
                 new Portal(cubeTestPortalPos, Portal.Destination.CubeGodBossRealm),
                 new Portal(dungeonTestPortalPos, Portal.Destination.SnakePitDungeon),
                 new Portal(pirateCaveTestPortalPos, Portal.Destination.PirateCaveDungeon),
+                new Portal(dreadstumpTestPortalPos, Portal.Destination.DreadstumpBossRealm),
             ];
 
             // So Overlay's minimap can show these regardless of which state

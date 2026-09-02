@@ -792,7 +792,12 @@ namespace Realm
         // class) — widened to protected the moment a real subclass needed
         // it directly: SandDevil.cs's "wander erratically" when it gets too
         // close to the player during its Chase phase.
-        protected IEnumerable<int> MoveRandomly()
+        // rotate = false skips the continuous Orientation spin below,
+        // leaving the sprite's facing fixed while it wanders — first real
+        // use: Pirate Cave's 6 critters, whose real (non-tinted-reskin) art
+        // reads as upright character sprites, not a rotationally-symmetric
+        // blob like the enemies this defaulted true for.
+        protected IEnumerable<int> MoveRandomly(bool rotate = true)
         {
             float direction = rand.NextFloat(0, MathHelper.TwoPi);
             while (true)
@@ -802,7 +807,8 @@ namespace Realm
                 for (int i = 0; i < 6; i++)
                 {
                     Velocity += Extensions.FromPolar(direction, 0.4f);
-                    Orientation -= 0.05f;
+                    if (rotate)
+                        Orientation -= 0.05f;
                     yield return 0;
                 }
             }
@@ -1384,7 +1390,7 @@ namespace Realm
                 healthMax = 5,
                 PointValue = 1,
             };
-            enemy.AddBehaviour(enemy.MoveRandomly());
+            enemy.AddBehaviour(enemy.MoveRandomly(rotate: false));
             return enemy;
         }
 
@@ -1396,7 +1402,7 @@ namespace Realm
                 healthMax = 5,
                 PointValue = 1,
             };
-            enemy.AddBehaviour(enemy.MoveRandomly());
+            enemy.AddBehaviour(enemy.MoveRandomly(rotate: false));
             return enemy;
         }
 
@@ -1408,7 +1414,7 @@ namespace Realm
                 healthMax = 5,
                 PointValue = 1,
             };
-            enemy.AddBehaviour(enemy.MoveRandomly());
+            enemy.AddBehaviour(enemy.MoveRandomly(rotate: false));
             return enemy;
         }
 
@@ -1420,7 +1426,7 @@ namespace Realm
                 healthMax = 5,
                 PointValue = 1,
             };
-            enemy.AddBehaviour(enemy.MoveRandomly());
+            enemy.AddBehaviour(enemy.MoveRandomly(rotate: false));
             return enemy;
         }
 
@@ -1432,7 +1438,7 @@ namespace Realm
                 healthMax = 5,
                 PointValue = 1,
             };
-            enemy.AddBehaviour(enemy.MoveRandomly());
+            enemy.AddBehaviour(enemy.MoveRandomly(rotate: false));
             return enemy;
         }
 
@@ -1444,7 +1450,7 @@ namespace Realm
                 healthMax = 5,
                 PointValue = 1,
             };
-            enemy.AddBehaviour(enemy.MoveRandomly());
+            enemy.AddBehaviour(enemy.MoveRandomly(rotate: false));
             return enemy;
         }
 

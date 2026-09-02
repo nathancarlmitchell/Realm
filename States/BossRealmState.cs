@@ -88,6 +88,23 @@ namespace Realm.States
 
             Game1.Camera.Pos = pos;
 
+            // Same wall, applied to the boss — every existing boss stays
+            // near the arena's center on its own (MoveTethered/FollowPlayer
+            // both self-correct toward a bounded point), but nothing stopped
+            // an unbounded movement pattern from drifting past the edge
+            // undetected (Dreadstump's Kiting phase flees straight away from
+            // the player with no tether at all, and reached this within a
+            // couple of seconds of the fight starting).
+            Boss boss = EntityManager.ActiveBoss;
+            if (boss != null)
+            {
+                float bossRadius = boss.Radius;
+                Vector2 bossPos = boss.Position;
+                bossPos.X = MathHelper.Clamp(bossPos.X, bossRadius, InstanceWorldWidth - bossRadius);
+                bossPos.Y = MathHelper.Clamp(bossPos.Y, bossRadius, InstanceWorldHeight - bossRadius);
+                boss.Position = bossPos;
+            }
+
             if (announcementFramesRemaining > 0)
                 announcementFramesRemaining--;
         }

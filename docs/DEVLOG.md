@@ -8800,3 +8800,44 @@ date/time for those individually; don't treat their grouping as meaning they all
      camera sub-pixel position. Plain `dotnet build` (0 errors) plus a real minimized boot-check
      (stayed running, no stderr) — no scripted test needed, this is a self-contained rendering
      config change with no player-state interaction.
+
+317. **Reorganized the Nexus's test portals into one tight grid, and added a direct test**
+     **shortcut into the Pirate Cave boss fight.** Requested directly. The previous layout placed
+     each portal at its own one-off offset from the player, accumulated one at a time across
+     several sessions as new bosses/dungeons were added — by the time Pirate Cave's dungeon test
+     portal was added it sat 700px below the player, an 800px total spread from the topmost portal.
+     Replaced with a single grid centered on the player: Character Select/Bank as a 2-wide row
+     closest to spawn, then every boss/dungeon test shortcut as a 3-wide grid immediately below it
+     (175px columns, 150px rows) — the full layout now spans about 350x300px instead of 350x800px.
+     Also added `dreadstumpTestPortalPos` (`Portal.Destination.DreadstumpBossRealm`, already existed
+     for the in-dungeon boss-room portal — see entry 314) as the grid's ninth/last slot, so
+     Dreadstump can be reached directly for testing without generating a Pirate Cave and walking to
+     its farthest room every time, matching the existing precedent for the other three bosses.
+
+318. **Fixed Dreadstump the Pirate King spawning/drifting out of the boss arena.** Reported directly
+     ("the pirate cave boss is spawning out of bounds"). Root cause: `BossRealmState.Update()` has
+     always clamped the *player's* position to the 2000x2000 arena bounds (nothing else in the
+     engine walls anything in — the open Realm is 500,000px, so this was never previously
+     reachable), but never the boss's — every other boss happens to stay near the arena center on
+     its own (`MoveTethered`/`FollowPlayer` both self-correct toward a bounded point), so this went
+     unnoticed until Dreadstump's phase-1 `KitingMovement()` (`FleePlayer`-style: steers straight
+     away from the player, unbounded, no tether) started pushing it past the arena edge within a
+     couple of seconds of the fight starting — reading as the boss having spawned out of bounds by
+     the time the player got a good look. Fixed by clamping `EntityManager.ActiveBoss`'s position
+     the same way the player's already is, right after the player clamp in the same `Update()`
+     override — a general fix at the shared boss-arena level, not a Dreadstump-specific patch, so
+     any future boss with an unbounded movement pattern is covered too. Plain `dotnet build` (0
+     errors) plus a real minimized boot-check (stayed running, no stderr).
+
+319. **Removed the continuous sprite-spin from Pirate Cave's 6 wandering "critter" enemies.**
+     Requested directly ("remove rotation from any pirate cave enemy movement"). All 6 (Cave Pirate
+     Cabin Boy/Hunchback/Macaw/Moll/Monkey/Parrot) wander via the shared `Enemy.MoveRandomly()`
+     coroutine, which has always applied a constant `Orientation -= 0.05f` per frame alongside the
+     random-walk movement itself — fine for the enemies it originally served (rotationally-symmetric
+     sprites with no real "facing"), but visibly wrong for Pirate Cave's real, upright character art,
+     which reads as spinning in place while it wanders. Rather than stripping the spin from the
+     shared coroutine outright (other existing callers — the open Realm's Wanderer and a couple of
+     Beach enemies — still want it, and changing their established look wasn't asked for), gave
+     `MoveRandomly()` an optional `rotate` parameter (default `true`, preserving every existing call
+     site unchanged) and passed `rotate: false` from all 6 critter factories only. Plain
+     `dotnet build` (0 errors) plus a real minimized boot-check (stayed running, no stderr).
