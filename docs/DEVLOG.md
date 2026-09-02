@@ -8648,6 +8648,24 @@ date/time for those individually; don't treat their grouping as meaning they all
      user's standing "don't script a test unless asked" feedback, no scripted verification; touches no
      save/persistence paths.
 
+312. **Character-slots screen now orders occupied slots by most-recently-played, top to bottom.**
+     Requested directly. `CharacterSlotsState.BuildRows()` already had everything it needed —
+     `CharacterSlotEntryData.LastPlayedUtc` (`Data/CharacterSlotsData.cs`) has tracked this per slot
+     since the character-slot system shipped, updated on every `PlayCharacter()` via `CharacterSlot
+     System.TouchLastPlayed()`, just never used for display ordering. Split row-building into three
+     groups instead of one straight `SlotIndex` loop: occupied slots now sort by `Entry.LastPlayedUtc`
+     descending; empty (creatable) slots keep their natural slot-index order below the occupied ones;
+     the single locked "next" slot always stays last — neither of those last two has a meaningful
+     "last played" of its own. Only the *visual* list order changed — each `Row.SlotIndex` still
+     points at its real underlying slot regardless of where it's drawn, so delete/purchase/create-
+     into-empty-slot hit-testing is unaffected. No jarring mid-session reshuffle either: the only path
+     that changes `LastPlayedUtc` (`PlayCharacter()`) immediately transitions away from this screen via
+     `StateManager.NewGame()`, so a reorder is only ever visible the next time the player actually
+     returns here. Plain `dotnet build` (0 errors) — per the user's standing "don't script a test
+     unless asked" feedback, no scripted verification; touches no save/persistence paths (BuildRows()
+     only reorders an in-memory rendering list, it doesn't write anything).
+
+
 
 
 

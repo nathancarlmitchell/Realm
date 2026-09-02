@@ -195,9 +195,20 @@ namespace Realm.States
         // empty) plus exactly one locked "next" row, matching "unlocking a
         // slot reveals the next locked one" literally rather than showing
         // several future locked rows at once.
+        //
+        // Visual order (not each row's own SlotIndex, which stays tied to
+        // its real underlying slot for hit-testing/delete/create-into-empty
+        // regardless of where it's drawn): occupied slots sorted by
+        // Entry.LastPlayedUtc, most recent first — the one explicit ordering
+        // requested. Empty (creatable) slots keep their natural slot-index
+        // order below the occupied ones, and the single locked "next" slot
+        // always stays last — neither has a meaningful "last played" of its
+        // own to sort by.
         private void BuildRows()
         {
-            rows = [];
+            List<Row> occupied = [];
+            List<Row> empty = [];
+            Row locked = null;
 
             for (int i = 0; i <= CharacterSlotSystem.UnlockedSlotCount; i++)
             {
@@ -206,17 +217,28 @@ namespace Realm.States
                 PlayerData saved =
                     entry != null ? Util.PeekPlayerData(entry.CharacterId) : null;
 
-                rows.Add(
-                    new Row
-                    {
-                        SlotIndex = i,
-                        IsLocked = isLocked,
-                        IsEmpty = !isLocked && entry == null,
-                        Entry = entry,
-                        Saved = saved,
-                    }
-                );
+                Row row = new()
+                {
+                    SlotIndex = i,
+                    IsLocked = isLocked,
+                    IsEmpty = !isLocked && entry == null,
+                    Entry = entry,
+                    Saved = saved,
+                };
+
+                if (isLocked)
+                    locked = row;
+                else if (entry != null)
+                    occupied.Add(row);
+                else
+                    empty.Add(row);
             }
+
+            rows = occupied
+                .OrderByDescending(r => r.Entry.LastPlayedUtc)
+                .Concat(empty)
+                .Append(locked)
+                .ToList();
         }
 
         public override void Update(GameTime gameTime)
