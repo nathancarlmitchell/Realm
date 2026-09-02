@@ -68,7 +68,11 @@ namespace Realm.States
                 dungeonType.MaxRoomSize,
                 dungeonType.MinRoomCount,
                 dungeonType.MaxRoomCount,
-                dungeonType.CorridorWidth
+                dungeonType.CorridorWidth,
+                dungeonType.SandFloorTileName,
+                dungeonType.WoodFloorTileName,
+                dungeonType.BackgroundTileName,
+                dungeonType.PathGapChance
             );
             tileAtlas = content.Load<Texture2D>(tileSet.ImageName);
 

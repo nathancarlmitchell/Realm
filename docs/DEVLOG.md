@@ -8747,6 +8747,39 @@ date/time for those individually; don't treat their grouping as meaning they all
      throwaway `Camera` first, per CLAUDE.md's own testing-workflow note). Plain `dotnet build` (0
      errors) plus a real minimized boot-check (stayed running, no stderr) after reverting.
 
+315. **Pirate Cave generation reworked into a "cove" layout — rooms typed sand/wood, a wood path**
+     **connects them, everything else is water.** Requested directly, matching the wiki's own lore
+     almost exactly ("assemble a makeshift network of wooden planks around the cove"). Generalized
+     `DungeonGenerator.Generate()` with an optional cove mode (`sandFloorTileName`/
+     `woodFloorTileName`/`backgroundTileName`/`pathGapChance`, all new `DungeonTypeData` fields,
+     resolved to real `TileDefData` by name — same "reference by name" idiom `EnemyNames`/`BossName`
+     already use) rather than a Pirate-Cave-only rewrite: each field is independently optional, and a
+     dungeon type that sets none of them (Snake Pit) gets the exact original behavior — confirmed via
+     a scripted check that Snake Pit still generates a real solid-wall background unchanged. Where
+     set: the full-grid background fill uses the named tile (Water) instead of a random wall
+     candidate; each room is typed once — not per cell — to Sand or Wood (50/50 when both are set)
+     and carved uniformly; corridors are carved as a Wood walkway instead of a random floor pick; and
+     any Wood placement (room or corridor) has `PathGapChance` (8%) odds of becoming the background
+     tile instead — a missing plank over water. A gap is still fully walkable (water only slows the
+     player, never blocks), so it can never disconnect a room. Also bumped room size up per the
+     request (`MinRoomSize`/`MaxRoomSize` 6/16 → 10/22) and trimmed room count down to compensate
+     (6/10 → 5/8, since bigger rooms need more space to fit in the same fixed canvas).
+
+     One real design call along the way: a corridor's straight-line route can legitimately cross
+     through a *different* room's rectangle than the two it's connecting (already possible before this
+     change, just invisible when every cell drew from the same shared floor pool) — now visible as a
+     wood strip cutting through a sand room. Left as-is rather than re-routing corridors around other
+     rooms: the crossing is still just the wood path continuing through, not a broken or disconnected
+     room, and re-routing to avoid it is real pathing complexity the request didn't ask for. Verified
+     via temporary `Game1.StartGame()` test code (reverted, no diff remains): 15 generation seeds all
+     produced room counts in the new 5-8 range, zero `Cave Wall` tiles anywhere (background is
+     correctly Water, not a random wall pick), every room's own tile split confirmed one type
+     dominant (only 2 of many rooms across all 15 seeds landed close to an even split — the crossing-
+     corridor case above, not a typing bug), and flood-fill connectivity from Room 0 still reached
+     every room. Plain `dotnet build` (0 errors) plus a real minimized boot-check (stayed running, no
+     stderr) after reverting.
+
+
 
 
 

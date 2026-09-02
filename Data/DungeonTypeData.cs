@@ -30,5 +30,24 @@ namespace Realm.Data
         // Cross-referenced against Portal.Destination.BossesByName — a short
         // stable key ("Stheno"), not the boss's display name.
         public string BossName { get; set; }
+
+        // Optional "cove" generation mode (DungeonGenerator.Generate()) —
+        // first real use: Pirate Cave, matching its own wiki lore of "a
+        // network of wooden planks around the cove." Left null/0 (the
+        // default), generation behaves exactly as before: a random wall
+        // tile background and a random same-category floor pick per cell.
+        // Set, each room is typed once to SandFloorTileName or
+        // WoodFloorTileName (whichever are non-null — both means "randomly
+        // one or the other per room," only one means "every room is that
+        // one"), corridors are carved as a WoodFloorTileName walkway, the
+        // background fill is BackgroundTileName instead of a random wall,
+        // and any wood placement (room or corridor) has a PathGapChance
+        // chance of becoming BackgroundTileName instead — a missing plank
+        // over water. All four tile names are looked up by TileDefData.Name
+        // within this dungeon type's own TileSetName.
+        public string SandFloorTileName { get; set; }
+        public string WoodFloorTileName { get; set; }
+        public string BackgroundTileName { get; set; }
+        public float PathGapChance { get; set; }
     }
 }
