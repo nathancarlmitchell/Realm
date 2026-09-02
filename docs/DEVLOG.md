@@ -8376,3 +8376,16 @@ date/time for those individually; don't treat their grouping as meaning they all
      tiles from room 0 reaches every other room's center (0 failures across all 50); a deliberately-
      impossible 3x3 canvas generated instantly with 0 rooms instead of hanging. Plain `dotnet build`
      (0 errors) plus a real minimized boot-check (stayed running, no stderr) after reverting.
+
+300. **Walled Dungeon, Phase 3 of 8 — DrawBackground() rendering seam.** Extracted
+     `States/RealmState.cs`'s inline background-draw block (biome rings if any, else the flat
+     `Art.Tile`) into `protected virtual void DrawBackground(SpriteBatch spriteBatch)` — the same
+     extension-point shape as the existing `DrawBossHud()`. `Draw()` now just calls
+     `DrawBackground(spriteBatch)`; the base implementation's body is byte-for-byte what used to be
+     inline, so this is a pure refactor with zero behavior change for the open Realm/boss arenas.
+     `DungeonState` (Phase 5) will override it to call `DungeonMap.Draw()` instead — already written
+     in Phase 1's `Dungeon/DungeonMap.cs` (windowed to `Game1.GetWorldBounds()`, same call `Enemy.cs`
+     already uses for its own on-screen checks). Verified via plain `dotnet build` (0 errors) and a
+     real minimized boot-check (stayed running, no stderr) — no scripted test needed for a pure
+     extraction; `DungeonMap.Draw()`'s own tile-window behavior gets its real in-game exercise once
+     `DungeonState` exists (Phase 5).

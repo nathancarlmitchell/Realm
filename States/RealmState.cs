@@ -41,6 +41,20 @@ namespace Realm.States
         // below, so it can use plain screen coordinates like Overlay.cs does.
         protected virtual void DrawBossHud(SpriteBatch spriteBatch) { }
 
+        // Background extension point for DungeonState (real wall/tile-atlas
+        // rendering via DungeonMap.Draw()) — same shape as DrawBossHud()
+        // above. Default here is exactly what Draw() always drew before this
+        // was extracted: biome rings if this instance has any, the flat
+        // Art.Tile background otherwise. Zero behavior change for the open
+        // Realm/boss arenas.
+        protected virtual void DrawBackground(SpriteBatch spriteBatch)
+        {
+            if (biomeRings.Count > 0)
+                DrawBiomeRings(spriteBatch);
+            else
+                spriteBatch.Draw(Art.Tile, new Vector2(32, 32), targetRectangle, Color.White);
+        }
+
         public static Guid HealthPotionGuid = Guid.NewGuid();
         public static Guid ManaPotionGuid = Guid.NewGuid();
         public static Guid AttackPotionGuid = Guid.NewGuid();
@@ -140,13 +154,7 @@ namespace Realm.States
                 Game1.Camera.GetTransformation()
             );
 
-            // Draw background — biome rings if this instance has any
-            // (regular open-world dungeons), the original single flat tile
-            // otherwise (boss arenas, or no biome data configured).
-            if (biomeRings.Count > 0)
-                DrawBiomeRings(spriteBatch);
-            else
-                spriteBatch.Draw(Art.Tile, new Vector2(32, 32), targetRectangle, Color.White);
+            DrawBackground(spriteBatch);
 
             spriteBatch.End();
 
