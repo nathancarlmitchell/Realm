@@ -131,7 +131,7 @@ namespace Realm
             // coordinates — a bare (tileX, tileY) would draw the number at a
             // handful of pixels from the world origin instead of on the tile
             // that was actually hit.
-            if (Player.Instance.ShowEnemyDamageNumbersEnabled)
+            if (Player.Instance.ShowEnemyDamageNumbersEnabled && damage != 0)
             {
                 Vector2 tileCenter = new(
                     tileX * TileSet.TileWidth + TileSet.TileWidth / 2f,

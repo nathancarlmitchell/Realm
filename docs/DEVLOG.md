@@ -8665,6 +8665,21 @@ date/time for those individually; don't treat their grouping as meaning they all
      unless asked" feedback, no scripted verification; touches no save/persistence paths (BuildRows()
      only reorders an in-memory rendering list, it doesn't write anything).
 
+313. **Zero-value DamageNumbers/XP numbers no longer spawn.** Requested directly. `DamageNumber`
+     (`DamageNumber.cs`) has 4 real call sites, each gated by its own settings toggle but none
+     checking the actual value first — a fully-Defense-blocked hit, an XP gain that rounds to 0, or a
+     destructible-tile hit that (for whatever reason) resolves to 0 damage would still spawn a visible
+     "-0" or "+0XP" floating number. Added a `!= 0` check alongside each existing toggle check instead
+     of a single central guard in the constructor or `EntityManager.Add()` — rejecting it before
+     construction is simpler and has no entity-lifecycle timing to reason about (a same-frame
+     IsExpired-on-construction number could still draw for a frame depending on update/draw ordering).
+     Fixed at all 4 sites: `Enemy.WasShot()`'s own hit number (`actualDamage`) and XP-gain number
+     (`xpGained`), `Player.Hit()`'s damage-taken number (`damageModified`), and `DungeonMap.
+     DamageTile()`'s tile-hit number (`damage`, entry 309). Plain `dotnet build` (0 errors) — per the
+     user's standing "don't script a test unless asked" feedback, no scripted verification; touches no
+     save/persistence paths.
+
+
 
 
 

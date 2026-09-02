@@ -683,7 +683,7 @@ namespace Realm
                 damageModified = damage / 10;
             }
 
-            if (ShowPlayerDamageNumbersEnabled)
+            if (ShowPlayerDamageNumbersEnabled && damageModified != 0)
             {
                 EntityManager.Add(
                     new DamageNumber(

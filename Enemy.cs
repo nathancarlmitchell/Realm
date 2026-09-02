@@ -326,7 +326,7 @@ namespace Realm
                 : Math.Max(damage - Defense, damage / 10);
             health -= actualDamage;
 
-            if (Player.Instance.ShowEnemyDamageNumbersEnabled)
+            if (Player.Instance.ShowEnemyDamageNumbersEnabled && actualDamage != 0)
                 EntityManager.Add(new DamageNumber(Position, actualDamage, Color.Red, prefix: "-"));
             if (Player.Instance.ShowHitParticlesEnabled)
                 Particle.SpawnBurst(
@@ -397,7 +397,7 @@ namespace Realm
                     Player.Instance.Level < 20
                         ? Player.Instance.ShowXpDropsEnabled
                         : Player.Instance.AlwaysShowExpEnabled;
-                if (showXpIcon)
+                if (showXpIcon && xpGained != 0)
                 {
                     EntityManager.Add(
                         new DamageNumber(
