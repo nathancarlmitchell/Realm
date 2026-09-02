@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
@@ -21,6 +22,12 @@ namespace Realm.States
         private readonly Texture2D tileAtlas;
         private readonly DungeonPathfindingController pathfindingController;
         private readonly DungeonEnemySpawner dungeonEnemySpawner;
+
+        // World position of the boss room's portal — null only if the
+        // dungeon generated with just the one (start) room, in which case
+        // there's nowhere else to put it. Used by DrawQuestIndicator() below
+        // to point an arrow at it.
+        private readonly Vector2? bossPortalPosition;
 
         // Accumulates fractional per-frame tile damage (DamagePerSecond / 60,
         // matching this codebase's existing fixed-60fps-tick convention —
@@ -58,6 +65,20 @@ namespace Realm.States
                 new Portal(startPos + new Vector2(0, 100), Portal.Destination.Nexus)
             );
 
+            // Boss room: whichever room is farthest (straight-line, room
+            // center to room center) from the player's start room — gives
+            // the player somewhere to head toward, on the opposite side of
+            // the dungeon from where they came in. Skipped entirely for a
+            // degenerate one-room dungeon (nowhere else to put it).
+            if (dungeonMap.Rooms.Count > 1)
+            {
+                Rectangle bossRoom = FindFarthestRoom(dungeonMap.Rooms);
+                bossPortalPosition = RoomCenterWorldPosition(bossRoom);
+                Portal.DroppedPortals.Add(
+                    new Portal(bossPortalPosition.Value, Portal.Destination.SthenoBossRealm)
+                );
+            }
+
             pathfindingController = new DungeonPathfindingController(dungeonMap);
             dungeonEnemySpawner = new DungeonEnemySpawner(dungeonMap, pathfindingController);
 
@@ -73,8 +94,38 @@ namespace Realm.States
                 room.Center.Y * dungeonMap.TileSet.TileHeight
             );
 
+        // rooms[0] is always the player's start room (see this constructor
+        // above) — returns whichever of the rest has the greatest
+        // straight-line distance from it, in tile-space (distance
+        // comparisons don't care about the world-space scale factor, so
+        // there's no need to convert first). Caller guards rooms.Count > 1.
+        private static Rectangle FindFarthestRoom(List<Rectangle> rooms)
+        {
+            Point start = rooms[0].Center;
+            Rectangle farthestRoom = rooms[1];
+            float farthestDistSq = Vector2.DistanceSquared(start.ToVector2(), rooms[1].Center.ToVector2());
+
+            for (int i = 2; i < rooms.Count; i++)
+            {
+                float distSq = Vector2.DistanceSquared(start.ToVector2(), rooms[i].Center.ToVector2());
+                if (distSq > farthestDistSq)
+                {
+                    farthestDistSq = distSq;
+                    farthestRoom = rooms[i];
+                }
+            }
+
+            return farthestRoom;
+        }
+
         protected override void DrawBackground(SpriteBatch spriteBatch) =>
             dungeonMap.Draw(spriteBatch, Game1.GetWorldBounds(1.1f), tileAtlas);
+
+        protected override void DrawQuestIndicator(SpriteBatch spriteBatch)
+        {
+            if (bossPortalPosition.HasValue)
+                Overlay.DrawIndicatorArrowTowards(spriteBatch, bossPortalPosition.Value);
+        }
 
         public override void Update(GameTime gameTime)
         {

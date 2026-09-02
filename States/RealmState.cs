@@ -41,6 +41,14 @@ namespace Realm.States
         // below, so it can use plain screen coordinates like Overlay.cs does.
         protected virtual void DrawBossHud(SpriteBatch spriteBatch) { }
 
+        // Extension point for any additional on-screen directional
+        // indicator an instance wants beyond the Beach Beacon compass arrow
+        // above (e.g. DungeonState's own arrow toward its boss room's
+        // portal) — same shape/placement as DrawBossHud() just above it.
+        // Empty here; the open Realm/boss arenas have nothing else to point
+        // at.
+        protected virtual void DrawQuestIndicator(SpriteBatch spriteBatch) { }
+
         // Background extension point for DungeonState (real wall/tile-atlas
         // rendering via DungeonMap.Draw()) — same shape as DrawBossHud()
         // above. Default here is exactly what Draw() always drew before this
@@ -227,6 +235,8 @@ namespace Realm.States
             Overlay.DrawBeaconIndicator(spriteBatch);
 
             DrawBossHud(spriteBatch);
+
+            DrawQuestIndicator(spriteBatch);
 
             if (Game1._Debug)
             {

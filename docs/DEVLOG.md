@@ -8491,3 +8491,21 @@ date/time for those individually; don't treat their grouping as meaning they all
      this time; the change is additive/subtractive to already-verified spawn/pathfinding code, not
      new mechanics, and touches no save/persistence paths.
 
+305. **Added a boss portal to the walled dungeon's farthest room, plus a directional indicator arrow
+     pointing at it.** Requested directly. `DungeonState`'s constructor now finds whichever room has
+     the greatest straight-line distance (room center to room center) from `Rooms[0]`, the player's
+     start room (new `FindFarthestRoom()`), and drops a `Portal.Destination.SthenoBossRealm` portal
+     there (skipped for a degenerate one-room dungeon) — same boss the user picked when asked which
+     of the 3 existing bosses to use; regular enemies still spawn in that room too (per explicit
+     choice), so it isn't treated as special beyond hosting the portal. New
+     `Overlay.DrawIndicatorArrowTowards(spriteBatch, targetPosition)`: generalized the existing
+     Beach-Beacon-only compass arrow (`ComputeBeaconIndicatorTransform` renamed to
+     `ComputeIndicatorTransform`, already generic math) into a reusable "arrow pointing at any world
+     position," gated by the same `ShowQuestIndicatorEnabled` setting; `DrawBeaconIndicator()` is now
+     a one-line wrapper over it. New `RealmState.DrawQuestIndicator()` extension point (same
+     shape/placement as the existing `DrawBossHud()` seam, empty by default) — `DungeonState`
+     overrides it to draw the arrow toward its stored boss-portal position. Plain `dotnet build` (0
+     errors) — per the user's standing "don't script a test unless asked" feedback, no scripted
+     verification; touches no save/persistence paths.
+
+

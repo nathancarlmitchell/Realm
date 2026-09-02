@@ -19,7 +19,9 @@ public class GameSettingsData
 
     // Defaults to TRUE (on) — without `= true` that default would silently
     // be `false` for an old save missing this key, flipping the setting
-    // off instead of leaving it on. Gates Overlay.DrawBeaconIndicator().
+    // off instead of leaving it on. Gates Overlay.DrawIndicatorArrowTowards()
+    // (the Beach Beacon compass arrow and DungeonState's boss-portal arrow
+    // both go through it).
     public bool ShowQuestIndicatorEnabled { get; set; } = true;
 
     // Defaults to TRUE (on), same "give it its own explicit default"

@@ -375,16 +375,19 @@ namespace Realm
 
         // Pure position/rotation math, split out from the actual Draw()
         // call below so it's independently testable without needing a
-        // working SpriteBatch/GraphicsDevice. playerPosition/beaconPosition
+        // working SpriteBatch/GraphicsDevice. playerPosition/targetPosition
         // are both world coordinates; the returned Position is a screen
         // coordinate (anchored to the viewport center, not the player's raw
-        // world position — see DrawBeaconIndicator()'s own comment on why).
-        private static (Vector2 Position, float Rotation) ComputeBeaconIndicatorTransform(
+        // world position — see DrawIndicatorArrowTowards()'s own comment on
+        // why). Generic over the target — originally written just for the
+        // Beach Beacon, reused as-is by DungeonState's boss-portal indicator
+        // (see DrawIndicatorArrowTowards below).
+        private static (Vector2 Position, float Rotation) ComputeIndicatorTransform(
             Vector2 playerPosition,
-            Vector2 beaconPosition
+            Vector2 targetPosition
         )
         {
-            float angle = (beaconPosition - playerPosition).ToAngle();
+            float angle = (targetPosition - playerPosition).ToAngle();
             Vector2 playerScreenPos = new(
                 Game1.GameplayViewportWidth / 2f,
                 Game1.GameplayViewportHeight / 2f
@@ -407,19 +410,26 @@ namespace Realm
 
         public static void DrawBeaconIndicator(SpriteBatch spriteBatch)
         {
+            BeachBeacon beacon = BeachBeacon.ActiveInstance;
+            if (beacon != null)
+                DrawIndicatorArrowTowards(spriteBatch, beacon.Position);
+        }
+
+        // Generic version of the Beach Beacon arrow above — an orbiting
+        // arrow pointing at any fixed world position, gated by the same
+        // "Quest Indicator" setting. Second real caller: DungeonState draws
+        // one pointing at its boss room's portal.
+        public static void DrawIndicatorArrowTowards(SpriteBatch spriteBatch, Vector2 targetPosition)
+        {
             if (!Player.Instance.ShowQuestIndicatorEnabled)
                 return;
 
-            BeachBeacon beacon = BeachBeacon.ActiveInstance;
-            if (beacon == null)
-                return;
-
-            if (beacon.Position == Player.Instance.Position)
+            if (targetPosition == Player.Instance.Position)
                 return; // standing exactly on it — no direction to show
 
-            var (arrowPos, rotation) = ComputeBeaconIndicatorTransform(
+            var (arrowPos, rotation) = ComputeIndicatorTransform(
                 Player.Instance.Position,
-                beacon.Position
+                targetPosition
             );
             Vector2 origin = new(Art.IndicatorArrow.Width / 2f, Art.IndicatorArrow.Height / 2f);
 
