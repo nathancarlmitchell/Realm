@@ -8608,6 +8608,24 @@ date/time for those individually; don't treat their grouping as meaning they all
      standing "don't script a test unless asked" feedback, no scripted verification; touches no
      save/persistence paths.
 
+310. **`Projectile.PassesThroughObstacles`/`EnemyProjectile.PassesThroughObstacles` — named**
+     **exceptions to wall-blocking.** Requested directly, with the exact two projectiles named:
+     Archer's Quiver shots and Knight's Shield Slam. New per-instance flag on both projectile
+     classes (mirrors `ExpiresOnHit`'s own "set once at spawn time" shape), defaulting false
+     (blocked by walls, unchanged for every other projectile in the game); `DungeonState.
+     ExpireWallBlockedProjectiles()` (entry 307) now skips a flagged projectile entirely — never
+     blocked, never expired against `TileDefData.CanShootThrough`, and (for a destructible tile)
+     never damages it either, regardless of what it flies through. Set `true` at the two named spawn
+     sites only (`CharacterClasses/Archer.cs`'s Quiver fan, `CharacterClasses/Knight.cs`'s Shield Slam
+     fan) — not a general trait of every piercing shot (a Bow's own piercing upgrades, if any, still
+     get walled normally); framed as each ability's own "unstoppable signature shot" quality, not a
+     new generic "piercing shots ignore walls" rule. Added the mirror field to `EnemyProjectile.cs`
+     too, defaulting false and unused today, so a future enemy/boss shot can opt in the same way
+     without another schema change. Plain `dotnet build` (0 errors) — per the user's standing "don't
+     script a test unless asked" feedback, no scripted verification; touches no save/persistence
+     paths.
+
+
 
 
 

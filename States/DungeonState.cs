@@ -184,6 +184,12 @@ namespace Realm.States
         // (Projectile.Update()/EnemyProjectile.Update()), no special "hit a
         // wall" state needed.
         //
+        // A projectile with PassesThroughObstacles set (Projectile.cs/
+        // EnemyProjectile.cs — currently only Archer's Quiver shots and
+        // Knight's Shield Slam) ignores TileDefData.CanShootThrough entirely
+        // — never blocked, never expired here, regardless of what it flies
+        // through.
+        //
         // Only player fire damages a destructible tile (DungeonMap.
         // DamageTile()) — a deliberate choice, not an oversight: breaking
         // into a secret area/shortcut is a player action, same genre
@@ -195,7 +201,7 @@ namespace Realm.States
         {
             foreach (var bullet in EntityManager.AllPlayerProjectiles())
             {
-                if (bullet.IsExpired)
+                if (bullet.IsExpired || bullet.PassesThroughObstacles)
                     continue;
 
                 int tileX = (int)(bullet.Position.X / dungeonMap.TileSet.TileWidth);
@@ -212,10 +218,10 @@ namespace Realm.States
 
             foreach (var projectile in EntityManager.AllEnemyProjectiles())
             {
-                if (
-                    !projectile.IsExpired
-                    && !dungeonMap.TileAtWorldPosition(projectile.Position).CanShootThrough
-                )
+                if (projectile.IsExpired || projectile.PassesThroughObstacles)
+                    continue;
+
+                if (!dungeonMap.TileAtWorldPosition(projectile.Position).CanShootThrough)
                     projectile.IsExpired = true;
             }
         }

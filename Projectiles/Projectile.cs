@@ -51,6 +51,17 @@ namespace Realm.Projectiles
         // Bow's Side shots.
         public bool IgnoresDefense = false;
 
+        // Whether this projectile ignores dungeon walls entirely — set once
+        // at spawn time, checked by DungeonState.ExpireWallBlockedProjectiles
+        // () instead of TileDefData.CanShootThrough for this shot. False
+        // (blocked by walls, the original default behavior) for everything
+        // except whatever a class explicitly opts in — currently Archer's
+        // Quiver ability and Knight's Shield Slam, both large, piercing
+        // "signature ability" shots meant to read as unstoppable, not a
+        // general trait of piercing shots (Bow's own basic-attack piercing
+        // upgrades, if any, still get walled normally).
+        public bool PassesThroughObstacles = false;
+
         public Projectile(Vector2 position, Vector2 velocity)
         {
             ID = Guid.NewGuid();

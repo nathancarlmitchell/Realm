@@ -190,6 +190,10 @@ namespace Realm.CharacterClasses
                 // 156): an odd Shots count centers one shot on the aim
                 // line, an even count straddles it evenly. Shots=1 (Tier 0)
                 // degenerates to a single shot straight down the aim line.
+                // Also passes through dungeon walls (PassesThroughObstacles)
+                // — the other of the two named "shots pass through
+                // obstacles" exceptions, same "unstoppable signature
+                // ability" reasoning as Quiver's own shots.
                 for (int i = 0; i < shield.Shots; i++)
                 {
                     float angle = aimAngle + (i - (shield.Shots - 1) / 2f) * arcGapRad;
@@ -203,6 +207,7 @@ namespace Realm.CharacterClasses
                             image = Art.ShieldProjectile,
                             ExpiresOnHit = false,
                             StunsOnHit = true,
+                            PassesThroughObstacles = true,
                         }
                     );
                 }

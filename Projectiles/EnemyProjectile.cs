@@ -41,6 +41,13 @@ namespace Realm.Projectiles
         // Projectile.ExpiresOnHit.
         public bool ExpiresOnHit = true;
 
+        // Mirrors Projectile.PassesThroughObstacles — whether this projectile
+        // ignores dungeon walls (TileDefData.CanShootThrough) entirely. False
+        // for every enemy projectile today; the mechanism exists here too so
+        // a future enemy/boss shot can opt in the same way the player's own
+        // Quiver/Shield Slam do.
+        public bool PassesThroughObstacles = false;
+
         // Set true the first time this projectile actually damages the
         // player (see EntityManager.HandleCollisions()) — prevents a
         // non-expiring projectile (ExpiresOnHit = false) from dealing

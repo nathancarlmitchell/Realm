@@ -175,7 +175,11 @@ namespace Realm.CharacterClasses
                 // speed/lifetime/art rather than the equipped Bow's. Also
                 // Vulnerable ("Targets receive 110% damage for 3 seconds
                 // after being hit") — the real wiki's own tiered-Quiver
-                // effect, alongside Paralyzed.
+                // effect, alongside Paralyzed. Also passes through dungeon
+                // walls (PassesThroughObstacles) — one of the two named
+                // "shots pass through obstacles" exceptions, meant to read as
+                // an unstoppable signature ability shot, not walled the way
+                // an ordinary Bow attack is.
                 for (int i = 0; i < quiver.Shots; i++)
                 {
                     float angle = aimAngle + (i - (quiver.Shots - 1) / 2f) * arcGapRad;
@@ -190,6 +194,7 @@ namespace Realm.CharacterClasses
                             ExpiresOnHit = false,
                             ParalyzesOnHit = true,
                             VulnerableOnHit = true,
+                            PassesThroughObstacles = true,
                         }
                     );
                 }
