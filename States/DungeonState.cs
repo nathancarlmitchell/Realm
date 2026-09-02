@@ -60,6 +60,11 @@ namespace Realm.States
 
             pathfindingController = new DungeonPathfindingController(dungeonMap);
             dungeonEnemySpawner = new DungeonEnemySpawner(dungeonMap, pathfindingController);
+
+            // Every enemy the dungeon will ever have, spawned once, up
+            // front — no respawning afterward, so clearing them all actually
+            // clears the dungeon.
+            dungeonEnemySpawner.SpawnAll();
         }
 
         private Vector2 RoomCenterWorldPosition(Rectangle room) =>
@@ -88,7 +93,6 @@ namespace Realm.States
 
             ApplyTileEffects(dungeonMap.TileAtWorldPosition(Player.Instance.Position));
 
-            dungeonEnemySpawner.Update();
             pathfindingController.Update();
         }
 

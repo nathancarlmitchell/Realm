@@ -8475,3 +8475,19 @@ date/time for those individually; don't treat their grouping as meaning they all
      everything else in this phase was. Plain `dotnet build` (0 errors) plus a real minimized
      boot-check (stayed running, no stderr) after reverting, with a final re-diff confirming the
      real save files still matched the backup exactly.
+
+304. **Dungeon enemies now spawn all-at-once, no respawning — a dungeon can be fully cleared.**
+     Requested directly: "adjust the enemy spawns inside a dungeon, so enemies are all spawned
+     initially, and do not respawn, allowing a dungeon to be fully 'cleared'." `Dungeon/
+     DungeonEnemySpawner.cs` had been a continuous wave spawner (mirroring the open Realm's
+     `EnemySpawner.cs` — every ~3s, under a population cap, in a random room) since Phase 6 of the
+     walled-dungeon plan; replaced with a single `SpawnAll()` that populates every room except the
+     player's start room (Room 0) once, called from `DungeonState`'s constructor instead of every
+     `Update()`. Removed the wave-cooldown/population-cap fields entirely (no longer meaningful for
+     a one-shot spawn) and `DungeonState.Update()`'s `dungeonEnemySpawner.Update()` call. Enemy
+     count per dungeon is now room-count-driven (2-4 per non-start room, same range the old wave
+     size used) rather than capped-and-continuous. Plain `dotnet build` (0 errors) — per the user's
+     standing "don't script a test unless asked" feedback for this project, no scripted verification
+     this time; the change is additive/subtractive to already-verified spawn/pathfinding code, not
+     new mechanics, and touches no save/persistence paths.
+

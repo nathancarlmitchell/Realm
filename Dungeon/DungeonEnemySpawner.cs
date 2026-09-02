@@ -1,6 +1,4 @@
 using System;
-using System.Collections.Generic;
-using System.Linq;
 using Microsoft.Xna.Framework;
 
 namespace Realm
@@ -10,15 +8,16 @@ namespace Realm
     // DungeonMap/room reference rather than one shared global state. Spawns
     // existing enemy types only; a dungeon has no biome-ring concept to
     // restrict which types are eligible.
+    //
+    // Unlike the open Realm's continuous EnemySpawner, this spawns everything
+    // a dungeon will ever have exactly once (SpawnAll(), called from
+    // DungeonState's constructor) and never respawns afterward — so clearing
+    // every enemy actually clears the dungeon, rather than more trickling in
+    // forever.
     public class DungeonEnemySpawner
     {
-        // Mirrors EnemySpawner.cs's own wave-cooldown idiom
-        // (waveCooldownRemaining, ticked down every Update() and reset after
-        // firing).
-        private const int SpawnIntervalFrames = 180; // ~3 seconds at 60fps.
-        private const int PopulationCap = 20;
-        private const int MinEnemiesPerWave = 2;
-        private const int MaxEnemiesPerWave = 4;
+        private const int MinEnemiesPerRoom = 2;
+        private const int MaxEnemiesPerRoom = 4;
 
         private static readonly Func<Vector2, Enemy>[] EnemyFactories =
         {
@@ -32,44 +31,31 @@ namespace Realm
         private readonly DungeonPathfindingController pathfinding;
         private readonly Random rand = new();
 
-        private int waveCooldownRemaining;
-
         public DungeonEnemySpawner(DungeonMap map, DungeonPathfindingController pathfinding)
         {
             this.map = map;
             this.pathfinding = pathfinding;
         }
 
-        public void Update()
+        // Populates every room except Room 0 (the player's start room — see
+        // DungeonState's constructor) with a handful of enemies. Called once;
+        // there is no Update() — nothing spawns after this.
+        public void SpawnAll()
         {
-            if (waveCooldownRemaining > 0)
+            for (int i = 1; i < map.Rooms.Count; i++)
             {
-                waveCooldownRemaining--;
-                return;
-            }
+                Rectangle room = map.Rooms[i];
+                int spawnCount = rand.Next(MinEnemiesPerRoom, MaxEnemiesPerRoom + 1);
 
-            waveCooldownRemaining = SpawnIntervalFrames;
+                for (int j = 0; j < spawnCount; j++)
+                {
+                    Vector2 position = RandomWorldPositionInRoom(room);
+                    Func<Vector2, Enemy> factory = EnemyFactories[rand.Next(EnemyFactories.Length)];
+                    Enemy enemy = factory(position);
 
-            // Room 0 is the player's start room (see DungeonState's
-            // constructor) — excluded so enemies don't spawn on top of the
-            // player the moment they enter.
-            if (map.Rooms.Count <= 1)
-                return;
-
-            if (EntityManager.OfEnemyType<Enemy>().Count() >= PopulationCap)
-                return;
-
-            Rectangle room = map.Rooms[rand.Next(1, map.Rooms.Count)];
-            int spawnCount = rand.Next(MinEnemiesPerWave, MaxEnemiesPerWave + 1);
-
-            for (int i = 0; i < spawnCount; i++)
-            {
-                Vector2 position = RandomWorldPositionInRoom(room);
-                Func<Vector2, Enemy> factory = EnemyFactories[rand.Next(EnemyFactories.Length)];
-                Enemy enemy = factory(position);
-
-                EntityManager.Add(enemy);
-                pathfinding.Register(enemy);
+                    EntityManager.Add(enemy);
+                    pathfinding.Register(enemy);
+                }
             }
         }
 
