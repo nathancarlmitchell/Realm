@@ -1,0 +1,11 @@
+{
+  "Name": "Snake Pit",
+  "TileSetName": "Crypt",
+  "MinRoomSize": 5,
+  "MaxRoomSize": 12,
+  "MinRoomCount": 10,
+  "MaxRoomCount": 15,
+  "CorridorWidth": 2,
+  "EnemyNames": ["Wanderer", "Seeker", "Snake", "Slime"],
+  "BossName": "Stheno"
+}

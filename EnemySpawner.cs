@@ -107,6 +107,15 @@ namespace Realm
             ("Giant Crab", position => new Bosses.GiantCrab(position)),
         ];
 
+        // Cross-references a name list against BasicEnemyPool above — the
+        // same lookup SpawnWave() below already does inline for the current
+        // biome's own EnemyNames, pulled out so DungeonEnemySpawner (Dungeon/
+        // DungeonEnemySpawner.cs) can use it too, for Data/DungeonType_
+        // {Name}.json's own EnemyNames. internal, not public — the return
+        // type involves Enemy, itself an internal type.
+        internal static Func<Vector2, Enemy>[] ResolveFactories(string[] enemyNames) =>
+            BasicEnemyPool.Where(e => enemyNames.Contains(e.name)).Select(e => e.factory).ToArray();
+
         // The BiomeData ring (Data/BiomeData.json, sorted ascending by
         // MaxDistance there) whose [MinDistance, MaxDistance) contains the
         // player's current distance from entryPosition. Falls back to null

@@ -77,7 +77,7 @@ namespace Realm.States
                 new Portal(bossTestPortalPos, Portal.Destination.BossRealm),
                 new Portal(sthenoTestPortalPos, Portal.Destination.SthenoBossRealm),
                 new Portal(cubeTestPortalPos, Portal.Destination.CubeGodBossRealm),
-                new Portal(dungeonTestPortalPos, Portal.Destination.Dungeon),
+                new Portal(dungeonTestPortalPos, Portal.Destination.SnakePitDungeon),
             ];
 
             // So Overlay's minimap can show these regardless of which state

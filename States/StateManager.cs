@@ -28,14 +28,21 @@
             );
         }
 
-        // Entered via a Dungeon-destination portal (currently only the fixed
-        // test portal in NexusState) — same shape as EnterBossRealm() above.
-        public static void EnterDungeon()
+        // Entered via a DungeonDestination portal (currently only the fixed
+        // Snake Pit test portal in NexusState) — dungeonTypeName says which
+        // Data/DungeonType_{Name}.json to generate from. Same shape as
+        // EnterBossRealm() above.
+        public static void EnterDungeon(string dungeonTypeName)
         {
             Sound.Play(Sound.EnterRealm, 0.35f);
 
             Game1.Instance.ChangeState(
-                new DungeonState(Game1.Instance, Game1.Instance.GraphicsDevice, Game1.Instance.Content)
+                new DungeonState(
+                    Game1.Instance,
+                    Game1.Instance.GraphicsDevice,
+                    Game1.Instance.Content,
+                    dungeonTypeName
+                )
             );
         }
 

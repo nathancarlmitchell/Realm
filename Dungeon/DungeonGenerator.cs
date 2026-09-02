@@ -14,19 +14,23 @@ namespace Realm
     // options" principle as ItemSpawner.cs's own tier-drop rolls.
     public static class DungeonGenerator
     {
-        private const int MinRoomSize = 5;
-        private const int MaxRoomSize = 12;
+        // Algorithm-robustness knobs — padding/retry budget, not part of a
+        // dungeon type's "personality" the way room size/count/corridor
+        // width are, so these stay fixed engine constants rather than
+        // DungeonTypeData fields.
         private const int EdgeBuffer = 1; // 1-tile gap kept clear at the world border.
         private const int RoomPadding = 1; // 1-tile gap required between any two rooms.
-        private const int MinRoomTarget = 10;
-        private const int MaxRoomTarget = 15;
         private const int MaxPlacementAttempts = 500;
-        private const int CorridorWidth = 2;
 
         public static DungeonMap Generate(
             TileSetData tileSet,
             int widthInTiles,
             int heightInTiles,
+            int minRoomSize,
+            int maxRoomSize,
+            int minRoomCount,
+            int maxRoomCount,
+            int corridorWidth,
             int? seed = null
         )
         {
@@ -55,10 +59,20 @@ namespace Realm
             for (int x = 0; x < widthInTiles; x++)
                 map[x, y] = RandomPick(wallCandidates, rand).Id;
 
-            List<Rectangle> rooms = PlaceRooms(map, widthInTiles, heightInTiles, floorCandidates, rand);
+            List<Rectangle> rooms = PlaceRooms(
+                map,
+                widthInTiles,
+                heightInTiles,
+                minRoomSize,
+                maxRoomSize,
+                minRoomCount,
+                maxRoomCount,
+                floorCandidates,
+                rand
+            );
 
             if (rooms.Count > 1)
-                ConnectRooms(map, rooms, floorCandidates, rand);
+                ConnectRooms(map, rooms, corridorWidth, floorCandidates, rand);
 
             foreach (Rectangle room in rooms)
                 map.Rooms.Add(room);
@@ -70,25 +84,29 @@ namespace Realm
             DungeonMap map,
             int widthInTiles,
             int heightInTiles,
+            int minRoomSize,
+            int maxRoomSize,
+            int minRoomCount,
+            int maxRoomCount,
             List<TileDefData> floorCandidates,
             Random rand
         )
         {
             List<Rectangle> rooms = [];
 
-            int maxFittableSize = Math.Min(MaxRoomSize, Math.Min(widthInTiles, heightInTiles) - 2 * EdgeBuffer);
-            if (maxFittableSize < MinRoomSize)
+            int maxFittableSize = Math.Min(maxRoomSize, Math.Min(widthInTiles, heightInTiles) - 2 * EdgeBuffer);
+            if (maxFittableSize < minRoomSize)
                 return rooms; // canvas too small to fit even one room — terminate with none.
 
-            int targetRoomCount = rand.Next(MinRoomTarget, MaxRoomTarget + 1);
+            int targetRoomCount = rand.Next(minRoomCount, maxRoomCount + 1);
             int attempts = 0;
 
             while (rooms.Count < targetRoomCount && attempts < MaxPlacementAttempts)
             {
                 attempts++;
 
-                int w = rand.Next(MinRoomSize, maxFittableSize + 1);
-                int h = rand.Next(MinRoomSize, maxFittableSize + 1);
+                int w = rand.Next(minRoomSize, maxFittableSize + 1);
+                int h = rand.Next(minRoomSize, maxFittableSize + 1);
                 int x = rand.Next(EdgeBuffer, widthInTiles - EdgeBuffer - w + 1);
                 int y = rand.Next(EdgeBuffer, heightInTiles - EdgeBuffer - h + 1);
 
@@ -119,6 +137,7 @@ namespace Realm
         private static void ConnectRooms(
             DungeonMap map,
             List<Rectangle> rooms,
+            int corridorWidth,
             List<TileDefData> floorCandidates,
             Random rand
         )
@@ -149,31 +168,32 @@ namespace Realm
                     }
                 }
 
-                CarveCorridor(map, centers[bestFrom], centers[bestTo], floorCandidates, rand);
+                CarveCorridor(map, centers[bestFrom], centers[bestTo], corridorWidth, floorCandidates, rand);
                 connected.Add(bestTo);
                 remaining.Remove(bestTo);
             }
         }
 
-        // L-shaped, CorridorWidth tiles wide, with the horizontal/vertical leg
+        // L-shaped, corridorWidth tiles wide, with the horizontal/vertical leg
         // order randomized per edge so corridors don't all bend the same way.
         private static void CarveCorridor(
             DungeonMap map,
             Point a,
             Point b,
+            int corridorWidth,
             List<TileDefData> floorCandidates,
             Random rand
         )
         {
             if (rand.Next(2) == 0)
             {
-                CarveHorizontal(map, a.X, b.X, a.Y, floorCandidates, rand);
-                CarveVertical(map, a.Y, b.Y, b.X, floorCandidates, rand);
+                CarveHorizontal(map, a.X, b.X, a.Y, corridorWidth, floorCandidates, rand);
+                CarveVertical(map, a.Y, b.Y, b.X, corridorWidth, floorCandidates, rand);
             }
             else
             {
-                CarveVertical(map, a.Y, b.Y, a.X, floorCandidates, rand);
-                CarveHorizontal(map, a.X, b.X, b.Y, floorCandidates, rand);
+                CarveVertical(map, a.Y, b.Y, a.X, corridorWidth, floorCandidates, rand);
+                CarveHorizontal(map, a.X, b.X, b.Y, corridorWidth, floorCandidates, rand);
             }
         }
 
@@ -182,6 +202,7 @@ namespace Realm
             int x1,
             int x2,
             int y,
+            int corridorWidth,
             List<TileDefData> floorCandidates,
             Random rand
         )
@@ -189,7 +210,7 @@ namespace Realm
             int minX = Math.Min(x1, x2);
             int maxX = Math.Max(x1, x2);
             for (int x = minX; x <= maxX; x++)
-            for (int dy = 0; dy < CorridorWidth; dy++)
+            for (int dy = 0; dy < corridorWidth; dy++)
                 map[x, y + dy] = RandomPick(floorCandidates, rand).Id;
         }
 
@@ -198,6 +219,7 @@ namespace Realm
             int y1,
             int y2,
             int x,
+            int corridorWidth,
             List<TileDefData> floorCandidates,
             Random rand
         )
@@ -205,7 +227,7 @@ namespace Realm
             int minY = Math.Min(y1, y2);
             int maxY = Math.Max(y1, y2);
             for (int y = minY; y <= maxY; y++)
-            for (int dx = 0; dx < CorridorWidth; dx++)
+            for (int dx = 0; dx < corridorWidth; dx++)
                 map[x + dx, y] = RandomPick(floorCandidates, rand).Id;
         }
 

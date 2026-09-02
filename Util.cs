@@ -176,6 +176,12 @@ namespace Realm
         private static string TileSetDataLocation(string name) =>
             Path.Combine(AppContext.BaseDirectory, $"TileSet_{name}.json");
 
+        // One file per dungeon type (Data/DungeonType_{Name}.json), same
+        // reasoning as TileSetDataLocation above. LoadDungeonTypeData(name)
+        // below builds the actual path from this.
+        private static string DungeonTypeDataLocation(string name) =>
+            Path.Combine(AppContext.BaseDirectory, $"DungeonType_{name}.json");
+
         // Read-only peek at a character's save data, without touching
         // Player.Instance or Player.PlayerClass. Returns null if that
         // character ID has no save (shouldn't normally happen for an
@@ -1406,6 +1412,64 @@ namespace Realm
             }
 
             return tileSet;
+        }
+
+        // Loads a single named dungeon type (Data/DungeonType_{name}.json —
+        // see Data/DungeonTypeData.cs). Same "throw on a bad config rather
+        // than silently returning something broken" shape as LoadTileSetData
+        // above — a dungeon type with no real enemy or an unresolvable boss
+        // reference can't actually run, so it's better to fail loudly here
+        // than to have DungeonState fail confusingly (or worse, silently
+        // spawn nothing) later.
+        public static DungeonTypeData LoadDungeonTypeData(string name)
+        {
+            string path = DungeonTypeDataLocation(name);
+            string json;
+
+            using (StreamReader r = new(path))
+            {
+                Debug.WriteLine(path + ": reading data.");
+                json = r.ReadToEnd();
+                Debug.WriteLine(json);
+            }
+
+            DungeonTypeData dungeonType;
+            try
+            {
+                dungeonType = JsonSerializer.Deserialize<DungeonTypeData>(json);
+            }
+            catch (System.Text.Json.JsonException e)
+            {
+                throw new InvalidOperationException($"{path}: malformed dungeon type JSON.", e);
+            }
+
+            if (dungeonType == null || string.IsNullOrWhiteSpace(dungeonType.TileSetName))
+            {
+                throw new InvalidOperationException($"{path}: dungeon type has no TileSetName.");
+            }
+
+            if (
+                dungeonType.EnemyNames == null
+                || EnemySpawner.ResolveFactories(dungeonType.EnemyNames).Length == 0
+            )
+            {
+                throw new InvalidOperationException(
+                    $"{path}: dungeon type's EnemyNames resolved to zero real enemies."
+                );
+            }
+
+            if (
+                string.IsNullOrWhiteSpace(dungeonType.BossName)
+                || !Portal.Destination.BossesByName.ContainsKey(dungeonType.BossName)
+            )
+            {
+                throw new InvalidOperationException(
+                    $"{path}: dungeon type's BossName '{dungeonType.BossName}' doesn't match any "
+                        + "known boss."
+                );
+            }
+
+            return dungeonType;
         }
 
         public static void SaveInventoryData()

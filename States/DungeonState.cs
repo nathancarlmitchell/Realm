@@ -12,6 +12,14 @@ namespace Realm.States
     // RealmState for the same reason BossRealmState does (Input.cs's
     // `currentState is RealmState` checks keep working here with no changes
     // needed there).
+    //
+    // Generic over dungeon type (Data/DungeonTypeData.cs) — which tileset,
+    // room-generation rules, eligible enemies, and boss a given instance
+    // uses is entirely data-driven via the dungeonTypeName constructor
+    // parameter, not hardcoded here. World size (InstanceWorldWidth/Height
+    // below) is the one exception, staying a fixed constant shared by every
+    // dungeon type — see the walled-dungeon-generalization plan's own
+    // scope note for why.
     public class DungeonState : RealmState
     {
         protected override bool SpawnsRegularEnemies => false;
@@ -35,7 +43,12 @@ namespace Realm.States
         // DamagePerSecond value isn't silently lost to Hit()'s int rounding.
         private float tileDamageAccumulator;
 
-        public DungeonState(Game1 game, GraphicsDevice graphicsDevice, ContentManager content)
+        public DungeonState(
+            Game1 game,
+            GraphicsDevice graphicsDevice,
+            ContentManager content,
+            string dungeonTypeName
+        )
             : base(game, graphicsDevice, content)
         {
             // Clean slate, same reasoning as BossRealmState's constructor —
@@ -43,14 +56,19 @@ namespace Realm.States
             // into a freshly-generated dungeon.
             EntityManager.Reset();
 
-            // Which tileset a given dungeon uses is a later, cheap decision
-            // (e.g. a constructor parameter once more than one tileset
-            // exists) — hardcoded to the one placeholder tileset for now.
-            TileSetData tileSet = Util.LoadTileSetData("Crypt");
+            // Everything that varies per dungeon type — see Data/
+            // DungeonTypeData.cs and the walled-dungeon-generalization plan.
+            DungeonTypeData dungeonType = Util.LoadDungeonTypeData(dungeonTypeName);
+            TileSetData tileSet = Util.LoadTileSetData(dungeonType.TileSetName);
             dungeonMap = DungeonGenerator.Generate(
                 tileSet,
                 InstanceWorldWidth / tileSet.TileWidth,
-                InstanceWorldHeight / tileSet.TileHeight
+                InstanceWorldHeight / tileSet.TileHeight,
+                dungeonType.MinRoomSize,
+                dungeonType.MaxRoomSize,
+                dungeonType.MinRoomCount,
+                dungeonType.MaxRoomCount,
+                dungeonType.CorridorWidth
             );
             tileAtlas = content.Load<Texture2D>(tileSet.ImageName);
 
@@ -74,13 +92,18 @@ namespace Realm.States
             {
                 Rectangle bossRoom = FindFarthestRoom(dungeonMap.Rooms);
                 bossPortalPosition = RoomCenterWorldPosition(bossRoom);
-                Portal.DroppedPortals.Add(
-                    new Portal(bossPortalPosition.Value, Portal.Destination.SthenoBossRealm)
-                );
+                Portal.Destination.BossDestination bossDestination = Portal
+                    .Destination
+                    .BossesByName[dungeonType.BossName];
+                Portal.DroppedPortals.Add(new Portal(bossPortalPosition.Value, bossDestination));
             }
 
             pathfindingController = new DungeonPathfindingController(dungeonMap);
-            dungeonEnemySpawner = new DungeonEnemySpawner(dungeonMap, pathfindingController);
+            dungeonEnemySpawner = new DungeonEnemySpawner(
+                dungeonMap,
+                pathfindingController,
+                EnemySpawner.ResolveFactories(dungeonType.EnemyNames)
+            );
 
             // Every enemy the dungeon will ever have, spawned once, up
             // front — no respawning afterward, so clearing them all actually

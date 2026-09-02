@@ -8508,4 +8508,42 @@ date/time for those individually; don't treat their grouping as meaning they all
      errors) — per the user's standing "don't script a test unless asked" feedback, no scripted
      verification; touches no save/persistence paths.
 
+306. **Generalized the dungeon system to support multiple dungeon types; the current one is now**
+     **"Snake Pit," its boss portal relabeled "Stheno's Lair."** Requested directly: "generalize the
+     dungeon code to have the ability to implement multiple dungeons, with different layouts, room
+     generation rules, enemy types, and bosses." New `Data/DungeonTypeData.cs`/`Data/DungeonType_
+     SnakePit.json` (Name, TileSetName, MinRoomSize/MaxRoomSize/MinRoomCount/MaxRoomCount/
+     CorridorWidth, EnemyNames, BossName) — same one-POCO-plus-one-JSON-file-per-instance shape as
+     `Data/TileSetData.cs`, reproducing today's hardcoded values exactly so behavior is unchanged for
+     this first type. `Util.LoadDungeonTypeData(name)` mirrors `LoadTileSetData()`'s validate-loudly
+     shape: throws on a blank `TileSetName`, on `EnemyNames` resolving to zero real enemies, or on an
+     unresolvable `BossName`. New `EnemySpawner.ResolveFactories(string[])` (`internal`, since its
+     return type involves the internal `Enemy` type) pulls out the exact name-to-factory cross-
+     reference `SpawnWave()` already did inline for `BiomeData.EnemyNames`, reused now by
+     `DungeonTypeData.EnemyNames` too — `BasicEnemyPool` itself stays private. `Portal.cs`: renamed
+     `SthenoBossRealm`'s `DungeonName` from `"Snake Pit"` to `"Stheno's Lair"` (the outer dungeon now
+     claims "Snake Pit," so the inner boss-room portal needed its own distinct label); new
+     `Destination.BossesByName` dictionary (`"Limon"`/`"Stheno"`/`"CubeGod"` → the three existing
+     `BossDestination`s), looked up by `DungeonTypeData.BossName`; `DungeonDestination` generalized
+     from a parameterless singleton into the same "each destination is its own instance, carrying
+     what it needs" shape `BossDestination` already uses — `Portal.Destination.Dungeon` is now
+     `Portal.Destination.SnakePitDungeon = new DungeonDestination("SnakePit", "Snake Pit")`; a second
+     dungeon type just adds its own static field, no other `Portal.cs` change needed.
+     `StateManager.EnterDungeon()`/`DungeonState`'s constructor/`Dungeon/DungeonEnemySpawner.cs`'s
+     constructor all gained a dungeon-type parameter (`dungeonTypeName` /
+     `Func<Vector2,Enemy>[] enemyFactories` respectively — the latter's constructor had to become
+     `internal`, same `Enemy`-is-internal reason as `ResolveFactories`).
+     `Dungeon/DungeonGenerator.cs`'s `Generate()` traded its `MinRoomSize`/`MaxRoomSize`/
+     `MinRoomTarget`/`MaxRoomTarget`/`CorridorWidth` private consts for parameters of the same
+     purpose, threaded through `PlaceRooms()`/`CarveHorizontal()`/`CarveVertical()`; `EdgeBuffer`/
+     `RoomPadding`/`MaxPlacementAttempts` stayed fixed engine constants (algorithm-robustness knobs,
+     not a "layout" a dungeon type should control). World size (3200×3200) intentionally stays a
+     fixed shared constant across every dungeon type — `InstanceWorldWidth/Height` are read by
+     `RealmState`'s base constructor before `DungeonState`'s own body (and so before any per-type
+     data) exists, the same constructor-ordering hazard the original walled-dungeon plan solved by
+     fixing the canvas size; reopening it wasn't needed for what was actually asked. Plain `dotnet
+     build` (0 errors) — per the user's standing "don't script a test unless asked" feedback, no
+     scripted verification; touches no save/persistence paths.
+
+
 

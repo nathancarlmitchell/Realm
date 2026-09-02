@@ -61,9 +61,14 @@ namespace Realm
 
             // Dropped by BigSnake on death (see Enemy.CreateBigSnake()) —
             // same shape as BossRealm above, just carrying the second boss.
+            // DungeonName is "Stheno's Lair", not "Snake Pit" — the walled
+            // DungeonState of that same name (see DungeonDestination/
+            // SnakePitDungeon below) already claims that label for the outer
+            // dungeon; this is the inner boss room's own portal, reached from
+            // inside it.
             public static readonly Destination SthenoBossRealm = new BossDestination(
                 "Stheno the Snake Queen",
-                "Snake Pit",
+                "Stheno's Lair",
                 position => new SthenoTheSnakeQueen(position),
                 () => Art.SnakePitPortal
             );
@@ -83,12 +88,31 @@ namespace Realm
             // through StateManager.Nexus() rather than a world portal.
             public static readonly Destination Nexus = new NexusDestination();
 
-            // Leads into a procedurally-generated, walled DungeonState —
-            // see States/DungeonState.cs. No dedicated art yet (unlike each
-            // BossDestination's own portal texture); PortalArt() below is
-            // left at the base class's default plain swirl (Art.Portal)
+            // Looked up by Data/DungeonType_{Name}.json's own BossName field
+            // (see Util.LoadDungeonTypeData()) — lets a dungeon type
+            // reference a boss by a short stable key instead of the C# field
+            // name directly. Grow this alongside BossRealm/SthenoBossRealm/
+            // CubeGodBossRealm above whenever a new boss is added.
+            internal static readonly Dictionary<string, BossDestination> BossesByName = new()
+            {
+                ["Limon"] = (BossDestination)BossRealm,
+                ["Stheno"] = (BossDestination)SthenoBossRealm,
+                ["CubeGod"] = (BossDestination)CubeGodBossRealm,
+            };
+
+            // Leads into a procedurally-generated, walled DungeonState of a
+            // given type — see States/DungeonState.cs and Data/
+            // DungeonTypeData.cs. Same "each destination is its own instance,
+            // carrying whatever it needs" shape as BossDestination above; a
+            // second dungeon type just adds its own static field here, no
+            // other Portal.cs change needed. No dedicated art yet (unlike
+            // each BossDestination's own portal texture); PortalArt() below
+            // is left at the base class's default plain swirl (Art.Portal)
             // until real per-dungeon art exists.
-            public static readonly Destination Dungeon = new DungeonDestination();
+            public static readonly Destination SnakePitDungeon = new DungeonDestination(
+                "SnakePit",
+                "Snake Pit"
+            );
 
             private sealed class RealmDestination : Destination
             {
@@ -134,9 +158,18 @@ namespace Realm
 
             private sealed class DungeonDestination : Destination
             {
-                public override string DisplayName => "Dungeon";
+                internal string DungeonTypeName { get; }
+                private readonly string displayName;
 
-                public override void Enter() => StateManager.EnterDungeon();
+                internal DungeonDestination(string dungeonTypeName, string displayName)
+                {
+                    DungeonTypeName = dungeonTypeName;
+                    this.displayName = displayName;
+                }
+
+                public override string DisplayName => displayName;
+
+                public override void Enter() => StateManager.EnterDungeon(DungeonTypeName);
             }
 
             // Carries which boss to spawn, so BossRealmState no longer
