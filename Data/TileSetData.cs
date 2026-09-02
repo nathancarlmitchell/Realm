@@ -57,10 +57,16 @@ namespace Realm.Data
         // code (see docs/DEVLOG.md's wall-blocked-projectiles entry).
         public bool CanShootThrough { get; set; } = true;
 
-        // Schema-only for now — no code reads this yet. Destructible tiles
-        // (runtime health/destroyed state, hit detection, DungeonMap grid
-        // updates) remain open follow-up work — see docs/BACKLOG.md.
+        // Breakable by player projectile fire — see DungeonMap.DamageTile().
         public bool IsDestructible { get; set; }
+
+        // Only meaningful when IsDestructible is true — how many points of
+        // projectile damage this tile takes before it breaks. Runtime
+        // remaining health is tracked separately, per-cell, by DungeonMap
+        // (see its DamageTile()); this is just the starting value each fresh
+        // instance of the tile begins with. Ignored entirely for a
+        // non-destructible tile (default 0 — never meant to be read).
+        public int DestructibleHealth { get; set; }
 
         public bool HarmsPlayer { get; set; }
         public float DamagePerSecond { get; set; }

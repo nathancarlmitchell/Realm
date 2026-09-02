@@ -8569,6 +8569,32 @@ date/time for those individually; don't treat their grouping as meaning they all
      user's standing "don't script a test unless asked" feedback, no scripted verification; touches
      no save/persistence paths.
 
+308. **Destructible tiles in walled dungeons.** Picked up from the backlog, alongside the user's own
+     new "Breakable Wall" tile (Id 2, `Data/TileSet_Crypt.json`) and matching 3rd atlas column
+     (`Content/Dungeons/Crypt/TileSet.png`) added directly. New `TileDefData.DestructibleHealth`
+     (int) — the requested "variable to control how much health breakable tiles have," per-tile-type
+     like every other tile property, not a single hardcoded number; the Breakable Wall is authored at
+     3. New `DungeonMap.DamageTile(tileX, tileY, damage)`: a no-op for a non-`IsDestructible` tile;
+     otherwise tracks remaining health in a small `Dictionary<Point,int>` (absent entry means "still
+     at full `DestructibleHealth`," so an unhit destructible tile costs no memory), and once exhausted
+     replaces the cell with a randomly-picked floor-candidate tile Id — same "random among
+     same-category candidates" principle `DungeonGenerator` already uses when carving, so a tileset
+     with several floor variants gets the same free visual variety on a broken wall too. Wired in from
+     `DungeonState.ExpireWallBlockedProjectiles()` (entry 307): a player projectile hitting a
+     destructible wall now damages it (by the projectile's own `Damage`) before still expiring in
+     place, same as any other wall hit. Deliberately scoped narrower than the backlog's original "bare
+     floor? rubble? loot?" question — only player fire breaks a tile (enemy fire still just expires
+     against it, no damage; same genre convention as Zelda/Diablo-likes' bombable walls being a player
+     action), and a broken tile always becomes plain floor, no loot/rubble variant. Also added: `Util.
+     LoadTileSetData()` now throws on duplicate tile Ids within one tileset (this session's own
+     Breakable Wall tile briefly landed on `Id: 1`, colliding with Cracked Floor, before being
+     corrected to `Id: 2` — a real instance of exactly the silent-overwrite bug this validation now
+     catches loudly instead). Moved the completed core mechanic from `docs/BACKLOG.md` to here; left a
+     narrower follow-up item there for the open questions above. Plain `dotnet build` (0 errors) —
+     per the user's standing "don't script a test unless asked" feedback, no scripted verification;
+     touches no save/persistence paths.
+
+
 
 
 

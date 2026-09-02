@@ -11,11 +11,14 @@ prioritized or scheduled — the user asked to keep these noted for later rather
 
 ## Open ideas
 
-- **Destructible tiles in walled dungeons.** Same origin as the item above. `TileDefData.
-  IsDestructible` is authored in the schema now, but the actual mechanic — per-tile runtime
-  health/destroyed state, hooking into hit detection so a shot can damage a tile, updating
-  `DungeonMap`'s live grid when one breaks, and deciding what a destroyed tile leaves behind (bare
-  floor? rubble? loot?) — is a real feature of its own, not attempted yet.
+- **Destructible-tile follow-ups.** The core mechanic shipped (`DungeonMap.DamageTile()`,
+  `TileDefData.DestructibleHealth` — see [DEVLOG.md](DEVLOG.md)) as narrowly scoped: only player
+  projectiles damage a destructible tile, and a broken tile always becomes a random floor-candidate
+  tile with nothing left behind. Open beyond that: whether enemy fire should also be able to break
+  one (currently it can't — a deliberate genre-convention default, not settled with the user);
+  whether a broken tile should drop loot or leave a rubble/visual variant instead of plain floor;
+  any hit/break VFX or sound (`Particle.SpawnBurst()` is the existing reusable entry point, not
+  wired up here).
 - **Add a real ability cooldown timer.** Today `UseAbility()` (Wizard's spell bomb, Archer's shot)
   is gated only by mana cost (`Player.AbilityCost`, 25) — there's no time-based lockout, so a
   player with enough mana can spam it repeatedly. The user chose to visualize the existing

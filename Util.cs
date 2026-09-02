@@ -1411,6 +1411,20 @@ namespace Realm
                 );
             }
 
+            List<int> duplicateIds = tileSet
+                .Tiles.GroupBy(t => t.Id)
+                .Where(g => g.Count() > 1)
+                .Select(g => g.Key)
+                .ToList();
+            if (duplicateIds.Count > 0)
+            {
+                throw new InvalidOperationException(
+                    $"{path}: duplicate tile Id(s) {string.Join(", ", duplicateIds)} — each tile "
+                        + "needs a unique Id within its own tileset, or later entries silently "
+                        + "overwrite earlier ones."
+                );
+            }
+
             return tileSet;
         }
 

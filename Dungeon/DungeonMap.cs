@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Realm.Data;
@@ -39,6 +40,21 @@ namespace Realm
 
         private readonly Dictionary<int, TileDefData> tilesById;
 
+        // Every CanPassThrough tile in this tileset — computed once here
+        // rather than per-call, since DamageTile() below needs it every time
+        // a destructible tile breaks (picks a random one to become, same
+        // "random among same-category candidates" principle DungeonGenerator
+        // already uses when carving).
+        private readonly List<TileDefData> floorCandidates;
+
+        // Remaining hit points for a destructible tile that's taken at least
+        // one hit — absent (not zero) means "still at its full starting
+        // DestructibleHealth," so a tile that's never been hit costs no
+        // memory here. Removed once a tile breaks (see DamageTile()).
+        private readonly Dictionary<Point, int> destructibleHealthRemaining = [];
+
+        private readonly Random rand = new();
+
         public DungeonMap(TileSetData tileSet, int widthInTiles, int heightInTiles)
         {
             TileSet = tileSet;
@@ -51,6 +67,8 @@ namespace Realm
             {
                 tilesById[tile.Id] = tile;
             }
+
+            floorCandidates = tileSet.Tiles.Where(t => t.CanPassThrough).ToList();
         }
 
         public int this[int x, int y]
@@ -81,6 +99,38 @@ namespace Realm
                 (int)(worldPosition.X / TileSet.TileWidth),
                 (int)(worldPosition.Y / TileSet.TileHeight)
             );
+
+        // Applies projectile damage to a destructible tile — a no-op (returns
+        // false) for a tile that isn't IsDestructible. Once the tile's
+        // DestructibleHealth is exhausted, it breaks: replaced in the grid by
+        // a randomly-picked floor candidate (the same "random among
+        // same-category candidates" principle DungeonGenerator already uses
+        // when carving, so a tileset with several floor variants gets the
+        // same free visual variety here too), returning true so the caller
+        // (DungeonState) knows a break just happened.
+        public bool DamageTile(int tileX, int tileY, int damage)
+        {
+            TileDefData tile = TileAt(tileX, tileY);
+            if (!tile.IsDestructible)
+                return false;
+
+            Point cell = new(tileX, tileY);
+            int remaining = destructibleHealthRemaining.GetValueOrDefault(
+                cell,
+                tile.DestructibleHealth
+            );
+            remaining -= damage;
+
+            if (remaining > 0)
+            {
+                destructibleHealthRemaining[cell] = remaining;
+                return false;
+            }
+
+            destructibleHealthRemaining.Remove(cell);
+            this[tileX, tileY] = floorCandidates[rand.Next(floorCandidates.Count)].Id;
+            return true;
+        }
 
         // Pushes a circle (player or enemy) out of any overlapping
         // !CanPassThrough tile. Checks only the small tile neighborhood the

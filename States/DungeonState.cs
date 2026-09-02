@@ -183,12 +183,31 @@ namespace Realm.States
         // IsExpired = true a normal duration timeout already uses
         // (Projectile.Update()/EnemyProjectile.Update()), no special "hit a
         // wall" state needed.
+        //
+        // Only player fire damages a destructible tile (DungeonMap.
+        // DamageTile()) — a deliberate choice, not an oversight: breaking
+        // into a secret area/shortcut is a player action, same genre
+        // convention as Zelda/Diablo-likes' bombable walls; enemies don't
+        // get to demolish the player's own cover. Either projectile type
+        // still just expires against a non-destructible wall exactly the
+        // same way.
         private void ExpireWallBlockedProjectiles()
         {
             foreach (var bullet in EntityManager.AllPlayerProjectiles())
             {
-                if (!bullet.IsExpired && !dungeonMap.TileAtWorldPosition(bullet.Position).CanShootThrough)
-                    bullet.IsExpired = true;
+                if (bullet.IsExpired)
+                    continue;
+
+                int tileX = (int)(bullet.Position.X / dungeonMap.TileSet.TileWidth);
+                int tileY = (int)(bullet.Position.Y / dungeonMap.TileSet.TileHeight);
+                TileDefData tile = dungeonMap.TileAt(tileX, tileY);
+                if (tile.CanShootThrough)
+                    continue;
+
+                if (tile.IsDestructible)
+                    dungeonMap.DamageTile(tileX, tileY, bullet.Damage);
+
+                bullet.IsExpired = true;
             }
 
             foreach (var projectile in EntityManager.AllEnemyProjectiles())
