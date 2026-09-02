@@ -1,0 +1,25 @@
+{
+  "Name": "Pirate Cave",
+  "TileSetName": "PirateCave",
+  "MinRoomSize": 6,
+  "MaxRoomSize": 16,
+  "MinRoomCount": 6,
+  "MaxRoomCount": 10,
+  "CorridorWidth": 3,
+  "EnemyNames": [
+    "Cave Pirate Cabin Boy",
+    "Cave Pirate Hunchback",
+    "Cave Pirate Macaw",
+    "Cave Pirate Moll",
+    "Cave Pirate Monkey",
+    "Cave Pirate Parrot",
+    "Cave Pirate Brawler",
+    "Cave Pirate Sailor",
+    "Cave Pirate Veteran",
+    "Pirate Lieutenant",
+    "Pirate Commander",
+    "Pirate Captain",
+    "Pirate Admiral"
+  ],
+  "BossName": "Dreadstump"
+}

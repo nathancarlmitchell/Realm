@@ -8679,6 +8679,75 @@ date/time for those individually; don't treat their grouping as meaning they all
      user's standing "don't script a test unless asked" feedback, no scripted verification; touches no
      save/persistence paths.
 
+314. **Second dungeon type: Pirate Cave, with all 13 named enemies and its own boss, Dreadstump the**
+     **Pirate King.** Requested directly, sourced from realmeye.com/wiki/pirate-cave and each linked
+     enemy's own page (fetched via a real browser session — RealmEye doesn't render for `WebFetch`).
+     The user supplied real art for the entire roster directly (`Content/Dungeons/Pirate Cave/`) —
+     all 13 enemies, the boss, and a dedicated entry-portal texture — so nothing here is a tinted
+     reskin. New `Data/DungeonType_PirateCave.json`/`Data/TileSet_PirateCave.json` (4-tile placeholder
+     atlas: Cave Wall, Wood Planks, Sandy Shore, Water — the wiki's entire "Water" mechanic, "slows
+     players... enemies are not affected," was already fully expressible via existing
+     `SlowsPlayer`/`CanPassThrough`, no engine change needed), tuned for a bigger, more open cave feel
+     than Snake Pit's tighter maze (`MinRoomSize`/`MaxRoomSize` 6/16, `MinRoomCount`/`MaxRoomCount`
+     6/10, `CorridorWidth` 3).
+
+     13 new `Enemy.cs` factories, one per wiki enemy, values read straight off each one's own stat/
+     attack table (`tiles/sec * 32/60` → world units/frame, `tiles * 32` → world units — same
+     conversion Player's tile-speed stats already use): 6 harmless HP5/PointValue1 "critter" wanderers
+     (Cabin Boy/Hunchback/Macaw/Moll/Monkey/Parrot — `MoveRandomly()` only, no attack, identical on
+     the wiki apart from sprite/drop); a melee "sword" trio (Brawler/Sailor/Veteran — `FollowPlayer()`
+     + a short-range `ShootIfInRange()` swing, this engine's existing way of doing "melee"); a
+     stationary ranged "sentry" quartet (Lieutenant/Commander/Captain/Admiral — no movement at all,
+     matching the wiki's own lack of any movement stat and "guards Dreadstump" framing; Captain/
+     Admiral add a second attack plus a periodic self-Armor buff). Two new shared `Enemy.cs`
+     primitives, both reused by the boss too: `OrbitPoint()`/`OrbitPlayer()` (circles a moving point —
+     Cave Pirate Veteran runs it alongside `FollowPlayer()` so it closes in, then settles into
+     circling once near the target radius, no distance-gated state machine needed) and
+     `PeriodicArmor()` (a temporary Defense buff cycle, `FlashRed()` on trigger). The user also supplied real projectile art
+     (`Content/Projectiles/`) mid-implementation — wired in over the generic `Art.EnemyProjectile`
+     default: the melee trio and Veteran's sword swing use `Art.PirateSword` (loaded from the
+     supplied file's own literal name, `Priate Sword.png` — a typo kept as-is on disk, named
+     correctly in code); the ranged quartet's cannonballs use `Art.PirateCannonBullet`, with
+     Captain/Admiral's second, slower attack using the distinct `Art.PirateShot` instead so its two
+     attacks read as visually different.
+
+     New `Bosses/DreadstumpThePirateKing.cs`, a real `BossRealmState`-hosted fight (own arena, same as
+     Limon/Stheno/Cube God) with 4 health-threshold phases (`HealthFraction`-polling `PhaseWatcher()`,
+     same shape as `LimonTheSpriteGoddess`'s, rather than Stheno's fixed-timer one — the wiki's own
+     phase descriptions read as progression-driven): Kiting (`FleePlayer()`-style distance-keeping
+     while firing, though implemented inline here rather than reusing `FleePlayer()` directly since it
+     needed phase-gating) with rapid single shots; Circling (orbits the ship's mast, alternating a
+     cutlass shot and a cannonball, with an occasional temporary self-Armor + triple-cannonball burst);
+     Ship Cannons (adds periodic barrages from 4 fixed lane positions — simplified from the wiki's 6
+     exact cannon positions — representing the ship's fixed-mounted cannons with no new arena geometry
+     needed); and a permanently-Armored escalation with periodic bigger bursts. HP1000/DEF6/
+     PointValue200 used directly from the wiki, same "don't scale further down" approach already taken
+     for Stheno's 9000 HP. His own shots use their own real art too: the phase-1 kiting shot
+     uses `Art.GoldShot` (matching the wiki's own "rapid yellow shots" description exactly), his
+     cutlass shot uses `Art.PirateKingSword`, and every cannonball-flavored attack (Circling's own,
+     the Armor-burst triple shot, the ship-cannon lanes, and the phase-4 big bursts) uses the same
+     `Art.PirateCannonBullet` the regular ranged pirates fire, reinforcing the shared cannon theme.
+
+     `Portal.cs`: new `DreadstumpBossRealm` (added to `BossesByName["Dreadstump"]`) and
+     `PirateCaveDungeon`; `DungeonDestination` gained an optional portal-art override (mirroring
+     `BossDestination`'s own) so Pirate Cave's real portal art actually gets used, while Snake Pit
+     keeps its default swirl unaffected. `EnemySpawner.BasicEnemyPool` gained all 13 entries (never
+     added to any `BiomeData.json`, so nothing changes for the open Realm). `NexusState.cs` gained one
+     more fixed test portal, same precedent as Snake Pit's own.
+
+     Verified via temporary `Game1.StartGame()` test code (reverted, no diff remains — touches no
+     `Player.Instance` state that ever saves, so no save-file backup was needed): `Util.
+     LoadDungeonTypeData("PirateCave")`/`Util.LoadTileSetData("PirateCave")` both load and validate
+     cleanly; all 13 `EnemyNames` resolve via `EnemySpawner.ResolveFactories()`;
+     `Portal.Destination.BossesByName["Dreadstump"]` resolves; 20 generation seeds at the new
+     room-size/count parameters all passed the room-count and flood-fill-connectivity checks; all 13
+     enemy factories constructed with no exception; the boss ran through all 4 phases (forced via
+     reflected health drops) across 1,600 `Update()` ticks with no exception. Hit the documented
+     `Game1.Camera`-must-be-initialized gotcha testing the boss standalone (fixed by constructing a
+     throwaway `Camera` first, per CLAUDE.md's own testing-workflow note). Plain `dotnet build` (0
+     errors) plus a real minimized boot-check (stayed running, no stderr) after reverting.
+
+
 
 
 

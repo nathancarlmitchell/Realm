@@ -1,0 +1,68 @@
+{
+  "Name": "Pirate Cave",
+  "ImageName": "Dungeons/Pirate Cave/TileSet",
+  "TileWidth": 32,
+  "TileHeight": 32,
+  "Tiles": [
+    {
+      "Id": 0,
+      "Name": "Cave Wall",
+      "OffsetX": 0,
+      "OffsetY": 0,
+      "CanPassThrough": false,
+      "CanShootThrough": false,
+      "IsDestructible": false,
+      "DestructibleHealth": 0,
+      "HarmsPlayer": false,
+      "DamagePerSecond": 0,
+      "SlowsPlayer": false,
+      "SlowMultiplier": 1,
+      "AppliedDebuffs": []
+    },
+    {
+      "Id": 1,
+      "Name": "Wood Planks",
+      "OffsetX": 1,
+      "OffsetY": 0,
+      "CanPassThrough": true,
+      "CanShootThrough": true,
+      "IsDestructible": false,
+      "DestructibleHealth": 0,
+      "HarmsPlayer": false,
+      "DamagePerSecond": 0,
+      "SlowsPlayer": false,
+      "SlowMultiplier": 1,
+      "AppliedDebuffs": []
+    },
+    {
+      "Id": 2,
+      "Name": "Sandy Shore",
+      "OffsetX": 2,
+      "OffsetY": 0,
+      "CanPassThrough": true,
+      "CanShootThrough": true,
+      "IsDestructible": false,
+      "DestructibleHealth": 0,
+      "HarmsPlayer": false,
+      "DamagePerSecond": 0,
+      "SlowsPlayer": false,
+      "SlowMultiplier": 1,
+      "AppliedDebuffs": []
+    },
+    {
+      "Id": 3,
+      "Name": "Water",
+      "OffsetX": 3,
+      "OffsetY": 0,
+      "CanPassThrough": true,
+      "CanShootThrough": true,
+      "IsDestructible": false,
+      "DestructibleHealth": 0,
+      "HarmsPlayer": false,
+      "DamagePerSecond": 0,
+      "SlowsPlayer": true,
+      "SlowMultiplier": 1,
+      "AppliedDebuffs": []
+    }
+  ]
+}

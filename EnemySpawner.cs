@@ -105,6 +105,24 @@ namespace Realm
             ("Scorpion Queen", position => new Bosses.ScorpionQueen(position)),
             ("Sandsman King", position => new Bosses.SandsmanKing(position)),
             ("Giant Crab", position => new Bosses.GiantCrab(position)),
+
+            // Pirate Cave (Data/DungeonType_PirateCave.json) — never added to
+            // any BiomeData.json's own EnemyNames, so these never spawn in
+            // the open Realm; only DungeonEnemySpawner.ResolveFactories()
+            // ever selects them.
+            ("Cave Pirate Cabin Boy", Enemy.CreateCavePirateCabinBoy),
+            ("Cave Pirate Hunchback", Enemy.CreateCavePirateHunchback),
+            ("Cave Pirate Macaw", Enemy.CreateCavePirateMacaw),
+            ("Cave Pirate Moll", Enemy.CreateCavePirateMoll),
+            ("Cave Pirate Monkey", Enemy.CreateCavePirateMonkey),
+            ("Cave Pirate Parrot", Enemy.CreateCavePirateParrot),
+            ("Cave Pirate Brawler", Enemy.CreateCavePirateBrawler),
+            ("Cave Pirate Sailor", Enemy.CreateCavePirateSailor),
+            ("Cave Pirate Veteran", Enemy.CreateCavePirateVeteran),
+            ("Pirate Lieutenant", Enemy.CreatePirateLieutenant),
+            ("Pirate Commander", Enemy.CreatePirateCommander),
+            ("Pirate Captain", Enemy.CreatePirateCaptain),
+            ("Pirate Admiral", Enemy.CreatePirateAdmiral),
         ];
 
         // Cross-references a name list against BasicEnemyPool above — the

@@ -69,6 +69,11 @@ namespace Realm.States
                 Player.Instance.Position.Y + 500
             );
 
+            var pirateCaveTestPortalPos = new Vector2(
+                Player.Instance.Position.X - 150,
+                Player.Instance.Position.Y + 700
+            );
+
             portalList =
             [
                 new Portal(),
@@ -78,6 +83,7 @@ namespace Realm.States
                 new Portal(sthenoTestPortalPos, Portal.Destination.SthenoBossRealm),
                 new Portal(cubeTestPortalPos, Portal.Destination.CubeGodBossRealm),
                 new Portal(dungeonTestPortalPos, Portal.Destination.SnakePitDungeon),
+                new Portal(pirateCaveTestPortalPos, Portal.Destination.PirateCaveDungeon),
             ];
 
             // So Overlay's minimap can show these regardless of which state

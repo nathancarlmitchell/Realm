@@ -808,6 +808,42 @@ namespace Realm
             }
         }
 
+        // Steers toward a point orbiting `center` at `radius`, advancing
+        // `angularSpeed` radians/frame — a constant inward pull toward
+        // wherever on the circle is "next," rather than toward center
+        // directly. First real use: Cave Pirate Veteran (Pirate Cave), which
+        // runs this alongside FollowPlayer() so it closes in, then settles
+        // into circling once near the target radius, with no separate
+        // distance-gated state machine needed — FollowPlayer's constant pull
+        // toward the player and this orbit's pull toward the circle just add
+        // together. Dreadstump the Pirate King (the Pirate Cave boss) reuses
+        // the same primitive to circle the ship's mast instead of the player
+        // via OrbitPoint directly.
+        protected IEnumerable<int> OrbitPoint(
+            Func<Vector2> center,
+            float radius,
+            float angularSpeed = 0.02f,
+            float acceleration = 0.4f
+        )
+        {
+            float angle = rand.NextFloat(0, MathHelper.TwoPi);
+            while (true)
+            {
+                angle = MathHelper.WrapAngle(angle + angularSpeed);
+                Vector2 target = center() + Extensions.FromPolar(angle, radius);
+                Vector2 toTarget = target - Position;
+                if (toTarget != Vector2.Zero)
+                    Velocity += toTarget.ScaleTo(acceleration);
+                yield return 0;
+            }
+        }
+
+        protected IEnumerable<int> OrbitPlayer(
+            float radius,
+            float angularSpeed = 0.02f,
+            float acceleration = 0.4f
+        ) => OrbitPoint(() => Player.Instance.Position, radius, angularSpeed, acceleration);
+
         #endregion
 
         #region Attack Behaviors
@@ -1064,6 +1100,34 @@ namespace Realm
             }
         }
 
+        // Periodically raises Defense by `multiplier` for durationFrames,
+        // then reverts — a simple self-buff cycle. FlashRed() signals the
+        // moment it triggers, the same visual cue phase transitions already
+        // use. First real use: Pirate Cave's Pirate Captain/Admiral
+        // ("occasionally Armored"). Assumes nothing else mutates Defense
+        // while this is running.
+        protected IEnumerable<int> PeriodicArmor(
+            int intervalFrames,
+            int durationFrames,
+            float multiplier = 1.5f
+        )
+        {
+            int baseDefense = Defense;
+            while (true)
+            {
+                for (int i = 0; i < intervalFrames; i++)
+                    yield return 0;
+
+                FlashRed();
+                Defense = (int)(baseDefense * multiplier);
+
+                for (int i = 0; i < durationFrames; i++)
+                    yield return 0;
+
+                Defense = baseDefense;
+            }
+        }
+
         #endregion
 
         #region Enemy Types
@@ -1296,6 +1360,279 @@ namespace Realm
             enemy.AddBehaviour(enemy.MoveRandomly());
             enemy.AddAttackBehaviour(enemy.ShootIfInRange(range: 6f * 32f, damage: 6, projectileSpeed: 3f));
 
+            return enemy;
+        }
+
+        // Pirate Cave (see Data/DungeonType_PirateCave.json and
+        // docs/DEVLOG.md) — every factory below sourced directly from each
+        // enemy's own realmeye.com/wiki page. Real art supplied for each
+        // (Content/Dungeons/Pirate Cave/), no tinted reskins needed.
+        // tiles/sec -> world units/frame via `* 32 / 60`; tiles -> world
+        // units via `* 32` — same conversion Player's own tile-speed stats
+        // already use.
+
+        // Harmless "critters" — HP5/DEF0/PointValue1, wander only, never
+        // attack, identical on the wiki apart from sprite/drop flavor.
+        // Water-avoidance from the wiki text is skipped: MoveRandomly() has
+        // no tile-awareness to build it on, and it's purely cosmetic with
+        // zero mechanical effect.
+        public static Enemy CreateCavePirateCabinBoy(Vector2 position)
+        {
+            var enemy = new Enemy(Art.CavePirateCabinBoy, position)
+            {
+                health = 5,
+                healthMax = 5,
+                PointValue = 1,
+            };
+            enemy.AddBehaviour(enemy.MoveRandomly());
+            return enemy;
+        }
+
+        public static Enemy CreateCavePirateHunchback(Vector2 position)
+        {
+            var enemy = new Enemy(Art.CavePirateHunchback, position)
+            {
+                health = 5,
+                healthMax = 5,
+                PointValue = 1,
+            };
+            enemy.AddBehaviour(enemy.MoveRandomly());
+            return enemy;
+        }
+
+        public static Enemy CreateCavePirateMacaw(Vector2 position)
+        {
+            var enemy = new Enemy(Art.CavePirateMacaw, position)
+            {
+                health = 5,
+                healthMax = 5,
+                PointValue = 1,
+            };
+            enemy.AddBehaviour(enemy.MoveRandomly());
+            return enemy;
+        }
+
+        public static Enemy CreateCavePirateMoll(Vector2 position)
+        {
+            var enemy = new Enemy(Art.CavePirateMoll, position)
+            {
+                health = 5,
+                healthMax = 5,
+                PointValue = 1,
+            };
+            enemy.AddBehaviour(enemy.MoveRandomly());
+            return enemy;
+        }
+
+        public static Enemy CreateCavePirateMonkey(Vector2 position)
+        {
+            var enemy = new Enemy(Art.CavePirateMonkey, position)
+            {
+                health = 5,
+                healthMax = 5,
+                PointValue = 1,
+            };
+            enemy.AddBehaviour(enemy.MoveRandomly());
+            return enemy;
+        }
+
+        public static Enemy CreateCavePirateParrot(Vector2 position)
+        {
+            var enemy = new Enemy(Art.CavePirateParrot, position)
+            {
+                health = 5,
+                healthMax = 5,
+                PointValue = 1,
+            };
+            enemy.AddBehaviour(enemy.MoveRandomly());
+            return enemy;
+        }
+
+        // Melee "sword" chasers — FollowPlayer + a short-range sword swing
+        // (an EnemyProjectile via ShootIfInRange, same as every other
+        // "melee" enemy this engine already has).
+        public static Enemy CreateCavePirateBrawler(Vector2 position)
+        {
+            var enemy = new Enemy(Art.CavePirateBrawler, position)
+            {
+                health = 20,
+                healthMax = 20,
+                PointValue = 2,
+            };
+            enemy.AddBehaviour(enemy.FollowPlayer(0.4f));
+            enemy.AddAttackBehaviour(
+                enemy.ShootIfInRange(
+                    range: 3.9f * 32f,
+                    damage: 4,
+                    projectileSpeed: 6.5f * 32f / 60f,
+                    projectileImage: Art.PirateSword
+                )
+            );
+            return enemy;
+        }
+
+        public static Enemy CreateCavePirateSailor(Vector2 position)
+        {
+            var enemy = new Enemy(Art.CavePirateSailor, position)
+            {
+                health = 30,
+                healthMax = 30,
+                PointValue = 3,
+            };
+            enemy.AddBehaviour(enemy.FollowPlayer(0.4f));
+            enemy.AddAttackBehaviour(
+                enemy.ShootIfInRange(
+                    range: 3.9f * 32f,
+                    damage: 7,
+                    projectileSpeed: 6.5f * 32f / 60f,
+                    projectileImage: Art.PirateSword
+                )
+            );
+            return enemy;
+        }
+
+        // "Chases the nearest player, circling them when close enough" —
+        // FollowPlayer's constant pull toward the player and OrbitPlayer's
+        // pull toward the circle just add together, so it closes in, then
+        // settles into circling once near the target radius, with no
+        // separate distance-gated state machine needed (see OrbitPoint's
+        // own doc comment).
+        public static Enemy CreateCavePirateVeteran(Vector2 position)
+        {
+            var enemy = new Enemy(Art.CavePirateVeteran, position)
+            {
+                health = 35,
+                healthMax = 35,
+                Defense = 2,
+                PointValue = 4,
+            };
+            enemy.AddBehaviour(enemy.FollowPlayer(0.2f));
+            enemy.AddBehaviour(enemy.OrbitPlayer(radius: 5.2f * 32f));
+            enemy.AddAttackBehaviour(
+                enemy.ShootIfInRange(
+                    range: 5.2f * 32f,
+                    damage: 8,
+                    projectileSpeed: 6.5f * 32f / 60f,
+                    projectileImage: Art.PirateSword
+                )
+            );
+            return enemy;
+        }
+
+        // Ranged "cannon" sentries — no movement stat on the wiki at all,
+        // and the wiki never says they chase (only "fires at the nearest
+        // player," "always have other pirates with them... protecting
+        // Dreadstump") — stationary, no AddBehaviour movement at all.
+        public static Enemy CreatePirateLieutenant(Vector2 position)
+        {
+            var enemy = new Enemy(Art.PirateLieutenant, position)
+            {
+                health = 70,
+                healthMax = 70,
+                Defense = 2,
+                PointValue = 7,
+            };
+            enemy.AddAttackBehaviour(
+                enemy.ShootIfInRange(
+                    range: 10f * 32f,
+                    damage: 10,
+                    projectileSpeed: 5f * 32f / 60f,
+                    projectileImage: Art.PirateCannonBullet,
+                    cooldownFrames: 150
+                )
+            );
+            return enemy;
+        }
+
+        public static Enemy CreatePirateCommander(Vector2 position)
+        {
+            var enemy = new Enemy(Art.PirateCommander, position)
+            {
+                health = 80,
+                healthMax = 80,
+                Defense = 3,
+                PointValue = 8,
+            };
+            enemy.AddAttackBehaviour(
+                enemy.ShootIfInRange(
+                    range: 10f * 32f,
+                    damage: 12,
+                    projectileSpeed: 5f * 32f / 60f,
+                    projectileImage: Art.PirateCannonBullet,
+                    cooldownFrames: 110
+                )
+            );
+            return enemy;
+        }
+
+        // "Shoot one fast cannonball, 2 slower cannonballs, and occasionally
+        // be Armored" — the two shot types run as independent
+        // ShootIfInRange behaviours on their own cooldowns rather than one
+        // combined volley, which already reads as "sometimes both, mostly
+        // the fast one" given the slower shot's longer cooldown.
+        public static Enemy CreatePirateCaptain(Vector2 position)
+        {
+            var enemy = new Enemy(Art.PirateCaptain, position)
+            {
+                health = 100,
+                healthMax = 100,
+                Defense = 4,
+                PointValue = 10,
+            };
+            enemy.AddAttackBehaviour(
+                enemy.ShootIfInRange(
+                    range: 11.25f * 32f,
+                    damage: 14,
+                    projectileSpeed: 5f * 32f / 60f,
+                    projectileImage: Art.PirateCannonBullet,
+                    cooldownFrames: 100
+                )
+            );
+            enemy.AddAttackBehaviour(
+                enemy.ShootIfInRange(
+                    range: 10.4f * 32f,
+                    damage: 18,
+                    projectileSpeed: 2f * 32f / 60f,
+                    projectileImage: Art.PirateShot,
+                    cooldownFrames: 160
+                )
+            );
+            enemy.AddBehaviour(enemy.PeriodicArmor(intervalFrames: 300, durationFrames: 120));
+            return enemy;
+        }
+
+        // "Always shoot single, fast cannonballs and sometimes shoot two
+        // slower cannonballs. Occasionally... Armored" — same two-
+        // independent-attacks shape as Captain, a step more aggressive on
+        // every stat.
+        public static Enemy CreatePirateAdmiral(Vector2 position)
+        {
+            var enemy = new Enemy(Art.PirateAdmiral, position)
+            {
+                health = 120,
+                healthMax = 120,
+                Defense = 5,
+                PointValue = 12,
+            };
+            enemy.AddAttackBehaviour(
+                enemy.ShootIfInRange(
+                    range: 11.25f * 32f,
+                    damage: 15,
+                    projectileSpeed: 5f * 32f / 60f,
+                    projectileImage: Art.PirateCannonBullet,
+                    cooldownFrames: 90
+                )
+            );
+            enemy.AddAttackBehaviour(
+                enemy.ShootIfInRange(
+                    range: 10.4f * 32f,
+                    damage: 20,
+                    projectileSpeed: 2f * 32f / 60f,
+                    projectileImage: Art.PirateShot,
+                    cooldownFrames: 140
+                )
+            );
+            enemy.AddBehaviour(enemy.PeriodicArmor(intervalFrames: 260, durationFrames: 120));
             return enemy;
         }
 

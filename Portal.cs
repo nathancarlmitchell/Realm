@@ -83,6 +83,21 @@ namespace Realm
                 () => Art.ThirdDimensionPortal
             );
 
+            // Pirate Cave's own boss room portal (see Data/DungeonType_
+            // PirateCave.json's BossName and DungeonState's farthest-room
+            // placement) — same shape as the other three, carrying the
+            // fourth boss. No dedicated portal art for this one specifically
+            // (the fight itself has full art — enemies, boss sprite, and the
+            // dungeon's own entry portal — just not a second, separate
+            // "boss room" portal texture), so it uses the base class's
+            // default plain swirl like Snake Pit's outer dungeon portal does.
+            public static readonly Destination DreadstumpBossRealm = new BossDestination(
+                "Dreadstump the Pirate King",
+                "Dreadstump's Ship",
+                position => new DreadstumpThePirateKing(position),
+                () => Art.Portal
+            );
+
             // The boss arena's own exit portal. No other portal currently
             // routes to Nexus — every other Nexus-bound path goes straight
             // through StateManager.Nexus() rather than a world portal.
@@ -98,6 +113,7 @@ namespace Realm
                 ["Limon"] = (BossDestination)BossRealm,
                 ["Stheno"] = (BossDestination)SthenoBossRealm,
                 ["CubeGod"] = (BossDestination)CubeGodBossRealm,
+                ["Dreadstump"] = (BossDestination)DreadstumpBossRealm,
             };
 
             // Leads into a procedurally-generated, walled DungeonState of a
@@ -105,13 +121,22 @@ namespace Realm
             // DungeonTypeData.cs. Same "each destination is its own instance,
             // carrying whatever it needs" shape as BossDestination above; a
             // second dungeon type just adds its own static field here, no
-            // other Portal.cs change needed. No dedicated art yet (unlike
-            // each BossDestination's own portal texture); PortalArt() below
-            // is left at the base class's default plain swirl (Art.Portal)
-            // until real per-dungeon art exists.
+            // other Portal.cs change needed. No dedicated art for this one —
+            // PortalArt() falls back to the base class's default plain swirl
+            // (Art.Portal) until real per-dungeon art exists.
             public static readonly Destination SnakePitDungeon = new DungeonDestination(
                 "SnakePit",
                 "Snake Pit"
+            );
+
+            // Real dedicated portal art supplied for this one (Content/
+            // Dungeons/Pirate Cave/Portal.png) — the optional getPortalArt
+            // parameter below is exactly why DungeonDestination grew one,
+            // mirroring BossDestination's own.
+            public static readonly Destination PirateCaveDungeon = new DungeonDestination(
+                "PirateCave",
+                "Pirate Cave",
+                () => Art.PirateCavePortal
             );
 
             private sealed class RealmDestination : Destination
@@ -160,16 +185,28 @@ namespace Realm
             {
                 internal string DungeonTypeName { get; }
                 private readonly string displayName;
+                private readonly Func<AnimatedTexture> getPortalArt;
 
-                internal DungeonDestination(string dungeonTypeName, string displayName)
+                // getPortalArt left null (the default) falls back to the
+                // base class's plain swirl, same as before this parameter
+                // existed — Snake Pit still passes nothing.
+                internal DungeonDestination(
+                    string dungeonTypeName,
+                    string displayName,
+                    Func<AnimatedTexture> getPortalArt = null
+                )
                 {
                     DungeonTypeName = dungeonTypeName;
                     this.displayName = displayName;
+                    this.getPortalArt = getPortalArt;
                 }
 
                 public override string DisplayName => displayName;
 
                 public override void Enter() => StateManager.EnterDungeon(DungeonTypeName);
+
+                internal override AnimatedTexture PortalArt() =>
+                    getPortalArt != null ? getPortalArt().Clone() : base.PortalArt();
             }
 
             // Carries which boss to spawn, so BossRealmState no longer

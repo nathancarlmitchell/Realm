@@ -82,6 +82,40 @@ namespace Realm
         public static Texture2D Rogue { get; private set; }
         public static Texture2D ArcherProjectile { get; private set; }
         public static Texture2D ShieldProjectile { get; private set; }
+
+        // Pirate Cave's own enemy roster (Data/DungeonType_PirateCave.json)
+        // — real, dedicated art supplied for every one of the wiki's named
+        // enemies, unlike the tinted-reskin approach used for enemies with
+        // no dedicated art (Slime/Brute). Loaded from Content/Dungeons/
+        // Pirate Cave/{Name}.png.
+        public static Texture2D CavePirateCabinBoy { get; private set; }
+        public static Texture2D CavePirateHunchback { get; private set; }
+        public static Texture2D CavePirateMacaw { get; private set; }
+        public static Texture2D CavePirateMoll { get; private set; }
+        public static Texture2D CavePirateMonkey { get; private set; }
+        public static Texture2D CavePirateParrot { get; private set; }
+        public static Texture2D CavePirateBrawler { get; private set; }
+        public static Texture2D CavePirateSailor { get; private set; }
+        public static Texture2D CavePirateVeteran { get; private set; }
+        public static Texture2D PirateLieutenant { get; private set; }
+        public static Texture2D PirateCommander { get; private set; }
+        public static Texture2D PirateCaptain { get; private set; }
+        public static Texture2D PirateAdmiral { get; private set; }
+        public static Texture2D DreadstumpThePirateKing { get; private set; }
+
+        // Pirate Cave's own projectile art (also user-supplied), used in
+        // place of the generic Art.EnemyProjectile default wherever a
+        // matching shot exists.
+        public static Texture2D GoldShot { get; private set; }
+        public static Texture2D PirateCannonBullet { get; private set; }
+        public static Texture2D PirateKingSword { get; private set; }
+        public static Texture2D PirateShot { get; private set; }
+
+        // Loaded from "Priate Sword.png" — a typo in the supplied filename,
+        // kept as-is on disk (renaming a user-supplied asset isn't this
+        // property's job) but named correctly here in code.
+        public static Texture2D PirateSword { get; private set; }
+
         public static AnimatedTexture Portal { get; private set; }
 
         // Dungeon-specific portal animations — same 7-frame, 8fps loop as
@@ -121,6 +155,12 @@ namespace Realm
         // Portal.Destination.CharacterSelectDestination) — same
         // single-static-frame treatment, a warrior figure.
         public static AnimatedTexture CharacterSelectPortal { get; private set; }
+
+        // Pirate Cave's own entry portal (see Portal.Destination.
+        // PirateCaveDungeon) — same single-static-frame treatment as
+        // ThirdDimensionPortal above; real art supplied for it (unlike
+        // Snake Pit's own dungeon portal, still the generic swirl).
+        public static AnimatedTexture PirateCavePortal { get; private set; }
 
         public static Texture2D Inventory { get; private set; }
         public static Texture2D HealthPotion { get; private set; }
@@ -270,6 +310,9 @@ namespace Realm
             CharacterSelectPortal = new AnimatedTexture(Vector2.Zero, 0f, 1.0f, 0.5f);
             CharacterSelectPortal.Load(content, "Character Changer", 1, 1);
 
+            PirateCavePortal = new AnimatedTexture(Vector2.Zero, 0f, 1.0f, 0.5f);
+            PirateCavePortal.Load(content, "Dungeons/Pirate Cave/Portal", 1, 1);
+
             HealthPotion = content.Load<Texture2D>("health_potion");
             ManaPotion = content.Load<Texture2D>("mana_potion");
 
@@ -398,6 +441,30 @@ namespace Realm
             LethalStrike = content.Load<Texture2D>("StatusEffects/leathal strike");
             GreenBolt = content.Load<Texture2D>("Projectiles/Green Bolt");
             BlackMagic = content.Load<Texture2D>("Projectiles/Black Magic");
+
+            // Pirate Cave (Data/DungeonType_PirateCave.json) — every enemy's
+            // own real art, supplied directly rather than a tinted reskin.
+            CavePirateCabinBoy = content.Load<Texture2D>("Dungeons/Pirate Cave/Cave Pirate Cabin Boy");
+            CavePirateHunchback = content.Load<Texture2D>("Dungeons/Pirate Cave/Cave Pirate Hunchback");
+            CavePirateMacaw = content.Load<Texture2D>("Dungeons/Pirate Cave/Cave Pirate Macaw");
+            CavePirateMoll = content.Load<Texture2D>("Dungeons/Pirate Cave/Cave Pirate Moll");
+            CavePirateMonkey = content.Load<Texture2D>("Dungeons/Pirate Cave/Cave Pirate Monkey");
+            CavePirateParrot = content.Load<Texture2D>("Dungeons/Pirate Cave/Cave Pirate Parrot");
+            CavePirateBrawler = content.Load<Texture2D>("Dungeons/Pirate Cave/Cave Pirate Brawler");
+            CavePirateSailor = content.Load<Texture2D>("Dungeons/Pirate Cave/Cave Pirate Sailor");
+            CavePirateVeteran = content.Load<Texture2D>("Dungeons/Pirate Cave/Cave Pirate Veteran");
+            PirateLieutenant = content.Load<Texture2D>("Dungeons/Pirate Cave/Pirate Lieutenant");
+            PirateCommander = content.Load<Texture2D>("Dungeons/Pirate Cave/Pirate Commander");
+            PirateCaptain = content.Load<Texture2D>("Dungeons/Pirate Cave/Pirate Captain");
+            PirateAdmiral = content.Load<Texture2D>("Dungeons/Pirate Cave/Pirate Admiral");
+            DreadstumpThePirateKing = content.Load<Texture2D>(
+                "Dungeons/Pirate Cave/Dreadstump the Pirate King"
+            );
+            GoldShot = content.Load<Texture2D>("Projectiles/Gold Shot");
+            PirateCannonBullet = content.Load<Texture2D>("Projectiles/Pirate Cannon Bullet");
+            PirateKingSword = content.Load<Texture2D>("Projectiles/Pirate King Sword");
+            PirateShot = content.Load<Texture2D>("Projectiles/Pirate Shot");
+            PirateSword = content.Load<Texture2D>("Projectiles/Priate Sword");
 
             // Fonts.
             HudFont = content.Load<SpriteFont>("Fonts/HudFont");

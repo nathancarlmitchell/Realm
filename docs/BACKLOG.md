@@ -57,7 +57,7 @@ prioritized or scheduled — the user asked to keep these noted for later rather
   enemy (`MoveSnake`+`Spray` is still open too, though `MoveSnake`+`Shoot` at a different speed is
   now covered by BigSnake). Real new art (rather than another tinted reskin) is also still an
   option whenever the user wants to supply some.
-- **Boss follow-ups, all three bosses now need a real playtest pass.** Limon: real hit/death sounds
+- **Boss follow-ups, all four bosses now need a real playtest pass.** Limon: real hit/death sounds
   (still reusing `Sound.SpriteGod*` as placeholders) and revisiting hand-tuned balance numbers
   after actually playing the fight. Stheno (see [DEVLOG.md](DEVLOG.md) entry 100): also reusing
   placeholder audio (`Sound.Snakes*`); every numeric constant in `Bosses/SthenoTheSnakeQueen.cs`/
@@ -75,7 +75,15 @@ prioritized or scheduled — the user asked to keep these noted for later rather
   unfair. The second-boss extension pattern predicted in this item (its own `XyzBoss : Boss`
   subclass, nothing moved into the shared `Boss` base beyond what turned out genuinely common —
   just `Name`/`Description`/`SpawnLoot()`/`DrawHealthBars()`) held up as designed, now proven a
-  third time by Cube God.
+  third time by Cube God, and a fourth by Dreadstump the Pirate King (Pirate Cave, see
+  [DEVLOG.md](DEVLOG.md)): also reuses `Sound.DefaultHit` entirely, same placeholder-audio status as
+  Cube God; every numeric constant in `Bosses/DreadstumpThePirateKing.cs` is read directly off the
+  wiki's own attack table (not scaled down or estimated), but the health-percentage phase
+  thresholds, the ship-cannon lane positions (simplified from the wiki's 6 exact cannons to 4
+  representative ones), and the alternating-attack/self-Armor cooldown values are all first-pass —
+  needs an actual playthrough to confirm the phase transitions read as escalating rather than
+  jarring, the cannon lanes are dodgeable, and the fight feels appropriately easy for the
+  "beginner dungeon" boss it's meant to be.
 - **Remove the test-only boss portals in the Nexus.** `States/NexusState.cs`'s `portalList` has
   three `// TEMP`-commented shortcut portals: `Portal.Destination.BossRealm` at
   `Player.Instance.Position + (-150, -100)`, `Portal.Destination.SthenoBossRealm` at
