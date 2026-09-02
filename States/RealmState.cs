@@ -51,16 +51,38 @@ namespace Realm.States
 
         // Background extension point for DungeonState (real wall/tile-atlas
         // rendering via DungeonMap.Draw()) — same shape as DrawBossHud()
-        // above. Default here is exactly what Draw() always drew before this
-        // was extracted: biome rings if this instance has any, the flat
-        // Art.Tile background otherwise. Zero behavior change for the open
-        // Realm/boss arenas.
+        // above. Owns its own spriteBatch.Begin()/End() pair (rather than
+        // being called inside one Draw() already opened) specifically so a
+        // subclass can pick its own SamplerState — DungeonState overrides it
+        // with SamplerState.PointClamp instead of this default LinearWrap,
+        // since linear-filtering a shared tile atlas bleeds a sliver of the
+        // adjacent packed tile in at every seam (worse with camera scroll
+        // landing on sub-pixel positions — reported as "flashing colors" at
+        // tile seams while moving). Default body here is exactly what Draw()
+        // always drew before this was extracted: biome rings if this
+        // instance has any, the flat Art.Tile background otherwise — zero
+        // behavior change for the open Realm/boss arenas, which have no
+        // shared-atlas seams to bleed across in the first place (each biome
+        // ring draws its own single texture, not sub-rectangles of one
+        // packed atlas).
         protected virtual void DrawBackground(SpriteBatch spriteBatch)
         {
+            spriteBatch.Begin(
+                SpriteSortMode.FrontToBack,
+                BlendState.AlphaBlend,
+                SamplerState.LinearWrap,
+                DepthStencilState.Default,
+                RasterizerState.CullNone,
+                null,
+                Game1.Camera.GetTransformation()
+            );
+
             if (biomeRings.Count > 0)
                 DrawBiomeRings(spriteBatch);
             else
                 spriteBatch.Draw(Art.Tile, new Vector2(32, 32), targetRectangle, Color.White);
+
+            spriteBatch.End();
         }
 
         public static Guid HealthPotionGuid = Guid.NewGuid();
@@ -152,19 +174,7 @@ namespace Realm.States
 
         public override void Draw(GameTime gameTime, SpriteBatch spriteBatch)
         {
-            spriteBatch.Begin(
-                SpriteSortMode.FrontToBack,
-                BlendState.AlphaBlend,
-                SamplerState.LinearWrap,
-                DepthStencilState.Default,
-                RasterizerState.CullNone,
-                null,
-                Game1.Camera.GetTransformation()
-            );
-
             DrawBackground(spriteBatch);
-
-            spriteBatch.End();
 
             spriteBatch.Begin(
                 SpriteSortMode.Deferred,

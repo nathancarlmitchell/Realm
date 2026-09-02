@@ -145,8 +145,28 @@ namespace Realm.States
             return farthestRoom;
         }
 
-        protected override void DrawBackground(SpriteBatch spriteBatch) =>
+        // PointClamp, not the base class's LinearWrap — linear-filtering a
+        // shared tile atlas bleeds a sliver of the adjacent packed tile in
+        // at every seam (worse as the camera scrolls across sub-pixel
+        // positions, reads as flickering colors along tile edges while
+        // moving). Point sampling never interpolates across a source
+        // rectangle's edge, so it can't bleed regardless of camera position.
+        protected override void DrawBackground(SpriteBatch spriteBatch)
+        {
+            spriteBatch.Begin(
+                SpriteSortMode.FrontToBack,
+                BlendState.AlphaBlend,
+                SamplerState.PointClamp,
+                DepthStencilState.Default,
+                RasterizerState.CullNone,
+                null,
+                Game1.Camera.GetTransformation()
+            );
+
             dungeonMap.Draw(spriteBatch, Game1.GetWorldBounds(1.1f), tileAtlas);
+
+            spriteBatch.End();
+        }
 
         protected override void DrawQuestIndicator(SpriteBatch spriteBatch)
         {

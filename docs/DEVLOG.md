@@ -8779,14 +8779,24 @@ date/time for those individually; don't treat their grouping as meaning they all
      every room. Plain `dotnet build` (0 errors) plus a real minimized boot-check (stayed running, no
      stderr) after reverting.
 
+316. **Fixed a tile-atlas seam-bleeding visual bug in dungeons — colors flashing at tile**
+     **boundaries while moving.** Reported directly: "the pixel where tiles connect seems to flash
+     colors and become visible when moving across the x axis." Root cause: `DungeonMap.Draw()`
+     samples many small sub-rectangles out of one shared `tileAtlas` texture, packed edge-to-edge
+     with zero padding, and the background batch used `SamplerState.LinearWrap` — bilinear filtering
+     that blends a sampled rectangle's edge pixels with whatever is packed immediately adjacent in
+     the atlas. The bleed is subtle at a resting camera position but flares up as the destination
+     screen rect lands on non-integer pixels during smooth scrolling, which lines up exactly with
+     the "flash... when moving" report.
 
-
-
-
-
-
-
-
-
-
-
+     Fixed by giving `DrawBackground()` control over its own `SpriteBatch.Begin()`/`End()` pair
+     instead of being called from inside an already-open batch in `RealmState.Draw()` — MonoGame
+     can't nest a second `Begin()` inside an open one, so overriding just the sampler per-state
+     needed the batch boundary moved into the extension point itself. `RealmState.DrawBackground()`
+     keeps the original `SamplerState.LinearWrap` (zero behavior change for the open Realm/boss
+     arenas — every other batch parameter is unchanged). `DungeonState.DrawBackground()` now opens
+     its own batch with `SamplerState.PointClamp` instead — nearest-neighbor sampling never
+     interpolates across a source rectangle's boundary, so the atlas seam can't bleed regardless of
+     camera sub-pixel position. Plain `dotnet build` (0 errors) plus a real minimized boot-check
+     (stayed running, no stderr) — no scripted test needed, this is a self-contained rendering
+     config change with no player-state interaction.
