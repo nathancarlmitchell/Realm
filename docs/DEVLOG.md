@@ -8359,3 +8359,20 @@ date/time for those individually; don't treat their grouping as meaning they all
      approaching each of the 4 walls, and leaves a clear-air position untouched; both malformed-
      tileset throw paths fire with clear messages. Plain `dotnet build` (0 errors) plus a real
      minimized boot-check (stayed running, no stderr) after reverting the test code.
+
+299. **Walled Dungeon, Phase 2 of 8 — procedural generation.** New
+     `Dungeon/DungeonGenerator.cs`: `Generate(tileSet, widthInTiles, heightInTiles, seed)` fills the
+     grid with a random wall-candidate tile per cell, places 10-15 non-overlapping rooms (5-12 tiles
+     per side, 1-tile edge buffer and inter-room padding, budgeted reject/retry), connects every
+     room via a minimum spanning tree (Prim's) over room centers, and carves each MST edge as an
+     L-shaped, 2-tile-wide corridor (leg order randomized per edge) — every carved cell gets an
+     independently-random floor/wall-candidate pick, not one repeated tile, so a tileset with
+     several variants of the same category shows free visual variety (same "random among same-
+     category options" principle `ItemSpawner.cs`'s tier drops already use). A too-small canvas
+     (smaller than one room) terminates immediately with zero rooms rather than hanging or crashing.
+     Verified via temporary `Game1.StartGame()` test code (reverted, no diff remains): generated the
+     real `Crypt` tileset across 50 seeds and asserted, every time, room count in [10,15], no two
+     rooms overlapping (even with padding), and — the key invariant — a flood-fill over walkable
+     tiles from room 0 reaches every other room's center (0 failures across all 50); a deliberately-
+     impossible 3x3 canvas generated instantly with 0 rooms instead of hanging. Plain `dotnet build`
+     (0 errors) plus a real minimized boot-check (stayed running, no stderr) after reverting.
