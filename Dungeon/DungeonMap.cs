@@ -121,6 +121,25 @@ namespace Realm
             );
             remaining -= damage;
 
+            // Same DamageNumber/prefix/color/settings-gate convention as an
+            // enemy's own hit number (Enemy.WasShot()) — "-" so it reads as
+            // damage dealt, not a gain, and gated by the same toggle
+            // (Settings > Graphics > "Show Enemy Damage Numbers") rather than
+            // a new dedicated setting, since this is the same "damage the
+            // player just dealt" moment, just aimed at a tile instead of an
+            // enemy. World-space tile-center position, not raw tile
+            // coordinates — a bare (tileX, tileY) would draw the number at a
+            // handful of pixels from the world origin instead of on the tile
+            // that was actually hit.
+            if (Player.Instance.ShowEnemyDamageNumbersEnabled)
+            {
+                Vector2 tileCenter = new(
+                    tileX * TileSet.TileWidth + TileSet.TileWidth / 2f,
+                    tileY * TileSet.TileHeight + TileSet.TileHeight / 2f
+                );
+                EntityManager.Add(new DamageNumber(tileCenter, damage, Color.Red, prefix: "-"));
+            }
+
             if (remaining > 0)
             {
                 destructibleHealthRemaining[cell] = remaining;

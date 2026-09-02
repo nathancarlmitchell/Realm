@@ -42,7 +42,7 @@
       "CanPassThrough": false,
       "CanShootThrough": false,
       "IsDestructible": true,
-      "DestructibleHealth": 3,
+      "DestructibleHealth": 300,
       "HarmsPlayer": false,
       "DamagePerSecond": 0,
       "SlowsPlayer": false,

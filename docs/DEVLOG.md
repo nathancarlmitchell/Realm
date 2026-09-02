@@ -8594,6 +8594,21 @@ date/time for those individually; don't treat their grouping as meaning they all
      per the user's standing "don't script a test unless asked" feedback, no scripted verification;
      touches no save/persistence paths.
 
+309. **Damage numbers on destructible tiles.** The user had already wired a first attempt directly
+     into `DungeonMap.DamageTile()` (`EntityManager.Add(new DamageNumber(new Vector2(tileX, tileY),
+     damage, Color.Red))`) — two real bugs fixed on top of that start: the position passed
+     `(tileX, tileY)` straight through as if it were already a world coordinate, so the number would
+     have rendered a few pixels from the world origin instead of on the tile actually hit (now the
+     tile's real world-space center, same `tileX * TileWidth + TileWidth/2` shape used everywhere else
+     in this file); and it ran unconditionally, ignoring the existing `Show Enemy Damage Numbers`
+     Settings > Graphics toggle every other "damage the player just dealt" number already respects
+     (`Enemy.WasShot()`) — now gated the same way, and given the same `prefix: "-"` those numbers use
+     so it reads as damage dealt, not a gain. No new setting added; this is the same kind of moment as
+     an enemy's own hit number, just aimed at a tile. Plain `dotnet build` (0 errors) — per the user's
+     standing "don't script a test unless asked" feedback, no scripted verification; touches no
+     save/persistence paths.
+
+
 
 
 
