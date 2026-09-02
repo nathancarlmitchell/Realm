@@ -19,6 +19,8 @@ namespace Realm.States
 
         private readonly DungeonMap dungeonMap;
         private readonly Texture2D tileAtlas;
+        private readonly DungeonPathfindingController pathfindingController;
+        private readonly DungeonEnemySpawner dungeonEnemySpawner;
 
         // Accumulates fractional per-frame tile damage (DamagePerSecond / 60,
         // matching this codebase's existing fixed-60fps-tick convention —
@@ -55,6 +57,9 @@ namespace Realm.States
             Portal.DroppedPortals.Add(
                 new Portal(startPos + new Vector2(0, 100), Portal.Destination.Nexus)
             );
+
+            pathfindingController = new DungeonPathfindingController(dungeonMap);
+            dungeonEnemySpawner = new DungeonEnemySpawner(dungeonMap, pathfindingController);
         }
 
         private Vector2 RoomCenterWorldPosition(Rectangle room) =>
@@ -82,6 +87,9 @@ namespace Realm.States
             }
 
             ApplyTileEffects(dungeonMap.TileAtWorldPosition(Player.Instance.Position));
+
+            dungeonEnemySpawner.Update();
+            pathfindingController.Update();
         }
 
         // HarmsPlayer/SlowsPlayer/AppliedDebuffs all reuse existing player

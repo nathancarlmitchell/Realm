@@ -8420,3 +8420,34 @@ date/time for those individually; don't treat their grouping as meaning they all
      to this feature; restored the real files from backup regardless. Plain `dotnet build` (0
      errors) plus a real minimized boot-check (stayed running, no stderr) after reverting the test
      code, with a final re-diff confirming the real save files still matched the backup exactly.
+
+302. **Walled Dungeon, Phases 6+7 of 8 — enemy spawning + pathfinding.** New
+     `Dungeon/DungeonEnemySpawner.cs`: an instance class (unlike the static `EnemySpawner`, since
+     each dungeon needs its own map/room reference), mirroring `EnemySpawner.cs`'s own
+     wave-cooldown idiom — every ~3 seconds, under a 20-enemy population cap, spawns 2-4 enemies
+     (randomly one of the existing Wanderer/Seeker/Snake/Slime factories, no new enemy types) at
+     random positions inside a random non-start room, registering each with the new
+     `Dungeon/DungeonPathfindingController.cs`. New `Dungeon/DungeonPathfinder.cs`: static
+     4-directional A* (avoids cutting across a wall corner diagonally on a blocky grid), Manhattan
+     heuristic, `PriorityQueue<Point,float>`. The controller replans every ~30 frames per registered
+     enemy and steers with the same `Velocity += direction.ScaleTo(0.5f)` idiom `Enemy.cs`'s own
+     `FollowPlayer()` already uses (same zero-vector guard too) — entirely external to `Enemy.cs`
+     (dictionary membership is the opt-in gate, so unregistered open-Realm enemies are provably
+     unaffected). `Enemy` is an internal type, so `Register(Enemy)` had to be `internal`, not
+     `public`, to build. `DungeonState` now constructs and drives both each `Update()`. Verified via
+     temporary `Game1.StartGame()` test code, **real save files backed up first per CLAUDE.md**
+     (restored again afterward — confirmed via diff — same pre-existing item-ID/Bounds churn as
+     entry 301, not a new issue): a hand-built maze's `FindPath()` correctly detours through the
+     only gap in a wall (and a fully sealed-off goal correctly returns null); a real dungeon's first
+     spawn wave produced 2-4 enemies whose positions were all inside a room at spawn time (checked
+     immediately, before any had a chance to wander into a corridor); the population stayed well
+     under the cap after 190 updates. The first pathfinding-convergence attempt picked an arbitrary
+     spawned enemy and got a noisy result (distance increased slightly) — traced to picking a
+     Wanderer, whose own `MoveRandomly()` accelerates at a comparable magnitude (0.4/frame) to the
+     controller's own steering (0.5/frame) in an uncorrelated direction, unlike a chase-type enemy;
+     not a pathfinding bug, just the wrong enemy type to assert convergence on. Corrected by
+     registering a fresh `Enemy.CreateSeeker()` (its own `FollowPlayer()` reinforces the controller's
+     steering rather than fighting it, matching the plan's own "known accepted quirk" note) directly
+     in a far room — its distance to the player dropped from ~1459 to ~702 over 400 updates,
+     confirming it actually routed around walls rather than beelining into one. Plain `dotnet build`
+     (0 errors) plus a real minimized boot-check (stayed running, no stderr) after reverting.
