@@ -8389,3 +8389,34 @@ date/time for those individually; don't treat their grouping as meaning they all
      real minimized boot-check (stayed running, no stderr) — no scripted test needed for a pure
      extraction; `DungeonMap.Draw()`'s own tile-window behavior gets its real in-game exercise once
      `DungeonState` exists (Phase 5).
+
+301. **Walled Dungeon, Phases 4+5 of 8 — wall collision, tile effects, `DungeonState`.** New
+     `States/DungeonState.cs`, built together since Phase 4's wall-collision/tile-effect logic lives
+     entirely inside it (no separate file). Constructor: `EntityManager.Reset()` (clean slate, same
+     as `BossRealmState`), generates a `DungeonMap` from the `Crypt` tileset, spawns the player at
+     `Rooms[0]`'s center, re-syncs the camera, and drops a Nexus exit portal. `Update()` runs
+     `base.Update()` then resolves circle collision for the player and every live `Enemy` via
+     `DungeonMap.ResolveCircleCollision()` (all external to `Enemy.cs` — `Position`/`Velocity` are
+     public, `EntityManager.OfEnemyType<Enemy>()` is public static, so zero changes needed there),
+     then applies whatever tile the player is standing on: `HarmsPlayer` accumulates fractional
+     `DamagePerSecond` (matching this codebase's existing fixed-60fps-tick convention, e.g. `Player.
+     cs`'s own health/mana regen) and fires `Player.Hit()` at whole-point thresholds so small DPS
+     values aren't lost to rounding; `SlowsPlayer` reuses the existing fixed 0.5x `Player.Slow()`
+     debuff as-is rather than adding a second, tile-specific slow amount; `AppliedDebuffs` reuses
+     `Player.ApplyDebuff()` directly — no new player-side systems. `DrawBackground()` overrides
+     Phase 3's seam to call `DungeonMap.Draw()`. Not wired up yet — no way to actually enter a
+     `DungeonState` in real play until Phase 8 (portal/`StateManager`), and no enemies spawn inside
+     one yet until Phase 6. Verified via temporary `Game1.StartGame()` test code, **real save files
+     backed up first per CLAUDE.md** (`DungeonState` inherits `RealmState`'s unconditional
+     save-on-entry): `EntityManager.Reset()` correctly marks a marker enemy `IsExpired` immediately
+     and the entity list actually drops it after subsequent `Update()`s; the player spawns inside
+     `Rooms[0]` with the camera synced to match; driving the player into a room wall across 200
+     `Update()` calls never let it penetrate past the wall's exact boundary; a full `Update()`+
+     `Draw()` cycle completed with no exception. Diffed the real save files against the backup
+     afterward and found the currently-loaded character's equipped-item `ID`/`Bounds` fields had
+     changed — tracked down (via an isolated vanilla-boot-with-no-test-code control run) to be a
+     pre-existing characteristic of any real entry into any `RealmState`-derived class (items are
+     reconstructed fresh from catalog data on every load, not round-tripped by identity), unrelated
+     to this feature; restored the real files from backup regardless. Plain `dotnet build` (0
+     errors) plus a real minimized boot-check (stayed running, no stderr) after reverting the test
+     code, with a final re-diff confirming the real save files still matched the backup exactly.
