@@ -1,0 +1,36 @@
+{
+  "Name": "Crypt",
+  "ImageName": "Dungeons/Crypt/TileSet",
+  "TileWidth": 32,
+  "TileHeight": 32,
+  "Tiles": [
+    {
+      "Id": 0,
+      "Name": "Stone Wall",
+      "OffsetX": 0,
+      "OffsetY": 0,
+      "CanPassThrough": false,
+      "CanShootThrough": false,
+      "IsDestructible": false,
+      "HarmsPlayer": false,
+      "DamagePerSecond": 0,
+      "SlowsPlayer": false,
+      "SlowMultiplier": 1,
+      "AppliedDebuffs": []
+    },
+    {
+      "Id": 1,
+      "Name": "Cracked Floor",
+      "OffsetX": 1,
+      "OffsetY": 0,
+      "CanPassThrough": true,
+      "CanShootThrough": true,
+      "IsDestructible": false,
+      "HarmsPlayer": false,
+      "DamagePerSecond": 0,
+      "SlowsPlayer": false,
+      "SlowMultiplier": 1,
+      "AppliedDebuffs": []
+    }
+  ]
+}

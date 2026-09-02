@@ -8336,3 +8336,26 @@ date/time for those individually; don't treat their grouping as meaning they all
      randomized correctly, confirming this was an isolated miss, not a design gap. Plain `dotnet build`
      (0 errors, same two pre-existing warnings); no scripted test. See [BUGFIXES.md](BUGFIXES.md)
      entry 60.
+
+298. **Walled Dungeon, Phase 1 of 8 — tile catalog + `DungeonMap`.** First step of the
+     procedurally-generated, real-wall-collision dungeon instance type scoped after "what would it
+     take to implement a system to handle tilesets" (see plan `hazy-swimming-kitten.md`, still in
+     progress — Phases 2-8 not yet built). New `Data/TileSetData.cs`: `TileSetData` (tileset name,
+     atlas image, tile size) + `TileDefData` (per-tile Id/offset plus `CanPassThrough`/
+     `CanShootThrough`/`IsDestructible`/`HarmsPlayer`/`DamagePerSecond`/`SlowsPlayer`/
+     `SlowMultiplier`/`AppliedDebuffs`, the last reusing `Entity.DebuffType` directly) — the
+     JSON-driven tile schema the user asked for instead of a placeholder-texture approach. Each
+     tileset gets its own file (`Data/TileSet_{Name}.json`, e.g. the new placeholder
+     `TileSet_Crypt.json` + `Content/Dungeons/Crypt/TileSet.png`, a 2-tile solid-color atlas — real
+     art is a later content-only swap), loaded via the new `Util.LoadTileSetData(name)`, which
+     throws (rather than silently returning empty like every other `LoadXData()`) if the tileset is
+     missing, malformed, has no `CanPassThrough` tile, or has no solid tile — a dungeon can't
+     generate without both. New `Dungeon/DungeonMap.cs`: tile-ID grid, `TileAt()` (bounds-safe,
+     returns a synthetic solid tile out of range), `ResolveCircleCollision()` (minimum-translation
+     push-out against every overlapping non-passable tile, 3 passes to settle corners — one method
+     shared by the player and every enemy in later phases), and a windowed `Draw()`. Verified via
+     temporary `Game1.StartGame()` test code (reverted, no diff remains): the real `Crypt` tileset
+     loads; a hand-built 5×5 walled room pushes a circle back to the exact expected boundary
+     approaching each of the 4 walls, and leaves a clear-air position untouched; both malformed-
+     tileset throw paths fire with clear messages. Plain `dotnet build` (0 errors) plus a real
+     minimized boot-check (stayed running, no stderr) after reverting the test code.

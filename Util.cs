@@ -170,6 +170,12 @@ namespace Realm
             "BiomeData.json"
         );
 
+        // One file per tileset (Data/TileSet_{Name}.json), not a shared array —
+        // see Data/TileSetData.cs's own doc comment for why. LoadTileSetData(name)
+        // below builds the actual path from this.
+        private static string TileSetDataLocation(string name) =>
+            Path.Combine(AppContext.BaseDirectory, $"TileSet_{name}.json");
+
         // Read-only peek at a character's save data, without touching
         // Player.Instance or Player.PlayerClass. Returns null if that
         // character ID has no save (shouldn't normally happen for an
@@ -1348,6 +1354,58 @@ namespace Realm
             }
 
             return biomeData;
+        }
+
+        // Loads a single named tileset (Data/TileSet_{name}.json — see
+        // Data/TileSetData.cs). Unlike every other LoadXData() above, this
+        // throws on a bad/missing/empty catalog rather than silently returning
+        // an empty result — a dungeon genuinely cannot generate without a real
+        // tileset (no walkable tiles = no floor, no solid tiles = no walls), so
+        // failing loudly here beats DungeonGenerator failing confusingly later.
+        public static TileSetData LoadTileSetData(string name)
+        {
+            string path = TileSetDataLocation(name);
+            string json;
+
+            using (StreamReader r = new(path))
+            {
+                Debug.WriteLine(path + ": reading data.");
+                json = r.ReadToEnd();
+                Debug.WriteLine(json);
+            }
+
+            TileSetData tileSet;
+            try
+            {
+                tileSet = JsonSerializer.Deserialize<TileSetData>(json);
+            }
+            catch (System.Text.Json.JsonException e)
+            {
+                throw new InvalidOperationException($"{path}: malformed tileset JSON.", e);
+            }
+
+            if (tileSet == null || tileSet.Tiles == null || tileSet.Tiles.Count == 0)
+            {
+                throw new InvalidOperationException($"{path}: tileset defines no tiles.");
+            }
+
+            if (!tileSet.Tiles.Any(t => t.CanPassThrough))
+            {
+                throw new InvalidOperationException(
+                    $"{path}: tileset has no CanPassThrough tile — a dungeon needs at least one "
+                        + "walkable tile to use as floor."
+                );
+            }
+
+            if (!tileSet.Tiles.Any(t => !t.CanPassThrough))
+            {
+                throw new InvalidOperationException(
+                    $"{path}: tileset has no non-CanPassThrough tile — a dungeon needs at least "
+                        + "one solid tile to use as wall."
+                );
+            }
+
+            return tileSet;
         }
 
         public static void SaveInventoryData()
