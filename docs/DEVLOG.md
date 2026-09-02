@@ -8451,3 +8451,27 @@ date/time for those individually; don't treat their grouping as meaning they all
      in a far room — its distance to the player dropped from ~1459 to ~702 over 400 updates,
      confirming it actually routed around walls rather than beelining into one. Plain `dotnet build`
      (0 errors) plus a real minimized boot-check (stayed running, no stderr) after reverting.
+
+303. **Walled Dungeon, Phase 8 of 8 — portal/StateManager wiring (feature complete).** New
+     `Portal.Destination.Dungeon` (`Portal.cs`), same shape as the three `BossDestination`s but with
+     no dedicated art yet — left at the base class's default plain swirl (`Art.Portal`) until real
+     per-dungeon art exists. New `StateManager.EnterDungeon()`, the same two-line shape as
+     `EnterBossRealm()`. New fixed test portal in `States/NexusState.cs`, following the exact
+     existing precedent of the three boss-test portals already there — lowest-risk way to reach a
+     real `DungeonState` before any in-world discovery mechanic (e.g. a rare drop) exists for it.
+     This is the last of the 8 phases — the walled dungeon is now reachable in real play via the
+     Nexus test portal, matching every confirmed decision from the plan (new/separate instance type,
+     procedural generation, real wall collision, A* pathfinding, JSON-driven tileset schema).
+     Verified via temporary `Game1.StartGame()` test code, **real save files backed up first per
+     CLAUDE.md** (restored again afterward, same pre-existing item-ID/Bounds churn as entries
+     301-302): entering the Nexus really stages a `NexusState` whose own fixed portal list contains
+     a Dungeon-destination portal; `Portal.Destination.Dungeon.Enter()` really stages a real
+     `DungeonState` (checked via `Game1`'s private `nextState` field, since `ChangeState()` only
+     stages a transition — the actual `currentState` swap happens inside `Game1.Update()`, which
+     this scripted test doesn't drive); a full `Update()`+`Draw()` cycle through that real entry path
+     completed with no exception. Manually walking into the new Nexus portal in real play is still
+     worth a human pass — `Input`/`Controls.Button` poll real OS hardware state directly (see
+     CLAUDE.md's own testing-workflow note), so a portal-collision walk-in can't be scripted the way
+     everything else in this phase was. Plain `dotnet build` (0 errors) plus a real minimized
+     boot-check (stayed running, no stderr) after reverting, with a final re-diff confirming the
+     real save files still matched the backup exactly.

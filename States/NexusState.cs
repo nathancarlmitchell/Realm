@@ -60,6 +60,15 @@ namespace Realm.States
                 Player.Instance.Position.Y + 300
             );
 
+            // TEMP: same "fixed test portal" precedent as the three boss
+            // portals above — lowest-risk way to reach a real DungeonState
+            // before any in-world discovery mechanic (e.g. a rare drop)
+            // exists for it.
+            var dungeonTestPortalPos = new Vector2(
+                Player.Instance.Position.X - 150,
+                Player.Instance.Position.Y + 500
+            );
+
             portalList =
             [
                 new Portal(),
@@ -68,6 +77,7 @@ namespace Realm.States
                 new Portal(bossTestPortalPos, Portal.Destination.BossRealm),
                 new Portal(sthenoTestPortalPos, Portal.Destination.SthenoBossRealm),
                 new Portal(cubeTestPortalPos, Portal.Destination.CubeGodBossRealm),
+                new Portal(dungeonTestPortalPos, Portal.Destination.Dungeon),
             ];
 
             // So Overlay's minimap can show these regardless of which state

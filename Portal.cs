@@ -83,6 +83,13 @@ namespace Realm
             // through StateManager.Nexus() rather than a world portal.
             public static readonly Destination Nexus = new NexusDestination();
 
+            // Leads into a procedurally-generated, walled DungeonState —
+            // see States/DungeonState.cs. No dedicated art yet (unlike each
+            // BossDestination's own portal texture); PortalArt() below is
+            // left at the base class's default plain swirl (Art.Portal)
+            // until real per-dungeon art exists.
+            public static readonly Destination Dungeon = new DungeonDestination();
+
             private sealed class RealmDestination : Destination
             {
                 public override string DisplayName => "Realm";
@@ -123,6 +130,13 @@ namespace Realm
                 public override void Enter() => StateManager.Nexus();
 
                 internal override AnimatedTexture PortalArt() => Art.NexusPortal.Clone();
+            }
+
+            private sealed class DungeonDestination : Destination
+            {
+                public override string DisplayName => "Dungeon";
+
+                public override void Enter() => StateManager.EnterDungeon();
             }
 
             // Carries which boss to spawn, so BossRealmState no longer

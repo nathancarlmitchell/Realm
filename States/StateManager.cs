@@ -28,6 +28,17 @@
             );
         }
 
+        // Entered via a Dungeon-destination portal (currently only the fixed
+        // test portal in NexusState) — same shape as EnterBossRealm() above.
+        public static void EnterDungeon()
+        {
+            Sound.Play(Sound.EnterRealm, 0.35f);
+
+            Game1.Instance.ChangeState(
+                new DungeonState(Game1.Instance, Game1.Instance.GraphicsDevice, Game1.Instance.Content)
+            );
+        }
+
         public static void Nexus()
         {
             EntityManager.Reset();
