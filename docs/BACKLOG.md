@@ -216,6 +216,21 @@ prioritized or scheduled — the user asked to keep these noted for later rather
   hasn't been interactively played yet. The delete "X" icon is currently just an outlined "X"
   character drawn at icon size (no dedicated art asset exists for it) — worth a real icon if it reads
   as too plain in play.
+- **Organize project file structure.** Requested directly. About 50 `.cs` files sit loose in the
+  repo root (`Player.cs`, `Enemy.cs`, `Entity.cs`, `Item.cs`, `Weapon.cs`, `Armor.cs`, `Portal.cs`,
+  `Util.cs`, `Sound.cs`, every other core/system/item-type file, etc.), alongside folders that
+  already group things logically: `States/`, `Bosses/`, `CharacterClasses/`, `Controls/`, `Data/`,
+  `Dungeon/`, `Enemies/`, `Particles/`, `Projectiles/`. No target layout decided yet — candidate
+  groupings: a `Systems/` folder for the `*System.cs` singletons (`BankSystem`, `InventorySystem`,
+  `FameSystem`, `CharacterSlotSystem`, `ClassRecordSystem`); an `Items/` folder for the
+  equipment/item hierarchy (`Item`, `Equipment`, `Weapon`, `Armor`, `Ring`, `Shield`, `Cloak`,
+  `Tome`, `Quiver`, `Spell`, `AbilityItem`, `Potion`); leaving the true engine-level files at root
+  (`Game1`, `Entity`, `EntityManager`, `Camera`, `Extensions`, `Program`). Every type lives in one
+  flat `namespace Realm` regardless of folder today — C# doesn't require folder structure to match
+  namespace, so this is a pure filesystem move, not a namespace/`using` rewrite — but worth doing as
+  its own dedicated commit (not mixed into a feature change) so the diff is reviewable as a pure
+  move, and worth double-checking nothing outside the `.csproj`'s default glob (e.g. a hardcoded
+  path anywhere) assumes a file's current location.
 
 ## Completed
 
