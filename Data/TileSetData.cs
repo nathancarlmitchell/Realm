@@ -50,15 +50,16 @@ namespace Realm.Data
         // is false as solid.
         public bool CanPassThrough { get; set; } = true;
 
-        // Schema-only for now — no code reads this yet. Exists so a tileset can
-        // be authored complete from day one; wiring it up (wall-blocked
-        // projectiles) is real, separate follow-up work — see the "Follow-up
-        // work" section of the walled-dungeon plan.
+        // A tile where this is false blocks projectiles — DungeonState's
+        // ExpireWallBlockedProjectiles() expires any player or enemy
+        // projectile that crosses into one, entirely externally to the
+        // shared EntityManager/Projectile.cs/EnemyProjectile.cs collision
+        // code (see docs/DEVLOG.md's wall-blocked-projectiles entry).
         public bool CanShootThrough { get; set; } = true;
 
-        // Schema-only for now — no code reads this yet. See CanShootThrough's
-        // comment above; the follow-up work here is breakable tiles with
-        // runtime health/destroyed state, not just this flag.
+        // Schema-only for now — no code reads this yet. Destructible tiles
+        // (runtime health/destroyed state, hit detection, DungeonMap grid
+        // updates) remain open follow-up work — see docs/BACKLOG.md.
         public bool IsDestructible { get; set; }
 
         public bool HarmsPlayer { get; set; }

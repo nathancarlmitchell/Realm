@@ -8545,5 +8545,30 @@ date/time for those individually; don't treat their grouping as meaning they all
      build` (0 errors) — per the user's standing "don't script a test unless asked" feedback, no
      scripted verification; touches no save/persistence paths.
 
+307. **Wall-blocked projectiles in walled dungeons.** Picked up from the backlog
+     ([docs/BACKLOG.md](BACKLOG.md)), which had flagged this as risky since it seemed to require
+     touching the shared `EntityManager.HandleCollisions()` used by every state in the game — turned
+     out not to: since only `DungeonState` has any concept of walls at all, the exact same "handle it
+     entirely from `DungeonState`, touch nothing shared" approach already used for player/enemy wall
+     collision (and tile effects) works here too. New `DungeonState.ExpireWallBlockedProjectiles()`,
+     called every `Update()` after the existing wall-collision block: for every live player
+     `Projectile` and `EnemyProjectile` (two new `internal` `EntityManager` accessors,
+     `AllPlayerProjectiles()`/`AllEnemyProjectiles()` — `internal` because `Projectile`/
+     `EnemyProjectile` are internal types, same reason `DungeonPathfindingController.Register(Enemy)`
+     needed to be `internal`), checks the tile at the projectile's current position
+     (`TileDefData.CanShootThrough`, already in the schema and already authored correctly in
+     `TileSet_Crypt.json` — no data change needed) and sets `IsExpired = true` if it's crossed into a
+     wall — the same field a normal duration timeout already sets
+     (`Projectile.Update()`/`EnemyProjectile.Update()`), so no new "hit a wall" state was needed
+     anywhere. Confirmed `GrenadeProjectile` (stationary, `Velocity = Vector2.Zero`) needs no special
+     case: it never moves after spawning, so it can only ever be affected if thrown to land exactly
+     on a wall tile, in which case expiring it immediately is the same correct outcome as any other
+     projectile hitting a wall. Updated `TileDefData.CanShootThrough`'s doc comment (`Data/
+     TileSetData.cs`) from "schema-only, nothing reads this yet" to describe the real behavior; moved
+     this item from `docs/BACKLOG.md`'s Open Ideas to here. Plain `dotnet build` (0 errors) — per the
+     user's standing "don't script a test unless asked" feedback, no scripted verification; touches
+     no save/persistence paths.
+
+
 
 

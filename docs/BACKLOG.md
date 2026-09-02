@@ -11,14 +11,6 @@ prioritized or scheduled — the user asked to keep these noted for later rather
 
 ## Open ideas
 
-- **Wall-blocked projectiles in walled dungeons.** Flagged as explicit follow-up work when the
-  walled-dungeon feature shipped ([DEVLOG.md](DEVLOG.md) entries 298-303). Every projectile in the
-  game passes through obstacles today — there is no obstacle/projectile interaction anywhere in the
-  engine — so a dungeon's real walls don't stop enemy or player shots yet, only movement. The tile
-  schema already has the field for it (`TileDefData.CanShootThrough`, `Data/TileSetData.cs`), but
-  nothing reads it. Doing this means touching the shared `EntityManager.HandleCollisions()`, used by
-  every state in the game, not just dungeons — a bigger, riskier change than anything in the
-  original 8-phase plan, and deserves its own dedicated pass.
 - **Destructible tiles in walled dungeons.** Same origin as the item above. `TileDefData.
   IsDestructible` is authored in the schema now, but the actual mechanic — per-tile runtime
   health/destroyed state, hooking into hit detection so a shot can damage a tile, updating

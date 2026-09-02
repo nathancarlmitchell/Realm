@@ -77,6 +77,17 @@ namespace Realm
         public static IEnumerable<Vector2> EnemyPositions => enemies.Select(e => e.Position);
         static List<Projectile> bullets = new List<Projectile>();
         static List<EnemyProjectile> enemiesProjectiles = new List<EnemyProjectile>();
+
+        // Live projectiles, both directions — used by DungeonState to expire
+        // any projectile that's crossed into a dungeon wall tile
+        // (TileDefData.CanShootThrough), entirely externally, the same way
+        // it already handles player/enemy wall collision. internal, not
+        // public — Projectile/EnemyProjectile are internal types (no access
+        // modifier), same reason DungeonPathfindingController.Register
+        // (Enemy) is internal.
+        internal static IEnumerable<Projectile> AllPlayerProjectiles() => bullets;
+
+        internal static IEnumerable<EnemyProjectile> AllEnemyProjectiles() => enemiesProjectiles;
         static List<Item> potions = new List<Item>();
 
         private static void AddEntity(Entity entity)

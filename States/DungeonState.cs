@@ -167,7 +167,38 @@ namespace Realm.States
 
             ApplyTileEffects(dungeonMap.TileAtWorldPosition(Player.Instance.Position));
 
+            ExpireWallBlockedProjectiles();
+
             pathfindingController.Update();
+        }
+
+        // Every projectile in the game passes straight through obstacles
+        // everywhere else (there's no obstacle/projectile interaction
+        // anywhere in the shared collision code) — this is where dungeon
+        // walls actually stop them, entirely externally to EntityManager/
+        // Projectile.cs/EnemyProjectile.cs, the same "handle it from
+        // DungeonState, touch nothing shared" approach already used for
+        // player/enemy wall collision above. A projectile that's crossed
+        // into a !CanShootThrough tile just expires in place — same
+        // IsExpired = true a normal duration timeout already uses
+        // (Projectile.Update()/EnemyProjectile.Update()), no special "hit a
+        // wall" state needed.
+        private void ExpireWallBlockedProjectiles()
+        {
+            foreach (var bullet in EntityManager.AllPlayerProjectiles())
+            {
+                if (!bullet.IsExpired && !dungeonMap.TileAtWorldPosition(bullet.Position).CanShootThrough)
+                    bullet.IsExpired = true;
+            }
+
+            foreach (var projectile in EntityManager.AllEnemyProjectiles())
+            {
+                if (
+                    !projectile.IsExpired
+                    && !dungeonMap.TileAtWorldPosition(projectile.Position).CanShootThrough
+                )
+                    projectile.IsExpired = true;
+            }
         }
 
         // HarmsPlayer/SlowsPlayer/AppliedDebuffs all reuse existing player
