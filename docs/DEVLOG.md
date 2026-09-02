@@ -8829,15 +8829,16 @@ date/time for those individually; don't treat their grouping as meaning they all
      any future boss with an unbounded movement pattern is covered too. Plain `dotnet build` (0
      errors) plus a real minimized boot-check (stayed running, no stderr).
 
-319. **Removed the continuous sprite-spin from Pirate Cave's 6 wandering "critter" enemies.**
-     Requested directly ("remove rotation from any pirate cave enemy movement"). All 6 (Cave Pirate
-     Cabin Boy/Hunchback/Macaw/Moll/Monkey/Parrot) wander via the shared `Enemy.MoveRandomly()`
-     coroutine, which has always applied a constant `Orientation -= 0.05f` per frame alongside the
-     random-walk movement itself — fine for the enemies it originally served (rotationally-symmetric
-     sprites with no real "facing"), but visibly wrong for Pirate Cave's real, upright character art,
-     which reads as spinning in place while it wanders. Rather than stripping the spin from the
-     shared coroutine outright (other existing callers — the open Realm's Wanderer and a couple of
-     Beach enemies — still want it, and changing their established look wasn't asked for), gave
-     `MoveRandomly()` an optional `rotate` parameter (default `true`, preserving every existing call
-     site unchanged) and passed `rotate: false` from all 6 critter factories only. Plain
-     `dotnet build` (0 errors) plus a real minimized boot-check (stayed running, no stderr).
+319. **Removed the continuous sprite-spin from `Enemy.MoveRandomly()` entirely — no enemy rotates**
+     **while wandering unless it explicitly asks to.** Requested directly ("remove rotation from any
+     pirate cave enemy movement"), reported after Pirate Cave's 6 "critter" enemies (Cave Pirate
+     Cabin Boy/Hunchback/Macaw/Moll/Monkey/Parrot) were seen visibly spinning in place while
+     wandering — traced to `MoveRandomly()`'s own constant `Orientation -= 0.05f` per frame,
+     alongside the random-walk movement itself. First pass added an opt-out `rotate` parameter
+     (default `true`) so only the critters lost the spin, on the assumption other existing callers
+     (the open Realm's Wanderer, a couple of Beach enemies) still wanted it — corrected on
+     follow-up: no enemy should rotate from its own movement unless a specific enemy asks for it, so
+     the `Orientation -=` line and the `rotate` parameter were removed outright, leaving
+     `MoveRandomly()`'s signature back to plain `()` and every wandering enemy's sprite facing fixed
+     by default. Plain `dotnet build` (0 errors) plus a real minimized boot-check (stayed running, no
+     stderr).
