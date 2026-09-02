@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using Realm;
 
@@ -58,9 +59,22 @@ namespace Realm.Projectiles
         // except whatever a class explicitly opts in — currently Archer's
         // Quiver ability and Knight's Shield Slam, both large, piercing
         // "signature ability" shots meant to read as unstoppable, not a
-        // general trait of piercing shots (Bow's own basic-attack piercing
-        // upgrades, if any, still get walled normally).
+        // general trait of piercing shots (Bow/Wand's own basic-attack
+        // piercing still gets walled normally — see ExpiresOnHit below for
+        // how those pierce through *destructible* tiles instead). Even a
+        // PassesThroughObstacles shot still damages a destructible tile it
+        // flies over — "passes through" means never blocked/stopped by one,
+        // not "ignores it entirely."
         public bool PassesThroughObstacles = false;
+
+        // Tile cells (tile-space coordinates) this projectile has already
+        // damaged — mirrors Enemy.HitBy's "only damage a given target once"
+        // guard, just tracked from the projectile's side instead of the
+        // target's, since a destructible tile has no equivalent list of its
+        // own. Without this, a slow-moving or PassesThroughObstacles shot
+        // that spends several frames over the same tile cell would damage it
+        // once per frame instead of once total.
+        public readonly HashSet<Point> DamagedTileCells = [];
 
         public Projectile(Vector2 position, Vector2 velocity)
         {

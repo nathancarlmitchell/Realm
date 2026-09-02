@@ -8625,6 +8625,30 @@ date/time for those individually; don't treat their grouping as meaning they all
      script a test unless asked" feedback, no scripted verification; touches no save/persistence
      paths.
 
+311. **Corrected entry 310's destructible-tile interaction** — reported directly: "They should still
+     damage breakable tiles. Bows and wands piercing shots should be able to hit multiple breakable
+     tiles, but not pass through obstacles." Two real fixes to `DungeonState.
+     ExpireWallBlockedProjectiles()`: (1) `PassesThroughObstacles` (Quiver/Shield Slam) had skipped
+     `DamageTile()` entirely — now it still damages a destructible tile it flies over, "passes
+     through" only ever meaning "never blocked/stopped by one," not "ignores it." (2) A genuinely
+     missing rule: ordinary weapon shots now pierce a destructible tile exactly the way they already
+     pierce an enemy, reusing `Projectile.ExpiresOnHit` (Bow/Wand's basic attacks are the only weapon
+     types with this `false`, per `Weapon.Shoot()`) as the same "stop at the first thing it damages,
+     or keep going" signal for tiles — a Bow/Wand shot now damages a destructible tile and keeps
+     flying, so it can chew through several breakable tiles in a row, while Sword/Dagger/Staff/most
+     ability shots still stop at the first one, matching how they already behave against enemies. A
+     *non*-destructible wall still fully blocks every piercing weapon shot regardless — the user's
+     explicit "but not pass through obstacles." New `Projectile.DamagedTileCells` (a `HashSet<Point>`)
+     guards against a shot lingering over the same cell across multiple frames (a slow shot, or any
+     `PassesThroughObstacles` shot after already passing through) from damaging it more than once —
+     the same problem `Enemy.HitBy` already solves for enemies, just tracked from the projectile's
+     side since a tile has no object of its own to hold an equivalent list. Enemy projectiles are
+     unaffected — the user's correction named only player weapons, and the "only player fire damages a
+     destructible tile" decision (entry 308) still stands. Plain `dotnet build` (0 errors) — per the
+     user's standing "don't script a test unless asked" feedback, no scripted verification; touches no
+     save/persistence paths.
+
+
 
 
 

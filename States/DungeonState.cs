@@ -184,34 +184,57 @@ namespace Realm.States
         // (Projectile.Update()/EnemyProjectile.Update()), no special "hit a
         // wall" state needed.
         //
-        // A projectile with PassesThroughObstacles set (Projectile.cs/
-        // EnemyProjectile.cs — currently only Archer's Quiver shots and
-        // Knight's Shield Slam) ignores TileDefData.CanShootThrough entirely
-        // — never blocked, never expired here, regardless of what it flies
-        // through.
-        //
         // Only player fire damages a destructible tile (DungeonMap.
         // DamageTile()) — a deliberate choice, not an oversight: breaking
         // into a secret area/shortcut is a player action, same genre
         // convention as Zelda/Diablo-likes' bombable walls; enemies don't
-        // get to demolish the player's own cover. Either projectile type
-        // still just expires against a non-destructible wall exactly the
-        // same way.
+        // get to demolish the player's own cover. Enemy fire still just
+        // expires against any wall exactly the same way it always has.
+        //
+        // Player fire's own stop-or-continue rule against a destructible
+        // tile mirrors ExpiresOnHit's existing meaning against an enemy —
+        // "does this shot stop at the first thing it damages, or keep
+        // going": a piercing weapon shot (ExpiresOnHit false — Bow/Wand's
+        // own basic attacks) damages a destructible tile and keeps flying,
+        // so it can chew through several breakable tiles in a row exactly
+        // like it already pierces through several enemies; a non-piercing
+        // shot (Sword/Dagger/Staff/most ability shots) damages one and stops
+        // there. Either way, a *non*-destructible wall still fully blocks
+        // it — piercing only ever applies to something the shot is actually
+        // damaging, same as it never lets a shot pierce through a wall it
+        // can't even hurt. PassesThroughObstacles (Quiver/Shield Slam) is the
+        // one true exception to that last rule: it's never blocked by any
+        // wall, destructible or not, but still damages a destructible one it
+        // flies over on the way through.
         private void ExpireWallBlockedProjectiles()
         {
             foreach (var bullet in EntityManager.AllPlayerProjectiles())
             {
-                if (bullet.IsExpired || bullet.PassesThroughObstacles)
+                if (bullet.IsExpired)
                     continue;
 
                 int tileX = (int)(bullet.Position.X / dungeonMap.TileSet.TileWidth);
                 int tileY = (int)(bullet.Position.Y / dungeonMap.TileSet.TileHeight);
                 TileDefData tile = dungeonMap.TileAt(tileX, tileY);
-                if (tile.CanShootThrough)
-                    continue;
 
-                if (tile.IsDestructible)
+                if (tile.CanShootThrough)
+                    continue; // floor — nothing to block or damage here.
+
+                Point cell = new(tileX, tileY);
+
+                // DamagedTileCells.Add() returns false if this cell is
+                // already in the set, so a shot lingering over the same tile
+                // across several frames (a slow shot, or any
+                // PassesThroughObstacles shot after it's already passed
+                // through once) only damages it the one time.
+                if (tile.IsDestructible && bullet.DamagedTileCells.Add(cell))
                     dungeonMap.DamageTile(tileX, tileY, bullet.Damage);
+
+                if (bullet.PassesThroughObstacles)
+                    continue; // never blocked, regardless of wall type.
+
+                if (tile.IsDestructible && !bullet.ExpiresOnHit)
+                    continue; // piercing shot, keeps flying after damaging it.
 
                 bullet.IsExpired = true;
             }
