@@ -819,15 +819,17 @@ namespace Realm
                     $"ItemSpawner.SpawnUniqueItem: no catalog item named '{itemName}' found."
                 );
 
-            // A UT item is, by definition, one of the more desirable drops
-            // in the game — always the top-ranked bag art, not derived from
-            // Tier (which is -1 for a UT item and would otherwise fall
-            // through BagRankForRing's own "no band" case).
+            // Always the White bag — Art.LootBagWhite already sits above
+            // Red at the top of the tier ladder (see LootBag.cs's own
+            // LifespanTicksFor() comment), just never wired to an actual
+            // drop before this. Not derived from Tier at all (which is -1
+            // for a UT item and would otherwise fall through
+            // BagRankForRing's own "no band" case).
             LootBag bag = new()
             {
                 Position = pos,
                 Items = [ring],
-                image = BagTextureForRank(3),
+                image = Art.LootBagWhite,
             };
 
             EntityManager.Add(bag);

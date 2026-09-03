@@ -9198,3 +9198,11 @@ date/time for those individually; don't treat their grouping as meaning they all
      loot bag holding exactly that item, and a typo'd item name throws as designed. Plain
      `dotnet build` (0 errors) plus a real minimized boot-check (stayed running, no stderr) after
      reverting.
+
+332. **UT items now drop in a White bag, not Red.** Requested directly. `ItemSpawner.
+     SpawnUniqueItem()` originally used `BagTextureForRank(3)` (Red, the same top rank a
+     tier-based drop can reach) as a placeholder; switched to `Art.LootBagWhite` directly — an
+     asset that already existed and was already documented as sitting *above* Red at the top of the
+     tier ladder (`LootBag.cs`'s own `LifespanTicksFor()` comment groups Orange/Red/White together
+     for the same longer-lifespan treatment), just never actually wired to a real drop before this.
+     Plain `dotnet build` (0 errors) plus a real minimized boot-check (stayed running, no stderr).
