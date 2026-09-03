@@ -465,12 +465,23 @@ namespace Realm
                         Sound.Play(Sound.LootAppears, 0.4f);
                     }
                 }
+
+                OnDeath();
             }
             else
             {
                 Sound.Play(hitSound, 0.5f);
             }
         }
+
+        // No-op for a regular enemy — Boss overrides this to always drop an
+        // exit portal back to the Realm right where it died (see Boss.cs).
+        // A separate hook rather than folding into portalDropOnDeath/
+        // PortalDropChances above: both of those exist to send the player
+        // *into* somewhere (a boss arena, another dungeon), this is the
+        // opposite direction (a boss's own guaranteed way *out*), and it
+        // needs a position offset those two don't.
+        protected virtual void OnDeath() { }
 
         // Default: the normal random-chance drop table every enemy uses.
         // Boss overrides this for guaranteed good loot instead. PointValue

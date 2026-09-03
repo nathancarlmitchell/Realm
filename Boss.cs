@@ -52,5 +52,21 @@ namespace Realm
         // every other enemy draws over its own sprite — drawing both would
         // be redundant.
         public override void DrawHealthBars(SpriteBatch spriteBatch) { }
+
+        // Every boss guarantees a way straight back to the open Realm (not
+        // Nexus — see Portal.Destination.Realm/RealmDestination), dropped
+        // one tile above wherever it actually died. Separate from
+        // BossRealmState's own exit portal (dropped at arena-entry time,
+        // near the player's start position, unconditionally and regardless
+        // of whether/where the boss ends up dying) — this one is guaranteed
+        // by the kill itself, right at the fight's own end point, same
+        // "one tile" convention every other world-unit conversion in this
+        // codebase uses (32px). Requested directly.
+        protected override void OnDeath()
+        {
+            Portal.DroppedPortals.Add(
+                new Portal(Position - new Vector2(0, 32), Portal.Destination.Realm)
+            );
+        }
     }
 }

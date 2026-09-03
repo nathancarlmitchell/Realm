@@ -8907,3 +8907,19 @@ date/time for those individually; don't treat their grouping as meaning they all
      for before wiring it in (Weapon/Armor run 0-14, Ring and every AbilityItem catalog run 0-7, so
      2-3 and 1-2 are both safely populated). Plain `dotnet build` (0 errors) plus a real minimized
      boot-check (stayed running, no stderr).
+
+323. **Every boss now always drops an exit portal straight back to the Realm, one tile above**
+     **where it actually died.** Requested directly. Distinct from the exit portal
+     `BossRealmState`'s own constructor already drops at arena-entry time (near the player's start
+     position, unconditional, and routed to Nexus, not the Realm) — this new one is guaranteed by
+     the kill itself, sitting right where the fight actually ended, and goes straight back to the
+     open Realm (`Portal.Destination.Realm`) instead of the hub. New `Enemy.OnDeath()` virtual hook
+     (no-op by default), called once from `WasShot()`'s existing death branch alongside the other
+     post-death spawning (loot, `portalDropOnDeath`, `PortalDropChances`) — kept as its own hook
+     rather than folded into either of those two, since both exist to send the player *into*
+     somewhere (a boss arena, another dungeon) while this is the opposite direction (a guaranteed way
+     *out*), and needs its own position offset neither of those apply. `Boss.OnDeath()` overrides it
+     to drop the portal at `Position - (0, 32)` — one tile, the same 32px convention every other
+     world-unit conversion in this codebase already uses — automatically covering all four bosses
+     (Limon, Stheno, CubeGod, Dreadstump) through the shared base class, no per-boss code needed.
+     Plain `dotnet build` (0 errors) plus a real minimized boot-check (stayed running, no stderr).
