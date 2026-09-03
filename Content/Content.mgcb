@@ -1935,6 +1935,18 @@
 /processorParam:TextureFormat=Color
 /build:StatusEffects/bleeding.png
 
+#begin StatusEffects/speedy.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:StatusEffects/speedy.png
+
 
 #begin Items/Potions/defense.png
 /importer:TextureImporter
@@ -2992,6 +3004,18 @@
 /processorParam:MakeSquare=False
 /processorParam:TextureFormat=Color
 /build:Rings/Magic/7.png
+
+#begin Rings/UT/Snake Eye Ring.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:Rings/UT/Snake Eye Ring.png
 
 #begin Rings/Speed/1.png
 /importer:TextureImporter

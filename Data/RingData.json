@@ -853,5 +853,24 @@
         "WisdomBonus": 0,
         "XpBonusPercent": 8.0,
         "ImageName": "Rings/Magic/7"
+    },
+    {
+        "Name": "Snake Eye Ring",
+        "Description": "A ring made from the eye of the Snake Queen.",
+        "Tier": -1,
+        "MaxHealthBonus": 50,
+        "MaxManaBonus": 0,
+        "AttackBonus": 5,
+        "DefenseBonus": 5,
+        "SpeedBonus": 5.0,
+        "DexterityBonus": 0,
+        "VitalityBonus": 0,
+        "WisdomBonus": 0,
+        "XpBonusPercent": 6.0,
+        "ImageName": "Rings/UT/Snake Eye Ring",
+        "IsUntiered": true,
+        "ReactiveProc": "Speedy",
+        "ReactiveProcDurationFrames": 120,
+        "ReactiveProcCooldownFrames": 300
     }
 ]

@@ -84,6 +84,17 @@ namespace Realm
             // see Enemy.bleedStacks) since the two sides deliberately don't
             // behave the same way here.
             Bleeding,
+
+            // A genuine buff despite living in "DebuffType" — same
+            // precedent Healing above already set. First real use:
+            // Equipment.ReactiveProcBuff (Snake Eye Ring's "on ability use,
+            // gain Speedy") — boosts movement speed for its duration (see
+            // Player.Update()'s own movement calculation). Approximates
+            // real RotMG's Speedy (which sets Speed to its stat maximum)
+            // as a flat multiplier instead, since this engine's simpler
+            // Speed-stat model has no "maximum regardless of gear" concept
+            // to set to.
+            Speedy,
         }
 
         private readonly Dictionary<DebuffType, int> activeDebuffs = new();
@@ -190,6 +201,7 @@ namespace Realm
                 // below returns; DrawDebuffIndicators() skips null icons
                 // rather than trying to draw them.
                 DebuffType.Vulnerable => null,
+                DebuffType.Speedy => Art.Speedy,
                 _ => null,
             };
 

@@ -794,5 +794,46 @@ namespace Realm
 
             Sound.Play(Sound.LootAppears, 0.4f);
         }
+
+        // Drops one specific, named catalog item by exact Item.Name — the
+        // shape a UT (untiered) item's own guaranteed-ish drop needs, which
+        // none of the tier-based methods above can express (they all pick
+        // randomly *within* a tier; a UT item isn't part of any tier at
+        // all — see Equipment.IsUntiered's own doc comment). First real
+        // use: Enemy.UniqueItemDropChances (Snake Eye Ring, dropped by
+        // Stheno/Snakepit Guard). Only searches Game1.Instance.Rings today
+        // since that's the only catalog with a UT entry so far — extend the
+        // search to Weapons/Armors/AbilityItem-family the same way once a
+        // UT item of one of those types exists.
+        //
+        // Throws on an unresolvable name rather than silently no-op'ing —
+        // same "loud failure on a typo'd reference" convention
+        // DungeonGenerator.ResolveTileByName() already established, so a
+        // mistyped name in a boss's own UniqueItemDropChances is caught
+        // immediately instead of silently never dropping.
+        public static void SpawnUniqueItem(Vector2 pos, string itemName)
+        {
+            Ring ring = Game1.Instance.Rings.FirstOrDefault(x => x.Name == itemName);
+            if (ring == null)
+                throw new InvalidOperationException(
+                    $"ItemSpawner.SpawnUniqueItem: no catalog item named '{itemName}' found."
+                );
+
+            // A UT item is, by definition, one of the more desirable drops
+            // in the game — always the top-ranked bag art, not derived from
+            // Tier (which is -1 for a UT item and would otherwise fall
+            // through BagRankForRing's own "no band" case).
+            LootBag bag = new()
+            {
+                Position = pos,
+                Items = [ring],
+                image = BagTextureForRank(3),
+            };
+
+            EntityManager.Add(bag);
+            LootBags.Add(bag);
+
+            Sound.Play(Sound.LootAppears, 0.4f);
+        }
     }
 }

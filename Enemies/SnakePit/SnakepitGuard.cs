@@ -87,6 +87,13 @@ namespace Realm
             // types the way an unset GuaranteedPotionChances would roll.
             GuaranteedPotionChances = new() { [Potions.Speed] = 1.0f };
 
+            // Snake Eye Ring — the game's first UT item (see Equipment.
+            // IsUntiered's own doc comment) — independently of the
+            // guaranteed loot above, matching the wiki's own listed drop
+            // sources (Stheno the Snake Queen and Snakepit Guard both drop
+            // it). 2% is an estimate, same as Stheno's own identical entry.
+            UniqueItemDropChances = new() { ["Snake Eye Ring"] = 0.02f };
+
             if (roomBoundsWorld.Width >= roomBoundsWorld.Height)
             {
                 oscillationStart = new Vector2(roomBoundsWorld.Left + OscillationMargin, position.Y);

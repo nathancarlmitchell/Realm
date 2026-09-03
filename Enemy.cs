@@ -171,6 +171,16 @@ namespace Realm
         // shared by every Beach enemy.
         protected Dictionary<Portal.Destination, float> PortalDropChances = new();
 
+        // Independent per-item chance (0.0-1.0) that death additionally
+        // drops one specific named catalog item — same "N separate rolls"
+        // shape as PortalDropChances above, just for a UT (untiered) item
+        // instead of a portal (see Equipment.IsUntiered's own doc comment
+        // for what UT means). Keyed by exact Item.Name, resolved at drop
+        // time via ItemSpawner.SpawnUniqueItem(). Empty by default; first
+        // real use: Snake Eye Ring, dropped independently by both Stheno
+        // the Snake Queen and Snakepit Guard.
+        protected Dictionary<string, float> UniqueItemDropChances = new();
+
         // Invulnerable enemies take zero damage from WasShot() below — a
         // true no-op, not just reduced damage. Used by boss phase-transition
         // windows (e.g. Stheno between phases); false (damageable) for every
@@ -556,6 +566,16 @@ namespace Realm
                         Portal.DroppedPortals.Add(new Portal(this.Position, destination));
                         Sound.Play(Sound.LootAppears, 0.4f);
                     }
+                }
+
+                // Chance-based UT item drops (UniqueItemDropChances above)
+                // — same independent-per-entry shape as PortalDropChances,
+                // on top of this enemy's own normal loot (SpawnLoot() above)
+                // rather than replacing it.
+                foreach (var (itemName, chance) in UniqueItemDropChances)
+                {
+                    if (rand.NextDouble() < chance)
+                        ItemSpawner.SpawnUniqueItem(this.Position, itemName);
                 }
 
                 OnDeath();

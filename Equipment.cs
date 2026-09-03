@@ -33,6 +33,48 @@ namespace Realm
     {
         public int Tier { get; set; }
 
+        // Untiered (UT) — a special item that breaks from the standard
+        // tier progression, typically a rare guaranteed-ish drop from one
+        // specific enemy rather than a random pick within a tier band. Set
+        // alongside Tier = -1 (see the JSON data's own comment) so a UT
+        // item is automatically excluded from every existing tier-based
+        // catalog query (Game1.Instance.Rings.Where(x => x.Tier ==
+        // rolledTier) etc. never matches a negative rolled tier) with zero
+        // changes needed to ItemSpawner's own selection logic — this flag
+        // exists purely for display (TierLabel below) and bag-rank
+        // purposes, not gating. First real item: Snake Eye Ring.
+        public bool IsUntiered { get; set; }
+
+        // "UT" instead of "T{Tier}" wherever this item's tier is shown —
+        // used by DrawTierLabel()/TooltipText()/HeaderLines() below instead
+        // of each formatting "T" + Tier directly.
+        protected string TierLabel => IsUntiered ? "UT" : $"T{Tier}";
+
+        // A UT item's own signature mechanic — e.g. Snake Eye Ring's "On
+        // Ability Use: gain Speedy for 2s, 5s cooldown." Null (the default)
+        // means this item has no reactive proc at all; Player.UseAbility()
+        // checks the equipped Ring for one on every ability use. Kept on
+        // Equipment (not Ring specifically) since any of the 4 equip slots
+        // could carry one in principle, even though only a Ring does today.
+        public DebuffType? ReactiveProcBuff { get; set; }
+        public int ReactiveProcDurationFrames { get; set; }
+        public int ReactiveProcCooldownFrames { get; set; }
+        private int reactiveProcCooldownRemaining;
+
+        // Called by Player.UseAbility() — returns true (and starts this
+        // item's own independent cooldown) if its reactive proc is ready to
+        // fire again; false while still on cooldown. A no-op item
+        // (ReactiveProcBuff null) never gets this far since the caller
+        // checks that first.
+        public bool TryTriggerReactiveProc()
+        {
+            if (reactiveProcCooldownRemaining > 0)
+                return false;
+
+            reactiveProcCooldownRemaining = ReactiveProcCooldownFrames;
+            return true;
+        }
+
         // Fixed to the border's 40x40 footprint, not the equipped icon's size —
         // an empty slot (nothing equipped) still needs a valid drop target.
         public Rectangle SlotBounds;
@@ -69,7 +111,7 @@ namespace Realm
             if (!Player.Instance.DisplayItemTiersEnabled)
                 return;
 
-            string text = "T" + Tier;
+            string text = TierLabel;
             Vector2 textSize = Art.RetroFont.MeasureString(text);
             Vector2 position = ComputeTierLabelPosition(iconBounds, textSize);
             Util.DrawOutlinedText(spriteBatch, Art.RetroFont, text, position, Color.White);
@@ -106,6 +148,9 @@ namespace Realm
         public override void Update()
         {
             hover = SlotBounds.Intersects(Input.MouseBounds);
+
+            if (reactiveProcCooldownRemaining > 0)
+                reactiveProcCooldownRemaining--;
         }
 
         // Summary of whichever bonuses are non-zero, one per line, for
@@ -145,7 +190,7 @@ namespace Realm
         public virtual string TooltipText()
         {
             string description = Util.WrapText(Art.RetroFont, Description, 350);
-            return $"T{Tier} - {Name}{Environment.NewLine}{description}{Environment.NewLine}{BonusSummary()}";
+            return $"{TierLabel} - {Name}{Environment.NewLine}{description}{Environment.NewLine}{BonusSummary()}";
         }
 
         // Tier/name/description as individual, uncolored lines — shared by
@@ -155,7 +200,7 @@ namespace Realm
         {
             var lines = new List<(string, TooltipComparison)>
             {
-                ($"T{Tier} - {Name}", TooltipComparison.Same),
+                ($"{TierLabel} - {Name}", TooltipComparison.Same),
             };
             string description = Util.WrapText(Art.RetroFont, Description, 350);
 

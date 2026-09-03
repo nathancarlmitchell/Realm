@@ -302,6 +302,7 @@ namespace Realm
         public static Texture2D LethalStrike { get; private set; }
         public static Texture2D Dazed { get; private set; }
         public static Texture2D Bleeding { get; private set; }
+        public static Texture2D Speedy { get; private set; }
         public static Texture2D GreenBolt { get; private set; }
         public static Texture2D BlackMagic { get; private set; }
 
@@ -470,6 +471,7 @@ namespace Realm
             LethalStrike = content.Load<Texture2D>("StatusEffects/leathal strike");
             Dazed = content.Load<Texture2D>("StatusEffects/dazed");
             Bleeding = content.Load<Texture2D>("StatusEffects/bleeding");
+            Speedy = content.Load<Texture2D>("StatusEffects/speedy");
             GreenBolt = content.Load<Texture2D>("Projectiles/Green Bolt");
             BlackMagic = content.Load<Texture2D>("Projectiles/Black Magic");
 

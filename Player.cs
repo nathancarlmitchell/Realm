@@ -632,7 +632,23 @@ namespace Realm
         // Mana * 100 / AbilityCost readiness calc can't divide by zero).
         public virtual int AbilityCost => Math.Max(1, AbilityItem.ManaCost);
 
-        public virtual void UseAbility() { }
+        // Called first thing by every class's own override (Archer/Knight/
+        // Priest/Rogue/Wizard.UseAbility() all call base.UseAbility() as
+        // their very first line) — the one shared place every ability use
+        // funnels through, regardless of class. Triggers the equipped
+        // Ring's own reactive proc (Equipment.ReactiveProcBuff — e.g. Snake
+        // Eye Ring's "on ability use, gain Speedy"), if it has one and
+        // isn't on its own cooldown. Runs on every button press rather than
+        // only a successful cast (each override's own mana-cost/equip
+        // checks happen after this call, not before) — a mana-starved
+        // attempt still procs the ring, a minor simplification rather than
+        // threading a "did it actually fire" result back through 5
+        // separate overrides.
+        public virtual void UseAbility()
+        {
+            if (Ring.ReactiveProcBuff.HasValue && Ring.TryTriggerReactiveProc())
+                ApplyDebuff(Ring.ReactiveProcBuff.Value, Ring.ReactiveProcDurationFrames);
+        }
 
         // Overridden per class (e.g. Wizard: item is Spell) — no shared enum,
         // since each future player class gets its own AbilityItem subclass
@@ -1600,15 +1616,21 @@ namespace Realm
         {
             // Update position. slowMultiplier halves speed while Slowed
             // (Entity's general debuff system) is active — e.g. a Stheno
-            // Pet's trailing orb.
+            // Pet's trailing orb. speedyMultiplier is the same idea in the
+            // other direction — Speedy (Equipment.ReactiveProcBuff, e.g.
+            // Snake Eye Ring's own proc) boosts it instead. The two stack
+            // multiplicatively rather than one overriding the other, same
+            // as any other pair of independent effects in this system.
             float slowMultiplier = HasDebuff(DebuffType.Slow) ? 0.5f : 1f;
+            float speedyMultiplier = HasDebuff(DebuffType.Speedy) ? 1.5f : 1f;
             // TilesPerSecond * 32px/tile / 60 ticks/sec (MonoGame's default
             // fixed timestep) converts the tiles/sec formula into this
             // engine's px/tick Velocity unit — no int truncation, unlike the
             // old formula, which threw away real precision (e.g. rounded a
             // true 5.7333 px/tick down to 5 at 50 Speed).
             float pixelsPerTick = TilesPerSecond * 32f / 60f;
-            Velocity = pixelsPerTick * slowMultiplier * Input.GetMovementDirection();
+            Velocity =
+                pixelsPerTick * slowMultiplier * speedyMultiplier * Input.GetMovementDirection();
             Position += Velocity;
 
             // Scroll-wheel zoom, applied before Pos below — Pos's own

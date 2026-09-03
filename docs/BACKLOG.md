@@ -249,6 +249,14 @@ prioritized or scheduled — the user asked to keep these noted for later rather
   its own dedicated commit (not mixed into a feature change) so the diff is reviewable as a pure
   move, and worth double-checking nothing outside the `.csproj`'s default glob (e.g. a hardcoded
   path anywhere) assumes a file's current location.
+- **Playtest the Snake Eye Ring / UT item system** (see [DEVLOG.md](DEVLOG.md), latest entry). First
+  pass, several numbers are estimates rather than confirmed values: the 2% `UniqueItemDropChances`
+  rate on both Stheno the Snake Queen and Snakepit Guard (the wiki doesn't publish an exact rate,
+  just "isn't hard to obtain"), and Speedy's 1.5x movement multiplier (a flat-multiplier
+  approximation of real RotMG's "sets Speed to its stat maximum," since this engine's simpler
+  Speed-stat model has no equivalent to set to). Worth an actual playthrough to confirm the proc
+  reads as noticeable/useful and the drop rate feels right before the same
+  `UniqueItemDropChances`/`ReactiveProcBuff` machinery gets reused for a second UT item.
 
 ## Completed
 

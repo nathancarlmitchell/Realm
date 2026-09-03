@@ -1054,6 +1054,12 @@ namespace Realm
                             WisdomBonus = ringData[i].WisdomBonus,
                             ImageName = ringData[i].ImageName,
                             XpBonusPercent = ringData[i].XpBonusPercent,
+                            IsUntiered = ringData[i].IsUntiered,
+                            ReactiveProcBuff = string.IsNullOrEmpty(ringData[i].ReactiveProc)
+                                ? null
+                                : Enum.Parse<Entity.DebuffType>(ringData[i].ReactiveProc),
+                            ReactiveProcDurationFrames = ringData[i].ReactiveProcDurationFrames,
+                            ReactiveProcCooldownFrames = ringData[i].ReactiveProcCooldownFrames,
                         }
                     );
                 }

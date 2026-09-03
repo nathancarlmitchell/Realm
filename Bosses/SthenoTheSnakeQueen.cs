@@ -80,6 +80,14 @@ namespace Realm.Bosses
             AddAttackBehaviour(Spiral());
 
             GuaranteedPotionChances = new() { [Potions.Speed] = 1.0f, [Potions.Defense] = 0.25f };
+
+            // Snake Eye Ring — the game's first UT (untiered) item (see
+            // Equipment.IsUntiered's own doc comment) — independently of
+            // the guaranteed loot above, same as Snakepit Guard's own
+            // identical entry (both are real wiki-listed drop sources).
+            // 2% is an estimate — the wiki doesn't publish an exact rate,
+            // just "isn't hard to obtain" from an accessible dungeon.
+            UniqueItemDropChances = new() { ["Snake Eye Ring"] = 0.02f };
         }
 
         // Runs the current phase for PhaseDurationFrames, then becomes

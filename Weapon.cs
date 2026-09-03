@@ -392,7 +392,7 @@ namespace Realm
         {
             string description = Util.WrapText(Art.RetroFont, Description, 350);
             string text =
-                $"T{Tier} - {Name}{Environment.NewLine}{description}{Environment.NewLine}Damage: {DamageMin} - {DamageMax}";
+                $"{TierLabel} - {Name}{Environment.NewLine}{description}{Environment.NewLine}Damage: {DamageMin} - {DamageMax}";
 
             if (Type == WeaponType.Bow)
                 text += $"{Environment.NewLine}Side Damage: {SideDamageMin} - {SideDamageMax}";

@@ -9142,3 +9142,59 @@ date/time for those individually; don't treat their grouping as meaning they all
      already use for their own signature drops, matching the wiki's own "Potion of Speed" entry in
      Snakepit Guard's drop table. Plain `dotnet build` (0 errors) plus a real minimized boot-check
      (stayed running, no stderr).
+
+331. **Added a new UT (Untiered) item tier, with the Snake Eye Ring as the first real UT item --**
+     **including its full Reactive Proc mechanic, a genuinely new engine system.** Requested
+     directly, sourced from realmeye.com/wiki/snake-eye-ring; real art already supplied
+     (`Content/Rings/UT/Snake Eye Ring.png`).
+
+     **UT infrastructure** (`Equipment.cs`): new `IsUntiered` (bool) purely for display/bag-rank --
+     a UT item's own JSON entry also sets `Tier: -1`, which is what actually excludes it from every
+     existing tier-based catalog query (`Game1.Instance.Rings.Where(x => x.Tier == rolledTier)` never
+     matches a negative rolled tier) with zero changes needed to `ItemSpawner`'s own selection logic.
+     New `TierLabel` (`"UT"` instead of `"T{Tier}"`) swapped into `DrawTierLabel()`/`TooltipText()`/
+     `HeaderLines()`, plus the two other raw `"T" + Tier"` sites this same formatting had spread to
+     (`Weapon.TooltipText()`, `AbilityItem.TooltipText()` — both already funnel their comparison
+     tooltips through the shared `HeaderLines()`, so those needed no change).
+
+     **Reactive Proc** — confirmed via `AskUserQuestion` to build for real rather than ship passive
+     stats only, since this is genuinely new engine infrastructure: no "temporary buff triggered by
+     ability use" mechanic existed anywhere in this codebase. New `Equipment.ReactiveProcBuff`
+     (nullable `DebuffType`) / `ReactiveProcDurationFrames` / `ReactiveProcCooldownFrames`, with its
+     own independent cooldown ticked in the already-existing `Equipment.Update()`. Hooked into
+     `Player.UseAbility()` (the shared virtual base every one of the 5 classes' own overrides already
+     calls first thing, as their literal first line) — one single injection point covers every
+     class's ability use with no per-class changes needed. Runs on every button press rather than
+     gating on a successful cast (each class's own mana-cost check happens after the base call, not
+     before) — a mana-starved attempt still procs the ring, a deliberate minor simplification over
+     threading a "did it actually fire" result back through 5 separate overrides.
+
+     New `DebuffType.Speedy` (a genuine buff living in "DebuffType," same precedent `Healing` already
+     set) — approximates real RotMG's Speedy (which sets Speed to its stat maximum) as a flat 1.5x
+     movement multiplier instead, stacking multiplicatively with the existing Slow multiplier in
+     `Player.Update()`'s own movement calculation, since this engine's simpler Speed-stat model has
+     no "maximum regardless of gear" concept to set to. Real icon art supplied
+     (`Content/StatusEffects/speedy.png`), wired into `Art.Speedy`/`DebuffIcon()` the same way
+     Dazed/Bleeding already are.
+
+     **The drop itself** — neither existing loot method fits a UT item (`Spawn()`/
+     `SpawnGuaranteedLoot()` both pick randomly *within* a tier; a UT item isn't part of any tier at
+     all). New `ItemSpawner.SpawnUniqueItem(pos, itemName)` drops one specific named catalog item by
+     exact `Item.Name` (only searches `Game1.Instance.Rings` today — the only catalog with a UT
+     entry so far; extend to Weapons/Armors/AbilityItem-family the same way once one of those gets a
+     UT item), always in the top-ranked bag art regardless of its `Tier` (which is -1 and would
+     otherwise fall through `BagRankForRing`'s "no band" case) — throws on an unresolvable name,
+     same loud-failure convention `DungeonGenerator.ResolveTileByName()` already established. New
+     `Enemy.UniqueItemDropChances` (`Dictionary<string, float>`, same independent-per-entry shape as
+     the existing `PortalDropChances`) rolled in `WasShot()`'s death branch, on top of an enemy's own
+     normal loot. Wired a 2% chance (an estimate — the wiki doesn't publish an exact rate, just
+     "isn't hard to obtain" from an accessible dungeon) onto both of the wiki's own listed drop
+     sources this engine actually has: Stheno the Snake Queen and Snakepit Guard.
+
+     Verified via a temporary `Game1.StartGame()` scripted check (reverted, no diff remains): the
+     ring loads with every wiki stat correct (Tier -1, 50/5/5/5 HP/ATT/DEF/SPD, 6% XP, Speedy proc at
+     120/300 frames), is genuinely excluded from a Tier==1 catalog query, `TryTriggerReactiveProc()`
+     fires once then correctly blocks until its cooldown drains, `SpawnUniqueItem()` produces a real
+     loot bag holding exactly that item, and a typo'd item name throws as designed. Plain
+     `dotnet build` (0 errors) plus a real minimized boot-check (stayed running, no stderr) after
+     reverting.

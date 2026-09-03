@@ -85,7 +85,7 @@ namespace Realm
         public override string TooltipText()
         {
             string description = Util.WrapText(Art.RetroFont, Description, 350);
-            return $"T{Tier} - {Name}{Environment.NewLine}{description}{Environment.NewLine}{BonusSummary()}{AbilitySummary()}";
+            return $"{TierLabel} - {Name}{Environment.NewLine}{description}{Environment.NewLine}{BonusSummary()}{AbilitySummary()}";
         }
 
         private string AbilitySummary()
