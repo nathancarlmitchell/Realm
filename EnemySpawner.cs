@@ -110,19 +110,19 @@ namespace Realm
             // any BiomeData.json's own EnemyNames, so these never spawn in
             // the open Realm; only DungeonEnemySpawner.ResolveFactories()
             // ever selects them.
-            ("Cave Pirate Cabin Boy", Enemy.CreateCavePirateCabinBoy),
-            ("Cave Pirate Hunchback", Enemy.CreateCavePirateHunchback),
-            ("Cave Pirate Macaw", Enemy.CreateCavePirateMacaw),
-            ("Cave Pirate Moll", Enemy.CreateCavePirateMoll),
-            ("Cave Pirate Monkey", Enemy.CreateCavePirateMonkey),
-            ("Cave Pirate Parrot", Enemy.CreateCavePirateParrot),
-            ("Cave Pirate Brawler", Enemy.CreateCavePirateBrawler),
-            ("Cave Pirate Sailor", Enemy.CreateCavePirateSailor),
-            ("Cave Pirate Veteran", Enemy.CreateCavePirateVeteran),
-            ("Pirate Lieutenant", Enemy.CreatePirateLieutenant),
-            ("Pirate Commander", Enemy.CreatePirateCommander),
-            ("Pirate Captain", Enemy.CreatePirateCaptain),
-            ("Pirate Admiral", Enemy.CreatePirateAdmiral),
+            ("Cave Pirate Cabin Boy", position => new CavePirateCabinBoy(position)),
+            ("Cave Pirate Hunchback", position => new CavePirateHunchback(position)),
+            ("Cave Pirate Macaw", position => new CavePirateMacaw(position)),
+            ("Cave Pirate Moll", position => new CavePirateMoll(position)),
+            ("Cave Pirate Monkey", position => new CavePirateMonkey(position)),
+            ("Cave Pirate Parrot", position => new CavePirateParrot(position)),
+            ("Cave Pirate Brawler", position => new CavePirateBrawler(position)),
+            ("Cave Pirate Sailor", position => new CavePirateSailor(position)),
+            ("Cave Pirate Veteran", position => new CavePirateVeteran(position)),
+            ("Pirate Lieutenant", position => new PirateLieutenant(position)),
+            ("Pirate Commander", position => new PirateCommander(position)),
+            ("Pirate Captain", position => new PirateCaptain(position)),
+            ("Pirate Admiral", position => new PirateAdmiral(position)),
 
             // Snake Pit (Data/DungeonType_SnakePit.json) — same "never in
             // any BiomeData.json" isolation as Pirate Cave's own roster

@@ -9056,3 +9056,21 @@ date/time for those individually; don't treat their grouping as meaning they all
      Snakepit Guard/Dart Thrower were already in `Enemies/SnakePit/` from entry 324 and needed no
      change. Plain `dotnet build` (0 errors) plus a real minimized boot-check (stayed running, no
      stderr) after each change.
+
+328. **Moved the 13 regular Pirate Cave enemies out of `Enemy.cs` into their own dedicated**
+     **classes, `Enemies/PirateCave/`.** Requested directly, the same cleanup entry 327 already did
+     for Snake Pit, applied to Pirate Cave's own roster. `CavePirateCabinBoy`/`Hunchback`/`Macaw`/
+     `Moll`/`Monkey`/`Parrot`/`Brawler`/`Sailor`/`Veteran` and `PirateLieutenant`/`Commander`/
+     `Captain`/`Admiral` are now plain `Enemy` subclasses with a real constructor instead of a
+     `public static Enemy CreateXyz(Vector2 position)` factory — pure reorganization, no behavior
+     change. None of the 13 needed their own `Random` field (unlike Snake Pit's `GreaterPitViper`)
+     since none of them roll anything random directly. `EnemySpawner.BasicEnemyPool`'s 13 entries now
+     construct these directly (`position => new CavePirateCabinBoy(position)`, etc.) instead of
+     referencing the removed factories. Dreadstump the Pirate King stays in `Bosses/` — a `Boss`
+     subclass, not a regular enemy, same distinction `Enemies/SnakePit/`'s own Snakepit Guard/Dart
+     Thrower draw against `Bosses/`. Also audited every Pirate Cave attack for correct (non-default)
+     projectile art while making this pass: all 13 already used the right texture wherever they have
+     an attack at all (`Art.PirateSword` for the 3 melee chasers, `Art.PirateCannonBullet`/
+     `Art.PirateShot` for the 4 cannon sentries; the 6 critters have no attack to begin with) — no
+     fix needed there, unlike Snake Pit's own gaps (entries 325-326). Plain `dotnet build` (0 errors)
+     plus a real minimized boot-check (stayed running, no stderr).
