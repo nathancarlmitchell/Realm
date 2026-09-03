@@ -61,17 +61,18 @@ namespace Realm
             hitSound = Sound.DefaultHit;
 
             // A real mini-boss drop table (Tier 7-9 weapons, Tier 6-8
-            // armor per the wiki's own drop table) — no stat potions
-            // (the wiki lists a specific named consumable, not a generic
-            // stat potion, so this category is left out entirely). Ring/
-            // AbilityItem tiers aren't called out by the wiki explicitly;
-            // 4-6 is a reasonable mini-boss-tier estimate, not a wiki
-            // number.
+            // armor per the wiki's own drop table). Ring/AbilityItem tiers
+            // aren't called out by the wiki explicitly; 4-6 is a
+            // reasonable mini-boss-tier estimate, not a wiki number.
+            // StatPotion is in the pool specifically for the guaranteed
+            // Speed potion below — the wiki's own drop table lists a
+            // "Potion of Speed," this engine's closest equivalent.
             DropPool =
                 ItemSpawner.LootCategory.Weapon
                 | ItemSpawner.LootCategory.Armor
                 | ItemSpawner.LootCategory.Ring
-                | ItemSpawner.LootCategory.AbilityItem;
+                | ItemSpawner.LootCategory.AbilityItem
+                | ItemSpawner.LootCategory.StatPotion;
             DropTierRanges = new()
             {
                 [ItemSpawner.LootCategory.Weapon] = (7, 9),
@@ -79,6 +80,12 @@ namespace Realm
                 [ItemSpawner.LootCategory.Ring] = (4, 6),
                 [ItemSpawner.LootCategory.AbilityItem] = (4, 6),
             };
+
+            // Guarantees the Speed potion every kill (100% — same shape
+            // Stheno/CubeGod already use for their own signature guaranteed
+            // potions), rather than a single random pick among all 8 stat
+            // types the way an unset GuaranteedPotionChances would roll.
+            GuaranteedPotionChances = new() { [Potions.Speed] = 1.0f };
 
             if (roomBoundsWorld.Width >= roomBoundsWorld.Height)
             {
@@ -100,6 +107,26 @@ namespace Realm
             AddAttackBehaviour(GrenadePairs());
             AddAttackBehaviour(Phase2SnakeBalls());
             AddAttackBehaviour(Phase2Grenades());
+        }
+
+        // Overrides Enemy's own default (the chance-based Spawn() table,
+        // which requires a literal DropChances entry per category to roll
+        // at all) with the same guaranteed-loot path every real boss in
+        // this game uses (Boss.SpawnLoot() -> ItemSpawner.
+        // SpawnGuaranteedLoot()) — every category in DropPool above always
+        // contributes an item, and GuaranteedPotionChances' Speed entry
+        // always fires. Without this override, SnakepitGuard had no
+        // DropChances set at all and was dropping nothing on death.
+        protected override void SpawnLoot()
+        {
+            ItemSpawner.SpawnGuaranteedLoot(
+                Position,
+                PointValue,
+                DropPool,
+                DropTierRanges,
+                StatPotionPool,
+                GuaranteedPotionChances
+            );
         }
 
         // Every boss/mini-boss with health-threshold phases in this

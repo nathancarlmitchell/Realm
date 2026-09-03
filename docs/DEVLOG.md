@@ -9123,3 +9123,22 @@ date/time for those individually; don't treat their grouping as meaning they all
      to prevent — zero breakable-wall tiles ever landed inside any room's own circle across ~3,100-
      3,500 breakable tiles generated per seed. Plain `dotnet build` (0 errors) plus a real minimized
      boot-check (stayed running, no stderr) after reverting.
+
+330. **Snakepit Guard now guarantees a Speed potion on death -- and, in fixing that, a real bug**
+     **surfaced: it had been dropping nothing at all.** Requested directly ("adjust the drop rates
+     ... to include a guaranteed speed potion"). `SnakepitGuard` never overrode `SpawnLoot()`, so it
+     was inheriting `Enemy`'s own default -- the chance-based `ItemSpawner.Spawn()` table, which
+     (since entry 321's "no default drop chances" rework) only rolls a category with a literal
+     `DropChances` entry. `SnakepitGuard` only ever set `DropTierRanges` (tier, not chance), so
+     every one of its Weapon/Armor/Ring/AbilityItem categories silently never rolled -- it had been
+     dropping nothing since it shipped in entry 324.
+
+     Fixed by giving it a `SpawnLoot()` override that calls `ItemSpawner.SpawnGuaranteedLoot()`
+     instead -- the same guaranteed-loot path every real boss in this game already uses
+     (`Boss.SpawnLoot()`), where every category in `DropPool` always contributes an item regardless
+     of any chance roll. Added `ItemSpawner.LootCategory.StatPotion` to `DropPool` (needed for a stat
+     potion to be reachable at all) and a new `GuaranteedPotionChances = { Speed: 100% }` -- same
+     "always exactly this potion" shape Stheno (`Speed`/`Defense`) and CubeGod (`Life`/`Defense`)
+     already use for their own signature drops, matching the wiki's own "Potion of Speed" entry in
+     Snakepit Guard's drop table. Plain `dotnet build` (0 errors) plus a real minimized boot-check
+     (stayed running, no stderr).
