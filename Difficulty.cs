@@ -19,7 +19,8 @@ namespace Realm
     // baseline ends up tuned to.
     public static class Difficulty
     {
-        public const float EnemyDamageMultiplier = 2f;
+        // public const float EnemyDamageMultiplier = 2f; // Medium
+        public const float EnemyDamageMultiplier = 1f; // Easy
 
         // Single global knob scaling every enemy's FollowPlayer() chase
         // acceleration (Enemy.cs) — applied once inside FollowPlayer()
@@ -30,7 +31,8 @@ namespace Realm
         // player felt a little slow. 1.4x is a first-pass guess — expect
         // retuning after the next playthrough, same as EnemyDamageMultiplier
         // above.
-        public const float EnemyChaseSpeedMultiplier = 1.4f;
+        // public const float EnemyChaseSpeedMultiplier = 1.4f; // Medium
+        public const float EnemyChaseSpeedMultiplier = 1.0f; // Easy
 
         // Single global knob scaling every enemy's health/healthMax —
         // applied once, at spawn time, via Enemy.ApplyHealthDifficultyScaling()
@@ -42,6 +44,7 @@ namespace Realm
         // feedback about feel; this is a deliberate "make enemies tankier"
         // dial). 2x to start — expect retuning after a playthrough, same
         // as the other two.
-        public const float EnemyHealthMultiplier = 2f;
+        // public const float EnemyHealthMultiplier = 2f; // Medium
+        public const float EnemyHealthMultiplier = 1f; // Easy
     }
 }

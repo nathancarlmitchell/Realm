@@ -85,9 +85,11 @@ namespace Realm.Bosses
             // Equipment.IsUntiered's own doc comment) — independently of
             // the guaranteed loot above, same as Snakepit Guard's own
             // identical entry (both are real wiki-listed drop sources).
-            // 2% is an estimate — the wiki doesn't publish an exact rate,
-            // just "isn't hard to obtain" from an accessible dungeon.
-            UniqueItemDropChances = new() { ["Snake Eye Ring"] = 0.02f };
+            // Guaranteed (100%) rather than Snakepit Guard's 2% estimate —
+            // Stheno is the harder, more dedicated source of the two (a
+            // full boss fight vs. a Treasure Room mini-boss), so a
+            // guaranteed drop here rewards going after her specifically.
+            UniqueItemDropChances = new() { ["Snake Eye Ring"] = 1f };
         }
 
         // Runs the current phase for PhaseDurationFrames, then becomes
