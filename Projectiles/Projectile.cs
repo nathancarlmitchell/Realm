@@ -52,6 +52,25 @@ namespace Realm.Projectiles
         // Bow's Side shots.
         public bool IgnoresDefense = false;
 
+        // Whether this projectile Dazes the enemy it hits (Enemy.Daze(),
+        // halving its next multi-shot attacks' projectile counts — see
+        // Enemy.EffectiveShotCount()). Same shape as ParalyzesOnHit/
+        // StunsOnHit above. Not used by any player class yet — added
+        // alongside EnemyProjectile's own DazesOnHit so the Dazed debuff is
+        // genuinely bidirectional infrastructure, not just a Snake-Pit-
+        // specific, player-receiving-only mechanic.
+        public bool DazesOnHit = false;
+        public int DazeDurationFrames = 120; // Enemy.Daze()'s own default
+
+        // Whether this projectile Bleeds the enemy it hits — unlike every
+        // debuff above, this doesn't route through Enemy.ApplyDebuff()
+        // directly; see Enemy.ApplyBleedStack() for why (stacking, not
+        // refreshing). Not used by any player class yet, same "genuinely
+        // bidirectional" reasoning as DazesOnHit above.
+        public bool BleedsOnHit = false;
+        public int BleedDurationFrames = 240; // 4s
+        public float BleedDamagePerSecond = 20f; // "default 20/sec if unspecified"
+
         // Whether this projectile ignores dungeon walls entirely — set once
         // at spawn time, checked by DungeonState.ExpireWallBlockedProjectiles
         // () instead of TileDefData.CanShootThrough for this shot. False

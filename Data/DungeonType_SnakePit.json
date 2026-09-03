@@ -6,6 +6,15 @@
   "MinRoomCount": 10,
   "MaxRoomCount": 15,
   "CorridorWidth": 2,
-  "EnemyNames": ["Wanderer", "Seeker", "Snake", "Slime"],
-  "BossName": "Stheno"
+  "EnemyNames": [
+    "Pit Snake",
+    "Pit Viper",
+    "Greater Pit Snake",
+    "Greater Pit Viper",
+    "Brown Python",
+    "Yellow Python",
+    "Fire Python"
+  ],
+  "BossName": "Stheno",
+  "TreasureRoomChance": 0.5
 }

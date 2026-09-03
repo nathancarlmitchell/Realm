@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Content;
@@ -25,6 +26,8 @@ namespace Realm.States
         protected override bool SpawnsRegularEnemies => false;
         protected override int InstanceWorldWidth => 3200;
         protected override int InstanceWorldHeight => 3200;
+
+        private static readonly Random rand = new();
 
         private readonly DungeonMap dungeonMap;
         private readonly Texture2D tileAtlas;
@@ -92,14 +95,39 @@ namespace Realm.States
             // the player somewhere to head toward, on the opposite side of
             // the dungeon from where they came in. Skipped entirely for a
             // degenerate one-room dungeon (nowhere else to put it).
+            Rectangle? bossRoom = null;
             if (dungeonMap.Rooms.Count > 1)
             {
-                Rectangle bossRoom = FindFarthestRoom(dungeonMap.Rooms);
-                bossPortalPosition = RoomCenterWorldPosition(bossRoom);
+                bossRoom = FindFarthestRoom(dungeonMap.Rooms);
+                bossPortalPosition = RoomCenterWorldPosition(bossRoom.Value);
                 Portal.Destination.BossDestination bossDestination = Portal
                     .Destination
                     .BossesByName[dungeonType.BossName];
                 Portal.DroppedPortals.Add(new Portal(bossPortalPosition.Value, bossDestination));
+            }
+
+            // Treasure Room (Dungeon/TreasureRoomController.cs) — a
+            // TreasureRoomChance roll against a spare room (neither the
+            // start room nor the boss room), same "picked from the
+            // already-generated rooms, no change to their own tile
+            // carving" simplification described on TreasureRoomChance's
+            // own doc comment. 0 (every dungeon type except Snake Pit)
+            // means this never fires.
+            List<Rectangle> spareRooms = new();
+            for (int i = 1; i < dungeonMap.Rooms.Count; i++)
+                if (dungeonMap.Rooms[i] != bossRoom)
+                    spareRooms.Add(dungeonMap.Rooms[i]);
+
+            if (spareRooms.Count > 0 && rand.NextDouble() < dungeonType.TreasureRoomChance)
+            {
+                Rectangle treasureRoom = spareRooms[rand.Next(spareRooms.Count)];
+                Rectangle treasureRoomBoundsWorld = new(
+                    treasureRoom.X * tileSet.TileWidth,
+                    treasureRoom.Y * tileSet.TileHeight,
+                    treasureRoom.Width * tileSet.TileWidth,
+                    treasureRoom.Height * tileSet.TileHeight
+                );
+                _ = new TreasureRoomController(treasureRoomBoundsWorld);
             }
 
             pathfindingController = new DungeonPathfindingController(dungeonMap);

@@ -71,6 +71,88 @@ namespace Realm
         protected SoundEffect hitSound;
         public List<Guid> HitBy;
 
+        // Bleeding, enemy side — deliberately not the generic activeDebuffs
+        // dictionary (see Entity.DebuffType.Bleeding's own doc comment):
+        // "X HP/sec per projectile that inflicted it," stacking rather than
+        // refreshing, so each qualifying hit appends its own entry instead
+        // of overwriting whichever was already there. Ticked/pruned in
+        // Update() below, applied once per second (not every frame the
+        // accumulator crosses 1) so a stack of several sources doesn't spam
+        // WasShot()'s own hit sound/particles/damage-number multiple times
+        // a second.
+        private readonly List<(int framesRemaining, float damagePerSecond)> bleedStacks = new();
+        private int bleedTickCooldown = 0;
+        private const int BleedTickIntervalFrames = 60; // 1 tick/sec
+        private int bleedParticleCooldown = 0;
+        private const int BleedParticleIntervalFrames = 15;
+
+        // Called by EntityManager.HandleCollisions() when a Bleeding-
+        // inflicting player projectile hits this enemy (Projectile.
+        // BleedsOnHit) — see the field doc comment above for why this
+        // appends rather than replaces.
+        internal void ApplyBleedStack(int durationFrames, float damagePerSecond)
+        {
+            bleedStacks.Add((durationFrames, damagePerSecond));
+
+            // Purely for the shared DrawDebuffIndicators()/DebuffIcon()
+            // system (Entity.cs) to show the Bleeding icon at all — the
+            // real per-stack accounting lives in bleedStacks above, not
+            // here; this entry just tracks "at least one stack is active"
+            // for icon purposes, refreshed (not summed) like any other
+            // duration-only debuff.
+            ApplyDebuff(DebuffType.Bleeding, durationFrames);
+        }
+
+        // Ticks every active bleed stack down by one frame, prunes expired
+        // ones, and — once per second, not every frame — applies the sum of
+        // every still-active stack's own rate as a single WasShot() call
+        // (ignoresDefense: true, a status tick rather than a mitigated
+        // hit) so a multi-source bleed doesn't spam the hit sound/particles
+        // several times a second. Also drives the same yellow
+        // RisingParticle clump the player side uses, for as long as any
+        // stack is active. Unlike the player's own Bleeding, this can kill
+        // — "cannot kill players" is player-specific language.
+        private void UpdateBleedStacks()
+        {
+            if (bleedStacks.Count == 0)
+                return;
+
+            for (int i = bleedStacks.Count - 1; i >= 0; i--)
+            {
+                var (framesRemaining, damagePerSecond) = bleedStacks[i];
+                framesRemaining--;
+                if (framesRemaining <= 0)
+                    bleedStacks.RemoveAt(i);
+                else
+                    bleedStacks[i] = (framesRemaining, damagePerSecond);
+            }
+
+            if (bleedStacks.Count == 0)
+                return;
+
+            if (--bleedTickCooldown <= 0)
+            {
+                bleedTickCooldown = BleedTickIntervalFrames;
+                float totalDamagePerSecond = 0f;
+                foreach (var (_, damagePerSecond) in bleedStacks)
+                    totalDamagePerSecond += damagePerSecond;
+
+                if (totalDamagePerSecond > 0f)
+                    WasShot((int)totalDamagePerSecond, ignoresDefense: true);
+            }
+
+            if (--bleedParticleCooldown <= 0)
+            {
+                bleedParticleCooldown = BleedParticleIntervalFrames;
+                RisingParticle.SpawnRisingBurst(
+                    () => Position,
+                    Color.Yellow,
+                    count: 2,
+                    lifespanTicks: 80
+                );
+            }
+        }
+
         // Which boss arena's portal (if any) this enemy drops on death, on
         // top of its normal loot roll — null for every enemy except the
         // specific ones a factory below wires up (CreateSpriteGod(),
@@ -125,6 +207,15 @@ namespace Realm
             ApplyDebuff(DebuffType.Vulnerable, durationFrames);
         }
 
+        // Dazes this enemy — halves its next multi-shot attacks' projectile
+        // counts (see EffectiveShotCount() above). Same shape as Paralyze()/
+        // Stun()/Vulnerable() above; the player-inflicts-enemy direction of
+        // Entity.DebuffType.Dazed (see Projectile.DazesOnHit).
+        public void Daze(int durationFrames = 120)
+        {
+            ApplyDebuff(DebuffType.Dazed, durationFrames);
+        }
+
         // "Targets receive 110% damage... after being hit" — a flat +10%
         // multiplier, applied in WasShot() below.
         private const float VulnerableDamageMultiplier = 1.1f;
@@ -174,6 +265,7 @@ namespace Realm
         public override void Update()
         {
             UpdateDebuffs();
+            UpdateBleedStacks();
 
             if (blinkTicksRemaining > 0)
             {
@@ -657,6 +749,31 @@ namespace Realm
             [ItemSpawner.LootCategory.AbilityItem] = (1, 2),
         };
 
+        // Shared drop table for the 7 regular Snake Pit enemies (not the
+        // Treasure Room's own Snakepit Guard/Dart Thrower — see
+        // SnakepitGuard.cs's own guaranteed-loot handling) — not covered by
+        // the original request, added here to close the same "silently
+        // drops nothing" gap the loot-drop-table rework (see docs/DEVLOG.md)
+        // just fixed for Pirate Cave; left unfixed here would mean these
+        // brand-new enemies drop nothing at all under that rework's "no
+        // drop without an explicit DropChances entry" rule. Numbers copied
+        // directly from PirateCaveDropChances/PirateCaveDropTierRanges
+        // above rather than inventing a fresh set — both dungeons read as
+        // similarly early/mid-game on their own wiki pages ("low to medium-
+        // level" for Snake Pit; Pirate Cave is this game's own "beginner
+        // dungeon" per its boss's own review), so reusing the same
+        // percentages/ranges is a reasonable default, not a considered
+        // retune.
+        protected static readonly ItemSpawner.LootCategory SnakePitDropPool = PirateCaveDropPool;
+        protected static readonly Dictionary<
+            ItemSpawner.LootCategory,
+            float
+        > SnakePitDropChances = PirateCaveDropChances;
+        protected static readonly Dictionary<
+            ItemSpawner.LootCategory,
+            (int Min, int Max)
+        > SnakePitDropTierRanges = PirateCaveDropTierRanges;
+
         protected void AddBehaviour(IEnumerable<int> behaviour)
         {
             behaviours.Add(behaviour.GetEnumerator());
@@ -921,18 +1038,30 @@ namespace Realm
 
         #region Attack Behaviors
 
+        // Dazed halves an enemy's next multi-shot attack's projectile
+        // count, rounded down but never below 1 (Entity.DebuffType.Dazed's
+        // own doc comment) — one small shared helper applied inside every
+        // multi-shot primitive below (Spray/FanShot/Bomb) rather than
+        // special-cased per caller, so it's automatic for every enemy that
+        // already uses them.
+        protected int EffectiveShotCount(int baseCount) =>
+            HasDebuff(DebuffType.Dazed) ? Math.Max(1, baseCount / 2) : baseCount;
+
         protected IEnumerable<int> Spray(
-            int projectileSpeed = 3,
+            float projectileSpeed = 3,
             int projectileAmount = 5,
             int damage = 10,
             Texture2D projectileImage = null,
-            Entity.CollisionShape collisionShape = Entity.CollisionShape.Circle
+            Entity.CollisionShape collisionShape = Entity.CollisionShape.Circle,
+            float? range = null
         )
         {
+            float rangeSquared = (range ?? 0) * (range ?? 0);
             while (true)
             {
                 var aim = Player.Instance.Position - Position;
-                if (aim.LengthSquared() > 0 && projectileCooldownRemaining <= 0)
+                bool inRange = !range.HasValue || aim.LengthSquared() <= rangeSquared;
+                if (aim.LengthSquared() > 0 && inRange && projectileCooldownRemaining <= 0)
                 {
                     projectileCooldownRemaining = projectileCooldown - (1 * 1);
                     float aimAngle = aim.ToAngle();
@@ -941,7 +1070,7 @@ namespace Realm
                     float randomSpread = rand.NextFloat(-0.1f, 0.1f) + rand.NextFloat(-0.1f, 0.1f);
 
                     float bulletOffset = 0.05f;
-                    for (var i = 0; i < projectileAmount; i++)
+                    for (var i = 0; i < EffectiveShotCount(projectileAmount); i++)
                     {
                         Vector2 vel = Extensions.FromPolar(
                             aimAngle + randomSpread + (i * bulletOffset),
@@ -985,7 +1114,22 @@ namespace Realm
             }
         }
 
-        IEnumerable<int> Bomb(int projectileSpeed = 3)
+        // damage: left null, every existing caller (Wanderer/Brute) keeps
+        // relying on EnemyProjectile's own default Damage (10) exactly as
+        // before — only set explicitly by a caller that needs this ring's
+        // real damage to matter (e.g. Greater Pit Snake/Viper's "detonating
+        // AoE on itself," approximated as this same full-circle burst
+        // rather than a new mechanic). dazesOnHit/dazeDurationFrames: same
+        // "left at its harmless default" shape, first real use: Snakepit
+        // Guard's Snake Spinners ring (Snake Pit). Widened from private to
+        // protected the moment a real subclass (SnakepitGuard.cs) needed it
+        // directly — same reasoning as MoveRandomly()'s own history.
+        protected IEnumerable<int> Bomb(
+            float projectileSpeed = 3,
+            int? damage = null,
+            bool dazesOnHit = false,
+            int dazeDurationFrames = 120
+        )
         {
             while (true)
             {
@@ -993,15 +1137,104 @@ namespace Realm
                 {
                     projectileCooldownRemaining = projectileCooldown - (1 * 1);
 
-                    for (int i = 0; i < 35; i++)
+                    // i * 10 (radians, not degrees — Extensions.FromPolar's
+                    // own units) is the original, unchanged angle step;
+                    // EffectiveShotCount() only ever shortens how far this
+                    // loop gets through that same sequence, so the
+                    // un-Dazed case (35, unchanged) produces byte-for-byte
+                    // the same 35 shots every existing caller already had.
+                    int shots = EffectiveShotCount(35);
+                    for (int i = 0; i < shots; i++)
                     {
                         Vector2 vel = Extensions.FromPolar(i * 10, projectileSpeed);
-                        EntityManager.Add(new EnemyProjectile(Position, vel) { duration = 50 });
+                        var projectile = new EnemyProjectile(Position, vel) { duration = 50 };
+                        if (damage.HasValue)
+                            projectile.Damage = damage.Value;
+                        if (dazesOnHit)
+                        {
+                            projectile.DazesOnHit = true;
+                            projectile.DazeDurationFrames = dazeDurationFrames;
+                        }
+                        EntityManager.Add(projectile);
                     }
                 }
 
                 if (projectileCooldownRemaining > 0)
                     projectileCooldownRemaining--;
+
+                yield return 0;
+            }
+        }
+
+        // Fires one shot in a uniformly random direction every
+        // cooldownFrames, rather than Shoot()'s aim-at-player — first real
+        // use: Greater Pit Snake (Snake Pit), whose wiki entry describes
+        // "single shots in a random cardinal or ordinal direction." A local
+        // cooldown (like ShootIfInRange/FanShot's own optional
+        // cooldownFrames), not the shared projectileCooldown field, so it
+        // can run alongside another attack behaviour on the same enemy
+        // without the two fights over one cooldown timer.
+        protected IEnumerable<int> ShootRandomDirection(
+            int damage,
+            float projectileSpeed,
+            int cooldownFrames,
+            Texture2D projectileImage = null
+        )
+        {
+            int cooldownRemaining = 0;
+            while (true)
+            {
+                if (cooldownRemaining <= 0)
+                {
+                    cooldownRemaining = cooldownFrames;
+                    Vector2 vel = Extensions.FromPolar(
+                        rand.NextFloat(0, MathHelper.TwoPi),
+                        projectileSpeed
+                    );
+                    EntityManager.Add(
+                        new EnemyProjectile(Position, vel, projectileImage) { Damage = damage }
+                    );
+                }
+                else
+                {
+                    cooldownRemaining--;
+                }
+
+                yield return 0;
+            }
+        }
+
+        // Spawns a telegraphed-AoE GrenadeProjectile (Projectiles/
+        // GrenadeProjectile.cs — already existed, previously only used via
+        // Stheno's own private SpawnGrenade() helper) at targetPosition()
+        // every cooldownFrames. One primitive covers every "throw a bomb
+        // somewhere" shape just by varying the delegate — aimed at the
+        // player, at a random nearby point, or at the enemy's own position
+        // for a "continually detonating on itself" AoE (Greater Pit
+        // Snake/Viper, Snake Pit) — same Func<Vector2> idiom OrbitPoint
+        // already uses for a moving center.
+        protected IEnumerable<int> ThrowGrenades(
+            int damage,
+            float radius,
+            int cooldownFrames,
+            Func<Vector2> targetPosition,
+            int fuseFrames = 60
+        )
+        {
+            int cooldownRemaining = 0;
+            while (true)
+            {
+                if (cooldownRemaining <= 0)
+                {
+                    cooldownRemaining = cooldownFrames;
+                    EntityManager.Add(
+                        new GrenadeProjectile(targetPosition(), radius, damage, fuseFrames)
+                    );
+                }
+                else
+                {
+                    cooldownRemaining--;
+                }
 
                 yield return 0;
             }
@@ -1086,6 +1319,9 @@ namespace Realm
         // (the two are the same formula; a full-circle step just happens to
         // make the centering irrelevant). First real use: Little Blue
         // Jelly's V-shaped shot and Little Green Jelly's 5-point star.
+        // dazesOnHit/dazeDurationFrames: same "harmless default, first real
+        // use Snakepit Guard's Snake Spit/Snake Balls" shape as Bomb()'s own
+        // pair above.
         protected IEnumerable<int> FanShot(
             float range,
             int damage,
@@ -1093,7 +1329,9 @@ namespace Realm
             int shots,
             float angleStep,
             Texture2D projectileImage = null,
-            int? cooldownFrames = null
+            int? cooldownFrames = null,
+            bool dazesOnHit = false,
+            int dazeDurationFrames = 120
         )
         {
             float rangeSquared = range * range;
@@ -1114,14 +1352,27 @@ namespace Realm
 
                     float aimAngle = aim.ToAngle();
                     float randomSpread = rand.NextFloat(-0.1f, 0.1f) + rand.NextFloat(-0.1f, 0.1f);
-                    float centerOffset = (shots - 1) / 2f;
-                    for (int i = 0; i < shots; i++)
+                    // centerOffset is recomputed off the *effective* (Dazed-
+                    // halved) count rather than the requested one, so a
+                    // reduced fan is still symmetric around the aim
+                    // direction instead of just chopping off one side of
+                    // the original spread.
+                    int effectiveShots = EffectiveShotCount(shots);
+                    float centerOffset = (effectiveShots - 1) / 2f;
+                    for (int i = 0; i < effectiveShots; i++)
                     {
                         float shotAngle = aimAngle + randomSpread + (i - centerOffset) * angleStep;
                         Vector2 vel = Extensions.FromPolar(shotAngle, projectileSpeed);
-                        EntityManager.Add(
-                            new EnemyProjectile(Position, vel, projectileImage) { Damage = damage }
-                        );
+                        var projectile = new EnemyProjectile(Position, vel, projectileImage)
+                        {
+                            Damage = damage,
+                        };
+                        if (dazesOnHit)
+                        {
+                            projectile.DazesOnHit = true;
+                            projectile.DazeDurationFrames = dazeDurationFrames;
+                        }
+                        EntityManager.Add(projectile);
                     }
                 }
 
@@ -1198,6 +1449,36 @@ namespace Realm
                     yield return 0;
 
                 Defense = baseDefense;
+            }
+        }
+
+        // Wait-then-trigger-then-revert shape as PeriodicArmor above, but
+        // for a movement burst instead of a stat buff — first real use:
+        // Brown Python (Snake Pit), whose wiki entry is normally
+        // OrbitPlayer'ing but "occasionally charges towards the nearest
+        // player." Direction is captured once at the start of the charge
+        // (a committed dash, not a homing beeline), same convention
+        // SthenoSwarm's own one-shot charge already uses.
+        protected IEnumerable<int> PeriodicCharge(
+            int intervalFrames,
+            int chargeDurationFrames,
+            float chargeSpeed
+        )
+        {
+            while (true)
+            {
+                for (int i = 0; i < intervalFrames; i++)
+                    yield return 0;
+
+                Vector2 toPlayer = Player.Instance.Position - Position;
+                Vector2 chargeDirection =
+                    toPlayer.LengthSquared() > 0 ? toPlayer.ScaleTo(1f) : Vector2.UnitX;
+
+                for (int i = 0; i < chargeDurationFrames; i++)
+                {
+                    Velocity += chargeDirection * chargeSpeed;
+                    yield return 0;
+                }
             }
         }
 
@@ -1756,6 +2037,237 @@ namespace Realm
                 )
             );
             enemy.AddBehaviour(enemy.PeriodicArmor(intervalFrames: 260, durationFrames: 120));
+            return enemy;
+        }
+
+        // Snake Pit (see Data/DungeonType_SnakePit.json, Dungeon/
+        // TreasureRoomController.cs, and docs/DEVLOG.md) — every factory
+        // below sourced directly from each enemy's own realmeye.com/wiki
+        // page. Real art supplied for each (Content/Dungeons/Snake Pit/).
+        // Stheno Pet/Swarm (also listed as Snake Pit "enemies" on the wiki)
+        // already exist as Stheno's own fight adds and aren't part of this
+        // roster; Snakepit Guard/Dart Thrower live in their own dedicated
+        // files (Enemies/SnakePit/) since the Treasure Room controller
+        // spawns them directly rather than picking them from
+        // EnemySpawner.BasicEnemyPool like the 7 below.
+
+        public static Enemy CreatePitSnake(Vector2 position)
+        {
+            var enemy = new Enemy(Art.PitSnake, position)
+            {
+                health = 5,
+                healthMax = 5,
+                PointValue = 5,
+                DropPool = SnakePitDropPool,
+                DropChances = SnakePitDropChances,
+                DropTierRanges = SnakePitDropTierRanges,
+            };
+            enemy.AddBehaviour(enemy.MoveRandomly());
+            enemy.AddAttackBehaviour(
+                enemy.ShootIfInRange(range: 12f * 32f, damage: 10, projectileSpeed: 6f * 32f / 60f)
+            );
+            return enemy;
+        }
+
+        // "A counterpart to the Pit Snake" — same shape, twice the damage
+        // split across a 2-shot "V formation" (FanShot with shots: 2 gives
+        // exactly a symmetric pair) instead of one shot.
+        public static Enemy CreatePitViper(Vector2 position)
+        {
+            var enemy = new Enemy(Art.PitViper, position)
+            {
+                health = 5,
+                healthMax = 5,
+                PointValue = 5,
+                DropPool = SnakePitDropPool,
+                DropChances = SnakePitDropChances,
+                DropTierRanges = SnakePitDropTierRanges,
+            };
+            enemy.AddBehaviour(enemy.MoveRandomly());
+            enemy.AddAttackBehaviour(
+                enemy.FanShot(
+                    range: 10f * 32f,
+                    damage: 20,
+                    projectileSpeed: 5f * 32f / 60f,
+                    shots: 2,
+                    angleStep: 0.3f
+                )
+            );
+            return enemy;
+        }
+
+        // "Wanders in place, snaps back if it strays too far from the
+        // center of the room" — MoveTethered() already defaults to
+        // tethering at its own spawn point, so no center-point plumbing is
+        // needed here at all. "Shoots single shots in a random cardinal or
+        // ordinal direction" (ShootRandomDirection), "throwing bombs at the
+        // nearest player" and "continually detonating a red AoE explosion
+        // on itself" both map onto the new ThrowGrenades primitive, just
+        // with a different targetPosition delegate.
+        public static Enemy CreateGreaterPitSnake(Vector2 position)
+        {
+            var enemy = new Enemy(Art.GreaterPitSnake, position)
+            {
+                health = 500,
+                healthMax = 500,
+                Defense = 10,
+                PointValue = 250,
+                DropPool = SnakePitDropPool,
+                DropChances = SnakePitDropChances,
+                DropTierRanges = SnakePitDropTierRanges,
+            };
+            enemy.AddBehaviour(enemy.MoveTethered());
+            enemy.AddAttackBehaviour(
+                enemy.ShootRandomDirection(damage: 45, projectileSpeed: 8f * 32f / 60f, cooldownFrames: 70)
+            );
+            enemy.AddAttackBehaviour(
+                enemy.ThrowGrenades(
+                    damage: 65,
+                    radius: 2f * 32f,
+                    cooldownFrames: 110,
+                    targetPosition: () => Player.Instance.Position
+                )
+            );
+            enemy.AddAttackBehaviour(
+                enemy.ThrowGrenades(
+                    damage: 65,
+                    radius: 2f * 32f,
+                    cooldownFrames: 130,
+                    targetPosition: () => enemy.Position
+                )
+            );
+            return enemy;
+        }
+
+        // Same wander/tether/self-AoE shape as Greater Pit Snake above, but
+        // a 3-pellet spread (Spray) instead of a random single shot, and
+        // its bombs land near a random point ~6 tiles away instead of
+        // exactly on the player. The wiki gives 3 different damage/speed
+        // values across the spread's own pellets (70/50/40, at increasing
+        // speed) — simplified to one representative middle value (Spray()
+        // fires a uniform pellet count/damage/speed per call), same
+        // "close enough" simplification this session's other bosses/
+        // enemies already use for non-uniform wiki attack tables.
+        public static Enemy CreateGreaterPitViper(Vector2 position)
+        {
+            var enemy = new Enemy(Art.GreaterPitViper, position)
+            {
+                health = 500,
+                healthMax = 500,
+                Defense = 10,
+                PointValue = 250,
+                DropPool = SnakePitDropPool,
+                DropChances = SnakePitDropChances,
+                DropTierRanges = SnakePitDropTierRanges,
+            };
+            enemy.AddBehaviour(enemy.MoveTethered());
+            enemy.AddAttackBehaviour(
+                enemy.Spray(projectileSpeed: 7f * 32f / 60f, projectileAmount: 3, damage: 50)
+            );
+            enemy.AddAttackBehaviour(
+                enemy.ThrowGrenades(
+                    damage: 65,
+                    radius: 2f * 32f,
+                    cooldownFrames: 110,
+                    targetPosition: () =>
+                        enemy.Position + Extensions.FromPolar(rand.NextFloat(0, MathHelper.TwoPi), 6f * 32f)
+                )
+            );
+            enemy.AddAttackBehaviour(
+                enemy.ThrowGrenades(
+                    damage: 65,
+                    radius: 2f * 32f,
+                    cooldownFrames: 130,
+                    targetPosition: () => enemy.Position
+                )
+            );
+            return enemy;
+        }
+
+        // "Circles approximately 2 tiles from the nearest player,
+        // continually firing... Occasionally charges towards the nearest
+        // player" — OrbitPlayer's constant pull toward the orbit target and
+        // PeriodicCharge's occasional velocity burst just add together,
+        // same "two behaviours, no bespoke state machine" shape Cave Pirate
+        // Veteran's own FollowPlayer+OrbitPlayer combo already established.
+        public static Enemy CreateBrownPython(Vector2 position)
+        {
+            var enemy = new Enemy(Art.BrownPython, position)
+            {
+                health = 200,
+                healthMax = 200,
+                Defense = 20,
+                PointValue = 70,
+                DropPool = SnakePitDropPool,
+                DropChances = SnakePitDropChances,
+                DropTierRanges = SnakePitDropTierRanges,
+            };
+            enemy.AddBehaviour(enemy.OrbitPlayer(radius: 2f * 32f));
+            enemy.AddBehaviour(
+                enemy.PeriodicCharge(intervalFrames: 200, chargeDurationFrames: 25, chargeSpeed: 6f)
+            );
+            enemy.AddAttackBehaviour(
+                enemy.ShootIfInRange(range: 6.3f * 32f, damage: 30, projectileSpeed: 7f * 32f / 60f)
+            );
+            return enemy;
+        }
+
+        // "The only python that does not directly move towards the
+        // player" — MoveRandomly() (wanders) rather than any Follow/Orbit
+        // behaviour, plus a 3-shot "swipe" (FanShot) aimed left/center/
+        // right of the player.
+        public static Enemy CreateYellowPython(Vector2 position)
+        {
+            var enemy = new Enemy(Art.YellowPython, position)
+            {
+                health = 200,
+                healthMax = 200,
+                Defense = 5,
+                PointValue = 70,
+                DropPool = SnakePitDropPool,
+                DropChances = SnakePitDropChances,
+                DropTierRanges = SnakePitDropTierRanges,
+            };
+            enemy.AddBehaviour(enemy.MoveRandomly());
+            enemy.AddAttackBehaviour(
+                enemy.FanShot(
+                    range: 12.75f * 32f,
+                    damage: 35,
+                    projectileSpeed: 8.5f * 32f / 60f,
+                    shots: 3,
+                    angleStep: 0.25f
+                )
+            );
+            return enemy;
+        }
+
+        // "Lunges at the nearest player, firing off a 4-shot shotgun if
+        // close enough" — FollowPlayer (aggressive) + Spray's new range
+        // parameter (only fires within range, unlike Spray()'s previous
+        // unconditional firing). "Wavy shots" visual flourish skipped
+        // (plain EnemyProjectile via Spray, not WavyProjectile) — a
+        // deliberate simplification, not an oversight.
+        public static Enemy CreateFirePython(Vector2 position)
+        {
+            var enemy = new Enemy(Art.FirePython, position)
+            {
+                health = 200,
+                healthMax = 200,
+                Defense = 5,
+                PointValue = 70,
+                DropPool = SnakePitDropPool,
+                DropChances = SnakePitDropChances,
+                DropTierRanges = SnakePitDropTierRanges,
+            };
+            enemy.AddBehaviour(enemy.FollowPlayer(0.5f));
+            enemy.AddAttackBehaviour(
+                enemy.Spray(
+                    projectileSpeed: 6.5f * 32f / 60f,
+                    projectileAmount: 4,
+                    damage: 35,
+                    range: 13f * 32f
+                )
+            );
             return enemy;
         }
 

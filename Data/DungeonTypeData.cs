@@ -49,5 +49,16 @@ namespace Realm.Data
         public string WoodFloorTileName { get; set; }
         public string BackgroundTileName { get; set; }
         public float PathGapChance { get; set; }
+
+        // Chance (0.0-1.0) that this dungeon instance gets a Treasure Room
+        // — see Dungeon/TreasureRoomController.cs. 0 (the default) means
+        // "never," unchanged for every dungeon type that doesn't opt in;
+        // first real use: Snake Pit, matching its own wiki's "there is a
+        // chance that at least one treasure room will appear." No change to
+        // the room's own tile carving when it does — one of the normally-
+        // generated rooms is picked and handed to the controller as-is, a
+        // deliberate simplification from the wiki's own distinctly-shaped
+        // "long room."
+        public float TreasureRoomChance { get; set; } = 0f;
     }
 }

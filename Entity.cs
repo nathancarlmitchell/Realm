@@ -65,6 +65,25 @@ namespace Realm
             // No icon (see DebuffIcon()'s own comment) — per direct
             // request, this debuff has no visual indicator at all.
             Vulnerable,
+
+            // Snake Pit (Snakepit Guard's Snake Spinners/Snake Balls) —
+            // halves an enemy's next multi-shot attack's projectile count
+            // (see Enemy.EffectiveShotCount()); on the player, pins
+            // AttacksPerSecond to its Dexterity-0 value (see Player.
+            // AttacksPerSecond). Duration-only, same "one active instance,
+            // refreshed on reapply" shape as every other entry here —
+            // unlike Bleeding below, nothing about Dazed needs to stack.
+            Dazed,
+
+            // Snake Pit (Snakepit Dart Thrower) — this entry only tracks
+            // *whether* an entity is currently bleeding at all (for the
+            // DebuffIcon()/DrawDebuffIndicators() below and, on the player
+            // side, gating health regen); the actual drain amount is
+            // tracked separately per side (Player: a flat rate, see
+            // Player.Bleed(); Enemy: a stacking list of per-source rates,
+            // see Enemy.bleedStacks) since the two sides deliberately don't
+            // behave the same way here.
+            Bleeding,
         }
 
         private readonly Dictionary<DebuffType, int> activeDebuffs = new();
@@ -164,6 +183,8 @@ namespace Realm
                 DebuffType.Healing => Art.Healing,
                 DebuffType.Unstable => Art.Unstable,
                 DebuffType.LethalStrike => Art.LethalStrike,
+                DebuffType.Dazed => Art.Dazed,
+                DebuffType.Bleeding => Art.Bleeding,
                 // Vulnerable deliberately has no icon — see its own enum
                 // comment. Falls through to the same null the default arm
                 // below returns; DrawDebuffIndicators() skips null icons

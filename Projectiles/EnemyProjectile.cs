@@ -33,6 +33,18 @@ namespace Realm.Projectiles
         // Damage above.
         public int UnstableDurationFrames = 180;
 
+        // Whether this projectile Dazes the player on hit (Player.Daze(),
+        // see Entity.DebuffType.Dazed's own doc comment) — same
+        // SlowsOnHit/UnstablesOnHit shape. First real use: Snakepit Guard's
+        // Snake Spinners/Snake Balls (Snake Pit).
+        public bool DazesOnHit = false;
+        public int DazeDurationFrames = 120; // Player.Daze()'s own default
+
+        // Whether this projectile Bleeds the player on hit (Player.Bleed())
+        // — same shape again. First real use: Snakepit Dart Thrower's dart.
+        public bool BleedsOnHit = false;
+        public int BleedDurationFrames = 240; // Player.Bleed()'s own default
+
         // Whether a hit against the player consumes this projectile — true
         // (the original, still-default behavior) for everything except
         // whatever explicitly opts out, e.g. GrenadeProjectile, which stays

@@ -116,6 +116,23 @@ namespace Realm
         // property's job) but named correctly here in code.
         public static Texture2D PirateSword { get; private set; }
 
+        // Snake Pit's own real enemy roster (Data/DungeonType_SnakePit.json)
+        // — real, dedicated art supplied for the 7 regular enemies plus the
+        // Treasure Room's own mini-boss, same "one texture per named wiki
+        // enemy" treatment as Pirate Cave above. Loaded from Content/
+        // Dungeons/Snake Pit/{Name}.png. No dedicated Snakepit Dart Thrower
+        // art exists (its own wiki page was merged into the Guard's — see
+        // docs/DEVLOG.md) — it reuses Art.HealthBar tinted, same
+        // placeholder-art precedent Cube God's "cube system" already set.
+        public static Texture2D PitSnake { get; private set; }
+        public static Texture2D PitViper { get; private set; }
+        public static Texture2D GreaterPitSnake { get; private set; }
+        public static Texture2D GreaterPitViper { get; private set; }
+        public static Texture2D BrownPython { get; private set; }
+        public static Texture2D YellowPython { get; private set; }
+        public static Texture2D FirePython { get; private set; }
+        public static Texture2D SnakepitGuard { get; private set; }
+
         public static AnimatedTexture Portal { get; private set; }
 
         // Dungeon-specific portal animations — same 7-frame, 8fps loop as
@@ -273,6 +290,8 @@ namespace Realm
         public static Texture2D Healing { get; private set; }
         public static Texture2D Unstable { get; private set; }
         public static Texture2D LethalStrike { get; private set; }
+        public static Texture2D Dazed { get; private set; }
+        public static Texture2D Bleeding { get; private set; }
         public static Texture2D GreenBolt { get; private set; }
         public static Texture2D BlackMagic { get; private set; }
 
@@ -439,6 +458,8 @@ namespace Realm
             Healing = content.Load<Texture2D>("StatusEffects/healing");
             Unstable = content.Load<Texture2D>("StatusEffects/unstable");
             LethalStrike = content.Load<Texture2D>("StatusEffects/leathal strike");
+            Dazed = content.Load<Texture2D>("StatusEffects/dazed");
+            Bleeding = content.Load<Texture2D>("StatusEffects/bleeding");
             GreenBolt = content.Load<Texture2D>("Projectiles/Green Bolt");
             BlackMagic = content.Load<Texture2D>("Projectiles/Black Magic");
 
@@ -465,6 +486,15 @@ namespace Realm
             PirateKingSword = content.Load<Texture2D>("Projectiles/Pirate King Sword");
             PirateShot = content.Load<Texture2D>("Projectiles/Pirate Shot");
             PirateSword = content.Load<Texture2D>("Projectiles/Priate Sword");
+
+            PitSnake = content.Load<Texture2D>("Dungeons/Snake Pit/Pit Snake");
+            PitViper = content.Load<Texture2D>("Dungeons/Snake Pit/Pit Viper");
+            GreaterPitSnake = content.Load<Texture2D>("Dungeons/Snake Pit/Greater Pit Snake");
+            GreaterPitViper = content.Load<Texture2D>("Dungeons/Snake Pit/Greater Pit Viper");
+            BrownPython = content.Load<Texture2D>("Dungeons/Snake Pit/Brown Python");
+            YellowPython = content.Load<Texture2D>("Dungeons/Snake Pit/Yellow Python");
+            FirePython = content.Load<Texture2D>("Dungeons/Snake Pit/Fire Python");
+            SnakepitGuard = content.Load<Texture2D>("Dungeons/Snake Pit/Snakepit Guard");
 
             // Fonts.
             HudFont = content.Load<SpriteFont>("Fonts/HudFont");

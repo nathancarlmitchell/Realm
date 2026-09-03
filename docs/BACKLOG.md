@@ -83,7 +83,18 @@ prioritized or scheduled — the user asked to keep these noted for later rather
   representative ones), and the alternating-attack/self-Armor cooldown values are all first-pass —
   needs an actual playthrough to confirm the phase transitions read as escalating rather than
   jarring, the cannon lanes are dodgeable, and the fight feels appropriately easy for the
-  "beginner dungeon" boss it's meant to be.
+  "beginner dungeon" boss it's meant to be. Also needs a real playtest pass: Snake Pit's own
+  Treasure Room mini-boss, `Enemies/SnakePit/SnakepitGuard.cs` (see [DEVLOG.md](DEVLOG.md)) — a
+  plain `Enemy` subclass rather than `Boss` (it fights inline in the dungeon, not a
+  `BossRealmState`), same "wiki numbers as-is, first pass" status as every boss above: HP/DEF/PV
+  and every attack's damage/speed/range are the wiki's own numbers, but the phase-2 oscillation
+  speed, every attack's cooldown, and the Ring/AbilityItem drop tiers (the wiki calls out Weapon/
+  Armor tiers explicitly but not those two) are all estimates. The Treasure Room itself is also a
+  simplification worth another look eventually: the room keeps its normal generated rectangular
+  shape rather than the wiki's own distinctly-shaped "long room," and the wiki's "faster Snake
+  Spinner bursts triggered whenever [the Guard] reaches either end of its oscillation range" wasn't
+  implemented — phase 2 only has its own continuous attacks, no extra burst tied to reaching an
+  end.
 - **Remove the test-only boss portals in the Nexus.** `States/NexusState.cs`'s `portalList` has
   three `// TEMP`-commented shortcut portals: `Portal.Destination.BossRealm` at
   `Player.Instance.Position + (-150, -100)`, `Portal.Destination.SthenoBossRealm` at

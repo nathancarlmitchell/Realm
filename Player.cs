@@ -331,8 +331,13 @@ namespace Realm
         // 8 attacks/sec at 75 Dexterity (every point past 0 adds ~0.0867).
         // Drives Update()'s projectileCooldown accumulator below. No Berserk
         // multiplier — this engine has no Berserk status effect to hook one
-        // into.
-        public float AttacksPerSecond => 1.5f + 6.5f * (Dexterity / 75f);
+        // into. Dazed (see DebuffType.Dazed) pins this to exactly its own
+        // Dexterity-0 value regardless of actual Dexterity — "reduces
+        // Dexterity to 0 during fire rate calculations" is literally what
+        // the un-dazed formula already returns at 0, so this is a direct
+        // read of the spec, not a second formula.
+        public float AttacksPerSecond =>
+            HasDebuff(DebuffType.Dazed) ? 1.5f : 1.5f + 6.5f * (Dexterity / 75f);
 
         // Movement rate: 4 tiles/sec at 0 Speed, scaling up to 9.6 tiles/sec
         // at 75 Speed. Drives Update()'s Velocity calculation below. No
@@ -731,6 +736,29 @@ namespace Realm
         public void Destabilize(int durationFrames = 180)
         {
             ApplyDebuff(DebuffType.Unstable, durationFrames);
+        }
+
+        // Dazes this player — see AttacksPerSecond above for what it
+        // actually does (pins fire rate to its Dexterity-0 value). Same
+        // duration-only shape as Slow()/Destabilize() above; default (2s)
+        // matches the more common of Snakepit Guard's own two Dazing
+        // attacks (Snake Spinners; Snake Balls pass their own 4s instead).
+        public void Daze(int durationFrames = 120)
+        {
+            ApplyDebuff(DebuffType.Dazed, durationFrames);
+        }
+
+        // Flat 20 HP/sec drain (see Update()'s bleedDamageAccumulator tick)
+        // for durationFrames, unlike Enemy's own per-source-stacking
+        // Bleeding (see Enemy.bleedStacks) — the player side is
+        // deliberately simpler: reapplying just refreshes the duration,
+        // same as every other duration-only debuff here, since the rate
+        // itself never depends on how many sources are hitting the player.
+        // Default (4s = 240 frames) matches Snakepit Dart Thrower's own
+        // dart, the only source today.
+        public void Bleed(int durationFrames = 240)
+        {
+            ApplyDebuff(DebuffType.Bleeding, durationFrames);
         }
 
         // Rogue's Cloak (see CharacterClasses/Rogue.cs/Cloak.cs) — written
@@ -1396,6 +1424,18 @@ namespace Realm
         // fraction every cycle instead of carrying it forward.
         private float healthCooldown = 0f;
 
+        // Same fractional-accumulator shape as healthCooldown above, for
+        // Bleeding's flat 20 HP/sec drain (see Update()'s own tick and
+        // Bleed()'s doc comment).
+        private float bleedDamageAccumulator = 0f;
+        private const float BleedDamagePerSecond = 20f;
+
+        // Cadence for Bleeding's yellow RisingParticle clump (see Update())
+        // — same cooldown-counter-driven shape Priest.cs's own healing
+        // effect already uses.
+        private int bleedParticleCooldown = 0;
+        private const int BleedParticleIntervalFrames = 15;
+
         private float manaCooldown = 0f;
 
         // Float accumulator, not the int-tick-count style the other
@@ -1597,13 +1637,52 @@ namespace Realm
             // of one HP completed this tick; subtracting 1 (not resetting
             // to 0) on regen carries the leftover fraction into the next
             // cycle instead of discarding it, same precision fix as
-            // AttacksPerSecond/TilesPerSecond above.
-            healthCooldown += HealthRegenPerSecond / 60f;
-            if (healthCooldown >= 1f)
+            // AttacksPerSecond/TilesPerSecond above. Skipped entirely while
+            // Bleeding — the wiki's own "negates VIT."
+            if (!HasDebuff(DebuffType.Bleeding))
             {
-                healthCooldown -= 1f;
-                if (Health < HealthMax)
-                    Health++;
+                healthCooldown += HealthRegenPerSecond / 60f;
+                if (healthCooldown >= 1f)
+                {
+                    healthCooldown -= 1f;
+                    if (Health < HealthMax)
+                        Health++;
+                }
+            }
+
+            // Bleeding's own drain — same fractional-tick shape as the
+            // regen above, but subtracting instead of adding, floored at 1
+            // (Bleed()'s own doc comment: "cannot kill players") rather
+            // than routed through Hit() at all, so this skips Defense
+            // mitigation, the hit sound/flash, and any Kill() path
+            // entirely — it's a status tick, not a shot. Also drives a
+            // small recurring yellow RisingParticle clump (Particles/
+            // RisingParticle.cs, the same effect/cadence Priest.cs's own
+            // healing aura already uses) for as long as this is active.
+            if (HasDebuff(DebuffType.Bleeding))
+            {
+                bleedDamageAccumulator += BleedDamagePerSecond / 60f;
+                if (bleedDamageAccumulator >= 1f)
+                {
+                    int damage = (int)bleedDamageAccumulator;
+                    Health = Math.Max(1, Health - damage);
+                    bleedDamageAccumulator -= damage;
+                }
+
+                if (--bleedParticleCooldown <= 0)
+                {
+                    bleedParticleCooldown = BleedParticleIntervalFrames;
+                    RisingParticle.SpawnRisingBurst(
+                        () => Position + new Vector2(0, Size.Y / 2f),
+                        Microsoft.Xna.Framework.Color.Yellow,
+                        count: 2,
+                        lifespanTicks: 80
+                    );
+                }
+            }
+            else
+            {
+                bleedDamageAccumulator = 0f;
             }
 
             // Low-health flash (see the fields above Update()).

@@ -521,6 +521,17 @@ namespace Realm
                     {
                         enemies[i].Vulnerable();
                     }
+                    if (bullets[j].DazesOnHit)
+                    {
+                        enemies[i].Daze(bullets[j].DazeDurationFrames);
+                    }
+                    if (bullets[j].BleedsOnHit)
+                    {
+                        enemies[i].ApplyBleedStack(
+                            bullets[j].BleedDurationFrames,
+                            bullets[j].BleedDamagePerSecond
+                        );
+                    }
                     if (bullets[j].ExpiresOnHit)
                     {
                         bullets[j].IsExpired = true;
@@ -552,6 +563,14 @@ namespace Realm
                     if (enemiesProjectiles[i].UnstablesOnHit && Player.Instance == hitPlayer)
                     {
                         hitPlayer.Destabilize(enemiesProjectiles[i].UnstableDurationFrames);
+                    }
+                    if (enemiesProjectiles[i].DazesOnHit && Player.Instance == hitPlayer)
+                    {
+                        hitPlayer.Daze(enemiesProjectiles[i].DazeDurationFrames);
+                    }
+                    if (enemiesProjectiles[i].BleedsOnHit && Player.Instance == hitPlayer)
+                    {
+                        hitPlayer.Bleed(enemiesProjectiles[i].BleedDurationFrames);
                     }
                     // Marked regardless of ExpiresOnHit below, so a
                     // non-expiring projectile (e.g. GrenadeProjectile) can

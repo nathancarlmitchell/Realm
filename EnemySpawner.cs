@@ -123,6 +123,19 @@ namespace Realm
             ("Pirate Commander", Enemy.CreatePirateCommander),
             ("Pirate Captain", Enemy.CreatePirateCaptain),
             ("Pirate Admiral", Enemy.CreatePirateAdmiral),
+
+            // Snake Pit (Data/DungeonType_SnakePit.json) — same "never in
+            // any BiomeData.json" isolation as Pirate Cave's own roster
+            // above. Snakepit Guard/Dart Thrower aren't here — the
+            // Treasure Room controller spawns them directly, never picked
+            // randomly by DungeonEnemySpawner.
+            ("Pit Snake", Enemy.CreatePitSnake),
+            ("Pit Viper", Enemy.CreatePitViper),
+            ("Greater Pit Snake", Enemy.CreateGreaterPitSnake),
+            ("Greater Pit Viper", Enemy.CreateGreaterPitViper),
+            ("Brown Python", Enemy.CreateBrownPython),
+            ("Yellow Python", Enemy.CreateYellowPython),
+            ("Fire Python", Enemy.CreateFirePython),
         ];
 
         // Cross-references a name list against BasicEnemyPool above — the

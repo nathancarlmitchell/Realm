@@ -8923,3 +8923,97 @@ date/time for those individually; don't treat their grouping as meaning they all
      world-unit conversion in this codebase already uses — automatically covering all four bosses
      (Limon, Stheno, CubeGod, Dreadstump) through the shared base class, no per-boss code needed.
      Plain `dotnet build` (0 errors) plus a real minimized boot-check (stayed running, no stderr).
+
+324. **Snake Pit reworked: 7 real wiki-sourced enemies replace the placeholder roster, a full**
+     **Treasure Room mini-boss encounter, and the Crypt tileset moved into the Snake Pit content**
+     **folder.** Requested directly, with real art supplied for all 8 named enemies
+     (`Content/Dungeons/Snake Pit/*.png`). Source: realmeye.com/wiki/snake-pit and every linked
+     enemy's own page (`WebFetch` doesn't render RealmEye, so the real browser tool was used, same
+     as every other wiki-research pass this session).
+
+     **The 7 regular enemies** (`Enemy.cs`, wired into `EnemySpawner.BasicEnemyPool` and
+     `Data/DungeonType_SnakePit.json`'s `EnemyNames`, replacing the old placeholder
+     `Wanderer`/`Seeker`/`Snake`/`Slime`): Pit Snake, Pit Viper (a 2-shot "V formation" via
+     `FanShot`), Greater Pit Snake/Viper (500 HP mini-tough enemies -- `MoveTethered()` already
+     defaults to tethering at its own spawn point, matching "wanders in place, snaps back to room
+     center" with zero new plumbing), Brown Python (`OrbitPlayer` + an occasional charge), Yellow
+     Python (a 3-shot "swipe" via `FanShot`), and Fire Python (lunges, then a close-range shotgun).
+     Also added a `SnakePitDropPool`/`DropChances`/`DropTierRanges` table (not explicitly
+     requested, but needed to avoid these 7 brand-new enemies silently dropping nothing under the
+     "no default drop chances" rule from entry 321 -- numbers copied directly from
+     `PirateCaveDropChances`/`PirateCaveDropTierRanges` as a reasonable default, not a considered
+     retune).
+
+     **Three new shared `Enemy.cs` primitives**, each reused across 2+ of the new enemies rather
+     than one-off per caller: `ShootRandomDirection()` (Greater Pit Snake's random-cardinal single
+     shot), `ThrowGrenades()` (spawns the already-existing `GrenadeProjectile` -- previously only
+     used via Stheno's own private helper -- at a `Func<Vector2>` target, covering "at the player,"
+     "near a random point," and "on myself" just by varying the delegate), and `PeriodicCharge()`
+     (Brown Python's occasional dash, same wait-then-trigger-then-revert shape as `PeriodicArmor`).
+     `Spray()` gained an optional `range` gate (Fire Python's "shotgun only if close enough") and had
+     its `projectileSpeed` widened from `int` to `float` (every existing integer-literal caller is
+     unaffected) so a wiki tile/sec conversion doesn't silently truncate.
+
+     **Two new debuffs, Dazed and Bleeding** (`Content/StatusEffects/dazed.png`/`bleeding.png`,
+     real art already supplied) -- both built as genuinely bidirectional infrastructure per direct
+     spec, even though only the player-receiving direction is exercised this pass:
+     - *Dazed*: on a player, pins `AttacksPerSecond` to its Dexterity-0 value (1.5f) -- a one-line
+       gate, since that's exactly what the existing formula already returns at 0 Dexterity. On an
+       enemy, halves its next multi-shot attack's projectile count (floor 1) via new
+       `Enemy.EffectiveShotCount()`, applied inside `Spray`/`FanShot`/`Bomb` so it's automatic for
+       every enemy using them. `EnemyProjectile.DazesOnHit`/`Projectile.DazesOnHit` (mirrors
+       `SlowsOnHit`/`StunsOnHit`) wired into both halves of `EntityManager.HandleCollisions()`.
+     - *Bleeding*: asymmetric by direct spec, so it doesn't reuse the generic debuff dictionary the
+       same way on both sides. On a player: flat 20 HP/sec, blocks health regen (the wiki's "negates
+       VIT"), floored at 1 HP ("cannot kill players") -- applied directly, deliberately bypassing
+       `Hit()` entirely (no Defense mitigation, no hit-sound/flash, no `Kill()` path). On an enemy:
+       `X` HP/sec *per projectile that inflicted it*, stacking rather than refreshing -- a new
+       `Enemy.bleedStacks` list (appended to, not overwritten, on each hit) ticks and prunes each
+       frame, applying the summed rate once per second via the existing `WasShot(ignoresDefense:
+       true)` (batched to once/sec rather than every frame specifically to avoid spamming its hit
+       sound/particles) -- this side *can* kill, since "cannot kill" is player-specific wording. Both
+       sides spawn a small recurring yellow `RisingParticle.SpawnRisingBurst()` clump (that class
+       already existed -- previously only used by Priest's own healing aura) for as long as the
+       status is active, same cadence Priest.cs's own effect already uses.
+
+     **A full Treasure Room mini-boss encounter** -- confirmed via AskUserQuestion to build for real
+     rather than simplify Snakepit Guard into a regular spawn, given its actual wiki scale (7,500 HP,
+     2 phases, 6 escort enemies, a room-wide ambush trigger). New `DungeonTypeData.TreasureRoomChance`
+     (0 default, every other dungeon type unaffected; Snake Pit sets 0.5) rolled in
+     `DungeonState`'s constructor against a spare non-start/non-boss room -- no change to the room's
+     own tile carving, a deliberate simplification from the wiki's own distinctly-shaped "long room"
+     called out directly in the code. New `Dungeon/TreasureRoomController.cs` (same "one small
+     controller class" shape as `DungeonPathfindingController`/`DungeonEnemySpawner`) spawns a
+     `TreasureRoomButton` (modeled directly on `BeachBeacon.cs` -- inert until walked into, then
+     fires a callback instead of just flipping its own flag) and 6 dormant `SnakepitDartThrower`
+     (`Enemies/SnakePit/` -- permanently `Invulnerable`, `DropsLoot = false`, no dedicated art or
+     even a surviving wiki page of its own, so it reuses `Art.HealthBar` tinted, same placeholder
+     precedent Cube God's "cube system" already set) around the room's perimeter; the button's
+     activation spawns `SnakepitGuard` (7,500 HP/DEF 20/PV 2,000, the wiki's own numbers) at the
+     room's center and hands every Dart Thrower a reference to it so they stop firing the instant it
+     dies. `SnakepitGuard` is a plain `Enemy` subclass, not `Boss` -- it fights inline in the dungeon
+     with its own small floating health bar, not a dedicated `BossRealmState` HUD -- with a
+     health-threshold 2-phase design (`PhaseWatcher()`, same shape as `LimonTheSpriteGoddess`/
+     `DreadstumpThePirateKing`): phase 1 chases slowly while firing `FanShot` Snake Spit, a
+     `Bomb()`-ring Snake Spinners (extended with a new `dazesOnHit` param, also added to `FanShot`)
+     for the daze, a 3-way `FanShot` Snake Balls, and paired `ThrowGrenades`; phase 2 oscillates
+     between the room's own two extreme points along whichever axis is longer instead of chasing,
+     with a 4-way Snake Balls spread and a trail of grenades along its path. A first pass built from
+     real wiki numbers (own guaranteed-loot table: Tier 7-9 weapons/Tier 6-8 armor from the wiki,
+     Ring/AbilityItem tiers estimated), not yet playtested -- flagged in `docs/BACKLOG.md`.
+
+     **Tileset move**: `Content/Dungeons/Crypt/TileSet.png` -> `Content/Dungeons/Snake Pit/TileSet.png`
+     via `git mv`, `Data/TileSet_Crypt.json`'s `ImageName` and the matching `Content.mgcb` block
+     updated to match, and the now-empty `Content/Dungeons/Crypt/` folder removed -- confirmed no
+     other dungeon type's `TileSetName` pointed at `"Crypt"` first, so this was a safe, isolated
+     move; the `TileSetData`'s own `"Crypt"` name/identity was left alone (only asked to move the
+     file, not rename the tileset).
+
+     Verified via a temporary `Game1.StartGame()` scripted check (reverted, no diff remains):
+     `Util.LoadDungeonTypeData("SnakePit")`'s 7 `EnemyNames` all resolved to real factories, and 12
+     real `DungeonState` constructions rolled a Treasure Room in 6 of them -- a dead-even 50%,
+     matching `TreasureRoomChance` exactly (an initial "12/12" reading was the test script's own
+     bug -- `EntityManager.CountWhere()` was counting stale entities left over from earlier
+     iterations since the test never called `Update()` to actually purge them; the real per-seed
+     delta was 6/12 once accounted for). Plain `dotnet build` (0 errors, same pre-existing unrelated
+     warnings) plus a real minimized boot-check (stayed running, no stderr) after reverting.
