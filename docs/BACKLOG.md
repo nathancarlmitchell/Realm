@@ -216,6 +216,13 @@ prioritized or scheduled — the user asked to keep these noted for later rather
   hasn't been interactively played yet. The delete "X" icon is currently just an outlined "X"
   character drawn at icon size (no dedicated art asset exists for it) — worth a real icon if it reads
   as too plain in play.
+- **Give Wanderer/Brute/Seeker/Slime/SpriteGod a real drop table.** Consequence of removing the
+  implicit PointValue-scaled drop-chance fallback (see [DEVLOG.md](DEVLOG.md) entry 321) — these
+  five open-Realm enemies had no explicit `Enemy.DropChances` at all (fully relying on that
+  fallback), so as of that change they drop nothing on death until each is given real numbers, the
+  same treatment Beach and Pirate Cave already got (`BeachDropChances`/`PirateCaveDropChances`).
+  Accepted deliberately for now per direct instruction, not an oversight — no tables/percentages
+  decided yet.
 - **Organize project file structure.** Requested directly. About 50 `.cs` files sit loose in the
   repo root (`Player.cs`, `Enemy.cs`, `Entity.cs`, `Item.cs`, `Weapon.cs`, `Armor.cs`, `Portal.cs`,
   `Util.cs`, `Sound.cs`, every other core/system/item-type file, etc.), alongside folders that

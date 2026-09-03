@@ -485,7 +485,6 @@ namespace Realm
                 this.Position,
                 PointValue,
                 DropPool,
-                DropWeights,
                 DropTierRanges,
                 StatPotionPool,
                 GuaranteedPotionChances,
@@ -502,20 +501,14 @@ namespace Realm
 
         // Which loot categories this enemy's drop table (SpawnLoot() above)
         // rolls against at all — the "real drop pool" backlog item's first
-        // real lever. Defaults to every category (today's existing
-        // behavior, unchanged for any enemy that doesn't opt into a
-        // narrower pool); a specific factory below can set this to exclude
-        // categories that don't fit that enemy's theme (e.g. CreateSnake()
-        // below drops gear only, no potions).
+        // real lever. Defaults to every category, but a category only
+        // actually rolls when DropChances below also has an explicit entry
+        // for it (see ItemSpawner.RollsCategory) — this default alone no
+        // longer produces any drops on its own. A specific factory below can
+        // still narrow this to exclude categories that don't fit that
+        // enemy's theme (e.g. CreateSnake() below drops gear only, no
+        // potions) even when it does have DropChances entries for the rest.
         protected ItemSpawner.LootCategory DropPool = ItemSpawner.LootCategory.All;
-
-        // Per-category chance multiplier layered on top of DropPool above —
-        // the backlog's "with its own odds" half. Empty by default (every
-        // category implicitly weight 1.0, i.e. today's unweighted rate,
-        // unchanged for any enemy that doesn't opt in); a specific factory
-        // below can raise or lower individual categories, e.g. CreateBigSnake()
-        // leaning toward potions without excluding gear the way DropPool would.
-        protected Dictionary<ItemSpawner.LootCategory, float> DropWeights = new();
 
         // Absolute tier range to roll a given category's dropped items
         // from, bypassing the PointValue/player-tier formula
@@ -523,10 +516,12 @@ namespace Realm
         // "what tier of gear can this enemy drop" lever. Per-category
         // (e.g. Weapon at tier 7-10, Ring at tier 3-4 on the same enemy),
         // not one shared range — keyed by LootCategory, empty by default
-        // (a category with no entry falls back to the existing
-        // PointValue-driven behavior, unchanged for any enemy that doesn't
-        // opt in for that category). Min/Max are inclusive; Min must be
-        // <= Max, since a range where it isn't has no valid roll.
+        // (a category with no entry falls back to the PointValue-driven
+        // formula, unchanged for any enemy that doesn't opt in for that
+        // category — this only picks the *tier*, DropChances below still
+        // decides whether the category rolls at all). Min/Max are
+        // inclusive; Min must be <= Max, since a range where it isn't has no
+        // valid roll.
         protected Dictionary<ItemSpawner.LootCategory, (int Min, int Max)> DropTierRanges = new();
 
         // Which specific stat potions (Attack/Defense/Dexterity/Life/
@@ -553,18 +548,14 @@ namespace Realm
         protected Dictionary<Potions, float> GuaranteedPotionChances = new();
 
         // Absolute, literal drop chance (0.0-1.0) for a whole category —
-        // Weapon/Armor/Ring/AbilityItem/StatPotion/HealthManaPotion — that
-        // bypasses both the PointValue-scaled base chance and the
-        // DropWeights multiplier above entirely. DropWeights is a
-        // *multiplier* on a PointValue-derived formula (the actual
-        // resulting percentage still depends on the enemy's toughness);
-        // this is for when an enemy needs an exact, fixed number instead
-        // (e.g. "this category is always 25%, full stop"). Empty by
-        // default (the existing PointValue/DropWeights-driven behavior,
-        // unchanged for any enemy that doesn't opt in for that category).
-        // Only affects Spawn() — SpawnGuaranteedLoot's gear categories are
-        // already deterministic (no chance roll to override) and it
-        // doesn't use HealthManaPotion at all.
+        // Weapon/Armor/Ring/AbilityItem/StatPotion/HealthManaPotion. The
+        // *only* way a category rolls at all (see ItemSpawner.
+        // RollsCategory) — empty by default, meaning an enemy that doesn't
+        // set an entry for a category simply never drops it, full stop, no
+        // implicit PointValue-scaled fallback. Only affects Spawn() —
+        // SpawnGuaranteedLoot's gear categories are already deterministic
+        // (no chance roll to override) and it doesn't use HealthManaPotion
+        // at all.
         protected Dictionary<ItemSpawner.LootCategory, float> DropChances = new();
 
         // Shared drop-rate override for every Beach-biome enemy (Pirate,
@@ -576,10 +567,12 @@ namespace Realm
         // never rolls would be meaningless); Weapon/Armor at 2.5% from tier
         // 1-3; Ring/AbilityItem at 1.25% from tier 1 only; HP/MP potions at
         // 2.5%. Halved from 5%/5%/2.5%/2.5%/5% per direct playtest feedback
-        // — drop rates felt too high across the board, same flat "everything
-        // in half" pass as ItemSpawner.DropChanceDenominator/StatPotion/
-        // HealthManaPotion's own base chances. static readonly since it's
-        // the same table for every instance, not per-enemy state.
+        // — drop rates felt too high across the board, a flat "everything in
+        // half" pass across the game's whole drop-chance formula at the
+        // time (that formula has since been replaced entirely — see
+        // ItemSpawner.RollsCategory — but these literal percentages weren't
+        // retuned when that happened). static readonly since it's the same
+        // table for every instance, not per-enemy state.
         protected static readonly ItemSpawner.LootCategory BeachDropPool =
             ItemSpawner.LootCategory.Weapon
             | ItemSpawner.LootCategory.Armor
@@ -615,6 +608,43 @@ namespace Realm
         // more generally; Beach -> Pirate Cave is just the first pairing.
         protected static readonly Dictionary<Portal.Destination, float> BeachPortalDropChances =
             new() { [Portal.Destination.PirateCaveDungeon] = 0.01f };
+
+        // Shared drop table for every Pirate Cave enemy (the 13 regular
+        // enemies below, and Dreadstump — see ItemSpawner.
+        // SpawnGuaranteedSingleItem() for how the boss's own single-item
+        // guarantee reuses this same pool/tier-range pair) — same "one
+        // table, edit once to retune everything" shape as BeachDropPool/
+        // BeachDropChances/BeachDropTierRanges above. Per direct request:
+        // no stat potions at all; Weapon/Armor tier 2-3, Ring/AbilityItem
+        // tier 1-2 (both narrower/lower than Beach's own 1-3/1-1); chance
+        // percentages copied verbatim from BeachDropChances.
+        protected static readonly ItemSpawner.LootCategory PirateCaveDropPool =
+            ItemSpawner.LootCategory.Weapon
+            | ItemSpawner.LootCategory.Armor
+            | ItemSpawner.LootCategory.Ring
+            | ItemSpawner.LootCategory.AbilityItem
+            | ItemSpawner.LootCategory.HealthManaPotion;
+
+        protected static readonly Dictionary<ItemSpawner.LootCategory, float> PirateCaveDropChances =
+            new()
+            {
+                [ItemSpawner.LootCategory.Weapon] = 0.0125f,
+                [ItemSpawner.LootCategory.Armor] = 0.0125f,
+                [ItemSpawner.LootCategory.Ring] = 0.005f,
+                [ItemSpawner.LootCategory.AbilityItem] = 0.005f,
+                [ItemSpawner.LootCategory.HealthManaPotion] = 0.025f,
+            };
+
+        protected static readonly Dictionary<
+            ItemSpawner.LootCategory,
+            (int Min, int Max)
+        > PirateCaveDropTierRanges = new()
+        {
+            [ItemSpawner.LootCategory.Weapon] = (2, 3),
+            [ItemSpawner.LootCategory.Armor] = (2, 3),
+            [ItemSpawner.LootCategory.Ring] = (1, 2),
+            [ItemSpawner.LootCategory.AbilityItem] = (1, 2),
+        };
 
         protected void AddBehaviour(IEnumerable<int> behaviour)
         {
@@ -1266,16 +1296,21 @@ namespace Realm
 
                 // Leans toward potions per the backlog's own example — gear
                 // stays fully in the pool (DropPool defaults to All, unlike
-                // Snake's gear-only exclusion), just weighted less likely to
-                // roll relative to potions.
-                DropWeights = new()
+                // Snake's gear-only exclusion), just less likely to roll
+                // than potions. Literal percentages (DropChances is now the
+                // only lever — see its own doc comment), carried over
+                // exactly from this enemy's old DropWeights-multiplier
+                // values (weight/16 for the PointValue>=100 gear bucket,
+                // weight/30 for StatPotion's fixed base, weight/20 for
+                // HealthManaPotion's) rather than retuned.
+                DropChances = new()
                 {
-                    [ItemSpawner.LootCategory.StatPotion] = 2.5f,
-                    [ItemSpawner.LootCategory.HealthManaPotion] = 2.5f,
-                    [ItemSpawner.LootCategory.Weapon] = 0.5f,
-                    [ItemSpawner.LootCategory.Armor] = 0.5f,
-                    [ItemSpawner.LootCategory.Ring] = 0.5f,
-                    [ItemSpawner.LootCategory.AbilityItem] = 0.5f,
+                    [ItemSpawner.LootCategory.StatPotion] = 0.08333f,
+                    [ItemSpawner.LootCategory.HealthManaPotion] = 0.125f,
+                    [ItemSpawner.LootCategory.Weapon] = 0.03125f,
+                    [ItemSpawner.LootCategory.Armor] = 0.03125f,
+                    [ItemSpawner.LootCategory.Ring] = 0.03125f,
+                    [ItemSpawner.LootCategory.AbilityItem] = 0.03125f,
                 },
             };
 
@@ -1378,15 +1413,20 @@ namespace Realm
                 tint = Color.LightGray,
 
                 // Generic non-Beach pool, same shape as CreateBigSnake's own
-                // DropWeights — no StatPotion, gear/ability items all still
-                // reachable, just not the sole outcome.
-                DropWeights = new()
+                // table — no StatPotion (simply has no entry below, now that
+                // DropChances is the only lever — see its own doc comment),
+                // gear/ability items all still reachable, just not the sole
+                // outcome. Literal percentages carried over exactly from
+                // this enemy's old DropWeights-multiplier values (weight/30
+                // for the PointValue<100 gear bucket, weight/20 for
+                // HealthManaPotion's fixed base) rather than retuned.
+                DropChances = new()
                 {
-                    [ItemSpawner.LootCategory.Weapon] = 1f,
-                    [ItemSpawner.LootCategory.Armor] = 1f,
-                    [ItemSpawner.LootCategory.Ring] = 0.5f,
-                    [ItemSpawner.LootCategory.AbilityItem] = 0.5f,
-                    [ItemSpawner.LootCategory.HealthManaPotion] = 1f,
+                    [ItemSpawner.LootCategory.Weapon] = 0.03333f,
+                    [ItemSpawner.LootCategory.Armor] = 0.03333f,
+                    [ItemSpawner.LootCategory.Ring] = 0.01667f,
+                    [ItemSpawner.LootCategory.AbilityItem] = 0.01667f,
+                    [ItemSpawner.LootCategory.HealthManaPotion] = 0.05f,
                 },
             };
 
@@ -1416,6 +1456,9 @@ namespace Realm
                 health = 5,
                 healthMax = 5,
                 PointValue = 1,
+                DropPool = PirateCaveDropPool,
+                DropChances = PirateCaveDropChances,
+                DropTierRanges = PirateCaveDropTierRanges,
             };
             enemy.AddBehaviour(enemy.MoveRandomly());
             return enemy;
@@ -1428,6 +1471,9 @@ namespace Realm
                 health = 5,
                 healthMax = 5,
                 PointValue = 1,
+                DropPool = PirateCaveDropPool,
+                DropChances = PirateCaveDropChances,
+                DropTierRanges = PirateCaveDropTierRanges,
             };
             enemy.AddBehaviour(enemy.MoveRandomly());
             return enemy;
@@ -1440,6 +1486,9 @@ namespace Realm
                 health = 5,
                 healthMax = 5,
                 PointValue = 1,
+                DropPool = PirateCaveDropPool,
+                DropChances = PirateCaveDropChances,
+                DropTierRanges = PirateCaveDropTierRanges,
             };
             enemy.AddBehaviour(enemy.MoveRandomly());
             return enemy;
@@ -1452,6 +1501,9 @@ namespace Realm
                 health = 5,
                 healthMax = 5,
                 PointValue = 1,
+                DropPool = PirateCaveDropPool,
+                DropChances = PirateCaveDropChances,
+                DropTierRanges = PirateCaveDropTierRanges,
             };
             enemy.AddBehaviour(enemy.MoveRandomly());
             return enemy;
@@ -1464,6 +1516,9 @@ namespace Realm
                 health = 5,
                 healthMax = 5,
                 PointValue = 1,
+                DropPool = PirateCaveDropPool,
+                DropChances = PirateCaveDropChances,
+                DropTierRanges = PirateCaveDropTierRanges,
             };
             enemy.AddBehaviour(enemy.MoveRandomly());
             return enemy;
@@ -1476,6 +1531,9 @@ namespace Realm
                 health = 5,
                 healthMax = 5,
                 PointValue = 1,
+                DropPool = PirateCaveDropPool,
+                DropChances = PirateCaveDropChances,
+                DropTierRanges = PirateCaveDropTierRanges,
             };
             enemy.AddBehaviour(enemy.MoveRandomly());
             return enemy;
@@ -1491,6 +1549,9 @@ namespace Realm
                 health = 20,
                 healthMax = 20,
                 PointValue = 2,
+                DropPool = PirateCaveDropPool,
+                DropChances = PirateCaveDropChances,
+                DropTierRanges = PirateCaveDropTierRanges,
             };
             enemy.AddBehaviour(enemy.FollowPlayer(0.4f));
             enemy.AddAttackBehaviour(
@@ -1511,6 +1572,9 @@ namespace Realm
                 health = 30,
                 healthMax = 30,
                 PointValue = 3,
+                DropPool = PirateCaveDropPool,
+                DropChances = PirateCaveDropChances,
+                DropTierRanges = PirateCaveDropTierRanges,
             };
             enemy.AddBehaviour(enemy.FollowPlayer(0.4f));
             enemy.AddAttackBehaviour(
@@ -1538,6 +1602,9 @@ namespace Realm
                 healthMax = 35,
                 Defense = 2,
                 PointValue = 4,
+                DropPool = PirateCaveDropPool,
+                DropChances = PirateCaveDropChances,
+                DropTierRanges = PirateCaveDropTierRanges,
             };
             enemy.AddBehaviour(enemy.FollowPlayer(0.2f));
             enemy.AddBehaviour(enemy.OrbitPlayer(radius: 5.2f * 32f));
@@ -1564,6 +1631,9 @@ namespace Realm
                 healthMax = 70,
                 Defense = 2,
                 PointValue = 7,
+                DropPool = PirateCaveDropPool,
+                DropChances = PirateCaveDropChances,
+                DropTierRanges = PirateCaveDropTierRanges,
             };
             enemy.AddAttackBehaviour(
                 enemy.ShootIfInRange(
@@ -1585,6 +1655,9 @@ namespace Realm
                 healthMax = 80,
                 Defense = 3,
                 PointValue = 8,
+                DropPool = PirateCaveDropPool,
+                DropChances = PirateCaveDropChances,
+                DropTierRanges = PirateCaveDropTierRanges,
             };
             enemy.AddAttackBehaviour(
                 enemy.ShootIfInRange(
@@ -1611,6 +1684,9 @@ namespace Realm
                 healthMax = 100,
                 Defense = 4,
                 PointValue = 10,
+                DropPool = PirateCaveDropPool,
+                DropChances = PirateCaveDropChances,
+                DropTierRanges = PirateCaveDropTierRanges,
             };
             enemy.AddAttackBehaviour(
                 enemy.ShootIfInRange(
@@ -1646,6 +1722,9 @@ namespace Realm
                 healthMax = 120,
                 Defense = 5,
                 PointValue = 12,
+                DropPool = PirateCaveDropPool,
+                DropChances = PirateCaveDropChances,
+                DropTierRanges = PirateCaveDropTierRanges,
             };
             enemy.AddAttackBehaviour(
                 enemy.ShootIfInRange(

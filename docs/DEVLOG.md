@@ -8862,3 +8862,48 @@ date/time for those individually; don't treat their grouping as meaning they all
      (0 errors) plus a real minimized boot-check (stayed running, no stderr) — no scripted test, per
      standing feedback, since this reuses `portalDropOnDeath`'s own already-proven
      `Portal.DroppedPortals.Add()` drop path with just a probabilistic gate in front of it.
+
+321. **Removed the implicit PointValue-scaled drop-chance formula — an enemy now drops nothing**
+     **unless it has an explicit `DropChances` entry for that category.** Requested directly, after
+     a loot-drop-table review turned up that every Pirate Cave enemy (all 13 regular enemies plus
+     Dreadstump) was silently relying on this generic fallback formula rather than any deliberate
+     table. Previously `ItemSpawner.RollsCategory()` fell back to a PointValue-scaled
+     `DropChanceDenominator`/`DropWeights`-multiplier formula whenever an enemy had no literal
+     `Enemy.DropChances` entry for a category — now it simply doesn't roll at all in that case, full
+     stop. `WeightFor()`/`WeightedChance()`/`DropChanceDenominator()` (the old formula's pieces) are
+     removed entirely; `MaxTierJump()`/`IsWeakEnemy()`/tier resolution are untouched, since those
+     govern *what tier* a drop lands at, not *whether* it happens. Confirmed the blast radius before
+     changing it: Wanderer, Brute, Seeker, Slime, and SpriteGod had zero explicit drop config at all
+     (fully implicit) and now drop nothing until given real tables (accepted per direct instruction —
+     no replacement table added for them yet); BigSnake and the Cube-trigger enemy used `DropWeights`
+     alone (a multiplier on the same formula, no literal `DropChances`) — converted both to literal
+     `DropChances` percentages carried over exactly from their old weighted odds (e.g. BigSnake's
+     `weight/16` gear buckets became `0.03125`, its `weight/30` StatPotion became `0.08333`, etc.) so
+     their existing loot behavior keeps working unchanged. `Enemy.DropWeights` (the field, and the
+     `dropWeights` parameter on `ItemSpawner.Spawn()`) is removed — `DropChances` is now the only
+     lever. All 14 Beach enemies and the three bosses with `GuaranteedPotionChances` (Limon/Stheno/
+     CubeGod) were already fully explicit and are unaffected. Plain `dotnet build` (0 errors) plus a
+     real minimized boot-check (stayed running, no stderr).
+
+322. **Added a real Pirate Cave loot table (all 13 regular enemies), and a new "guaranteed single**
+     **item" drop shape for Dreadstump.** Requested directly, closing the gap entry 321 exposed. New
+     shared `Enemy.PirateCaveDropPool`/`PirateCaveDropChances`/`PirateCaveDropTierRanges` — same "one
+     table, edit once" precedent `BeachDropPool`/`BeachDropChances`/`BeachDropTierRanges` already
+     established — wired into all 13 `CreateCavePirate*`/`CreatePirateLieutenant`/`Commander`/
+     `Captain`/`Admiral` factories. Per direct spec: Weapon/Armor at tier 2-3, Ring/AbilityItem at
+     tier 1-2 (both narrower/lower than Beach's own 1-3/1-1), HP/MP potions included, no stat
+     potions at all, and the chance percentages copied verbatim from `BeachDropChances` (Weapon/Armor
+     1.25%, Ring/AbilityItem 0.5%, HP/MP 2.5%).
+
+     Dreadstump gets the same `DropPool`/`DropTierRanges`, but not the same *shape* — per direct
+     request ("same table but with guaranteed chance of 1 item"), a new
+     `ItemSpawner.SpawnGuaranteedSingleItem()` sits between `Spawn()`'s "maybe nothing" chance table
+     and `SpawnGuaranteedLoot()`'s "one guaranteed item per category, every time" (what the other
+     three bosses use): it picks one category uniformly among whichever the pool enables, then
+     guarantees exactly one item from it — deliberately more modest than Limon/Stheno/CubeGod's own
+     multi-item hauls, matching Pirate Cave's status as the beginner dungeon. `Dreadstump.SpawnLoot()`
+     overrides `Boss`'s own default to call the new method instead. Verified every gear catalog
+     (Weapon/Armor/Ring/every AbilityItem type) actually has content at the tiers this table asks
+     for before wiring it in (Weapon/Armor run 0-14, Ring and every AbilityItem catalog run 0-7, so
+     2-3 and 1-2 are both safely populated). Plain `dotnet build` (0 errors) plus a real minimized
+     boot-check (stayed running, no stderr).

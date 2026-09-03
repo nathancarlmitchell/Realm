@@ -57,6 +57,14 @@ namespace Realm.Bosses
             baseDefense = Defense;
             PointValue = 200;
 
+            // Same pool/tier-range table as every regular Pirate Cave enemy
+            // (Enemy.PirateCaveDropPool/PirateCaveDropTierRanges) — but see
+            // SpawnLoot() below, which guarantees exactly one item from it
+            // rather than every category at once like the other three
+            // bosses' SpawnGuaranteedLoot(). Per direct request.
+            DropPool = PirateCaveDropPool;
+            DropTierRanges = PirateCaveDropTierRanges;
+
             // No dedicated Dreadstump audio yet — reuses the shared default,
             // same placeholder-audio status as Cube God.
             deathSound = Sound.DefaultHit;
@@ -73,6 +81,16 @@ namespace Realm.Bosses
             AddAttackBehaviour(ShipCannons());
             AddAttackBehaviour(BigBursts());
         }
+
+        // Overrides Boss's own default (SpawnGuaranteedLoot — one item
+        // guaranteed per DropPool category, every time) with a single
+        // guaranteed item picked among the same categories instead — a
+        // deliberately more modest guaranteed reward than Limon/Stheno/
+        // CubeGod's own multi-item hauls, matching Pirate Cave's status as
+        // the beginner dungeon. Per direct request ("same table... but a
+        // guaranteed chance of 1 item").
+        protected override void SpawnLoot() =>
+            ItemSpawner.SpawnGuaranteedSingleItem(Position, DropPool, DropTierRanges);
 
         // Polls health each frame; once it crosses a threshold, briefly goes
         // Invulnerable (with a red flash) and advances currentPhase — same

@@ -22,9 +22,9 @@ namespace Realm
         // unless a specific factory opts into a narrower pool).
         //
         // On/off per category. The backlog's other half — "with its own
-        // odds" — is the separate per-category weight multiplier below
-        // (see WeightFor/WeightedChance, and Enemy.DropWeights), applied on
-        // top of whatever this gate lets through.
+        // odds" — is Enemy.DropChances (see RollsCategory below): the only
+        // way a gated-in category actually rolls, now that there's no
+        // implicit PointValue-scaled fallback.
         [Flags]
         public enum LootCategory
         {
@@ -38,47 +38,23 @@ namespace Realm
             All = Weapon | Armor | Ring | AbilityItem | StatPotion | HealthManaPotion,
         }
 
-        // Per-category chance multiplier layered on top of LootCategory's
-        // simple in/out gate — the backlog's "with its own odds" half,
-        // deliberately left out when DropPool/LootCategory first shipped.
-        // 1.0 (i.e. no entry for that category) matches today's unweighted
-        // rate exactly; >1 rolls more often, <1 less often. Only meaningful
-        // for Spawn()'s chance-based rolls below — SpawnGuaranteedLoot's
-        // included categories are deterministic once a reachable tier
-        // exists (that's what makes the loot "guaranteed"), so a weight
-        // wouldn't change anything there and isn't threaded through.
-        private static float WeightFor(IReadOnlyDictionary<LootCategory, float> weights, LootCategory category) =>
-            weights != null && weights.TryGetValue(category, out float weight) ? weight : 1f;
-
-        // rand.Next(N) == 0 style chances get more frequent as N shrinks, so
-        // a weight is applied as a divisor on the base denominator rather
-        // than a multiplier on the chance itself. Floored at 1 (guaranteed,
-        // rand.Next(1) is always 0) so an extreme weight can't produce a
-        // zero/negative Next() argument.
-        private static int WeightedChance(int baseChance, float weight) =>
-            Math.Max(1, (int)Math.Round(baseChance / weight));
-
         // Whether a category's chance-based roll succeeds this call. An
-        // enemy-supplied dropChances entry (Enemy.DropChances) is a literal
-        // absolute probability (0.0-1.0) that bypasses the PointValue-scaled
-        // baseChance and the DropWeights multiplier entirely — the same
-        // "just give me the exact number" want RollGuaranteedPotions()
-        // fills for specific stat potions, generalized to every other
-        // chance-based category. Falls back to the existing weighted
-        // formula when no override is set for that category, so an enemy
-        // that doesn't opt in behaves exactly as before. Only meaningful
-        // for Spawn() — SpawnGuaranteedLoot's gear categories are already
-        // deterministic (no chance roll to override) and it doesn't use
-        // HealthManaPotion at all, so this isn't threaded through there.
+        // enemy-supplied dropChances entry (Enemy.DropChances) is the *only*
+        // way a category can drop at all now — no entry means no roll, full
+        // stop. Previously a category with no explicit chance still rolled
+        // via an implicit PointValue-scaled formula (see DropWeights'
+        // now-removed doc comment history) — removed per direct request so
+        // an enemy drops nothing unless its loot has actually been
+        // considered and given real numbers, rather than silently
+        // inheriting whatever the generic formula happened to produce.
+        // Only meaningful for Spawn() — SpawnGuaranteedLoot's gear
+        // categories are already deterministic (no chance roll at all) and
+        // it doesn't use HealthManaPotion, so this isn't threaded through
+        // there.
         private static bool RollsCategory(
             IReadOnlyDictionary<LootCategory, float> dropChances,
-            IReadOnlyDictionary<LootCategory, float> dropWeights,
-            LootCategory category,
-            int baseChance
-        ) =>
-            dropChances != null && dropChances.TryGetValue(category, out float chance)
-                ? rand.NextDouble() < chance
-                : rand.Next(WeightedChance(baseChance, WeightFor(dropWeights, category))) == 0;
+            LootCategory category
+        ) => dropChances != null && dropChances.TryGetValue(category, out float chance) && rand.NextDouble() < chance;
 
         // Every stat potion the StatPotion category can roll from by
         // default — the 8 options both Spawn()'s and SpawnGuaranteedLoot's
@@ -120,7 +96,7 @@ namespace Realm
         // Defense potion, which can both land on the same kill). When an
         // enemy sets this (non-empty), it entirely replaces the normal
         // single-roll StatPotion behavior for that enemy — StatPotionPool
-        // and the category's own DropWeights entry stop applying, since
+        // and the category's own DropChances entry stop applying, since
         // there's no longer a single roll for them to modify.
         private static List<Potions> RollGuaranteedPotions(
             IReadOnlyDictionary<Potions, float> guaranteedPotionChances
@@ -270,28 +246,13 @@ namespace Realm
         //   < 1000 : SpriteGod        — a real threat
         //   1000+  : bosses           — always via SpawnGuaranteedLoot below
         //
-        // DropChanceDenominator: lower = more frequent (rand.Next(N) == 0).
         // MaxTierJump: how many tiers above the player's currently equipped
         // tier a drop can reach — rolled per category via RollTierOffset,
         // not a flat bump, so a tough kill doesn't guarantee the maximum
-        // every time.
-        //
-        // Doubled from 20/15/8 per direct playtest feedback — drop rates
-        // felt too high across the board. A flat "everything in half" cut,
-        // not yet a Difficulty-style global knob (see Difficulty.cs) — the
-        // user explicitly asked for the raw numbers halved for now, nothing
-        // more abstracted. This also halves every enemy's DropWeights-based
-        // rate automatically (WeightedChance divides this same denominator
-        // by the weight), so BigSnake's potion-leaning weights etc. don't
-        // need separate retuning.
-        private static int DropChanceDenominator(int pointValue) =>
-            pointValue switch
-            {
-                < 10 => 40,
-                < 100 => 30,
-                _ => 16,
-            };
-
+        // every time. The matching DropChanceDenominator (how often a
+        // category rolled at all) was removed alongside RollsCategory's
+        // implicit fallback formula — chance is now purely an enemy-
+        // supplied DropChances number, no PointValue-scaled default.
         private static int MaxTierJump(int pointValue) =>
             pointValue switch
             {
@@ -348,7 +309,6 @@ namespace Realm
             Vector2 pos,
             int pointValue = 0,
             LootCategory dropPool = LootCategory.All,
-            IReadOnlyDictionary<LootCategory, float> dropWeights = null,
             IReadOnlyDictionary<LootCategory, (int Min, int Max)> dropTierRanges = null,
             IReadOnlyList<Potions> statPotionPool = null,
             IReadOnlyDictionary<Potions, float> guaranteedPotionChances = null,
@@ -365,11 +325,10 @@ namespace Realm
             int? bestEquipmentRank = null;
             bool statPotionDropped = false;
 
-            int dropChance = DropChanceDenominator(pointValue);
             int maxTierJump = MaxTierJump(pointValue);
 
             // Drop weapon.
-            if (dropPool.HasFlag(LootCategory.Weapon) && RollsCategory(dropChances, dropWeights, LootCategory.Weapon, dropChance))
+            if (dropPool.HasFlag(LootCategory.Weapon) && RollsCategory(dropChances, LootCategory.Weapon))
             {
                 // Picked at random among every catalog entry at the resolved
                 // tier (every WeaponType), not just the first match —
@@ -390,7 +349,7 @@ namespace Realm
             }
 
             // Drop armor.
-            if (dropPool.HasFlag(LootCategory.Armor) && RollsCategory(dropChances, dropWeights, LootCategory.Armor, dropChance))
+            if (dropPool.HasFlag(LootCategory.Armor) && RollsCategory(dropChances, LootCategory.Armor))
             {
                 // Same reasoning as the weapon drop above — Game1.StartGame()
                 // merges Robe/Leather/Heavy in a fixed order, so
@@ -410,7 +369,7 @@ namespace Realm
             }
 
             // Drop ring.
-            if (dropPool.HasFlag(LootCategory.Ring) && RollsCategory(dropChances, dropWeights, LootCategory.Ring, dropChance))
+            if (dropPool.HasFlag(LootCategory.Ring) && RollsCategory(dropChances, LootCategory.Ring))
             {
                 // Picked at random among every ring at the resolved tier,
                 // same reasoning as the weapon/armor drops above —
@@ -430,7 +389,7 @@ namespace Realm
             }
 
             // Drop ability item.
-            if (dropPool.HasFlag(LootCategory.AbilityItem) && RollsCategory(dropChances, dropWeights, LootCategory.AbilityItem, dropChance))
+            if (dropPool.HasFlag(LootCategory.AbilityItem) && RollsCategory(dropChances, LootCategory.AbilityItem))
             {
                 // Same "wrong class is possible" spirit as weapon/armor drops
                 // above — not filtered to the player's own class. Spell,
@@ -467,14 +426,14 @@ namespace Realm
                         items.Add(new Potion(potion));
                     }
                 }
-                else if (RollsCategory(dropChances, dropWeights, LootCategory.StatPotion, 30))
+                else if (RollsCategory(dropChances, LootCategory.StatPotion))
                 {
                     statPotionDropped = true;
                     items.Add(new Potion(RollStatPotion(statPotionPool)));
                 }
             }
 
-            if (dropPool.HasFlag(LootCategory.HealthManaPotion) && RollsCategory(dropChances, dropWeights, LootCategory.HealthManaPotion, 20))
+            if (dropPool.HasFlag(LootCategory.HealthManaPotion) && RollsCategory(dropChances, LootCategory.HealthManaPotion))
             {
                 if (rand.Next(2) == 0)
                     items.Add(new Potion(Potions.Mana));
@@ -687,6 +646,146 @@ namespace Realm
             {
                 Position = pos,
                 Items = items,
+                image = bagTexture,
+            };
+
+            EntityManager.Add(bag);
+            LootBags.Add(bag);
+
+            Sound.Play(Sound.LootAppears, 0.4f);
+        }
+
+        // Every enabled category in dropPool that this method knows how to
+        // resolve, in a fixed order — used to pick uniformly among whatever
+        // categories a caller enables, not to imply any priority.
+        private static readonly LootCategory[] SingleItemCategories =
+        {
+            LootCategory.Weapon,
+            LootCategory.Armor,
+            LootCategory.Ring,
+            LootCategory.AbilityItem,
+            LootCategory.HealthManaPotion,
+        };
+
+        // A third drop shape, between Spawn()'s "maybe nothing" chance table
+        // and SpawnGuaranteedLoot()'s "one guaranteed item per category,
+        // every time" — exactly one item guaranteed, picked uniformly among
+        // whichever categories dropPool enables. First use: Dreadstump the
+        // Pirate King, whose own review asked for "the same [Pirate Cave]
+        // table, but a guaranteed chance of 1 item" rather than the other
+        // three bosses' guaranteed one-per-category haul. StatPotion isn't
+        // supported here (no statPotionPool/guaranteedPotionChances
+        // parameters at all) — every current caller excludes it from
+        // dropPool entirely, so it was never worth threading through. Every
+        // gear category needs a real entry in dropTierRanges (there's no
+        // player-tier-relative fallback here, unlike Spawn()/
+        // SpawnGuaranteedLoot) — this method always resolves an *absolute*
+        // tier, matching "the same table" being a fixed designer-picked
+        // range, not something that should scale with the player's own gear.
+        public static void SpawnGuaranteedSingleItem(
+            Vector2 pos,
+            LootCategory dropPool,
+            IReadOnlyDictionary<LootCategory, (int Min, int Max)> dropTierRanges
+        )
+        {
+            List<LootCategory> candidates = SingleItemCategories
+                .Where(category => dropPool.HasFlag(category))
+                .ToList();
+
+            if (candidates.Count == 0)
+                return;
+
+            LootCategory picked = candidates[rand.Next(candidates.Count)];
+
+            Item item = null;
+            int? bagRank = null;
+
+            switch (picked)
+            {
+                case LootCategory.Weapon:
+                {
+                    var tierRange = TierRangeFor(dropTierRanges, LootCategory.Weapon);
+                    var options = tierRange.HasValue
+                        ? ItemsAtOverrideTier(Game1.Instance.Weapons, x => x.Tier, tierRange.Value)
+                        : [];
+                    if (options.Count > 0)
+                    {
+                        Weapon chosen = options[rand.Next(options.Count)];
+                        bagRank = BagRankForWeaponOrArmor(chosen.Tier);
+                        item = chosen;
+                    }
+                    break;
+                }
+                case LootCategory.Armor:
+                {
+                    var tierRange = TierRangeFor(dropTierRanges, LootCategory.Armor);
+                    var options = tierRange.HasValue
+                        ? ItemsAtOverrideTier(Game1.Instance.Armors, x => x.Tier, tierRange.Value)
+                        : [];
+                    if (options.Count > 0)
+                    {
+                        Armor chosen = options[rand.Next(options.Count)];
+                        bagRank = BagRankForWeaponOrArmor(chosen.Tier);
+                        item = chosen;
+                    }
+                    break;
+                }
+                case LootCategory.Ring:
+                {
+                    var tierRange = TierRangeFor(dropTierRanges, LootCategory.Ring);
+                    var options = tierRange.HasValue
+                        ? ItemsAtOverrideTier(Game1.Instance.Rings, x => x.Tier, tierRange.Value)
+                        : [];
+                    if (options.Count > 0)
+                    {
+                        Ring chosen = options[rand.Next(options.Count)];
+                        bagRank = BagRankForRing(chosen.Tier);
+                        item = chosen;
+                    }
+                    break;
+                }
+                case LootCategory.AbilityItem:
+                {
+                    var tierRange = TierRangeFor(dropTierRanges, LootCategory.AbilityItem);
+                    List<AbilityItem> allAbilityItems = Game1
+                        .Instance.Spells.Cast<AbilityItem>()
+                        .Concat(Game1.Instance.Quivers)
+                        .Concat(Game1.Instance.Shields)
+                        .Concat(Game1.Instance.Tomes)
+                        .Concat(Game1.Instance.Cloaks)
+                        .ToList();
+                    var options = tierRange.HasValue
+                        ? ItemsAtOverrideTier(allAbilityItems, x => x.Tier, tierRange.Value)
+                        : [];
+                    if (options.Count > 0)
+                    {
+                        AbilityItem chosen = options[rand.Next(options.Count)];
+                        bagRank = BagRankForAbilityItem(chosen.Tier);
+                        item = chosen;
+                    }
+                    break;
+                }
+                case LootCategory.HealthManaPotion:
+                    item = new Potion(rand.Next(2) == 0 ? Potions.Mana : Potions.Health);
+                    break;
+            }
+
+            // Only happens if a caller enables a gear category without a
+            // matching dropTierRanges entry (nothing to resolve against) —
+            // a graceful no-op rather than a crash, same grace every other
+            // "no catalog entries at this tier" case in this file gets.
+            if (item == null)
+                return;
+
+            // Same bag-art convention as Spawn()/SpawnGuaranteedLoot() —
+            // ranked art for equipment, Brown for the potion case (not
+            // Blue, which is reserved for a StatPotion drop specifically).
+            Texture2D bagTexture = bagRank.HasValue ? BagTextureForRank(bagRank.Value) : Art.LootBag;
+
+            LootBag bag = new()
+            {
+                Position = pos,
+                Items = [item],
                 image = bagTexture,
             };
 
