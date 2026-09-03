@@ -258,6 +258,25 @@ prioritized or scheduled — the user asked to keep these noted for later rather
   reads as noticeable/useful and the drop rate feels right before the same
   `UniqueItemDropChances`/`ReactiveProcBuff` machinery gets reused for a second UT item.
 
+- **Create a Sprite World dungeon.** Real art now supplied for a full new enemy roster:
+  `Content/Dungeons/Sprite World/` holds 11 sprites — Craig the Intern, plus Native/Native
+  Greater variants across 5 elements (Fire, Ice, Magic, Nature, Darkness) — and what look like
+  their matching projectile art in `Content/Projectiles/` (5 colors — Black/Blue/Cyan/Green/
+  Orange — each with a `[Color] Sprite Magic` bolt plus one stronger per-element shape: Beam/
+  Twirl/Bolt/Line, presumably the Greater tier's own signature attack; exact color-to-element
+  mapping not decided yet). "Sprite World" already exists as a *label* today — `Portal.
+  Destination.BossRealm`'s own `DungeonName` (`Portal.cs`), the boss-arena portal Limon the Sprite
+  Goddess is fought behind — but there's no real walled `DungeonState` for it the way Snake Pit/
+  Pirate Cave have (`Data/DungeonType_SnakePit.json`/`DungeonType_PirateCave.json`), just the open
+  Realm's own random SpriteGod-drops-a-portal encounter. Building a real Sprite World dungeon
+  means: a `Data/DungeonType_SpriteWorld.json` + matching `TileSetData`/tileset art (none supplied
+  yet — only enemy/projectile art so far), real stats/attacks for Craig the Intern and the 10
+  Native/Greater sprites (no wiki page gathered yet, unlike Snake Pit/Pirate Cave's RealmEye-sourced
+  numbers), and deciding whether Limon the Sprite Goddess herself becomes this dungeon's own boss
+  room (matching the existing "Sprite World" naming) or stays a separate open-Realm encounter. Not
+  started — needs the same wiki-research-and-plan pass Snake Pit/Pirate Cave each got before
+  implementation.
+
 ## Completed
 
 Moved to a dedicated log so it isn't duplicated here — see
