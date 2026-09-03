@@ -41,6 +41,7 @@ namespace Realm.Bosses
             DropPool = BeachDropPool;
             DropChances = BeachDropChances;
             DropTierRanges = BeachDropTierRanges;
+            PortalDropChances = BeachPortalDropChances;
 
             AddBehaviour(MoveTethered(wanderDistance: WanderDistance, speed: WanderSpeed));
             AddBehaviour(MaintainScorpions());

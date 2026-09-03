@@ -24,6 +24,7 @@ namespace Realm
             DropPool = BeachDropPool;
             DropChances = BeachDropChances;
             DropTierRanges = BeachDropTierRanges;
+            PortalDropChances = BeachPortalDropChances;
 
             AddBehaviour(FollowPlayer(0.2f));
             AddAttackBehaviour(

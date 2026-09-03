@@ -79,6 +79,16 @@ namespace Realm
         // (mirrors this session's Portal.Destination enum->class cleanup).
         protected Portal.Destination portalDropOnDeath;
 
+        // Independent per-portal chance (0.0-1.0) that death additionally
+        // drops a portal to some destination — same "N separate rolls, one
+        // per entry" shape as GuaranteedPotionChances below, just for
+        // portals instead of stat potions, and a *chance* rather than
+        // portalDropOnDeath's guaranteed drop. Empty by default (no enemy
+        // drops a portal unless a factory/subclass sets this); first real
+        // use: BeachPortalDropChances below, a 1% Pirate Cave portal chance
+        // shared by every Beach enemy.
+        protected Dictionary<Portal.Destination, float> PortalDropChances = new();
+
         // Invulnerable enemies take zero damage from WasShot() below — a
         // true no-op, not just reduced damage. Used by boss phase-transition
         // windows (e.g. Stheno between phases); false (damageable) for every
@@ -440,6 +450,21 @@ namespace Realm
                     Portal.DroppedPortals.Add(new Portal(this.Position, portalDropOnDeath));
                     Sound.Play(Sound.LootAppears, 0.4f);
                 }
+
+                // Chance-based portal drops (PortalDropChances above) — each
+                // entry rolled independently, so more than one could drop on
+                // the same kill. Separate from portalDropOnDeath above
+                // (guaranteed, one destination) and from SpawnLoot()'s own
+                // ItemSpawner-driven table (regular gear/potions) — this is
+                // its own roll for a Portal object instead.
+                foreach (var (destination, chance) in PortalDropChances)
+                {
+                    if (rand.NextDouble() < chance)
+                    {
+                        Portal.DroppedPortals.Add(new Portal(this.Position, destination));
+                        Sound.Play(Sound.LootAppears, 0.4f);
+                    }
+                }
             }
             else
             {
@@ -582,6 +607,14 @@ namespace Realm
             [ItemSpawner.LootCategory.Ring] = (1, 1),
             [ItemSpawner.LootCategory.AbilityItem] = (1, 1),
         };
+
+        // Same "one shared table, wired into every Beach enemy" shape as
+        // BeachDropPool/BeachDropChances/BeachDropTierRanges above, for
+        // PortalDropChances instead — first entry in what's meant to grow
+        // into "certain enemies have a chance of dropping certain portals"
+        // more generally; Beach -> Pirate Cave is just the first pairing.
+        protected static readonly Dictionary<Portal.Destination, float> BeachPortalDropChances =
+            new() { [Portal.Destination.PirateCaveDungeon] = 0.01f };
 
         protected void AddBehaviour(IEnumerable<int> behaviour)
         {
@@ -1269,6 +1302,7 @@ namespace Realm
                 DropPool = BeachDropPool,
                 DropChances = BeachDropChances,
                 DropTierRanges = BeachDropTierRanges,
+                PortalDropChances = BeachPortalDropChances,
             };
 
             enemy.AddBehaviour(enemy.FollowPlayer(0.2f));

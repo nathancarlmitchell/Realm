@@ -59,6 +59,7 @@ namespace Realm.Bosses
             DropPool = BeachDropPool;
             DropChances = BeachDropChances;
             DropTierRanges = BeachDropTierRanges;
+            PortalDropChances = BeachPortalDropChances;
 
             AddBehaviour(WanderThenChase());
             AddAttackBehaviour(BuccaneerAttack());

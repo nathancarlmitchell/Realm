@@ -28,6 +28,7 @@ namespace Realm
             DropPool = BeachDropPool;
             DropChances = BeachDropChances;
             DropTierRanges = BeachDropTierRanges;
+            PortalDropChances = BeachPortalDropChances;
 
             AddBehaviour(MoveTethered(wanderDistance: WanderDistance, speed: WanderSpeed));
             AddAttackBehaviour(

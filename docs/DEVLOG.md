@@ -8842,3 +8842,23 @@ date/time for those individually; don't treat their grouping as meaning they all
      `MoveRandomly()`'s signature back to plain `()` and every wandering enemy's sprite facing fixed
      by default. Plain `dotnet build` (0 errors) plus a real minimized boot-check (stayed running, no
      stderr).
+
+320. **Added chance-based portal drops — enemies can now drop a portal to some destination on**
+     **death, independently of their normal loot roll. First pairing: every Beach enemy has a 1%**
+     **chance to drop a Pirate Cave portal.** Requested directly, as the first case of a more
+     general system ("certain enemies have a chance of dropping certain portals"). A portal-on-death
+     mechanism already existed (`Enemy.portalDropOnDeath`), but it's a single, *guaranteed*
+     destination wired to a handful of specific boss-trigger enemies (SpriteGod, BigSnake, the Cube
+     trigger) — the wrong shape for "a whole biome's enemies, each independently rolling a small
+     chance." Added a new `PortalDropChances` (`Dictionary<Portal.Destination, float>`, empty by
+     default so no existing enemy is affected) rolled in `WasShot()` right after the guaranteed
+     drop — each entry an independent roll, same "N separate chances, any subset can land" shape
+     `GuaranteedPotionChances` already uses for stat potions, so an enemy could in principle drop
+     more than one portal type on the same kill once a second pairing exists. Wired a new shared
+     `BeachPortalDropChances = { [PirateCaveDungeon] = 0.01f }` table into all 14 Beach enemies
+     (13 `Enemies/Beach/*.cs` subclasses plus `CreatePirate()`'s own object initializer) — the same
+     "one shared table, edit once to retune everything" precedent `BeachDropPool`/`BeachDropChances`/
+     `BeachDropTierRanges` already established for their own loot categories. Plain `dotnet build`
+     (0 errors) plus a real minimized boot-check (stayed running, no stderr) — no scripted test, per
+     standing feedback, since this reuses `portalDropOnDeath`'s own already-proven
+     `Portal.DroppedPortals.Add()` drop path with just a probabilistic gate in front of it.

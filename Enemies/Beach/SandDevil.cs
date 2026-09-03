@@ -90,6 +90,7 @@ namespace Realm
             DropPool = BeachDropPool;
             DropChances = BeachDropChances;
             DropTierRanges = BeachDropTierRanges;
+            PortalDropChances = BeachPortalDropChances;
 
             // Bug fix: push out to MinSpawnDistanceFromPlayer if the spawn
             // system landed this enemy closer than that — see the
