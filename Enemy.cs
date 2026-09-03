@@ -536,14 +536,35 @@ namespace Realm
                         startScale: 0.2f
                     );
 
+                // Chance-based UT item drops (UniqueItemDropChances above) —
+                // same independent-per-entry shape as PortalDropChances, but
+                // resolved BEFORE SpawnLoot() runs and folded into it as
+                // extraItems, so a rolled UT item lands in this enemy's one
+                // normal loot bag instead of spawning a second bag of its
+                // own (that used to be ItemSpawner.SpawnUniqueItem()'s job —
+                // see its replacement, ResolveUniqueItem()).
+                List<Item> extraLootItems = null;
+                foreach (var (itemName, chance) in UniqueItemDropChances)
+                {
+                    if (rand.NextDouble() < chance)
+                    {
+                        extraLootItems ??= new List<Item>();
+                        extraLootItems.Add(ItemSpawner.ResolveUniqueItem(itemName));
+                    }
+                }
+
                 // Spawn loot — SpawnLoot() is virtual, so Boss subclasses
                 // (guaranteed good loot) override this; every other enemy
                 // uses the base implementation's normal random-chance table.
                 // Gated on DropsLoot so a specific enemy (e.g. a boss's
                 // non-loot-dropping pet/add) can opt out entirely, without
-                // affecting anything else.
+                // affecting anything else — note that a DropsLoot = false
+                // enemy with a UniqueItemDropChances entry would lose a
+                // rolled UT item here (extraLootItems only reaches
+                // SpawnLoot()), same as it already lost its normal loot; no
+                // current enemy combines the two.
                 if (DropsLoot)
-                    SpawnLoot();
+                    SpawnLoot(extraLootItems);
 
                 // Some enemies additionally drop a portal into a boss arena,
                 // on top of their normal loot above.
@@ -566,16 +587,6 @@ namespace Realm
                         Portal.DroppedPortals.Add(new Portal(this.Position, destination));
                         Sound.Play(Sound.LootAppears, 0.4f);
                     }
-                }
-
-                // Chance-based UT item drops (UniqueItemDropChances above)
-                // — same independent-per-entry shape as PortalDropChances,
-                // on top of this enemy's own normal loot (SpawnLoot() above)
-                // rather than replacing it.
-                foreach (var (itemName, chance) in UniqueItemDropChances)
-                {
-                    if (rand.NextDouble() < chance)
-                        ItemSpawner.SpawnUniqueItem(this.Position, itemName);
                 }
 
                 OnDeath();
@@ -602,7 +613,7 @@ namespace Realm
         // scales drop chance/tier off — no separate difficulty field needed.
         // Whether this even gets called at all is gated by DropsLoot below,
         // not by anything in here.
-        protected virtual void SpawnLoot()
+        protected virtual void SpawnLoot(List<Item> extraItems = null)
         {
             ItemSpawner.Spawn(
                 this.Position,
@@ -611,7 +622,8 @@ namespace Realm
                 DropTierRanges,
                 StatPotionPool,
                 GuaranteedPotionChances,
-                DropChances
+                DropChances,
+                extraItems
             );
         }
 

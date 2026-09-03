@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 
@@ -35,7 +36,7 @@ namespace Realm
         // existing boss's drops change) — a future boss wanting a themed
         // guaranteed-loot pool (e.g. never drops rings) can set it in its
         // own constructor exactly like a regular enemy's factory would.
-        protected override void SpawnLoot()
+        protected override void SpawnLoot(List<Item> extraItems = null)
         {
             ItemSpawner.SpawnGuaranteedLoot(
                 this.Position,
@@ -43,7 +44,8 @@ namespace Realm
                 DropPool,
                 DropTierRanges,
                 StatPotionPool,
-                GuaranteedPotionChances
+                GuaranteedPotionChances,
+                extraItems
             );
         }
 

@@ -49,6 +49,10 @@ namespace Realm
                     WisdomBonus = ringData.WisdomBonus,
                     XpBonusPercent = ringData.XpBonusPercent,
                     ImageName = ringData.ImageName,
+                    IsUntiered = ringData.IsUntiered,
+                    ReactiveProcBuff = ringData.ReactiveProcBuff,
+                    ReactiveProcDurationFrames = ringData.ReactiveProcDurationFrames,
+                    ReactiveProcCooldownFrames = ringData.ReactiveProcCooldownFrames,
                 };
 
                 Player.Instance.EquipRing(ring);

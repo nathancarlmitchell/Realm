@@ -114,7 +114,13 @@ namespace Realm
             string text = TierLabel;
             Vector2 textSize = Art.RetroFont.MeasureString(text);
             Vector2 position = ComputeTierLabelPosition(iconBounds, textSize);
-            Util.DrawOutlinedText(spriteBatch, Art.RetroFont, text, position, Color.White);
+
+            // UT badge reads purple instead of the normal white, so an
+            // untiered item stands out in the corner of its own icon the
+            // same way its tooltip header does (see Util.DrawTooltip's
+            // "UT - " special case) rather than looking like a plain tier.
+            Color color = IsUntiered ? Color.Purple : Color.White;
+            Util.DrawOutlinedText(spriteBatch, Art.RetroFont, text, position, color);
         }
 
         // True if the player's current class can actually equip this item —

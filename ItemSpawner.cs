@@ -177,6 +177,29 @@ namespace Realm
                 bestRank = candidateRank;
         }
 
+        // Shared by Spawn()/SpawnGuaranteedLoot()/SpawnGuaranteedSingleItem()
+        // — a UT item (Equipment.IsUntiered) in the bag always wins,
+        // regardless of what else is in it or what bestEquipmentRank
+        // resolved to (a UT item's own Tier is -1, so it would otherwise
+        // never even earn a rank at all). Below that, the existing
+        // "highest tier present, then potion-only Blue, then plain Brown"
+        // resolution is unchanged.
+        private static Texture2D ResolveBagTexture(
+            List<Item> items,
+            int? bestEquipmentRank,
+            bool statPotionDropped
+        )
+        {
+            if (items.Any(i => i is Equipment equipment && equipment.IsUntiered))
+                return Art.LootBagWhite;
+
+            return bestEquipmentRank.HasValue
+                ? BagTextureForRank(bestEquipmentRank.Value)
+                : statPotionDropped
+                    ? Art.LootBagBlue
+                    : Art.LootBag;
+        }
+
         private static readonly Random rand = new();
 
         // Move to RealmState?
@@ -312,7 +335,8 @@ namespace Realm
             IReadOnlyDictionary<LootCategory, (int Min, int Max)> dropTierRanges = null,
             IReadOnlyList<Potions> statPotionPool = null,
             IReadOnlyDictionary<Potions, float> guaranteedPotionChances = null,
-            IReadOnlyDictionary<LootCategory, float> dropChances = null
+            IReadOnlyDictionary<LootCategory, float> dropChances = null,
+            List<Item> extraItems = null
         )
         {
             List<Item> items = [];
@@ -441,16 +465,23 @@ namespace Realm
                     items.Add(new Potion(Potions.Health));
             }
 
+            // extraItems (e.g. a rolled UT item — see Enemy.
+            // UniqueItemDropChances) goes into this same bag rather than a
+            // second, separate one — added last so it doesn't influence
+            // which gear category "wins" the tier-based rank above;
+            // ResolveBagTexture() below checks for a UT item independently
+            // of that ranking anyway.
+            if (extraItems != null)
+                items.AddRange(extraItems);
+
             // Equipment's tier always wins when any dropped — potions have
             // no tier to compare against, so Blue only shows when the bag
             // is potion-only. Brown (Art.LootBag) is the fallback when
             // nothing tiered or Blue-worthy dropped at all (e.g. only a
-            // Health/Mana potion, which doesn't set either flag above).
-            Texture2D bagTexture = bestEquipmentRank.HasValue
-                ? BagTextureForRank(bestEquipmentRank.Value)
-                : statPotionDropped
-                    ? Art.LootBagBlue
-                    : Art.LootBag;
+            // Health/Mana potion, which doesn't set either flag above). A
+            // UT item in extraItems overrides all of that — see
+            // ResolveBagTexture().
+            Texture2D bagTexture = ResolveBagTexture(items, bestEquipmentRank, statPotionDropped);
 
             if (items.Count > 0)
             {
@@ -518,7 +549,8 @@ namespace Realm
             LootCategory dropPool = LootCategory.All,
             IReadOnlyDictionary<LootCategory, (int Min, int Max)> dropTierRanges = null,
             IReadOnlyList<Potions> statPotionPool = null,
-            IReadOnlyDictionary<Potions, float> guaranteedPotionChances = null
+            IReadOnlyDictionary<Potions, float> guaranteedPotionChances = null,
+            List<Item> extraItems = null
         )
         {
             List<Item> items = [];
@@ -632,15 +664,18 @@ namespace Realm
                 }
             }
 
+            // extraItems (e.g. a rolled UT item) goes into this same
+            // guaranteed-loot bag rather than a second, separate one — see
+            // Spawn()'s own identical comment.
+            if (extraItems != null)
+                items.AddRange(extraItems);
+
             // Same resolution as Spawn() — equipment's tier always wins,
             // Blue only for a potion-only bag, Brown as the final fallback
             // (though in practice a boss's guaranteed loot rarely ends up
-            // with nothing at all).
-            Texture2D bagTexture = bestEquipmentRank.HasValue
-                ? BagTextureForRank(bestEquipmentRank.Value)
-                : statPotionDropped
-                    ? Art.LootBagBlue
-                    : Art.LootBag;
+            // with nothing at all); a UT item overrides all of that (see
+            // ResolveBagTexture()).
+            Texture2D bagTexture = ResolveBagTexture(items, bestEquipmentRank, statPotionDropped);
 
             LootBag bag = new()
             {
@@ -685,107 +720,118 @@ namespace Realm
         public static void SpawnGuaranteedSingleItem(
             Vector2 pos,
             LootCategory dropPool,
-            IReadOnlyDictionary<LootCategory, (int Min, int Max)> dropTierRanges
+            IReadOnlyDictionary<LootCategory, (int Min, int Max)> dropTierRanges,
+            List<Item> extraItems = null
         )
         {
             List<LootCategory> candidates = SingleItemCategories
                 .Where(category => dropPool.HasFlag(category))
                 .ToList();
 
-            if (candidates.Count == 0)
-                return;
-
-            LootCategory picked = candidates[rand.Next(candidates.Count)];
-
             Item item = null;
             int? bagRank = null;
 
-            switch (picked)
+            // candidates.Count == 0 (dropPool enables none of the
+            // categories this method knows about) used to return here
+            // immediately — now falls through to the extraItems check
+            // below instead, so a caller with an empty dropPool but a
+            // rolled UT item (e.g. Enemy.UniqueItemDropChances) still gets
+            // a real bag rather than silently losing it.
+            if (candidates.Count > 0)
             {
-                case LootCategory.Weapon:
+                LootCategory picked = candidates[rand.Next(candidates.Count)];
+
+                switch (picked)
                 {
-                    var tierRange = TierRangeFor(dropTierRanges, LootCategory.Weapon);
-                    var options = tierRange.HasValue
-                        ? ItemsAtOverrideTier(Game1.Instance.Weapons, x => x.Tier, tierRange.Value)
-                        : [];
-                    if (options.Count > 0)
+                    case LootCategory.Weapon:
                     {
-                        Weapon chosen = options[rand.Next(options.Count)];
-                        bagRank = BagRankForWeaponOrArmor(chosen.Tier);
-                        item = chosen;
+                        var tierRange = TierRangeFor(dropTierRanges, LootCategory.Weapon);
+                        var options = tierRange.HasValue
+                            ? ItemsAtOverrideTier(Game1.Instance.Weapons, x => x.Tier, tierRange.Value)
+                            : [];
+                        if (options.Count > 0)
+                        {
+                            Weapon chosen = options[rand.Next(options.Count)];
+                            bagRank = BagRankForWeaponOrArmor(chosen.Tier);
+                            item = chosen;
+                        }
+                        break;
                     }
-                    break;
-                }
-                case LootCategory.Armor:
-                {
-                    var tierRange = TierRangeFor(dropTierRanges, LootCategory.Armor);
-                    var options = tierRange.HasValue
-                        ? ItemsAtOverrideTier(Game1.Instance.Armors, x => x.Tier, tierRange.Value)
-                        : [];
-                    if (options.Count > 0)
+                    case LootCategory.Armor:
                     {
-                        Armor chosen = options[rand.Next(options.Count)];
-                        bagRank = BagRankForWeaponOrArmor(chosen.Tier);
-                        item = chosen;
+                        var tierRange = TierRangeFor(dropTierRanges, LootCategory.Armor);
+                        var options = tierRange.HasValue
+                            ? ItemsAtOverrideTier(Game1.Instance.Armors, x => x.Tier, tierRange.Value)
+                            : [];
+                        if (options.Count > 0)
+                        {
+                            Armor chosen = options[rand.Next(options.Count)];
+                            bagRank = BagRankForWeaponOrArmor(chosen.Tier);
+                            item = chosen;
+                        }
+                        break;
                     }
-                    break;
-                }
-                case LootCategory.Ring:
-                {
-                    var tierRange = TierRangeFor(dropTierRanges, LootCategory.Ring);
-                    var options = tierRange.HasValue
-                        ? ItemsAtOverrideTier(Game1.Instance.Rings, x => x.Tier, tierRange.Value)
-                        : [];
-                    if (options.Count > 0)
+                    case LootCategory.Ring:
                     {
-                        Ring chosen = options[rand.Next(options.Count)];
-                        bagRank = BagRankForRing(chosen.Tier);
-                        item = chosen;
+                        var tierRange = TierRangeFor(dropTierRanges, LootCategory.Ring);
+                        var options = tierRange.HasValue
+                            ? ItemsAtOverrideTier(Game1.Instance.Rings, x => x.Tier, tierRange.Value)
+                            : [];
+                        if (options.Count > 0)
+                        {
+                            Ring chosen = options[rand.Next(options.Count)];
+                            bagRank = BagRankForRing(chosen.Tier);
+                            item = chosen;
+                        }
+                        break;
                     }
-                    break;
-                }
-                case LootCategory.AbilityItem:
-                {
-                    var tierRange = TierRangeFor(dropTierRanges, LootCategory.AbilityItem);
-                    List<AbilityItem> allAbilityItems = Game1
-                        .Instance.Spells.Cast<AbilityItem>()
-                        .Concat(Game1.Instance.Quivers)
-                        .Concat(Game1.Instance.Shields)
-                        .Concat(Game1.Instance.Tomes)
-                        .Concat(Game1.Instance.Cloaks)
-                        .ToList();
-                    var options = tierRange.HasValue
-                        ? ItemsAtOverrideTier(allAbilityItems, x => x.Tier, tierRange.Value)
-                        : [];
-                    if (options.Count > 0)
+                    case LootCategory.AbilityItem:
                     {
-                        AbilityItem chosen = options[rand.Next(options.Count)];
-                        bagRank = BagRankForAbilityItem(chosen.Tier);
-                        item = chosen;
+                        var tierRange = TierRangeFor(dropTierRanges, LootCategory.AbilityItem);
+                        List<AbilityItem> allAbilityItems = Game1
+                            .Instance.Spells.Cast<AbilityItem>()
+                            .Concat(Game1.Instance.Quivers)
+                            .Concat(Game1.Instance.Shields)
+                            .Concat(Game1.Instance.Tomes)
+                            .Concat(Game1.Instance.Cloaks)
+                            .ToList();
+                        var options = tierRange.HasValue
+                            ? ItemsAtOverrideTier(allAbilityItems, x => x.Tier, tierRange.Value)
+                            : [];
+                        if (options.Count > 0)
+                        {
+                            AbilityItem chosen = options[rand.Next(options.Count)];
+                            bagRank = BagRankForAbilityItem(chosen.Tier);
+                            item = chosen;
+                        }
+                        break;
                     }
-                    break;
+                    case LootCategory.HealthManaPotion:
+                        item = new Potion(rand.Next(2) == 0 ? Potions.Mana : Potions.Health);
+                        break;
                 }
-                case LootCategory.HealthManaPotion:
-                    item = new Potion(rand.Next(2) == 0 ? Potions.Mana : Potions.Health);
-                    break;
             }
 
-            // Only happens if a caller enables a gear category without a
-            // matching dropTierRanges entry (nothing to resolve against) —
-            // a graceful no-op rather than a crash, same grace every other
-            // "no catalog entries at this tier" case in this file gets.
-            if (item == null)
+            // item == null happens when a caller enables a gear category
+            // without a matching dropTierRanges entry (nothing to resolve
+            // against), or when dropPool enables none of this method's
+            // categories at all — graceful, same as every other "no catalog
+            // entries at this tier" case in this file, and no longer an
+            // early-out on its own since extraItems (e.g. a rolled UT item
+            // from Enemy.UniqueItemDropChances) can still fill the bag.
+            List<Item> items = item != null ? [item] : [];
+            if (extraItems != null)
+                items.AddRange(extraItems);
+
+            if (items.Count == 0)
                 return;
 
-            // Same bag-art convention as Spawn()/SpawnGuaranteedLoot() —
-            // ranked art for equipment, Brown for the potion case (not
-            // Blue, which is reserved for a StatPotion drop specifically).
-            Texture2D bagTexture = bagRank.HasValue ? BagTextureForRank(bagRank.Value) : Art.LootBag;
+            Texture2D bagTexture = ResolveBagTexture(items, bagRank, statPotionDropped: false);
 
             LootBag bag = new()
             {
                 Position = pos,
-                Items = [item],
+                Items = items,
                 image = bagTexture,
             };
 
@@ -795,7 +841,7 @@ namespace Realm
             Sound.Play(Sound.LootAppears, 0.4f);
         }
 
-        // Drops one specific, named catalog item by exact Item.Name — the
+        // Resolves one specific, named catalog item by exact Item.Name — the
         // shape a UT (untiered) item's own guaranteed-ish drop needs, which
         // none of the tier-based methods above can express (they all pick
         // randomly *within* a tier; a UT item isn't part of any tier at
@@ -806,36 +852,27 @@ namespace Realm
         // search to Weapons/Armors/AbilityItem-family the same way once a
         // UT item of one of those types exists.
         //
+        // Returns the resolved Item rather than spawning its own bag — the
+        // caller (Enemy.WasShot()) folds it into the same extraItems list
+        // that feeds SpawnLoot(), so a rolled UT item always lands in the
+        // enemy's one normal loot bag instead of a second bag of its own
+        // (that used to be this method's own job, and was the cause of "a
+        // white and blue bag spawn separate" for one kill).
+        //
         // Throws on an unresolvable name rather than silently no-op'ing —
         // same "loud failure on a typo'd reference" convention
         // DungeonGenerator.ResolveTileByName() already established, so a
         // mistyped name in a boss's own UniqueItemDropChances is caught
         // immediately instead of silently never dropping.
-        public static void SpawnUniqueItem(Vector2 pos, string itemName)
+        public static Item ResolveUniqueItem(string itemName)
         {
             Ring ring = Game1.Instance.Rings.FirstOrDefault(x => x.Name == itemName);
             if (ring == null)
                 throw new InvalidOperationException(
-                    $"ItemSpawner.SpawnUniqueItem: no catalog item named '{itemName}' found."
+                    $"ItemSpawner.ResolveUniqueItem: no catalog item named '{itemName}' found."
                 );
 
-            // Always the White bag — Art.LootBagWhite already sits above
-            // Red at the top of the tier ladder (see LootBag.cs's own
-            // LifespanTicksFor() comment), just never wired to an actual
-            // drop before this. Not derived from Tier at all (which is -1
-            // for a UT item and would otherwise fall through
-            // BagRankForRing's own "no band" case).
-            LootBag bag = new()
-            {
-                Position = pos,
-                Items = [ring],
-                image = Art.LootBagWhite,
-            };
-
-            EntityManager.Add(bag);
-            LootBags.Add(bag);
-
-            Sound.Play(Sound.LootAppears, 0.4f);
+            return ring;
         }
     }
 }

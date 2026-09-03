@@ -89,8 +89,8 @@ namespace Realm.Bosses
         // CubeGod's own multi-item hauls, matching Pirate Cave's status as
         // the beginner dungeon. Per direct request ("same table... but a
         // guaranteed chance of 1 item").
-        protected override void SpawnLoot() =>
-            ItemSpawner.SpawnGuaranteedSingleItem(Position, DropPool, DropTierRanges);
+        protected override void SpawnLoot(List<Item> extraItems = null) =>
+            ItemSpawner.SpawnGuaranteedSingleItem(Position, DropPool, DropTierRanges, extraItems);
 
         // Polls health each frame; once it crosses a threshold, briefly goes
         // Invulnerable (with a red flash) and advances currentPhase — same

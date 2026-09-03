@@ -2124,6 +2124,42 @@ namespace Realm
         private static Color ClassifyTooltipLine(string line) =>
             CategoryBaseColor(CategorizeTooltipLine(line));
 
+        // An untiered item's own header line always starts with exactly
+        // this — see Equipment.TierLabel/HeaderLines()/TooltipText(). Both
+        // tooltip renderers below special-case it so only the "UT" itself
+        // draws in purple (matching Equipment.DrawTierLabel()'s own badge),
+        // while the rest of the line ("- Name") keeps whatever color its
+        // category/comparison would otherwise resolve to.
+        private const string UntieredHeaderPrefix = "UT - ";
+
+        // Draws one tooltip line, splitting out an untiered header's "UT"
+        // prefix into its own purple segment — used by both tooltip
+        // renderers below instead of calling DrawOutlinedText directly.
+        private static void DrawTooltipLine(
+            SpriteBatch spriteBatch,
+            SpriteFont font,
+            string line,
+            Vector2 position,
+            Color color
+        )
+        {
+            if (line.StartsWith(UntieredHeaderPrefix))
+            {
+                DrawOutlinedText(spriteBatch, font, "UT", position, Color.Purple);
+                float utWidth = font.MeasureString("UT").X;
+                DrawOutlinedText(
+                    spriteBatch,
+                    font,
+                    line[2..],
+                    position + new Vector2(utWidth, 0),
+                    color
+                );
+                return;
+            }
+
+            DrawOutlinedText(spriteBatch, font, line, position, color);
+        }
+
         // Same background-panel technique as the single-string overload
         // above, but colors each line by ClassifyTooltipLine() rather than
         // drawing the whole tooltip in one flat color. Used by each equip
@@ -2156,7 +2192,7 @@ namespace Realm
 
             for (int i = 0; i < lines.Length; i++)
             {
-                DrawOutlinedText(
+                DrawTooltipLine(
                     spriteBatch,
                     font,
                     lines[i],
@@ -2225,7 +2261,7 @@ namespace Realm
                             : lines[i].Comparison == TooltipComparison.Better
                                 ? Color.Gold
                                 : CategoryBaseColor(category);
-                DrawOutlinedText(
+                DrawTooltipLine(
                     spriteBatch,
                     font,
                     lines[i].Text,

@@ -124,7 +124,7 @@ namespace Realm
         // contributes an item, and GuaranteedPotionChances' Speed entry
         // always fires. Without this override, SnakepitGuard had no
         // DropChances set at all and was dropping nothing on death.
-        protected override void SpawnLoot()
+        protected override void SpawnLoot(List<Item> extraItems = null)
         {
             ItemSpawner.SpawnGuaranteedLoot(
                 Position,
@@ -132,7 +132,8 @@ namespace Realm
                 DropPool,
                 DropTierRanges,
                 StatPotionPool,
-                GuaranteedPotionChances
+                GuaranteedPotionChances,
+                extraItems
             );
         }
 

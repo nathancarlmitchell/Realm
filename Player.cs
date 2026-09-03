@@ -1038,6 +1038,10 @@ namespace Realm
                 WisdomBonus = best.WisdomBonus,
                 XpBonusPercent = best.XpBonusPercent,
                 ImageName = best.ImageName,
+                IsUntiered = best.IsUntiered,
+                ReactiveProcBuff = best.ReactiveProcBuff,
+                ReactiveProcDurationFrames = best.ReactiveProcDurationFrames,
+                ReactiveProcCooldownFrames = best.ReactiveProcCooldownFrames,
             };
 
             EquipRing(copy);

@@ -9206,3 +9206,43 @@ date/time for those individually; don't treat their grouping as meaning they all
      tier ladder (`LootBag.cs`'s own `LifespanTicksFor()` comment groups Orange/Red/White together
      for the same longer-lifespan treatment), just never actually wired to a real drop before this.
      Plain `dotnet build` (0 errors) plus a real minimized boot-check (stayed running, no stderr).
+
+333. **Fixed three UT-item bugs: merged loot bags, purple “UT” label, and Speedy actually
+     working.** All three traced back to gaps left by the UT-item feature (entry 331). *Two bags per
+     kill*: `Enemy.WasShot()` called `SpawnLoot()` (one bag) and then separately rolled
+     `UniqueItemDropChances` via `ItemSpawner.SpawnUniqueItem()`, which spawned its own second bag —
+     explaining “a white and blue bag spawn separate” for one kill. Fixed by rolling
+     `UniqueItemDropChances` *before* `SpawnLoot()` and resolving hits via a new
+     `ItemSpawner.ResolveUniqueItem()` (replaces `SpawnUniqueItem()`, now just returns the resolved
+     `Item` instead of spawning a bag itself). `Spawn()`/`SpawnGuaranteedLoot()`/
+     `SpawnGuaranteedSingleItem()` all gained a new `List<Item> extraItems = null` parameter, merged
+     into their own roll via `items.AddRange()`; `SpawnLoot()`'s virtual signature (and its three
+     overrides — `Boss.cs`, `DreadstumpThePirateKing.cs`, `SnakepitGuard.cs`) now takes and forwards
+     the same `extraItems` list. Bag-texture choice across all three methods now goes through one
+     shared `ItemSpawner.ResolveBagTexture()` that always returns `Art.LootBagWhite` if *any* item in
+     the final combined list `IsUntiered`, regardless of what rank the rest of the haul would
+     otherwise pick — so a UT item always wins the bag, and every category's loot lands in that one
+     bag together.
+
+     *Tooltip showed “T-1” instead of “UT”, and Speedy didn't work at all*: both traced to the
+     same root cause. `Ring.LoadRing()` (the actual drag-to-equip and save-reload code path —
+     `InventorySystem.cs`'s drag handler and `Util.cs`'s save-file reload both call it) and
+     `Player.EquipHighestTierRing()` each rebuild a brand-new `Ring` object when equipping, copying
+     only the classic stat fields and silently dropping `IsUntiered`/`ReactiveProcBuff`/
+     `ReactiveProcDurationFrames`/`ReactiveProcCooldownFrames` — so an equipped Snake Eye Ring lost
+     its UT status and its proc entirely, even though the catalog instance and a freshly-dropped loot
+     bag both had them correctly. Fixed by copying those 4 fields in both object initializers.
+
+     *Purple “UT” label*: `Equipment.DrawTierLabel()`'s in-icon corner badge now draws in
+     `Color.Purple` when `IsUntiered` instead of the normal white. For the tooltip header line
+     (“UT - Snake Eye Ring”), added `Util.DrawTooltipLine()` — used by both `DrawCategorizedTooltip()`
+     and the list-based `DrawTooltip()` instead of calling `DrawOutlinedText()` directly — which
+     special-cases a line starting with the literal `"UT - "` prefix and splits it into two draw
+     calls: `"UT"` in purple, then the rest of the line (`" - Name"`) in whatever color its normal
+     category/comparison logic would have picked. Only the “UT” itself changes color; the rest of
+     the header line is unaffected.
+
+     Plain `dotnet build` (0 errors) plus a real minimized boot-check (stayed running, `IsIconic`
+     confirmed truly minimized, no stderr) — real save files (`PlayerData_*.json`/
+     `InventoryData_*.json`/`BankData.json`/`FameData.json`/`KeyBindingsData.json`) backed up first
+     and diffed afterward as unmodified.
