@@ -22,6 +22,8 @@
     <Folder Include="Content\AbilityItems\Quivers\" />
     <Folder Include="Content\Armor\Heavy\" />
     <Folder Include="Content\Controls\" />
+    <Folder Include="Content\Dungeons\Sprite World\" />
+    <Folder Include="Content\Dungeons\Snake Pit\" />
     <Folder Include="Content\Weapons\Swords\" />
     <Folder Include="Content\Weapons\Wands\Projectiles\" />
     <Folder Include="Enemies\Beach\" />
