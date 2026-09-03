@@ -59,6 +59,16 @@ namespace Realm.States
             // into a freshly-generated dungeon.
             EntityManager.Reset();
 
+            // Remembered so the player reappears here (not at this
+            // dungeon's own small-coordinate spawn point, reinterpreted in
+            // the far larger open world) whenever they next return via a
+            // real open-world RealmState — see PendingRealmReturnPosition's
+            // own doc comment. This dungeon's own boss room (BossRealmState,
+            // entered from inside here) relies on this already being set by
+            // the time it runs, so it correctly preserves this same value
+            // instead of capturing its own (still-bounded) one.
+            PendingRealmReturnPosition ??= Player.Instance.Position;
+
             // Everything that varies per dungeon type — see Data/
             // DungeonTypeData.cs and the walled-dungeon-generalization plan.
             DungeonTypeData dungeonType = Util.LoadDungeonTypeData(dungeonTypeName);
@@ -206,7 +216,28 @@ namespace Realm.States
 
         public override void Update(GameTime gameTime)
         {
+            Camera cameraBeforeUpdate = Game1.Camera;
+
             base.Update(gameTime);
+
+            // base.Update() (RealmState.Update()) walks Portal.DroppedPortals
+            // and can synchronously call a portal's own EnterPortal() (e.g.
+            // this dungeon's own Nexus exit portal, or its boss room's
+            // portal) — that constructs the NEXT state right there and gives
+            // it its own fresh Game1.Camera (RealmState's constructor always
+            // does), even though Game1.ChangeState() only queues it for next
+            // frame, leaving this DungeonState instance to keep running the
+            // rest of this very Update() call regardless. Without this
+            // guard, dungeonMap.ResolveCircleCollision() below would resolve
+            // Player.Instance.Position against THIS dungeon's small tile
+            // grid and stomp the NEW state's own Camera.Pos with that
+            // dungeon-relative result — same "camera looks stuck" symptom as
+            // BossRealmState's identical guard. Bail out here as soon as the
+            // Camera identity changes, before touching Player.Instance.
+            // Position, the new Camera, or this dungeon's own tile/pathing
+            // state again.
+            if (Game1.Camera != cameraBeforeUpdate)
+                return;
 
             Player.Instance.Position = dungeonMap.ResolveCircleCollision(
                 Player.Instance.Position,

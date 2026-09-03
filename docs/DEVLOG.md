@@ -9246,3 +9246,59 @@ date/time for those individually; don't treat their grouping as meaning they all
      confirmed truly minimized, no stderr) — real save files (`PlayerData_*.json`/
      `InventoryData_*.json`/`BankData.json`/`FameData.json`/`KeyBindingsData.json`) backed up first
      and diffed afterward as unmodified.
+
+334. **Fixed camera tracking breaking after returning from a boss room.** Two separate,
+     compounding bugs in the same area, both traced back to how BossRealmState/DungeonState
+     (each a bounded sub-instance with its own tiny world size — 2000x2000 for a boss arena,
+     3200x3200 for a dungeon) hand control back to a real open-world RealmState.
+
+     *Stale-instance clamp stomping the new Camera*: `BossRealmState.Update()`/`DungeonState.
+     Update()` each call `base.Update(gameTime)` first, then re-clamp `Player.Instance.Position`
+     to their own small arena/dungeon bounds and re-sync `Game1.Camera.Pos` to match — a "hard
+     wall" for the bounded instance. But `base.Update()` (`RealmState.Update()`) walks
+     `Portal.DroppedPortals` and can synchronously call a portal's own `EnterPortal()` (e.g. the
+     exit portal `Boss.OnDeath()` drops — entry 331/`cbfd05c`), which constructs the NEXT state
+     right there and gives it its own fresh `Game1.Camera` (`RealmState`'s constructor always
+     does) — `Game1.ChangeState()` only queues that state for next frame, so the OLD
+     BossRealmState/DungeonState instance is still `currentState` and keeps running the rest of
+     its own `Update()` override regardless. That stale clamp code was firing anyway, re-clamping
+     `Player.Instance.Position` into the tiny arena's own coordinate range and stomping the BRAND
+     NEW state's `Camera.Pos` with that same tiny value. Fixed by capturing `Game1.Camera` before
+     `base.Update(gameTime)` and bailing out of the rest of the override immediately if the
+     reference changed (`Game1.Camera != cameraBeforeUpdate`) — a portal walk mid-`base.Update()`
+     means this instance is already logically elsewhere and must touch neither `Player.Instance.
+     Position` nor the new state's Camera again.
+
+     *No relocation back into the real open world*: even with the above fixed, returning from a
+     boss arena/dungeon still left `Player.Instance.Position` at whatever small-instance
+     coordinate the player was standing at (e.g. near where the boss died) — a valid but
+     essentially arbitrary point that, reinterpreted directly in the Realm's own far larger
+     (500,000px) world, usually landed very close to the world's true (0,0) corner. Camera.Pos's
+     own edge-barrier clamp (`Camera.cs`) is working as designed there — it keeps the camera from
+     showing past the world's edge — but from the player's perspective, walking away from a
+     literal world corner with the camera pinned to the barrier for a stretch looks exactly like
+     "the camera stopped following me." Fixed with `RealmState.PendingRealmReturnPosition` (`Vector2?`,
+     internal): `BossRealmState`/`DungeonState`'s constructor now captures the player's real,
+     already-valid open-world position into it (via `??=`, only if nothing is already pending —
+     so a dungeon's own boss room correctly preserves the ORIGINAL pre-dungeon Realm position
+     instead of overwriting it with the dungeon's own bounded one) right before overwriting
+     `Player.Instance.Position` with the arena/dungeon's own local spawn point. The next real
+     open-world `RealmState`'s constructor restores it (once, then clears it) before building its
+     own Camera, so the fresh Camera's initial position is already correct with no extra fixup
+     call needed. `NexusState`'s constructor clears the same field unconditionally on entry —
+     leaving a bounded instance via its OTHER exit (its own dropped Nexus portal, instead of
+     finishing the fight/dungeon) routes through there, not through `RealmState`, and would
+     otherwise leave a stale pending position to wrongly hijack a later, unrelated, ordinary
+     Nexus -> Realm walk.
+
+     Verified with a temporary `Game1.StartGame()` scripted check (reverted, no diff remains):
+     entered a boss arena, forced the boss to die deep in the arena's own corner (well inside the
+     real world's own camera-barrier danger zone), auto-entered the dropped Realm portal, and
+     confirmed Camera.Pos tracked Player.Instance.Position with no divergence both on the
+     transition frame and across several frames of subsequent movement — restored to the real
+     pre-arena Realm position, not the arena's own corner coordinate. Plain `dotnet build`
+     (0 errors) plus a real minimized boot-check (stayed running, `IsIconic` confirmed truly
+     minimized, no stderr) — real save files backed up first and diffed afterward: unchanged
+     except for the equipped Weapon/Armor/Ring's own `ID` field, which `Weapon`/`Armor`/`Ring`'s
+     constructors already regenerate via `Guid.NewGuid()` on every normal load regardless of this
+     change — same stats, same items, nothing lost.

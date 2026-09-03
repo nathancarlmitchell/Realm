@@ -25,6 +25,16 @@ namespace Realm.States
 
             EntityManager.Reset();
 
+            // A bounded instance (BossRealmState/DungeonState) left pending
+            // via its OTHER exit (its own dropped Nexus portal, taken
+            // instead of killing the boss/finishing the dungeon) routes
+            // here, not through RealmState — so any position it was holding
+            // onto for a later Realm-ward return (RealmState.
+            // PendingRealmReturnPosition) is now stale and must be dropped,
+            // or it would wrongly hijack a later, entirely unrelated,
+            // ordinary Nexus -> Realm walk.
+            RealmState.PendingRealmReturnPosition = null;
+
             // IsOpen is a static field, so it would otherwise persist stale
             // across a state transition (e.g. leaving with the bank open,
             // returning to a freshly-constructed NexusState) — reset it here so

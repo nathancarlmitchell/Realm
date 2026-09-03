@@ -44,6 +44,17 @@ namespace Realm.States
             // Realm the player just left follows them into the arena.
             EntityManager.Reset();
 
+            // Remembered so the player reappears here (not at this arena's
+            // own small-coordinate spawn point, reinterpreted in the far
+            // larger open world) whenever they next return via a real
+            // open-world RealmState — see PendingRealmReturnPosition's own
+            // doc comment. ??=, not a plain assignment: if this is a
+            // dungeon's own boss room (entered from inside a DungeonState,
+            // which already captured the true pre-dungeon Realm position),
+            // this must not overwrite that with the dungeon's own bounded
+            // coordinate.
+            PendingRealmReturnPosition ??= Player.Instance.Position;
+
             Vector2 center = new(InstanceWorldWidth / 2, InstanceWorldHeight / 2);
 
             // Arena bottom for the player, arena top for the boss — plenty
@@ -78,7 +89,32 @@ namespace Realm.States
         // Player.Update() already set it before this override runs.
         public override void Update(GameTime gameTime)
         {
+            Camera cameraBeforeUpdate = Game1.Camera;
+
             base.Update(gameTime);
+
+            // base.Update() (RealmState.Update()) walks Portal.DroppedPortals
+            // and can synchronously call a portal's own EnterPortal() (e.g.
+            // the exit portal this arena's own constructor drops, or the one
+            // Boss.OnDeath() drops back to the Realm), which constructs the
+            // NEXT state right there and gives it its own fresh Game1.Camera
+            // (RealmState's constructor always does) — Game1.ChangeState()
+            // only queues that state for next frame, so this BossRealmState
+            // instance is still "currentState" and keeps running the rest of
+            // this very Update() call regardless. Without this guard, the
+            // arena-bound clamp below would fire anyway, teleporting
+            // Player.Instance.Position into this tiny InstanceWorldWidth/
+            // Height range (2000, vs. the real Realm's 500,000) and stomping
+            // the NEW state's own Camera.Pos with that same tiny-arena
+            // coordinate — which the new Camera's much larger world then
+            // reads as "right at the corner," permanently barrier-clamping
+            // it there until the player walks far enough away, looking
+            // exactly like "camera tracking stopped working" after leaving a
+            // boss room. Bailing out here as soon as the Camera identity
+            // changes means this stale instance touches neither Player.
+            // Instance.Position nor the new state's Camera again.
+            if (Game1.Camera != cameraBeforeUpdate)
+                return;
 
             float radius = Player.Instance.Radius;
             Vector2 pos = Player.Instance.Position;
