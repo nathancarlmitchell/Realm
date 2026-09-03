@@ -58,6 +58,8 @@ namespace Realm
             string woodFloorTileName = null,
             string backgroundTileName = null,
             float pathGapChance = 0f,
+            bool circularRooms = false,
+            string corridorTileName = null,
             int? seed = null
         )
         {
@@ -87,6 +89,13 @@ namespace Realm
                 pathGapChance
             );
 
+            // Resolved once here rather than threaded through as a raw
+            // string — null means "corridors behave exactly as before" (the
+            // cove walkway above, or a random floor pick), same "null =
+            // feature off" contract every other optional tile name already
+            // has.
+            TileDefData corridorTile = ResolveTileByName(tileSet, corridorTileName);
+
             // Start fully solid (or, in cove mode, fully background/water) —
             // free per-cell variety on the non-cove wall block, since a
             // single background tile is deliberately uniform.
@@ -104,16 +113,42 @@ namespace Realm
                 maxRoomCount,
                 floorCandidates,
                 cove,
+                circularRooms,
                 rand
             );
 
             if (rooms.Count > 1)
-                ConnectRooms(map, rooms, corridorWidth, floorCandidates, cove, rand);
+                ConnectRooms(map, rooms, corridorWidth, floorCandidates, cove, circularRooms, corridorTile, rand);
 
             foreach (Rectangle room in rooms)
                 map.Rooms.Add(room);
 
             return map;
+        }
+
+        // Whether world cell (x, y) falls inside `room`'s own footprint —
+        // the whole rectangle when circularRooms is false (today's original
+        // behavior), or the circle inscribed within it (diameter =
+        // room.Width, always square-bounded — see PlaceRooms() below) when
+        // true. Shared by room carving itself and by corridor carving's own
+        // "don't stamp a hallway tile over a room's own floor" check.
+        private static bool RoomContains(Rectangle room, bool circularRooms, int x, int y)
+        {
+            if (!circularRooms)
+                return room.Contains(x, y);
+
+            float radius = room.Width / 2f;
+            Vector2 center = new(room.Center.X, room.Center.Y);
+            Vector2 cell = new(x + 0.5f, y + 0.5f);
+            return Vector2.DistanceSquared(cell, center) <= radius * radius;
+        }
+
+        private static bool IsInsideAnyRoom(List<Rectangle> rooms, bool circularRooms, int x, int y)
+        {
+            foreach (Rectangle room in rooms)
+                if (RoomContains(room, circularRooms, x, y))
+                    return true;
+            return false;
         }
 
         private static TileDefData ResolveTileByName(TileSetData tileSet, string name)
@@ -153,6 +188,7 @@ namespace Realm
             int maxRoomCount,
             List<TileDefData> floorCandidates,
             CoveOptions cove,
+            bool circularRooms,
             Random rand
         )
         {
@@ -169,20 +205,60 @@ namespace Realm
             {
                 attempts++;
 
-                int w = rand.Next(minRoomSize, maxFittableSize + 1);
-                int h = rand.Next(minRoomSize, maxFittableSize + 1);
+                // circularRooms: w/h always match (a square bounding box),
+                // so the circle inscribed within it (see RoomContains()
+                // above) is a true circle, not an ellipse — MinRoomSize/
+                // MaxRoomSize become "diameter" range in this mode, the same
+                // fields reused rather than adding a separate name for them.
+                int w,
+                    h;
+                if (circularRooms)
+                {
+                    w = h = rand.Next(minRoomSize, maxFittableSize + 1);
+                }
+                else
+                {
+                    w = rand.Next(minRoomSize, maxFittableSize + 1);
+                    h = rand.Next(minRoomSize, maxFittableSize + 1);
+                }
+
                 int x = rand.Next(EdgeBuffer, widthInTiles - EdgeBuffer - w + 1);
                 int y = rand.Next(EdgeBuffer, heightInTiles - EdgeBuffer - h + 1);
 
                 Rectangle candidate = new(x, y, w, h);
-                Rectangle padded = new(
-                    x - RoomPadding,
-                    y - RoomPadding,
-                    w + RoomPadding * 2,
-                    h + RoomPadding * 2
-                );
 
-                if (rooms.Any(existing => padded.Intersects(existing)))
+                // Circular: overlap is a center-to-center distance check
+                // against the sum of both radii (plus padding) instead of a
+                // padded-rectangle intersection — a bounding-box overlap
+                // check would reject plenty of candidates whose actual
+                // circles don't overlap at all (two circles' bounding
+                // squares touch at the corners well before the circles
+                // themselves do).
+                bool overlaps;
+                if (circularRooms)
+                {
+                    float newRadius = w / 2f;
+                    Vector2 newCenter = new(candidate.Center.X, candidate.Center.Y);
+                    overlaps = rooms.Any(existing =>
+                    {
+                        float existingRadius = existing.Width / 2f;
+                        Vector2 existingCenter = new(existing.Center.X, existing.Center.Y);
+                        float minDist = newRadius + existingRadius + RoomPadding;
+                        return Vector2.DistanceSquared(newCenter, existingCenter) < minDist * minDist;
+                    });
+                }
+                else
+                {
+                    Rectangle padded = new(
+                        x - RoomPadding,
+                        y - RoomPadding,
+                        w + RoomPadding * 2,
+                        h + RoomPadding * 2
+                    );
+                    overlaps = rooms.Any(existing => padded.Intersects(existing));
+                }
+
+                if (overlaps)
                     continue;
 
                 rooms.Add(candidate);
@@ -201,9 +277,14 @@ namespace Realm
 
                 for (int cy = candidate.Top; cy < candidate.Bottom; cy++)
                 for (int cx = candidate.Left; cx < candidate.Right; cx++)
+                {
+                    if (!RoomContains(candidate, circularRooms, cx, cy))
+                        continue; // outside the inscribed circle — leave as background/wall.
+
                     map[cx, cy] = roomTile != null
                         ? PlaceCoveTile(roomTile, cove, rand)
                         : RandomPick(floorCandidates, rand).Id;
+                }
             }
 
             return rooms;
@@ -218,6 +299,8 @@ namespace Realm
             int corridorWidth,
             List<TileDefData> floorCandidates,
             CoveOptions cove,
+            bool circularRooms,
+            TileDefData corridorTile,
             Random rand
         )
         {
@@ -247,7 +330,18 @@ namespace Realm
                     }
                 }
 
-                CarveCorridor(map, centers[bestFrom], centers[bestTo], corridorWidth, floorCandidates, cove, rand);
+                CarveCorridor(
+                    map,
+                    centers[bestFrom],
+                    centers[bestTo],
+                    corridorWidth,
+                    floorCandidates,
+                    cove,
+                    rooms,
+                    circularRooms,
+                    corridorTile,
+                    rand
+                );
                 connected.Add(bestTo);
                 remaining.Remove(bestTo);
             }
@@ -262,21 +356,34 @@ namespace Realm
             int corridorWidth,
             List<TileDefData> floorCandidates,
             CoveOptions cove,
+            List<Rectangle> rooms,
+            bool circularRooms,
+            TileDefData corridorTile,
             Random rand
         )
         {
             if (rand.Next(2) == 0)
             {
-                CarveHorizontal(map, a.X, b.X, a.Y, corridorWidth, floorCandidates, cove, rand);
-                CarveVertical(map, a.Y, b.Y, b.X, corridorWidth, floorCandidates, cove, rand);
+                CarveHorizontal(map, a.X, b.X, a.Y, corridorWidth, floorCandidates, cove, rooms, circularRooms, corridorTile, rand);
+                CarveVertical(map, a.Y, b.Y, b.X, corridorWidth, floorCandidates, cove, rooms, circularRooms, corridorTile, rand);
             }
             else
             {
-                CarveVertical(map, a.Y, b.Y, a.X, corridorWidth, floorCandidates, cove, rand);
-                CarveHorizontal(map, a.X, b.X, b.Y, corridorWidth, floorCandidates, cove, rand);
+                CarveVertical(map, a.Y, b.Y, a.X, corridorWidth, floorCandidates, cove, rooms, circularRooms, corridorTile, rand);
+                CarveHorizontal(map, a.X, b.X, b.Y, corridorWidth, floorCandidates, cove, rooms, circularRooms, corridorTile, rand);
             }
         }
 
+        // corridorTile set: every cell gets that tile (e.g. a breakable
+        // wall — see DungeonTypeData.CorridorTileName's own doc comment),
+        // except cells that already fall inside some room's own footprint
+        // (RoomContains/IsInsideAnyRoom) — those are left untouched rather
+        // than stamped over, since a corridor's straight-line path always
+        // starts and ends inside a room (and can graze a third room along
+        // the way — see docs/DEVLOG.md entry 315), and overwriting a room's
+        // own already-carved floor with a hallway-fill tile would leave a
+        // visible, wrong-looking block of "rubble" sitting inside an
+        // otherwise open room.
         private static void CarveHorizontal(
             DungeonMap map,
             int x1,
@@ -285,6 +392,9 @@ namespace Realm
             int corridorWidth,
             List<TileDefData> floorCandidates,
             CoveOptions cove,
+            List<Rectangle> rooms,
+            bool circularRooms,
+            TileDefData corridorTile,
             Random rand
         )
         {
@@ -292,9 +402,20 @@ namespace Realm
             int maxX = Math.Max(x1, x2);
             for (int x = minX; x <= maxX; x++)
             for (int dy = 0; dy < corridorWidth; dy++)
-                map[x, y + dy] = cove.WoodFloorTile != null
-                    ? PlaceCoveTile(cove.WoodFloorTile, cove, rand)
-                    : RandomPick(floorCandidates, rand).Id;
+            {
+                int cy = y + dy;
+                if (corridorTile != null)
+                {
+                    if (!IsInsideAnyRoom(rooms, circularRooms, x, cy))
+                        map[x, cy] = corridorTile.Id;
+                }
+                else
+                {
+                    map[x, cy] = cove.WoodFloorTile != null
+                        ? PlaceCoveTile(cove.WoodFloorTile, cove, rand)
+                        : RandomPick(floorCandidates, rand).Id;
+                }
+            }
         }
 
         private static void CarveVertical(
@@ -305,6 +426,9 @@ namespace Realm
             int corridorWidth,
             List<TileDefData> floorCandidates,
             CoveOptions cove,
+            List<Rectangle> rooms,
+            bool circularRooms,
+            TileDefData corridorTile,
             Random rand
         )
         {
@@ -312,9 +436,20 @@ namespace Realm
             int maxY = Math.Max(y1, y2);
             for (int y = minY; y <= maxY; y++)
             for (int dx = 0; dx < corridorWidth; dx++)
-                map[x + dx, y] = cove.WoodFloorTile != null
-                    ? PlaceCoveTile(cove.WoodFloorTile, cove, rand)
-                    : RandomPick(floorCandidates, rand).Id;
+            {
+                int cx = x + dx;
+                if (corridorTile != null)
+                {
+                    if (!IsInsideAnyRoom(rooms, circularRooms, cx, y))
+                        map[cx, y] = corridorTile.Id;
+                }
+                else
+                {
+                    map[cx, y] = cove.WoodFloorTile != null
+                        ? PlaceCoveTile(cove.WoodFloorTile, cove, rand)
+                        : RandomPick(floorCandidates, rand).Id;
+                }
+            }
         }
 
         private static TileDefData RandomPick(List<TileDefData> candidates, Random rand) =>

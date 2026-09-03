@@ -75,7 +75,9 @@ namespace Realm.States
                 dungeonType.SandFloorTileName,
                 dungeonType.WoodFloorTileName,
                 dungeonType.BackgroundTileName,
-                dungeonType.PathGapChance
+                dungeonType.PathGapChance,
+                dungeonType.CircularRooms,
+                dungeonType.CorridorTileName
             );
             tileAtlas = content.Load<Texture2D>(tileSet.ImageName);
 

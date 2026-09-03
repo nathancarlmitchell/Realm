@@ -9074,3 +9074,52 @@ date/time for those individually; don't treat their grouping as meaning they all
      `Art.PirateShot` for the 4 cannon sentries; the 6 critters have no attack to begin with) — no
      fix needed there, unlike Snake Pit's own gaps (entries 325-326). Plain `dotnet build` (0 errors)
      plus a real minimized boot-check (stayed running, no stderr).
+
+329. **Snake Pit now generates circular rooms connected by hallways filled with breakable**
+     **tiles, matching the wiki's own "a series of circular rooms linked by hallways... filled in**
+     **with easily destructible brown blocks."** Requested directly, with a design discussion first
+     (the user asked whether this needed a per-dungeon-type generator file) -- recommended continuing
+     to extend the single shared `Dungeon/DungeonGenerator.cs` with more orthogonal, opt-in fields
+     (the same shape `CoveOptions`/Pirate Cave's cove mode already established) rather than splitting
+     into per-type files, since both dungeon types today still share the exact same core algorithm
+     (MST room connection, L-shaped corridors) and only differ in cosmetic/shape details -- a real
+     split would make sense once a third dungeon type needs something structurally different. User
+     agreed.
+
+     New `DungeonTypeData.CircularRooms` (bool, default false) and `CorridorTileName` (nullable
+     string, resolved by name like `WoodFloorTileName`/`SandFloorTileName` already are). Snake Pit
+     sets `CircularRooms: true` and `CorridorTileName: "Breakable Wall"` (the Crypt tileset's
+     existing destructible tile, confirmed via `AskUserQuestion` to reuse as-is at its existing 300
+     HP rather than adding a separate, cheaper hallway-specific tile).
+
+     `DungeonGenerator.PlaceRooms()`: circular mode samples one size for both width and height (a
+     square bounding box, so the circle inscribed within it — see new `RoomContains()` — is a true
+     circle, not an ellipse; `MinRoomSize`/`MaxRoomSize` become "diameter" range in this mode, the
+     same fields reused rather than adding new ones) and switches the overlap check from padded-
+     rectangle-intersection to a center-to-center distance check against the sum of both radii — a
+     bounding-box check would reject plenty of candidates whose actual circles don't overlap at all.
+     Carving only fills cells within the room's own radius, leaving the bounding box's corners as
+     background/wall.
+
+     `CarveHorizontal()`/`CarveVertical()`: when `CorridorTileName` is set, every corridor cell
+     becomes that tile *except* cells that already fall inside some room's own footprint (new
+     `IsInsideAnyRoom()`, checked against every room, not just the two endpoints being connected —
+     matching entry 315's own precedent that a corridor's straight-line path can graze a third
+     room along the way). Without this check, a hallway-fill tile would get stamped directly into
+     the middle of an already-open room wherever the straight-line corridor path crosses through
+     one, looking like a broken chunk of rubble sitting in open floor. `DungeonPathfindingController`
+     needed no changes at all — it already re-plans off the live tile grid every 0.5s, and
+     `DungeonMap.DamageTile()` already swaps a broken tile for real floor, so enemies naturally path
+     through a hallway the instant the player opens a gap in it. The Treasure Room
+     (`TreasureRoomController.cs`) is deliberately exempt from circular mode even when a dungeon type
+     opts in — the wiki's own Treasure Room is explicitly described as visually distinct from the
+     dungeon's circular rooms ("a shape that is easily recognizable from the circular rooms
+     otherwise found throughout the dungeon"), so its normal rectangular footprint is the wiki's own
+     intended contrast, not something to fix.
+
+     Verified via a temporary `Game1.StartGame()` scripted check (reverted, no diff remains) across
+     8 seeds: every generated room reported a square bounding box (true circle, not ellipse), every
+     room's own center was floor, and — the specific correctness concern `IsInsideAnyRoom()` exists
+     to prevent — zero breakable-wall tiles ever landed inside any room's own circle across ~3,100-
+     3,500 breakable tiles generated per seed. Plain `dotnet build` (0 errors) plus a real minimized
+     boot-check (stayed running, no stderr) after reverting.

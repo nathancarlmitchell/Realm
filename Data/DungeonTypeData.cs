@@ -60,5 +60,30 @@ namespace Realm.Data
         // deliberate simplification from the wiki's own distinctly-shaped
         // "long room."
         public float TreasureRoomChance { get; set; } = 0f;
+
+        // Rooms carved as circles (inscribed within their own placement
+        // rectangle) instead of the default filled rectangle — first real
+        // use: Snake Pit, matching its own wiki's "a series of circular
+        // rooms." false (the default) is the original behavior, unchanged
+        // for every dungeon type that doesn't opt in. The Treasure Room
+        // (Dungeon/TreasureRoomController.cs) is deliberately exempt even
+        // when this is true — the wiki's own Treasure Room is described as
+        // visually distinct from the dungeon's circular rooms, not another
+        // circle, so it keeps its normal rectangular footprint regardless.
+        public bool CircularRooms { get; set; } = false;
+
+        // Optional hallway fill — first real use: Snake Pit, matching its
+        // own wiki's "hallways... filled in with easily destructible brown
+        // blocks." Left null (the default), corridors behave exactly as
+        // before (a random same-category floor pick, or the cove walkway
+        // above). Set, every corridor cell outside any room's own footprint
+        // is carved as this tile instead — expected to be a real
+        // IsDestructible wall tile (e.g. Crypt's "Breakable Wall") so the
+        // hallway has to be broken through rather than walked straight down;
+        // nothing here enforces that, it's just what makes the feature make
+        // sense. Looked up by TileDefData.Name within this dungeon type's
+        // own TileSetName, same as SandFloorTileName/WoodFloorTileName/
+        // BackgroundTileName above.
+        public string CorridorTileName { get; set; }
     }
 }

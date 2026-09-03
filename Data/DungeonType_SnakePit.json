@@ -1,11 +1,13 @@
 {
   "Name": "Snake Pit",
   "TileSetName": "Crypt",
-  "MinRoomSize": 5,
-  "MaxRoomSize": 12,
+  "MinRoomSize": 15,
+  "MaxRoomSize": 30,
   "MinRoomCount": 10,
   "MaxRoomCount": 15,
-  "CorridorWidth": 2,
+  "CorridorWidth": 3,
+  "CircularRooms": true,
+  "CorridorTileName": "Breakable Wall",
   "EnemyNames": [
     "Pit Snake",
     "Pit Viper",
