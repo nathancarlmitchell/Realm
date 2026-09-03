@@ -9017,3 +9017,13 @@ date/time for those individually; don't treat their grouping as meaning they all
      iterations since the test never called `Update()` to actually purge them; the real per-seed
      delta was 6/12 once accounted for). Plain `dotnet build` (0 errors, same pre-existing unrelated
      warnings) plus a real minimized boot-check (stayed running, no stderr) after reverting.
+
+325. **Wired up a supplied Snake Pit projectile sprite that entry 324 missed.**
+     `Content/Projectiles/Snake Bite.png` was supplied alongside the 8 enemy sprites but not
+     noticed until a post-commit `git status` sweep turned it up as a real, untracked asset (every
+     enemy in entry 324 shipped using the generic `Art.EnemyProjectile` default instead). New
+     `Art.SnakeBite`, applied as the `projectileImage` for the 5 regular enemies whose own attack is
+     a plain bite/shot — Pit Snake, Pit Viper, Brown/Yellow/Fire Python — leaving Greater Pit
+     Snake/Viper and Snakepit Guard on the generic default, since their own attacks are named
+     "Snake Balls"/bombs on the wiki, a visually different shot. Plain `dotnet build` (0 errors)
+     plus a real minimized boot-check (stayed running, no stderr).

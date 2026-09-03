@@ -2064,7 +2064,12 @@ namespace Realm
             };
             enemy.AddBehaviour(enemy.MoveRandomly());
             enemy.AddAttackBehaviour(
-                enemy.ShootIfInRange(range: 12f * 32f, damage: 10, projectileSpeed: 6f * 32f / 60f)
+                enemy.ShootIfInRange(
+                    range: 12f * 32f,
+                    damage: 10,
+                    projectileSpeed: 6f * 32f / 60f,
+                    projectileImage: Art.SnakeBite
+                )
             );
             return enemy;
         }
@@ -2090,7 +2095,8 @@ namespace Realm
                     damage: 20,
                     projectileSpeed: 5f * 32f / 60f,
                     shots: 2,
-                    angleStep: 0.3f
+                    angleStep: 0.3f,
+                    projectileImage: Art.SnakeBite
                 )
             );
             return enemy;
@@ -2207,7 +2213,12 @@ namespace Realm
                 enemy.PeriodicCharge(intervalFrames: 200, chargeDurationFrames: 25, chargeSpeed: 6f)
             );
             enemy.AddAttackBehaviour(
-                enemy.ShootIfInRange(range: 6.3f * 32f, damage: 30, projectileSpeed: 7f * 32f / 60f)
+                enemy.ShootIfInRange(
+                    range: 6.3f * 32f,
+                    damage: 30,
+                    projectileSpeed: 7f * 32f / 60f,
+                    projectileImage: Art.SnakeBite
+                )
             );
             return enemy;
         }
@@ -2235,7 +2246,8 @@ namespace Realm
                     damage: 35,
                     projectileSpeed: 8.5f * 32f / 60f,
                     shots: 3,
-                    angleStep: 0.25f
+                    angleStep: 0.25f,
+                    projectileImage: Art.SnakeBite
                 )
             );
             return enemy;
@@ -2265,6 +2277,7 @@ namespace Realm
                     projectileSpeed: 6.5f * 32f / 60f,
                     projectileAmount: 4,
                     damage: 35,
+                    projectileImage: Art.SnakeBite,
                     range: 13f * 32f
                 )
             );

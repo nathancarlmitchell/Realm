@@ -133,6 +133,16 @@ namespace Realm
         public static Texture2D FirePython { get; private set; }
         public static Texture2D SnakepitGuard { get; private set; }
 
+        // Snake Pit's own basic-shot projectile art (also user-supplied) —
+        // used by the 5 regular enemies whose own attack is a plain bite/
+        // shot (Pit Snake/Viper, Brown/Yellow/Fire Python) in place of the
+        // generic Art.EnemyProjectile default, same role Pirate Cave's own
+        // GoldShot/PirateShot/etc. play there. Not used by Greater Pit
+        // Snake/Viper (their own attacks are named "Snake Balls"/bombs on
+        // the wiki, a different visual, so they keep the generic default)
+        // or Snakepit Guard (also Snake Balls/Spinners, not a bite).
+        public static Texture2D SnakeBite { get; private set; }
+
         public static AnimatedTexture Portal { get; private set; }
 
         // Dungeon-specific portal animations — same 7-frame, 8fps loop as
@@ -495,6 +505,7 @@ namespace Realm
             YellowPython = content.Load<Texture2D>("Dungeons/Snake Pit/Yellow Python");
             FirePython = content.Load<Texture2D>("Dungeons/Snake Pit/Fire Python");
             SnakepitGuard = content.Load<Texture2D>("Dungeons/Snake Pit/Snakepit Guard");
+            SnakeBite = content.Load<Texture2D>("Projectiles/Snake Bite");
 
             // Fonts.
             HudFont = content.Load<SpriteFont>("Fonts/HudFont");
