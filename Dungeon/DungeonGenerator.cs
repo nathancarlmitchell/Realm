@@ -31,7 +31,7 @@ namespace Realm
         // width are, so these stay fixed engine constants rather than
         // DungeonTypeData fields.
         private const int EdgeBuffer = 1; // 1-tile gap kept clear at the world border.
-        private const int RoomPadding = 1; // 1-tile gap required between any two rooms.
+        private const int RoomPadding = 3; // 1-tile gap required between any two rooms.
         private const int MaxPlacementAttempts = 500;
 
         // Resolved cove-mode tiles, bundled so PlaceRooms()/ConnectRooms()/
@@ -118,7 +118,16 @@ namespace Realm
             );
 
             if (rooms.Count > 1)
-                ConnectRooms(map, rooms, corridorWidth, floorCandidates, cove, circularRooms, corridorTile, rand);
+                ConnectRooms(
+                    map,
+                    rooms,
+                    corridorWidth,
+                    floorCandidates,
+                    cove,
+                    circularRooms,
+                    corridorTile,
+                    rand
+                );
 
             foreach (Rectangle room in rooms)
                 map.Rooms.Add(room);
@@ -172,7 +181,11 @@ namespace Realm
         // blocks), so this never risks disconnecting a room.
         private static int PlaceCoveTile(TileDefData tile, CoveOptions cove, Random rand)
         {
-            if (tile == cove.WoodFloorTile && cove.BackgroundTile != null && rand.NextDouble() < cove.PathGapChance)
+            if (
+                tile == cove.WoodFloorTile
+                && cove.BackgroundTile != null
+                && rand.NextDouble() < cove.PathGapChance
+            )
                 return cove.BackgroundTile.Id;
 
             return tile.Id;
@@ -194,7 +207,10 @@ namespace Realm
         {
             List<Rectangle> rooms = [];
 
-            int maxFittableSize = Math.Min(maxRoomSize, Math.Min(widthInTiles, heightInTiles) - 2 * EdgeBuffer);
+            int maxFittableSize = Math.Min(
+                maxRoomSize,
+                Math.Min(widthInTiles, heightInTiles) - 2 * EdgeBuffer
+            );
             if (maxFittableSize < minRoomSize)
                 return rooms; // canvas too small to fit even one room — terminate with none.
 
@@ -244,7 +260,8 @@ namespace Realm
                         float existingRadius = existing.Width / 2f;
                         Vector2 existingCenter = new(existing.Center.X, existing.Center.Y);
                         float minDist = newRadius + existingRadius + RoomPadding;
-                        return Vector2.DistanceSquared(newCenter, existingCenter) < minDist * minDist;
+                        return Vector2.DistanceSquared(newCenter, existingCenter)
+                            < minDist * minDist;
                     });
                 }
                 else
@@ -269,7 +286,9 @@ namespace Realm
                 // when cove mode isn't set up for either tile.
                 TileDefData roomTile = (cove.SandFloorTile, cove.WoodFloorTile) switch
                 {
-                    (not null, not null) => rand.Next(2) == 0 ? cove.WoodFloorTile : cove.SandFloorTile,
+                    (not null, not null) => rand.Next(2) == 0
+                        ? cove.WoodFloorTile
+                        : cove.SandFloorTile,
                     (not null, null) => cove.SandFloorTile,
                     (null, not null) => cove.WoodFloorTile,
                     _ => null,
@@ -281,9 +300,10 @@ namespace Realm
                     if (!RoomContains(candidate, circularRooms, cx, cy))
                         continue; // outside the inscribed circle — leave as background/wall.
 
-                    map[cx, cy] = roomTile != null
-                        ? PlaceCoveTile(roomTile, cove, rand)
-                        : RandomPick(floorCandidates, rand).Id;
+                    map[cx, cy] =
+                        roomTile != null
+                            ? PlaceCoveTile(roomTile, cove, rand)
+                            : RandomPick(floorCandidates, rand).Id;
                 }
             }
 
@@ -364,13 +384,61 @@ namespace Realm
         {
             if (rand.Next(2) == 0)
             {
-                CarveHorizontal(map, a.X, b.X, a.Y, corridorWidth, floorCandidates, cove, rooms, circularRooms, corridorTile, rand);
-                CarveVertical(map, a.Y, b.Y, b.X, corridorWidth, floorCandidates, cove, rooms, circularRooms, corridorTile, rand);
+                CarveHorizontal(
+                    map,
+                    a.X,
+                    b.X,
+                    a.Y,
+                    corridorWidth,
+                    floorCandidates,
+                    cove,
+                    rooms,
+                    circularRooms,
+                    corridorTile,
+                    rand
+                );
+                CarveVertical(
+                    map,
+                    a.Y,
+                    b.Y,
+                    b.X,
+                    corridorWidth,
+                    floorCandidates,
+                    cove,
+                    rooms,
+                    circularRooms,
+                    corridorTile,
+                    rand
+                );
             }
             else
             {
-                CarveVertical(map, a.Y, b.Y, a.X, corridorWidth, floorCandidates, cove, rooms, circularRooms, corridorTile, rand);
-                CarveHorizontal(map, a.X, b.X, b.Y, corridorWidth, floorCandidates, cove, rooms, circularRooms, corridorTile, rand);
+                CarveVertical(
+                    map,
+                    a.Y,
+                    b.Y,
+                    a.X,
+                    corridorWidth,
+                    floorCandidates,
+                    cove,
+                    rooms,
+                    circularRooms,
+                    corridorTile,
+                    rand
+                );
+                CarveHorizontal(
+                    map,
+                    a.X,
+                    b.X,
+                    b.Y,
+                    corridorWidth,
+                    floorCandidates,
+                    cove,
+                    rooms,
+                    circularRooms,
+                    corridorTile,
+                    rand
+                );
             }
         }
 
@@ -411,9 +479,10 @@ namespace Realm
                 }
                 else
                 {
-                    map[x, cy] = cove.WoodFloorTile != null
-                        ? PlaceCoveTile(cove.WoodFloorTile, cove, rand)
-                        : RandomPick(floorCandidates, rand).Id;
+                    map[x, cy] =
+                        cove.WoodFloorTile != null
+                            ? PlaceCoveTile(cove.WoodFloorTile, cove, rand)
+                            : RandomPick(floorCandidates, rand).Id;
                 }
             }
         }
@@ -445,9 +514,10 @@ namespace Realm
                 }
                 else
                 {
-                    map[cx, y] = cove.WoodFloorTile != null
-                        ? PlaceCoveTile(cove.WoodFloorTile, cove, rand)
-                        : RandomPick(floorCandidates, rand).Id;
+                    map[cx, y] =
+                        cove.WoodFloorTile != null
+                            ? PlaceCoveTile(cove.WoodFloorTile, cove, rand)
+                            : RandomPick(floorCandidates, rand).Id;
                 }
             }
         }
