@@ -129,13 +129,13 @@ namespace Realm
             // above. Snakepit Guard/Dart Thrower aren't here — the
             // Treasure Room controller spawns them directly, never picked
             // randomly by DungeonEnemySpawner.
-            ("Pit Snake", Enemy.CreatePitSnake),
-            ("Pit Viper", Enemy.CreatePitViper),
-            ("Greater Pit Snake", Enemy.CreateGreaterPitSnake),
-            ("Greater Pit Viper", Enemy.CreateGreaterPitViper),
-            ("Brown Python", Enemy.CreateBrownPython),
-            ("Yellow Python", Enemy.CreateYellowPython),
-            ("Fire Python", Enemy.CreateFirePython),
+            ("Pit Snake", position => new PitSnake(position)),
+            ("Pit Viper", position => new PitViper(position)),
+            ("Greater Pit Snake", position => new GreaterPitSnake(position)),
+            ("Greater Pit Viper", position => new GreaterPitViper(position)),
+            ("Brown Python", position => new BrownPython(position)),
+            ("Yellow Python", position => new YellowPython(position)),
+            ("Fire Python", position => new FirePython(position)),
         ];
 
         // Cross-references a name list against BasicEnemyPool above — the

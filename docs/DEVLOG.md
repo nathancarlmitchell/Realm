@@ -9027,3 +9027,32 @@ date/time for those individually; don't treat their grouping as meaning they all
      Snake/Viper and Snakepit Guard on the generic default, since their own attacks are named
      "Snake Balls"/bombs on the wiki, a visually different shot. Plain `dotnet build` (0 errors)
      plus a real minimized boot-check (stayed running, no stderr).
+
+326. **Every Snake Pit enemy now uses the real Snake Bite projectile art, not the generic**
+     **default.** Requested directly, after entry 325 only wired it into 5 of the roster's basic-shot
+     attacks. Audited every remaining attack across the 7 regular enemies plus Snakepit Guard/Dart
+     Thrower: Greater Pit Snake's `ShootRandomDirection` and Greater Pit Viper's `Spray` were still
+     on the default (`Art.SnakeBite` added to both); Snakepit Guard's Snake Spit/Snake Balls
+     (`FanShot`, both phases) and Snake Spinners (`Bomb`) were too (`Bomb()` gained a new optional
+     `projectileImage` parameter, matching `FanShot`'s own, to make this possible); the Dart
+     Thrower's own dart likewise. `ThrowGrenades`' own attacks (the self-detonating/thrown-bomb
+     hazards on Greater Pit Snake/Viper and Snakepit Guard) were left alone — `GrenadeProjectile`
+     already draws its own dedicated telegraphed-AoE circle (`Art.Circle`), a correct, non-default
+     look already, not the generic projectile at all.
+
+327. **Moved the 7 regular Snake Pit enemies out of `Enemy.cs` into their own dedicated classes,**
+     **`Enemies/SnakePit/`.** Requested directly, matching the convention every other biome/dungeon's
+     regular enemies already use (`Enemies/Beach/*.cs`) rather than the static-factory-method shape
+     `Enemy.cs` itself still uses for Pirate Cave's own roster (left as-is — out of scope, not asked).
+     `PitSnake`/`PitViper`/`GreaterPitSnake`/`GreaterPitViper`/`BrownPython`/`YellowPython`/
+     `FirePython` are now plain `Enemy` subclasses with a real constructor instead of a
+     `public static Enemy CreateXyz(Vector2 position)` factory — pure reorganization, no behavior
+     change (the same `AddBehaviour`/`AddAttackBehaviour` calls, just `this`-implicit instead of
+     against a local `enemy` variable). `GreaterPitViper` needed its own `private static readonly
+     Random rand` field, same reason `Bandit.cs`/`BeachedBuccaneer.cs` each already needed their own
+     — `Enemy`'s own `rand` is private, not visible to a subclass in a different file.
+     `EnemySpawner.BasicEnemyPool`'s 7 entries now construct these directly
+     (`position => new PitSnake(position)`, etc.) instead of referencing the removed factories.
+     Snakepit Guard/Dart Thrower were already in `Enemies/SnakePit/` from entry 324 and needed no
+     change. Plain `dotnet build` (0 errors) plus a real minimized boot-check (stayed running, no
+     stderr) after each change.

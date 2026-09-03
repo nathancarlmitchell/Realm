@@ -184,7 +184,8 @@ namespace Realm
                 projectileSpeed: SnakeSpitSpeed,
                 shots: 3,
                 angleStep: 0.3f,
-                cooldownFrames: SnakeSpitCooldown
+                cooldownFrames: SnakeSpitCooldown,
+                projectileImage: Art.SnakeBite
             ).GetEnumerator();
 
             while (true)
@@ -209,7 +210,8 @@ namespace Realm
                 projectileSpeed: SpinnerSpeed,
                 damage: SpinnerDamage,
                 dazesOnHit: true,
-                dazeDurationFrames: SpinnerDazeFrames
+                dazeDurationFrames: SpinnerDazeFrames,
+                projectileImage: Art.SnakeBite
             ).GetEnumerator();
 
             while (true)
@@ -241,7 +243,8 @@ namespace Realm
                 angleStep: MathHelper.TwoPi / 3f,
                 cooldownFrames: SnakeBallCooldown,
                 dazesOnHit: true,
-                dazeDurationFrames: SnakeBallDazeFrames
+                dazeDurationFrames: SnakeBallDazeFrames,
+                projectileImage: Art.SnakeBite
             ).GetEnumerator();
 
             while (true)
@@ -300,7 +303,8 @@ namespace Realm
                 angleStep: MathHelper.PiOver2,
                 cooldownFrames: Phase2SnakeBallCooldown,
                 dazesOnHit: true,
-                dazeDurationFrames: SnakeBallDazeFrames
+                dazeDurationFrames: SnakeBallDazeFrames,
+                projectileImage: Art.SnakeBite
             ).GetEnumerator();
 
             while (true)

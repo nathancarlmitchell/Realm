@@ -72,7 +72,7 @@ namespace Realm
                         {
                             cooldownRemaining = DartCooldown;
                             EntityManager.Add(
-                                new EnemyProjectile(Position, aim.ScaleTo(DartSpeed))
+                                new EnemyProjectile(Position, aim.ScaleTo(DartSpeed), Art.SnakeBite)
                                 {
                                     Damage = DartDamage,
                                     BleedsOnHit = true,
