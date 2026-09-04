@@ -55,6 +55,15 @@ namespace Realm
         // be redundant.
         public override void DrawHealthBars(SpriteBatch spriteBatch) { }
 
+        // Extension point for a boss whose arena has its own floor-level
+        // visual (e.g. LimonTheSpriteGoddess's conveyor-zone tiles) —
+        // called from BossRealmState.DrawBackground(), after the plain flat
+        // background it always draws, in its own PointClamp-sampled
+        // spriteBatch pass (crisp tile edges, matching DungeonState's own
+        // atlas-drawing convention). No-op here; most bosses have nothing
+        // to add.
+        public virtual void DrawArenaFloor(SpriteBatch spriteBatch) { }
+
         // Every boss guarantees a way straight back to the open Realm (not
         // Nexus — see Portal.Destination.Realm/RealmDestination), dropped
         // one tile above wherever it actually died. Separate from

@@ -9626,3 +9626,47 @@ date/time for those individually; don't treat their grouping as meaning they all
      became a conveyor. Plain `dotnet build` (0 errors) plus a real minimized boot-check; real save
      files backed up first and diffed — the same benign `PlayerData` equipped-item-GUID pattern
      from entry 339 showed up again (real gameplay between sessions, unrelated to this test).
+
+341. **Gave Limon the Sprite Goddess's boss-arena conveyor zones real visible art.** Reported
+     directly — the arena's push mechanic (entry 335's `ArenaConveyorPush()`) worked but the zones
+     themselves were invisible; this was a known, explicitly flagged gap from that same entry ("no
+     visual distinguishes the conveyor zones from the rest of the arena, an explicit
+     simplification, not an oversight") that the real Sprite World conveyor-tile art (now available
+     since entries 337-340 wired it into the regular dungeon) finally made worth closing.
+
+     New `Boss.DrawArenaFloor(SpriteBatch)` — a no-op virtual extension point (same shape as
+     `DrawHealthBars`/`DrawBossHud`) a boss overrides to paint something on its own arena floor.
+     `BossRealmState.DrawBackground()` now calls it in its own `PointClamp`-sampled pass (crisp tile
+     edges, same reasoning `DungeonState`'s own `DrawBackground()` override already documents) right
+     after the base flat-tile background.
+
+     `LimonTheSpriteGoddess.DrawArenaFloor()` mirrors `ArenaConveyorPush()`'s own band math exactly
+     (dormant draws nothing, matching "no push happens yet either"; phase 3 draws both rings) and
+     paints it with `Art.SpriteWorldTileSet` (new — the same dungeon tile atlas `DungeonState`
+     already loads dynamically per-instance, added as a static `Art.cs` property since Limon's
+     constructor has no `ContentManager` on hand). Since the push zones are circular/annular but the
+     only available tile art is 4 plain axis-aligned directional tiles (Up/Down/Left/Right, no
+     rotation support), each tile position in the band picks whichever of the 4 best matches its own
+     local tangent direction (the identical clockwise/counter-clockwise formulas
+     `ArenaConveyorPush()` already used to push the player), snapped to the nearest cardinal axis —
+     producing a stepped circular flow from the same plain tiles rather than needing new rotated art.
+
+     Verified visually, not just by scripted assertion (a rendering bug, not a logic one) — a
+     temporary `Game1.StartGame()` change (reverted, no diff remains) jumped straight into a real
+     `BossRealmState` with Limon's own `BossDestination`, force-set her `currentPhase` field via
+     reflection to Phase1 then separately Phase3, and centered the camera on her arena. Real
+     screenshots (`Start-Process` non-minimized, `Graphics.CopyFromScreen`) confirmed: Phase1 shows
+     only the outer ring; Phase3 shows both outer and inner rings, each a coherent stepped circular
+     band of directional tiles. Cross-checked the tile-to-direction mapping isn't swapped by
+     sampling the tileset's own per-tile pixel colors (Up=blue `(58,137,208)`, Down=green
+     `(117,177,93)`, Left=magenta `(212,83,215)`, Right=dark-red `(204,70,72)`) against the actual
+     screenshot pixels at hand-calculated ring positions — matched (a tile that first looked magenta
+     near the top of one screenshot, at normal viewing scale, was confirmed by pixel sampling to
+     actually be the dark-red Right tile, not a real mismatch).
+
+     Plain `dotnet build` (0 errors) plus a real minimized boot-check. Real save files backed up
+     first and diffed: the same benign equipped-item-instance-GUID churn from entries 339/340
+     showed up again — this time plausibly from this test's own `BossRealmState` construction
+     (`RealmState`'s constructor always saves — see CLAUDE.md), which is the same harmless
+     re-equip-via-catalog-lookup behavior every normal game boot already causes, not a data-loss
+     regression (stats/tiers/names all identical; only the internal instance ID changed).

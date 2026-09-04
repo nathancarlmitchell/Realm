@@ -79,6 +79,35 @@ namespace Realm.States
             );
         }
 
+        // Draws the plain flat background every RealmState gets (base call,
+        // its own Begin/End pair), then gives the active boss a chance to
+        // paint its own arena-floor visual on top (e.g.
+        // LimonTheSpriteGoddess's conveyor-zone tiles) in a separate
+        // PointClamp-sampled pass — a real tile atlas needs point sampling
+        // to avoid bleeding an adjacent packed tile in at its seams (same
+        // reasoning DungeonState's own DrawBackground() override already
+        // documents), which the base LinearWrap pass doesn't provide.
+        protected override void DrawBackground(SpriteBatch spriteBatch)
+        {
+            base.DrawBackground(spriteBatch);
+
+            Boss boss = EntityManager.ActiveBoss;
+            if (boss == null)
+                return;
+
+            spriteBatch.Begin(
+                SpriteSortMode.Deferred,
+                BlendState.AlphaBlend,
+                SamplerState.PointClamp,
+                DepthStencilState.Default,
+                RasterizerState.CullNone,
+                null,
+                Game1.Camera.GetTransformation()
+            );
+            boss.DrawArenaFloor(spriteBatch);
+            spriteBatch.End();
+        }
+
         // Hard walls — the arena is meant to be a bounded room, but nothing
         // in Player.Update() ever clamps Position on its own (the open Realm
         // world is 500,000px, so this was never previously reachable in

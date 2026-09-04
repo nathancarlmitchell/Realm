@@ -249,6 +249,16 @@ namespace Realm
         // mechanic (LimonTheSpriteGoddess.ParalyzePunishment()).
         public static Texture2D PrejudicePulse { get; private set; }
 
+        // The Sprite World dungeon's own tile atlas (Data/TileSet_
+        // SpriteWorld.json's ImageName) — DungeonState loads it dynamically
+        // per-instance via ContentManager instead (it already has a real
+        // TileSetData/ContentManager on hand), so this static copy exists
+        // only for LimonTheSpriteGoddess.DrawArenaFloor(), which has
+        // neither: it needs the same atlas (specifically the 4 directional
+        // Conveyor tiles) to paint her boss-arena conveyor zones with real
+        // art instead of leaving them invisible.
+        public static Texture2D SpriteWorldTileSet { get; private set; }
+
         public static AnimatedTexture Portal { get; private set; }
 
         // Dungeon-specific portal animations — same 7-frame, 8fps loop as
@@ -689,6 +699,7 @@ namespace Realm
             RainbowLine = content.Load<Texture2D>("Projectiles/Rainbow Sprite Line");
             RainbowStar = content.Load<Texture2D>("Projectiles/Rainbow Sprite Star");
             PrejudicePulse = content.Load<Texture2D>("Projectiles/Prejudice Pulse");
+            SpriteWorldTileSet = content.Load<Texture2D>("Dungeons/Sprite World/TileSet");
 
             // 4 frames, one row (160x40 = 4x40x40) — a quick, one-shot
             // blast rather than a looping idle animation, matching how it's

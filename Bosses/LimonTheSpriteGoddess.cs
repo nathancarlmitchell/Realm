@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Realm;
+using Realm.Data;
 using Realm.Projectiles;
 
 namespace Realm.Bosses
@@ -18,13 +20,17 @@ namespace Realm.Bosses
     //
     // BossRealmState has no tile grid (an open Vector2-bounded arena, not a
     // DungeonMap) — the arena's own conveyor belts (both the phase 1/2
-    // square border and phase 3's double ring) are therefore geometry-based
+    // outer ring and phase 3's double ring) are therefore geometry-based
     // pushes computed directly against arenaCenter/ArenaHalfSize below,
     // architecturally separate from DungeonState's own TileDefData-based
     // conveyor mechanic (Sprite World's regular dungeon rooms/corridors).
-    // Neither the square platform nor the double-ring floor pattern has any
-    // dedicated art — no visual distinguishes the conveyor zones from the
-    // rest of the arena, an explicit simplification, not an oversight.
+    // DrawArenaFloor() below paints the same push bands with the real
+    // Sprite World conveyor-tile art (Art.SpriteWorldTileSet) so the zones
+    // are actually visible — each tile position picks whichever of the 4
+    // directional (Up/Down/Left/Right) tiles best matches its own local
+    // tangent direction, snapped to the nearest cardinal axis, producing a
+    // stepped circular flow from plain axis-aligned tiles rather than
+    // needing any new rotated/curved art.
     //
     // "Silence" isn't a debuff this engine has — every Silencing shot
     // elsewhere in Sprite World substitutes DazesOnHit; Limon's own kit
@@ -72,6 +78,28 @@ namespace Realm.Bosses
         private readonly Vector2 arenaCenter;
         private const float ArenaHalfSize = 500f; // matches the old SquareWall's own wallHalfSize
 
+        // Resolved once here (a JSON read, not a per-frame cost) rather
+        // than in DrawArenaFloor() itself — the 4 directional Conveyor
+        // tiles' own source rectangles within Art.SpriteWorldTileSet, used
+        // to paint the arena's push bands with real art. See
+        // DrawArenaFloor()/DrawConveyorRing() below.
+        private readonly int conveyorTileSize;
+        private readonly Rectangle conveyorUpSource;
+        private readonly Rectangle conveyorDownSource;
+        private readonly Rectangle conveyorLeftSource;
+        private readonly Rectangle conveyorRightSource;
+
+        private static Rectangle TileSourceRect(TileSetData tileSet, string tileName)
+        {
+            TileDefData tile = tileSet.Tiles.First(t => t.Name == tileName);
+            return new Rectangle(
+                tile.OffsetX * tileSet.TileWidth,
+                tile.OffsetY * tileSet.TileHeight,
+                tileSet.TileWidth,
+                tileSet.TileHeight
+            );
+        }
+
         public LimonTheSpriteGoddess(Vector2 position)
             : base(Art.Limon, position)
         {
@@ -84,6 +112,13 @@ namespace Realm.Bosses
             PointValue = 2000;
             deathSound = Sound.SpriteGodDeath;
             hitSound = Sound.SpriteGodHit;
+
+            TileSetData spriteWorldTileSet = Util.LoadTileSetData("SpriteWorld");
+            conveyorTileSize = spriteWorldTileSet.TileWidth;
+            conveyorUpSource = TileSourceRect(spriteWorldTileSet, "Conveyor Up");
+            conveyorDownSource = TileSourceRect(spriteWorldTileSet, "Conveyor Down");
+            conveyorLeftSource = TileSourceRect(spriteWorldTileSet, "Conveyor Left");
+            conveyorRightSource = TileSourceRect(spriteWorldTileSet, "Conveyor Right");
 
             AddBehaviour(ActivationWatcher());
             AddBehaviour(PhaseWatcher());
@@ -322,6 +357,75 @@ namespace Realm.Bosses
                 }
 
                 yield return 0;
+            }
+        }
+
+        // Paints the same push bands ArenaConveyorPush() above computes,
+        // with real Sprite World conveyor-tile art — mirrors that method's
+        // own phase/band logic exactly (dormant draws nothing, matching
+        // "no push happens yet either"). Called from BossRealmState.
+        // DrawBackground() every frame, in its own PointClamp-sampled pass.
+        public override void DrawArenaFloor(SpriteBatch spriteBatch)
+        {
+            if (currentPhase == Phase.Dormant)
+                return;
+
+            DrawConveyorRing(spriteBatch, ArenaHalfSize - BorderWidth, ArenaHalfSize, clockwise: true);
+
+            if (currentPhase == Phase.Phase3)
+                DrawConveyorRing(spriteBatch, InnerRingInner, InnerRingOuter, clockwise: false);
+        }
+
+        // Walks every tile position in the square bounding outerRadius and
+        // draws whichever of the 4 directional Conveyor tiles best matches
+        // that point's own local tangent direction (clockwise or
+        // counter-clockwise — same formulas ArenaConveyorPush() uses),
+        // snapped to the nearest cardinal axis (whichever tangent
+        // component has the larger magnitude decides Left/Right vs.
+        // Up/Down). Produces a stepped circular flow pattern from plain
+        // axis-aligned tiles — cheap enough to run every frame (at most a
+        // few hundred tile checks for this arena's size, far less than a
+        // real DungeonMap draws every frame already).
+        private void DrawConveyorRing(
+            SpriteBatch spriteBatch,
+            float innerRadius,
+            float outerRadius,
+            bool clockwise
+        )
+        {
+            int minTx = (int)MathF.Floor((arenaCenter.X - outerRadius) / conveyorTileSize);
+            int maxTx = (int)MathF.Floor((arenaCenter.X + outerRadius) / conveyorTileSize);
+            int minTy = (int)MathF.Floor((arenaCenter.Y - outerRadius) / conveyorTileSize);
+            int maxTy = (int)MathF.Floor((arenaCenter.Y + outerRadius) / conveyorTileSize);
+
+            for (int ty = minTy; ty <= maxTy; ty++)
+            for (int tx = minTx; tx <= maxTx; tx++)
+            {
+                Vector2 tileCenter = new(
+                    tx * conveyorTileSize + conveyorTileSize / 2f,
+                    ty * conveyorTileSize + conveyorTileSize / 2f
+                );
+                Vector2 rel = tileCenter - arenaCenter;
+                float dist = rel.Length();
+                if (dist < innerRadius || dist > outerRadius || dist == 0)
+                    continue;
+
+                Vector2 tangent = clockwise
+                    ? new Vector2(-rel.Y, rel.X) / dist
+                    : new Vector2(rel.Y, -rel.X) / dist;
+
+                Rectangle source =
+                    MathF.Abs(tangent.X) > MathF.Abs(tangent.Y)
+                        ? (tangent.X > 0 ? conveyorRightSource : conveyorLeftSource)
+                        : (tangent.Y > 0 ? conveyorDownSource : conveyorUpSource);
+
+                Rectangle dest = new(
+                    tx * conveyorTileSize,
+                    ty * conveyorTileSize,
+                    conveyorTileSize,
+                    conveyorTileSize
+                );
+                spriteBatch.Draw(Art.SpriteWorldTileSet, dest, source, Color.White);
             }
         }
 
