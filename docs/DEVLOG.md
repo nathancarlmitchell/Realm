@@ -9550,3 +9550,35 @@ date/time for those individually; don't treat their grouping as meaning they all
      generation call rather than assuming the game's outer world size applied here too. Plain
      `dotnet build` (0 errors) plus a real minimized boot-check; real save files backed up first
      and diffed unmodified.
+
+339. **Fixed a real bug from entry 338: stray single-cell conveyors were still spawning outside
+     the intended strips.** Reported directly after playing — conveyor tiles kept turning up
+     scattered through rooms and corridors, not just as the whole-room strips entry 338 built.
+
+     Root cause: `DungeonGenerator.Generate()`'s `floorCandidates` list (`tileSet.Tiles.Where(t =>
+     t.CanPassThrough)`) never excluded conveyor tiles — they're `CanPassThrough: true` like any
+     other floor tile, so all 4 conveyor tiles stayed in the same random-pick pool used for every
+     ordinary floor cell (`RandomPick(floorCandidates, rand)`, in both the room fill loop and
+     corridor carving). For Sprite World's tileset that's 4 conveyor tiles alongside a single
+     "Platform Floor," so roughly 4 in 5 non-strip floor cells had a real chance of independently
+     rolling a stray, ungrouped conveyor — on top of the intentional strips `PlaceConveyorStrips()`
+     lays down separately. This bug predates entry 338; the old per-cell `ConveyorTileChance` roll
+     partly masked it by giving conveyors a second, more visible spawn path, but the underlying
+     `floorCandidates` leak was already there.
+
+     Fixed by filtering `floorCandidates` to `t.CanPassThrough && t.ConveyorSpeed == 0` —
+     `ConveyorSpeed` is the one field only conveyor tiles ever set (default 0 for everything else),
+     the same "identify by a real distinguishing property" approach `wallCandidates` already uses
+     for `ExcludeFromBackgroundFill`. Conveyors now only ever appear where `PlaceConveyorStrips()`
+     deliberately places them.
+
+     Verified via a temporary `Game1.StartGame()` scripted check (reverted, no diff remains):
+     scanned every corridor cell (a real floor tile outside every room's own circular footprint,
+     where `PlaceConveyorStrips()` is never called at all) across 20 seeded `SpriteWorld`
+     `DungeonMap`s — 6,951 corridor cells sampled, 0 conveyor tiles among them, confirming the leak
+     is closed (before this fix, the same check would have shown roughly 80% of those cells as
+     stray conveyors). Plain `dotnet build` (0 errors) plus a real minimized boot-check; real save
+     files backed up first and diffed — one `PlayerData_*.json` differed only in its four equipped
+     items' own instance GUIDs (identical stats/tiers/names throughout), consistent with real
+     gameplay between sessions rather than anything this test touched (it never constructs
+     `Player.Instance`, a `RealmState`, or calls any save path).

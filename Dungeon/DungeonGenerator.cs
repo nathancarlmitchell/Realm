@@ -87,7 +87,19 @@ namespace Realm
             List<TileDefData> wallCandidates = tileSet
                 .Tiles.Where(t => !t.CanPassThrough && !t.ExcludeFromBackgroundFill)
                 .ToList();
-            List<TileDefData> floorCandidates = tileSet.Tiles.Where(t => t.CanPassThrough).ToList();
+
+            // A conveyor tile (ConveyorSpeed != 0 — the only tiles that set
+            // it) is still CanPassThrough, but it must never be picked as an
+            // ordinary random floor tile here — every non-strip cell (a
+            // plain floor pick, or a corridor carved with no CorridorTile
+            // override) would otherwise have a real chance of turning into
+            // a stray, ungrouped conveyor tile alongside the intentional
+            // whole-room strips PlaceConveyorStrips() lays down below,
+            // scattering single conveyor cells the same way the old
+            // per-cell roll (replaced by that strip mechanic) used to.
+            List<TileDefData> floorCandidates = tileSet
+                .Tiles.Where(t => t.CanPassThrough && t.ConveyorSpeed == 0)
+                .ToList();
 
             // Util.LoadTileSetData() already guarantees both are non-empty for
             // any tileset loaded the normal way, but Generate() is public and
