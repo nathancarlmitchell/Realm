@@ -4098,6 +4098,18 @@
 /processorParam:TextureFormat=Color
 /build:Projectiles/Purple Sprite Bolt.png
 
+#begin Projectiles/Prejudice Missle.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:Projectiles/Prejudice Missle.png
+
 #begin Projectiles/Rainbow Sprite Blast.png
 /importer:TextureImporter
 /processor:TextureProcessor
@@ -5372,6 +5384,18 @@
 /processorParam:MakeSquare=False
 /processorParam:TextureFormat=Color
 /build:Weapons/Staves/14.png
+
+#begin Weapons/Staves/UT/Staff of Extreme Prejudice.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:Weapons/Staves/UT/Staff of Extreme Prejudice.png
 
 #begin Weapons/Staves/Projectiles/0.png
 /importer:TextureImporter

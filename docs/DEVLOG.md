@@ -9712,3 +9712,62 @@ date/time for those individually; don't treat their grouping as meaning they all
      position-relative leftover value to the correct neutral one every other item already had — the
      item itself (name/tier/everything else) unchanged, confirmed via a structured field-by-field
      diff, not a data-loss regression.
+
+343. **Added the Staff of Extreme Prejudice, a real wiki-sourced UT staff, and dropped it from
+     Limon the Sprite Goddess.** Requested directly (realmeye.com/wiki/staff-of-extreme-prejudice) —
+     the first UT weapon in the game (Snake Eye Ring, entry from the Snake Pit work, was the first UT
+     item overall, but a Ring). Fittingly, this is the exact staff Limon's own `ParalyzePunishment()`
+     (entry 337) was already modeled after ("fire a radial blast of shots similar to the Staff of
+     Extreme Prejudice") — the wiki's real numbers confirm that homage was a good read: 10 shots, 36°
+     apart, is a literal 360°/10 full-circle spread, "arc gap: 36°" in the wiki's own stat table.
+
+     New `Weapon.RadialShotCount` (mirrored on `StaffData.cs`, default 0 for every tiered staff) —
+     the first staff in the game whose whole attack shape differs from the shared "2 aimed
+     SineWaveProjectile shots" pattern every other staff uses. `Weapon.Shoot()` gained a branch
+     ahead of that shared pattern: when set, fires `RadialShotCount` individual SineWaveProjectiles
+     (still using this staff's own, much smaller Amplitude/Frequency wave) at even
+     `360°/RadialShotCount` steps starting from the aim angle — matching the wiki's own "the
+     direction the character is facing determines where the origin of the 10 shots will be," so
+     facing a target still lines exactly one shot up with it.
+
+     Stats converted from the wiki's own table the same way every prior enemy/dungeon conversion in
+     this project has been (`tiles/sec * 32/60` -> px/tick, `tile * 32` -> px, seconds * 60 ->
+     frames): Damage 95-110, ProjectileMagnitude 5.8667 (11 tiles/sec), ProjectileDuration 22 frames
+     (0.364s lifetime), Amplitude 4.8 (0.15 tile), Frequency 2.0 (2 cycles/shot, unconverted — every
+     existing staff tier already stores this field directly in "cycles/shot" units), XpBonusPercent
+     6. `FireRate: 40%` from the wiki has no equivalent field to set — this engine's own
+     `AttacksPerSecond` is a flat function of the player's Dexterity alone, with no per-weapon fire-
+     rate multiplier at all (confirmed by grep: `Weapon.FireRate` is declared but read nowhere), a
+     pre-existing simplification, not something this item needed to work around. The wiki's
+     "Awakened Enchantment" (a whole separate endgame reforging mechanic no other UT item in this
+     codebase models yet) is out of scope, same simplification precedent as everywhere else.
+
+     Two real, pre-existing gaps this first UT weapon exposed, both fixed as part of wiring it in:
+     - `Weapon.LoadWeapon()`'s field-copy list (used to re-equip a saved weapon by name on load)
+       never copied `IsUntiered` at all — every prior weapon was tiered, so this never mattered
+       until now; a saved game with this staff equipped would have silently lost its purple UT
+       styling on the next load. Added `IsUntiered`/`RadialShotCount` to that copy list.
+     - `ItemSpawner.ResolveUniqueItem()` (the "resolve one specific named UT item for
+       `Enemy.UniqueItemDropChances`" helper) only ever searched `Game1.Instance.Rings` — literally
+       true until now, since Snake Eye Ring was the only UT item that existed, and the method's own
+       doc comment already flagged this as temporary ("extend the search to Weapons/Armors/...
+       once a UT item of one of those types exists"). Extended to search Weapons and Armors too.
+
+     `LimonTheSpriteGoddess`'s constructor gained `UniqueItemDropChances = new() { ["Staff of
+     Extreme Prejudice"] = 0.05f }` — a real wiki-listed drop source (the wiki's other two, a
+     Standard Quest Chest and a Prismimic Attacker, don't exist in this engine), same 5% rate as
+     Stheno's own Snake Eye Ring drop.
+
+     Verified via a temporary `Game1.StartGame()` scripted check (reverted, no diff remains): the
+     catalog entry resolves with the correct Type/IsUntiered/RadialShotCount/damage;
+     `ItemSpawner.ResolveUniqueItem` resolves it as a real `Weapon`; equipping it via the real
+     `Weapon.LoadWeapon()` path correctly restores `IsUntiered`/`RadialShotCount` (confirming the
+     fixed copy-list gap); firing it added exactly 10 real player projectiles, at angles spread
+     evenly 36° apart (confirmed by reading each projectile's own `Velocity.ToAngle()` back). Two
+     real test-script-only mistakes caught along the way, not feature bugs: assuming a fresh Wizard
+     rather than accounting for `StartGame()` loading this account's real last-played character (a
+     Priest), which made the first equip attempt silently fail its own weapon-type class-check; and
+     forgetting the documented `Game1.Camera` initialization gotcha before calling anything that
+     reads mouse-aim direction. Plain `dotnet build` (0 errors) plus a real minimized boot-check;
+     real save files backed up first and diffed fully unmodified this time (the test's `Util.
+     ResetPlayer()` call only ever touched the in-memory `Player.Instance`, no real save path ran).

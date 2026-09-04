@@ -255,8 +255,10 @@ prioritized or scheduled — the user asked to keep these noted for later rather
   just "isn't hard to obtain"), and Speedy's 1.5x movement multiplier (a flat-multiplier
   approximation of real RotMG's "sets Speed to its stat maximum," since this engine's simpler
   Speed-stat model has no equivalent to set to). Worth an actual playthrough to confirm the proc
-  reads as noticeable/useful and the drop rate feels right before the same
-  `UniqueItemDropChances`/`ReactiveProcBuff` machinery gets reused for a second UT item.
+  reads as noticeable/useful and the drop rate feels right — the `UniqueItemDropChances` machinery
+  has since been reused for a second UT item (entry 343: Staff of Extreme Prejudice, dropped by
+  Limon at the same estimated 5% Stheno's own ring uses), so both items' drop rates are worth
+  checking together in one pass.
 
 - **Craig the Intern's art sits unused.** Supplied alongside the rest of the Sprite World
   enemy roster (`Content/Dungeons/Sprite World/Craig the Intern.png`), but the wiki gives him no

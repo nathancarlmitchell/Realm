@@ -847,10 +847,11 @@ namespace Realm
         // randomly *within* a tier; a UT item isn't part of any tier at
         // all — see Equipment.IsUntiered's own doc comment). First real
         // use: Enemy.UniqueItemDropChances (Snake Eye Ring, dropped by
-        // Stheno/Snakepit Guard). Only searches Game1.Instance.Rings today
-        // since that's the only catalog with a UT entry so far — extend the
-        // search to Weapons/Armors/AbilityItem-family the same way once a
-        // UT item of one of those types exists.
+        // Stheno/Snakepit Guard; Staff of Extreme Prejudice, dropped by
+        // Limon the Sprite Goddess). Searches Weapons/Armors/Rings — every
+        // catalog with a real UT entry so far — extend the search to the
+        // AbilityItem-family catalogs too whenever a UT item of one of
+        // those types exists.
         //
         // Returns the resolved Item rather than spawning its own bag — the
         // caller (Enemy.WasShot()) folds it into the same extraItems list
@@ -866,13 +867,17 @@ namespace Realm
         // immediately instead of silently never dropping.
         public static Item ResolveUniqueItem(string itemName)
         {
-            Ring ring = Game1.Instance.Rings.FirstOrDefault(x => x.Name == itemName);
-            if (ring == null)
+            Item item =
+                (Item)Game1.Instance.Weapons.FirstOrDefault(x => x.Name == itemName)
+                ?? (Item)Game1.Instance.Armors.FirstOrDefault(x => x.Name == itemName)
+                ?? Game1.Instance.Rings.FirstOrDefault(x => x.Name == itemName);
+
+            if (item == null)
                 throw new InvalidOperationException(
                     $"ItemSpawner.ResolveUniqueItem: no catalog item named '{itemName}' found."
                 );
 
-            return ring;
+            return item;
         }
     }
 }

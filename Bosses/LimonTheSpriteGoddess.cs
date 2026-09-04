@@ -133,6 +133,16 @@ namespace Realm.Bosses
             AddAttackBehaviour(Phase3Attacks());
             AddAttackBehaviour(ParalyzePunishment());
 
+            // Staff of Extreme Prejudice — a real wiki-listed drop source
+            // for this UT weapon (realmeye.com/wiki/staff-of-extreme-
+            // prejudice's own "Drops From" list also names a Standard
+            // Quest Chest and Prismimic Attacker, neither of which exist
+            // in this engine, so Limon is the only wired source). Same
+            // shape/rate as Stheno's own Snake Eye Ring drop — a modest,
+            // independent-of-guaranteed-loot chance for a dedicated boss
+            // kill, not a certainty.
+            UniqueItemDropChances = new() { ["Staff of Extreme Prejudice"] = 0.05f };
+
             GuaranteedPotionChances = new()
             {
                 [Potions.Dexterity] = 1.0f,

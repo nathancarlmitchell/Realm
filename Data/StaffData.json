@@ -208,5 +208,21 @@
         "XpBonusPercent": 8.0,
         "ImageName": "Weapons/Staves/14",
         "ProjectileImageName": "Weapons/Staves/Projectiles/14"
+    },
+    {
+        "Name": "Staff of Extreme Prejudice",
+        "Description": "Once the most powerful staff in existence; a crack in its frame has rendered it incapable of focusing fire. It remains uniquely deadly.",
+        "Tier": -1,
+        "IsUntiered": true,
+        "DamageMin": 95,
+        "DamageMax": 110,
+        "ProjectileMagnitude": 5.8667,
+        "ProjectileDuration": 22,
+        "Amplitude": 4.8,
+        "Frequency": 2.0,
+        "RadialShotCount": 10,
+        "XpBonusPercent": 6.0,
+        "ImageName": "Weapons/Staves/UT/Staff of Extreme Prejudice",
+        "ProjectileImageName": "Projectiles/Prejudice Missle"
     }
 ]

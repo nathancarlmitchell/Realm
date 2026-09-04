@@ -54,6 +54,15 @@ namespace Realm
         // for every other weapon type, which never reads it.
         public float ArcGapDegrees { get; set; }
 
+        // Staff-only — realmeye.com/wiki/staff-of-extreme-prejudice's own
+        // "fires 10 bolts that shoot all around the user, spreading in a
+        // radial direction" (arc gap 36° = 360°/10). Every other staff
+        // stays at the default 0 (its own 2-shot aimed SineWaveProjectile
+        // pattern below, unchanged) — this is the first staff whose whole
+        // attack shape differs from every tiered staff's shared pattern,
+        // so it's a real per-weapon override rather than a new WeaponType.
+        public int RadialShotCount { get; set; }
+
         // Extra shot deviation while the player has the Unstable debuff
         // (see DebuffType.Unstable) — "weapons gain random shot deviation
         // when aiming (limited to a certain angle), significantly lowering
@@ -115,6 +124,7 @@ namespace Realm
                     Name = weaponData.Name,
                     Description = weaponData.Description,
                     Tier = weaponData.Tier,
+                    IsUntiered = weaponData.IsUntiered,
                     DamageMin = weaponData.DamageMin,
                     DamageMax = weaponData.DamageMax,
                     ProjectileMagnitude = weaponData.ProjectileMagnitude,
@@ -128,6 +138,7 @@ namespace Realm
                     SideProjectileImage = sideProjectileTexture,
                     SideProjectileImageName = weaponData.SideProjectileImageName,
                     ArcGapDegrees = weaponData.ArcGapDegrees,
+                    RadialShotCount = weaponData.RadialShotCount,
                     XpBonusPercent = weaponData.XpBonusPercent,
                 };
 
@@ -204,6 +215,46 @@ namespace Realm
                 // Staff included ("Staff shots do not pass through
                 // targets").
                 bool expiresOnHit = this.Type != WeaponType.Wand && this.Type != WeaponType.Bow;
+
+                if (this.Type == WeaponType.Staff && this.RadialShotCount > 0)
+                {
+                    // Staff of Extreme Prejudice's own unique fire pattern
+                    // (realmeye.com/wiki/staff-of-extreme-prejudice):
+                    // "fires 10 bolts that shoot all around the user,
+                    // spreading in a radial direction." The aim direction
+                    // still decides where shot 0 lands (per the wiki, "the
+                    // direction the character is facing determines where
+                    // the origin of the 10 shots will be" — facing a
+                    // target lines a shot up with it), the rest fill out
+                    // the remaining (360 / RadialShotCount)-degree steps
+                    // around the full circle. Every shot still uses this
+                    // staff's own (small) Amplitude/Frequency wave, same
+                    // SineWaveProjectile every other staff shot uses — just
+                    // one shot per angle, not a leading/trailing pair.
+                    float stepRadians = MathHelper.TwoPi / this.RadialShotCount;
+                    for (int i = 0; i < this.RadialShotCount; i++)
+                    {
+                        EntityManager.Add(
+                            new SineWaveProjectile(
+                                spawnPosition,
+                                aimAngle + randomSpread + i * stepRadians,
+                                this.ProjectileMagnitude,
+                                this.Amplitude,
+                                this.Frequency,
+                                phaseOffset: 0f
+                            )
+                            {
+                                image = this.ProjectileImage,
+                                Damage = (int)damage,
+                                ExpiresOnHit = expiresOnHit,
+                                Duration = this.ProjectileDuration,
+                            }
+                        );
+                    }
+
+                    Sound.Play(Sound.MagicShoot, 0.3f);
+                    return;
+                }
 
                 if (this.Type == WeaponType.Staff)
                 {

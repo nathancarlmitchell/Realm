@@ -12,6 +12,15 @@ namespace Realm.Data
         public string Name { get; set; }
         public string Description { get; set; }
         public int Tier { get; set; }
+
+        // UT-only — see Equipment.IsUntiered's own doc comment. False (the
+        // default) for every tiered staff above; Tier is meaningless once
+        // this is true (the real wiki has no numeric tier for a UT item —
+        // by convention here, same as Data/RingData.json's own Snake Eye
+        // Ring, Tier is left at -1 for a UT entry, purely so it reads as
+        // "not a real tier" rather than colliding with T-1 of anything).
+        public bool IsUntiered { get; set; }
+
         public int DamageMin { get; set; }
         public int DamageMax { get; set; }
         public float ProjectileMagnitude { get; set; }
@@ -23,6 +32,11 @@ namespace Realm.Data
         // only Staff ever used.
         public float Amplitude { get; set; }
         public float Frequency { get; set; }
+
+        // UT-only (see Weapon.RadialShotCount's own doc comment) — 0 (the
+        // default) for every tiered staff, which keeps the normal 2-shot
+        // aimed pattern Weapon.Shoot() already gives every Staff.
+        public int RadialShotCount { get; set; }
 
         public float XpBonusPercent { get; set; }
         public string ImageName { get; set; }
