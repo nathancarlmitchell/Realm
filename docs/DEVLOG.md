@@ -9670,3 +9670,45 @@ date/time for those individually; don't treat their grouping as meaning they all
      (`RealmState`'s constructor always saves — see CLAUDE.md), which is the same harmless
      re-equip-via-catalog-lookup behavior every normal game boot already causes, not a data-loss
      regression (stats/tiers/names all identical; only the internal instance ID changed).
+
+342. **Fixed the camera-tracking bug from entry fd2035a resurfacing via the boss/dungeon's OTHER
+     exit portal.** Reported directly — the original fix covered leaving a boss room/dungeon via
+     its Realm-bound exit portal (killing the boss, or finishing the dungeon), but not its separate,
+     always-available Nexus-exit portal.
+
+     Root cause: `BossRealmState`/`DungeonState` remember the player's real pre-instance position in
+     `RealmState.PendingRealmReturnPosition` so a later `RealmState` construction can restore it
+     instead of leaving the player at the bounded instance's own tiny coordinate (reinterpreted in
+     the far larger shared world, that lands right next to the true (0,0) corner and sticks against
+     `Camera.Pos`'s edge-barrier clamp — see fd2035a). `NexusState`'s constructor — reached via the
+     bounded instance's OTHER exit (its own separately-dropped Nexus portal) — correctly recognized
+     that this pending value was now relevant to ITS entry too, but only ever *cleared* it instead of
+     *restoring* it, discarding the real position and leaving `Player.Instance.Position` stuck at the
+     tiny arena/dungeon coordinate. Worse, `NexusState`'s own `Game1.Camera = new Camera(...)` ran
+     *before* that clear, meaning even a correct restore placed after it would've been too late — the
+     `Camera`'s own initial `_pos` (captured from `Player.Instance.Position` in its constructor) would
+     already have baked in the stale coordinate.
+
+     Fixed by moving the position handling to the top of `NexusState`'s constructor (before `Camera`
+     is built) and changing it from an unconditional clear to the same restore-then-clear
+     `RealmState`'s own constructor already does. Renamed the field `PendingReturnPosition` (was
+     `PendingRealmReturnPosition`) since it's no longer Realm-specific — it now represents "wherever
+     the player was, in whatever shared-coordinate-space state, right before entering a bounded
+     instance," consumed by whichever of `RealmState`/`NexusState` the player actually walks back
+     into.
+
+     Verified via a temporary `Game1.StartGame()` scripted check (reverted, no diff remains) —
+     directly constructing real `RealmState`/`BossRealmState`/`DungeonState`/`NexusState` chains
+     (no reflection needed, `PendingReturnPosition` is `internal`): (1) Realm (pos 10000,8000) ->
+     Boss -> Nexus restored `Player.Instance.Position` and `Game1.Camera.Pos` to the real pre-boss
+     position, not the boss arena's own tiny coordinate; (2) an ordinary Realm -> Nexus walk with no
+     bounded instance involved left the position untouched; (3) a dungeon's own boss room, entered
+     from inside a `DungeonState`, still preserved the pre-*dungeon* position (not the dungeon's own
+     bounded one) through to a Nexus exit, confirming the existing `??=` capture logic still composes
+     correctly with the new restore. Plain `dotnet build` (0 errors) plus a real minimized boot-check.
+     Real save files backed up first and diffed: the same benign equipped-item-GUID churn from
+     entries 339-341 (this test's chain of real state constructions each save unconditionally — see
+     CLAUDE.md); one inventory item's own `Bounds` rectangle also normalized from a stale,
+     position-relative leftover value to the correct neutral one every other item already had — the
+     item itself (name/tier/everything else) unchanged, confirmed via a structured field-by-field
+     diff, not a data-loss regression.

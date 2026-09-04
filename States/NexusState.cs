@@ -15,6 +15,36 @@ namespace Realm.States
         public NexusState(Game1 game, GraphicsDevice graphicsDevice, ContentManager content)
             : base()
         {
+            // A bounded instance (BossRealmState/DungeonState) left pending
+            // via its OTHER exit (its own dropped Nexus portal, taken
+            // instead of killing the boss/finishing the dungeon) routes
+            // here instead of through RealmState, but Player.Instance.
+            // Position is still sitting at that bounded instance's own tiny
+            // coordinate (2000x2000 for a boss arena, 3200x3200 for a
+            // dungeon) — reinterpreted directly in this shared 500,000px
+            // world (Nexus doesn't reinterpret coordinates any more than
+            // the open Realm does), that's usually right next to the true
+            // (0,0) corner, triggering Camera.Pos's own edge-barrier clamp —
+            // the exact "camera stopped tracking" symptom entry fd2035a
+            // fixed for the direct Boss/Dungeon -> Realm path, just not yet
+            // for this one. Restored here the same way RealmState's own
+            // constructor restores it (must run before Camera is
+            // constructed just below, so its initial _pos, captured from
+            // Player.Instance.Position, already reflects the real
+            // position) rather than simply discarded — wherever the player
+            // was standing right before entering the bounded instance
+            // (Realm or Nexus alike, since PendingReturnPosition is set
+            // from Player.Instance.Position at that moment, whatever state
+            // that was) is exactly where they should reappear now. Null
+            // (the normal case — an ordinary Realm -> Nexus walk, with no
+            // bounded instance involved) leaves Player.Instance.Position
+            // untouched, same as before this fix.
+            if (RealmState.PendingReturnPosition.HasValue)
+            {
+                Player.Instance.Position = RealmState.PendingReturnPosition.Value;
+                RealmState.PendingReturnPosition = null;
+            }
+
             Game1.Camera = new Camera(
                 Game1.GameplayViewportWidth,
                 Game1.GameplayViewportHeight,
@@ -24,16 +54,6 @@ namespace Realm.States
             );
 
             EntityManager.Reset();
-
-            // A bounded instance (BossRealmState/DungeonState) left pending
-            // via its OTHER exit (its own dropped Nexus portal, taken
-            // instead of killing the boss/finishing the dungeon) routes
-            // here, not through RealmState — so any position it was holding
-            // onto for a later Realm-ward return (RealmState.
-            // PendingRealmReturnPosition) is now stale and must be dropped,
-            // or it would wrongly hijack a later, entirely unrelated,
-            // ordinary Nexus -> Realm walk.
-            RealmState.PendingRealmReturnPosition = null;
 
             // IsOpen is a static field, so it would otherwise persist stale
             // across a state transition (e.g. leaving with the bank open,

@@ -46,14 +46,14 @@ namespace Realm.States
 
             // Remembered so the player reappears here (not at this arena's
             // own small-coordinate spawn point, reinterpreted in the far
-            // larger open world) whenever they next return via a real
-            // open-world RealmState — see PendingRealmReturnPosition's own
-            // doc comment. ??=, not a plain assignment: if this is a
-            // dungeon's own boss room (entered from inside a DungeonState,
-            // which already captured the true pre-dungeon Realm position),
-            // this must not overwrite that with the dungeon's own bounded
-            // coordinate.
-            PendingRealmReturnPosition ??= Player.Instance.Position;
+            // larger shared world) whenever they next leave — via a real
+            // open-world RealmState, or via this arena's own Nexus-exit
+            // portal below — see PendingReturnPosition's own doc comment.
+            // ??=, not a plain assignment: if this is a dungeon's own boss
+            // room (entered from inside a DungeonState, which already
+            // captured the true pre-dungeon position), this must not
+            // overwrite that with the dungeon's own bounded coordinate.
+            PendingReturnPosition ??= Player.Instance.Position;
 
             Vector2 center = new(InstanceWorldWidth / 2, InstanceWorldHeight / 2);
 

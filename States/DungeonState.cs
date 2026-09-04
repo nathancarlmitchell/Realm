@@ -62,13 +62,14 @@ namespace Realm.States
 
             // Remembered so the player reappears here (not at this
             // dungeon's own small-coordinate spawn point, reinterpreted in
-            // the far larger open world) whenever they next return via a
-            // real open-world RealmState — see PendingRealmReturnPosition's
-            // own doc comment. This dungeon's own boss room (BossRealmState,
+            // the far larger shared world) whenever they next leave — via a
+            // real open-world RealmState, or via this dungeon's own
+            // Nexus-exit portal — see PendingReturnPosition's own doc
+            // comment. This dungeon's own boss room (BossRealmState,
             // entered from inside here) relies on this already being set by
             // the time it runs, so it correctly preserves this same value
             // instead of capturing its own (still-bounded) one.
-            PendingRealmReturnPosition ??= Player.Instance.Position;
+            PendingReturnPosition ??= Player.Instance.Position;
 
             // A leftover count from a previous dungeon instance must never
             // leak into a fresh one — see Enemy.NativeSpriteKillCount's own

@@ -101,37 +101,45 @@ namespace Realm.States
         // Instance.Position with a spawn point that only makes sense in that
         // bounded instance's own tiny coordinate space (2000x2000 for a boss
         // arena, 3200x3200 for a dungeon) — the value captured is wherever
-        // the player actually was in the open Realm immediately before
-        // entering it. The ??= (rather than a plain assignment) matters for
-        // a dungeon's own boss room: entering the dungeon already captured
-        // the true pre-dungeon Realm position; entering its boss arena from
-        // inside the dungeon must NOT overwrite that with the dungeon's own
-        // (already bounded, already wrong to restore to) coordinate.
+        // the player actually was, in whatever shared-coordinate-space state
+        // they were in (the open Realm, or Nexus — both use Game1.WorldWidth/
+        // Height and never reinterpret coordinates, unlike a bounded
+        // instance), immediately before entering it. The ??= (rather than a
+        // plain assignment) matters for a dungeon's own boss room: entering
+        // the dungeon already captured the true pre-dungeon position;
+        // entering its boss arena from inside the dungeon must NOT overwrite
+        // that with the dungeon's own (already bounded, already wrong to
+        // restore to) coordinate.
         //
-        // Consumed once, below, the next time a real open-world RealmState
-        // is constructed (i.e. on the way back out via that instance's own
-        // Realm-bound exit portal — Boss.OnDeath()'s dropped portal, for a
-        // boss arena), so the player reappears where they actually left off
-        // instead of at that small-instance coordinate reinterpreted in the
-        // Realm's own much larger (500,000px) world — which, being close to
-        // (0,0), used to land them right at the world's true edge and
-        // visibly stick there against Camera.Pos's own edge-barrier clamp
-        // (Camera.cs), exactly the "camera stopped tracking the player"
-        // symptom reported after leaving a boss room.
+        // Consumed once — by RealmState's own constructor below (the
+        // instance's Realm-bound exit, e.g. Boss.OnDeath()'s dropped
+        // portal) OR by NexusState's constructor (the instance's OTHER
+        // exit, its own separately-dropped Nexus portal, taken instead of
+        // killing the boss/finishing the dungeon) — whichever the player
+        // actually walks into. Both restore it the same way: before their
+        // own Camera is constructed (its initial _pos is captured from
+        // Player.Instance.Position at that moment), so the player reappears
+        // exactly where they left off instead of at that small-instance
+        // coordinate reinterpreted in the far larger (500,000px) shared
+        // world — which, being close to (0,0), used to land them right at
+        // the world's true edge and visibly stick there against Camera.
+        // Pos's own edge-barrier clamp (Camera.cs), exactly the "camera
+        // stopped tracking the player" symptom reported after leaving a
+        // boss room (originally fixed for the direct Boss/Dungeon -> Realm
+        // path only — entry fd2035a; NexusState initially just discarded
+        // this instead of restoring it, so the identical symptom kept
+        // happening via a bounded instance's other exit until fixed here
+        // too).
         //
         // internal rather than protected — NexusState (a sibling State, not
-        // a RealmState subclass) needs to clear this too: any bounded
-        // instance's OTHER exit (its own dropped Nexus portal, taken instead
-        // of killing the boss/finishing the dungeon) routes through
-        // NexusState, not through this class at all, and would otherwise
-        // leave a stale position pending to wrongly hijack a later, entirely
-        // unrelated, ordinary Nexus -> Realm walk.
+        // a RealmState subclass) needs to consume this too.
         //
         // Null (the default, and its state after being consumed/cleared)
-        // means nothing pending to restore — the normal Nexus -> Realm entry
-        // path, which already carries a perfectly valid open-world position
-        // over as-is and must not be touched.
-        internal static Vector2? PendingRealmReturnPosition;
+        // means nothing pending to restore — the normal Realm <-> Nexus walk
+        // with no bounded instance involved, which already carries a
+        // perfectly valid shared-world position over as-is and must not be
+        // touched.
+        internal static Vector2? PendingReturnPosition;
 
         public RealmState(Game1 game, GraphicsDevice graphicsDevice, ContentManager content)
             : base()
@@ -140,15 +148,15 @@ namespace Realm.States
 
             // Only for a real open-world instance (not the bounded
             // BossRealmState/DungeonState currently setting this) — see
-            // PendingRealmReturnPosition's own doc comment above. Runs
-            // before Camera is constructed just below, so the fresh
-            // Camera's own initial _pos (set from Player.Instance.Position
-            // in its constructor) already reflects the restored position
-            // instead of needing a second fixup call afterward.
-            if (SpawnsRegularEnemies && PendingRealmReturnPosition.HasValue)
+            // PendingReturnPosition's own doc comment above. Runs before
+            // Camera is constructed just below, so the fresh Camera's own
+            // initial _pos (set from Player.Instance.Position in its
+            // constructor) already reflects the restored position instead
+            // of needing a second fixup call afterward.
+            if (SpawnsRegularEnemies && PendingReturnPosition.HasValue)
             {
-                Player.Instance.Position = PendingRealmReturnPosition.Value;
-                PendingRealmReturnPosition = null;
+                Player.Instance.Position = PendingReturnPosition.Value;
+                PendingReturnPosition = null;
             }
 
             Sound.PlaySong();
