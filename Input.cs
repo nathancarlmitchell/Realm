@@ -100,10 +100,18 @@ public static class Input
 
         // Ability. Usable in the Nexus as well as the dungeon (unlike potions/
         // leveling below), so the player can try it out or just mess around
-        // without needing to be in an active RealmState.
+        // without needing to be in an active RealmState. Gated on Silenced
+        // here rather than inside Player.UseAbility() itself — that method
+        // is virtual and every class's own override calls base.
+        // UseAbility() as its first line, then keeps running its own
+        // ability logic regardless of what the base call did internally;
+        // the base method has no way to stop a subclass's own override
+        // from continuing. Checking here, before UseAbility() is ever
+        // invoked at all, is the one place that actually blocks it.
         if (
             (currentState is RealmState || currentState is NexusState)
             && WasBindingPressed(KeyBindings.Get(KeyBindings.Action.UseAbility))
+            && !Player.Instance.HasDebuff(Entity.DebuffType.Silenced)
         )
         {
             Player.Instance.UseAbility();

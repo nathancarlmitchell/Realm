@@ -777,6 +777,17 @@ namespace Realm
             ApplyDebuff(DebuffType.Dazed, durationFrames);
         }
 
+        // Silences this player — see Input.cs's own UseAbility() gate for
+        // what it actually does (blocks the ability key entirely while
+        // active). Same duration-only shape as Daze()/Slow() above;
+        // default (4s = 240 frames) matches the wiki's own "Silenced for
+        // 4s" duration on every Native Sprite God shot that inflicts it
+        // (realmeye.com/wiki/native-sprite-god).
+        public void Silence(int durationFrames = 240)
+        {
+            ApplyDebuff(DebuffType.Silenced, durationFrames);
+        }
+
         // Flat 20 HP/sec drain (see Update()'s bleedDamageAccumulator tick)
         // for durationFrames, unlike Enemy's own per-source-stacking
         // Bleeding (see Enemy.bleedStacks) — the player side is

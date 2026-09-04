@@ -9409,3 +9409,39 @@ date/time for those individually; don't treat their grouping as meaning they all
      `docs/BACKLOG.md`'s own "Create a Sprite World dungeon" entry removed (superseded by this work);
      a new entry notes Craig the Intern's own supplied art still sits unused (no combat stats on the
      wiki — a non-hostile NPC cameo, not a real enemy).
+
+336. **Built a real Silenced debuff, replacing Native Sprite God's own Daze substitution.**
+     Requested directly, once real icon art (`Content/StatusEffects/silenced.png`) turned up —
+     entry 335 had substituted `DazesOnHit` for every one of Native Sprite God's Silencing shots
+     since no Silence mechanic existed yet.
+
+     New `Entity.DebuffType.Silenced`, genuinely bidirectional infrastructure from the start (same
+     "not just a one-direction, single-dungeon mechanic" precedent Dazed/Bleeding already set):
+     - *On a silenced player*: blocks the ability key entirely. Gated at the actual call site
+       (`Input.cs`'s own `UseAbility()` check), not inside `Player.UseAbility()` itself —
+       `UseAbility()` is `virtual` and every class's own override calls `base.UseAbility()` as its
+       first line, then keeps running its own ability logic regardless of what the base call did
+       internally, so the base method has no way to stop a subclass's override from continuing.
+       Checking before `UseAbility()` is ever invoked at all is the one place that actually blocks
+       it. `Player.Silence(durationFrames = 240)` sets it, mirroring `Daze()`.
+     - *On a silenced enemy*: blocks its attack behaviours, the same restriction `Stunned` already
+       causes — this engine has no enemy-side "special ability" distinct from its normal attacks
+       for Silence to target more narrowly, so the two read as the same effect here, added
+       alongside Stunned's own existing `Enemy.Update()` gate. `Enemy.Silence(durationFrames = 240)`
+       mirrors `Daze()`.
+     - `EnemyProjectile.SilencesOnHit`/`SilenceDurationFrames` (mirrors `DazesOnHit`) and
+       `Projectile.SilencesOnHit`/`SilenceDurationFrames` (the player-inflicts-enemy direction, not
+       used by any player class yet, same "genuinely bidirectional" reasoning as `DazesOnHit`'s own
+       mirrored pair), both wired into `EntityManager.HandleCollisions()`'s matching halves.
+     - `FanShot()`/`ShootIfInRange()` gained `silencesOnHit`/`silenceDurationFrames` params (same
+       shape as their existing `dazesOnHit`/`dazeDurationFrames`), so `Enemies/SpriteWorld/
+       NativeSpriteGod.cs`'s own `SilenceAttack()` could just swap its `dazesOnHit: true` calls for
+       `silencesOnHit: true` directly, plus the hand-rolled Magic-form `BoomerangProjectile` spawn.
+
+     Verified via a temporary `Game1.StartGame()` scripted check (reverted, no diff remains):
+     `Player.Silence()` sets and correctly decays `HasDebuff(Silenced)`; a real `EnemyProjectile`
+     with `SilencesOnHit` colliding with the player through an actual `EntityManager.Update()` pass
+     applies it (confirming `HandleCollisions()`'s own wiring, not just the debuff-tracking dictionary
+     in isolation); a real player `Projectile` with `SilencesOnHit` colliding with a fresh `Enemy.
+     CreateWanderer()` instance applies it on that side too. Plain `dotnet build` (0 errors) plus a
+     real minimized boot-check; real save files backed up first and diffed unmodified.

@@ -95,6 +95,23 @@ namespace Realm
             // Speed-stat model has no "maximum regardless of gear" concept
             // to set to.
             Speedy,
+
+            // Sprite World (realmeye.com/wiki/sprite-world — Native Sprite
+            // God's own "aimed stagnating crescents that Silence" and
+            // several other forms' matching shots) — blocks ability use on
+            // the player (see Input.cs's own UseAbility() gate, not
+            // Player.UseAbility() itself — that method is virtual and
+            // every class's override keeps running its own logic after
+            // calling base.UseAbility(), so the base method has no way to
+            // stop it) and blocks attack behaviours on an enemy (Enemy.
+            // Update()'s own ApplyAttackBehaviours() gate, alongside
+            // Stunned — a different name for what happens to read as the
+            // same restriction in this engine, since neither side has a
+            // separate "special ability" distinct from its normal attacks
+            // to silence specifically). Duration-only, same "one active
+            // instance, refreshed on reapply" shape as every other
+            // duration-based entry here.
+            Silenced,
         }
 
         private readonly Dictionary<DebuffType, int> activeDebuffs = new();
@@ -202,6 +219,7 @@ namespace Realm
                 // rather than trying to draw them.
                 DebuffType.Vulnerable => null,
                 DebuffType.Speedy => Art.Speedy,
+                DebuffType.Silenced => Art.Silenced,
                 _ => null,
             };
 

@@ -1947,6 +1947,18 @@
 /processorParam:TextureFormat=Color
 /build:StatusEffects/speedy.png
 
+#begin StatusEffects/silenced.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:StatusEffects/silenced.png
+
 
 #begin Items/Potions/defense.png
 /importer:TextureImporter

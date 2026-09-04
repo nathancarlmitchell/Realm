@@ -226,6 +226,19 @@ namespace Realm
             ApplyDebuff(DebuffType.Dazed, durationFrames);
         }
 
+        // Silences this enemy — blocks its attack behaviours (Update()
+        // below) for durationFrames, the same restriction Stun() already
+        // has (this engine has no enemy-side "special ability" distinct
+        // from its normal attacks for Silence to target more narrowly —
+        // see DebuffType.Silenced's own doc comment). The
+        // player-inflicts-enemy direction of Entity.DebuffType.Silenced
+        // (see Projectile.SilencesOnHit); default (4s) matches Player.
+        // Silence()'s own default.
+        public void Silence(int durationFrames = 240)
+        {
+            ApplyDebuff(DebuffType.Silenced, durationFrames);
+        }
+
         // "Targets receive 110% damage... after being hit" — a flat +10%
         // multiplier, applied in WasShot() below.
         private const float VulnerableDamageMultiplier = 1.1f;
@@ -291,15 +304,21 @@ namespace Realm
             {
                 ApplyBehaviours();
 
-                // Attack if on screen, or just slightly off it. Stunned
-                // blocks this (Paralyzed doesn't — it only blocks movement
-                // below). Rogue's Cloak (see Player.IsInvisible) blocks it
-                // too — "many enemies will stop shooting entirely if they
-                // can't see any players" — a single centralized check here
-                // covers every enemy/boss in the game, since every attack
-                // funnels through this one call.
+                // Attack if on screen, or just slightly off it. Stunned and
+                // Silenced both block this (Paralyzed doesn't — it only
+                // blocks movement below); the two read as the same
+                // restriction here since this engine has no enemy-side
+                // "special ability" distinct from its normal attacks for
+                // Silenced to target more narrowly — see DebuffType.
+                // Silenced's own doc comment. Rogue's Cloak (see Player.
+                // IsInvisible) blocks it too — "many enemies will stop
+                // shooting entirely if they can't see any players" — a
+                // single centralized check here covers every enemy/boss in
+                // the game, since every attack funnels through this one
+                // call.
                 if (
                     !HasDebuff(DebuffType.Stunned)
+                    && !HasDebuff(DebuffType.Silenced)
                     && !Player.Instance.IsInvisible
                     && Game1.GetWorldBounds(1.25f).Contains(Position.ToPoint())
                 )
@@ -1354,7 +1373,9 @@ namespace Realm
             float? maxSpeed = null,
             bool slowsOnHit = false,
             bool dazesOnHit = false,
-            int dazeDurationFrames = 120
+            int dazeDurationFrames = 120,
+            bool silencesOnHit = false,
+            int silenceDurationFrames = 240
         )
         {
             float rangeSquared = range * range;
@@ -1389,6 +1410,8 @@ namespace Realm
                             SlowsOnHit = slowsOnHit,
                             DazesOnHit = dazesOnHit,
                             DazeDurationFrames = dazeDurationFrames,
+                            SilencesOnHit = silencesOnHit,
+                            SilenceDurationFrames = silenceDurationFrames,
                         }
                     );
                 }
@@ -1431,7 +1454,9 @@ namespace Realm
             float? accelerationMagnitude = null,
             float? minSpeed = null,
             float? maxSpeed = null,
-            bool slowsOnHit = false
+            bool slowsOnHit = false,
+            bool silencesOnHit = false,
+            int silenceDurationFrames = 240
         )
         {
             float rangeSquared = range * range;
@@ -1477,6 +1502,11 @@ namespace Realm
                         {
                             projectile.DazesOnHit = true;
                             projectile.DazeDurationFrames = dazeDurationFrames;
+                        }
+                        if (silencesOnHit)
+                        {
+                            projectile.SilencesOnHit = true;
+                            projectile.SilenceDurationFrames = silenceDurationFrames;
                         }
                         EntityManager.Add(projectile);
                     }

@@ -45,6 +45,13 @@ namespace Realm.Projectiles
         public bool BleedsOnHit = false;
         public int BleedDurationFrames = 240; // Player.Bleed()'s own default
 
+        // Whether this projectile Silences the player on hit (Player.
+        // Silence(), see Entity.DebuffType.Silenced's own doc comment) —
+        // same SlowsOnHit/DazesOnHit shape. First real use: Native Sprite
+        // God's own Silencing shots (Sprite World).
+        public bool SilencesOnHit = false;
+        public int SilenceDurationFrames = 240; // Player.Silence()'s own default
+
         // Forwarded straight to Player.Hit()'s own ignoresDefense param —
         // first real use: Limon the Sprite Goddess's phase 3 "rainbow
         // blast" (realmeye.com/wiki/sprite-world-guide's own "heavy armor

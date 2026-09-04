@@ -62,6 +62,18 @@ namespace Realm.Projectiles
         public bool DazesOnHit = false;
         public int DazeDurationFrames = 120; // Enemy.Daze()'s own default
 
+        // Whether this projectile Silences the enemy it hits (Enemy.
+        // Silence(), blocking its attack behaviours — the same restriction
+        // StunsOnHit above already causes, since this engine has no
+        // enemy-side "special ability" distinct from its normal attacks
+        // for Silence to target more narrowly). Same shape as DazesOnHit
+        // above. Not used by any player class yet — added alongside
+        // EnemyProjectile's own SilencesOnHit so the Silenced debuff is
+        // genuinely bidirectional infrastructure, not just a Sprite-
+        // World-specific, player-receiving-only mechanic.
+        public bool SilencesOnHit = false;
+        public int SilenceDurationFrames = 240; // Enemy.Silence()'s own default
+
         // Whether this projectile Bleeds the enemy it hits — unlike every
         // debuff above, this doesn't route through Enemy.ApplyDebuff()
         // directly; see Enemy.ApplyBleedStack() for why (stacking, not

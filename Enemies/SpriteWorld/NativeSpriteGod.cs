@@ -23,10 +23,9 @@ namespace Realm
     // per-form column (a plain-text scrape strips the icons that would
     // normally disambiguate); the 2 attacks per form below are matched to
     // each form's own textual description as closely as the table allows,
-    // not a guaranteed row-for-row mapping. "Silence" isn't a debuff this
-    // engine has — every Silencing shot below uses DazesOnHit instead (see
-    // Entity.DebuffType.Dazed's own doc comment), an explicit substitution,
-    // not an oversight.
+    // not a guaranteed row-for-row mapping. Every "Silencing" shot below
+    // uses the real Entity.DebuffType.Silenced debuff (SilencesOnHit) —
+    // this class's own attacks are what motivated adding it.
     class NativeSpriteGod : Enemy
     {
         private static readonly Random formRand = new();
@@ -213,10 +212,10 @@ namespace Realm
         }
 
         // Each form's own Silence attack — 0 damage on the wiki's own
-        // table, DazesOnHit substituting for Silence throughout (see this
-        // class's own header comment). Magic's is a boomerang (matching
-        // "aimed cyan boomerangs that Silence" specifically), hand-rolled
-        // since FanShot/ShootIfInRange don't spawn BoomerangProjectile.
+        // table, using the real Entity.DebuffType.Silenced debuff. Magic's
+        // is a boomerang (matching "aimed cyan boomerangs that Silence"
+        // specifically), hand-rolled since FanShot/ShootIfInRange don't
+        // spawn BoomerangProjectile.
         private int magicSilenceCooldownRemaining = 0;
 
         private IEnumerable<int> SilenceAttack()
@@ -230,8 +229,8 @@ namespace Realm
                 projectileSpeed: 9f * 32f / 60f,
                 projectileImage: Art.SpriteDarknessTwirl,
                 cooldownFrames: SilenceCooldown,
-                dazesOnHit: true,
-                dazeDurationFrames: SilenceDurationFrames
+                silencesOnHit: true,
+                silenceDurationFrames: SilenceDurationFrames
             ).GetEnumerator();
             var ice = FanShot(
                 range: 26f * 32f,
@@ -241,8 +240,8 @@ namespace Realm
                 angleStep: 0.3f,
                 projectileImage: Art.SpriteIceTwirl,
                 cooldownFrames: SilenceCooldown,
-                dazesOnHit: true,
-                dazeDurationFrames: SilenceDurationFrames
+                silencesOnHit: true,
+                silenceDurationFrames: SilenceDurationFrames
             ).GetEnumerator();
             var fire = FanShot(
                 range: 7.875f * 32f,
@@ -252,8 +251,8 @@ namespace Realm
                 angleStep: 0.3f,
                 projectileImage: Art.SpriteFireTwirl,
                 cooldownFrames: SilenceCooldown,
-                dazesOnHit: true,
-                dazeDurationFrames: SilenceDurationFrames
+                silencesOnHit: true,
+                silenceDurationFrames: SilenceDurationFrames
             ).GetEnumerator();
             var nature = ShootIfInRange(
                 range: 12f * 32f,
@@ -263,8 +262,8 @@ namespace Realm
                 cooldownFrames: SilenceCooldown,
                 accelerationMagnitude: 40f * 32f / 3600f,
                 maxSpeed: 11f * 32f / 60f,
-                dazesOnHit: true,
-                dazeDurationFrames: SilenceDurationFrames
+                silencesOnHit: true,
+                silenceDurationFrames: SilenceDurationFrames
             ).GetEnumerator();
 
             while (true)
@@ -289,8 +288,8 @@ namespace Realm
                                 new BoomerangProjectile(Position, vel, 40, Art.SpriteMagicTwirl)
                                 {
                                     Damage = 0,
-                                    DazesOnHit = true,
-                                    DazeDurationFrames = SilenceDurationFrames,
+                                    SilencesOnHit = true,
+                                    SilenceDurationFrames = SilenceDurationFrames,
                                 }
                             );
                         }

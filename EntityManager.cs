@@ -532,6 +532,10 @@ namespace Realm
                             bullets[j].BleedDamagePerSecond
                         );
                     }
+                    if (bullets[j].SilencesOnHit)
+                    {
+                        enemies[i].Silence(bullets[j].SilenceDurationFrames);
+                    }
                     if (bullets[j].ExpiresOnHit)
                     {
                         bullets[j].IsExpired = true;
@@ -571,6 +575,10 @@ namespace Realm
                     if (enemiesProjectiles[i].BleedsOnHit && Player.Instance == hitPlayer)
                     {
                         hitPlayer.Bleed(enemiesProjectiles[i].BleedDurationFrames);
+                    }
+                    if (enemiesProjectiles[i].SilencesOnHit && Player.Instance == hitPlayer)
+                    {
+                        hitPlayer.Silence(enemiesProjectiles[i].SilenceDurationFrames);
                     }
                     // Marked regardless of ExpiresOnHit below, so a
                     // non-expiring projectile (e.g. GrenadeProjectile) can
