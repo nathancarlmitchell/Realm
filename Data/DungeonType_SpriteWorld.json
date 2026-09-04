@@ -2,11 +2,11 @@
   "Name": "Sprite World",
   "TileSetName": "SpriteWorld",
   "MinRoomSize": 8,
-  "MaxRoomSize": 16,
+  "MaxRoomSize": 24,
   "MinRoomCount": 12,
   "MaxRoomCount": 18,
   "CorridorWidth": 2,
-  "CircularRooms": true,
+  "CircularRooms": false,
   "ConveyorMaxStripsPerRoom": 5,
   "ConveyorTileNames": [
     "Conveyor Up",

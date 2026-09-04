@@ -10,7 +10,7 @@
             "OffsetX": 0,
             "OffsetY": 0,
             "CanPassThrough": false,
-            "CanShootThrough": false,
+            "CanShootThrough": true,
             "IsDestructible": false,
             "DestructibleHealth": 0,
             "HarmsPlayer": false,
@@ -53,7 +53,7 @@
         {
             "Id": 3,
             "Name": "Conveyor Up",
-            "OffsetX": 1,
+            "OffsetX": 3,
             "OffsetY": 0,
             "CanPassThrough": true,
             "CanShootThrough": true,
@@ -71,7 +71,7 @@
         {
             "Id": 4,
             "Name": "Conveyor Down",
-            "OffsetX": 1,
+            "OffsetX": 4,
             "OffsetY": 0,
             "CanPassThrough": true,
             "CanShootThrough": true,
@@ -89,7 +89,7 @@
         {
             "Id": 5,
             "Name": "Conveyor Left",
-            "OffsetX": 1,
+            "OffsetX": 5,
             "OffsetY": 0,
             "CanPassThrough": true,
             "CanShootThrough": true,
@@ -107,7 +107,7 @@
         {
             "Id": 6,
             "Name": "Conveyor Right",
-            "OffsetX": 1,
+            "OffsetX": 6,
             "OffsetY": 0,
             "CanPassThrough": true,
             "CanShootThrough": true,

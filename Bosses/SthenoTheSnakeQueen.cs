@@ -89,7 +89,7 @@ namespace Realm.Bosses
             // Stheno is the harder, more dedicated source of the two (a
             // full boss fight vs. a Treasure Room mini-boss), so a
             // guaranteed drop here rewards going after her specifically.
-            UniqueItemDropChances = new() { ["Snake Eye Ring"] = 1f };
+            UniqueItemDropChances = new() { ["Snake Eye Ring"] = 0.05f };
         }
 
         // Runs the current phase for PhaseDurationFrames, then becomes

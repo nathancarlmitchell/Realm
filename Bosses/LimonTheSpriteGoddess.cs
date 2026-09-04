@@ -141,7 +141,7 @@ namespace Realm.Bosses
             // shape/rate as Stheno's own Snake Eye Ring drop — a modest,
             // independent-of-guaranteed-loot chance for a dedicated boss
             // kill, not a certainty.
-            UniqueItemDropChances = new() { ["Staff of Extreme Prejudice"] = 0.05f };
+            UniqueItemDropChances = new() { ["Staff of Extreme Prejudice"] = 1f };
 
             GuaranteedPotionChances = new()
             {
@@ -380,7 +380,12 @@ namespace Realm.Bosses
             if (currentPhase == Phase.Dormant)
                 return;
 
-            DrawConveyorRing(spriteBatch, ArenaHalfSize - BorderWidth, ArenaHalfSize, clockwise: true);
+            DrawConveyorRing(
+                spriteBatch,
+                ArenaHalfSize - BorderWidth,
+                ArenaHalfSize,
+                clockwise: true
+            );
 
             if (currentPhase == Phase.Phase3)
                 DrawConveyorRing(spriteBatch, InnerRingInner, InnerRingOuter, clockwise: false);
@@ -633,7 +638,8 @@ namespace Realm.Bosses
         private IEnumerable<int> ArmoredSpiral(Texture2D projectileImage = null)
         {
             Texture2D image = projectileImage ?? Art.LimonSignatureBolt;
-            var armor = PeriodicArmor(intervalFrames: 0, durationFrames: PatternDuration).GetEnumerator();
+            var armor = PeriodicArmor(intervalFrames: 0, durationFrames: PatternDuration)
+                .GetEnumerator();
 
             while (true)
             {
@@ -649,7 +655,11 @@ namespace Realm.Bosses
                     spiralAngle += 0.35f;
                     float speed = 5f * 32f / 60f;
                     EntityManager.Add(
-                        new EnemyProjectile(Position, Extensions.FromPolar(spiralAngle, speed), image)
+                        new EnemyProjectile(
+                            Position,
+                            Extensions.FromPolar(spiralAngle, speed),
+                            image
+                        )
                         {
                             Damage = 35,
                         }
@@ -768,48 +778,52 @@ namespace Realm.Bosses
             // Limon's plain signature one.
             var magicSpiral = ArmoredSpiral(Art.LimonMagicBolt).GetEnumerator();
             var iceRing = FanShot(
-                range: float.MaxValue,
-                damage: 30,
-                projectileSpeed: 4f * 32f / 60f,
-                shots: 12,
-                angleStep: MathHelper.TwoPi / 12f,
-                projectileImage: Art.LimonIceBolt,
-                cooldownFrames: 120,
-                slowsOnHit: true
-            ).GetEnumerator();
+                    range: float.MaxValue,
+                    damage: 30,
+                    projectileSpeed: 4f * 32f / 60f,
+                    shots: 12,
+                    angleStep: MathHelper.TwoPi / 12f,
+                    projectileImage: Art.LimonIceBolt,
+                    cooldownFrames: 120,
+                    slowsOnHit: true
+                )
+                .GetEnumerator();
             var natureBeams = ShootIfInRange(
-                range: float.MaxValue,
-                damage: 40,
-                projectileSpeed: 5f * 32f / 60f,
-                projectileImage: Art.LimonNatureBeam,
-                cooldownFrames: 45
-            ).GetEnumerator();
+                    range: float.MaxValue,
+                    damage: 40,
+                    projectileSpeed: 5f * 32f / 60f,
+                    projectileImage: Art.LimonNatureBeam,
+                    cooldownFrames: 45
+                )
+                .GetEnumerator();
             // Darkness: "the many rainbow stars are being shot out" (the
             // wiki's own Darkness-form tip) — Art.RainbowStar directly,
             // rather than reusing the regular roster's own
             // SpriteDarknessBolt (no dedicated Darkness art was supplied
             // in this batch).
             var darknessBursts = FanShot(
-                range: float.MaxValue,
-                damage: 35,
-                projectileSpeed: 6f * 32f / 60f,
-                shots: 6,
-                angleStep: MathHelper.TwoPi / 6f,
-                projectileImage: Art.RainbowStar,
-                cooldownFrames: 100
-            ).GetEnumerator();
+                    range: float.MaxValue,
+                    damage: 35,
+                    projectileSpeed: 6f * 32f / 60f,
+                    shots: 6,
+                    angleStep: MathHelper.TwoPi / 6f,
+                    projectileImage: Art.RainbowStar,
+                    cooldownFrames: 100
+                )
+                .GetEnumerator();
             // Fire (not one of the wiki's own 4 named forms — see
             // SecondaryForm's own doc comment): a rapid, wide fan matching
             // the aggressive chase Phase2Movement() gives this form.
             var fireFan = FanShot(
-                range: float.MaxValue,
-                damage: 30,
-                projectileSpeed: 6.5f * 32f / 60f,
-                shots: 5,
-                angleStep: 0.25f,
-                projectileImage: Art.LimonFireBolt,
-                cooldownFrames: 50
-            ).GetEnumerator();
+                    range: float.MaxValue,
+                    damage: 30,
+                    projectileSpeed: 6.5f * 32f / 60f,
+                    shots: 5,
+                    angleStep: 0.25f,
+                    projectileImage: Art.LimonFireBolt,
+                    cooldownFrames: 50
+                )
+                .GetEnumerator();
 
             while (true)
             {
