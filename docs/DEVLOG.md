@@ -9582,3 +9582,47 @@ date/time for those individually; don't treat their grouping as meaning they all
      items' own instance GUIDs (identical stats/tiers/names throughout), consistent with real
      gameplay between sessions rather than anything this test touched (it never constructs
      `Player.Instance`, a `RealmState`, or calls any save path).
+
+340. **Fixed two more real bugs, reported directly after playing: conveyor strips didn't run the
+     full length of the room, and breaking a destructible tile had a chance of spawning a
+     conveyor.**
+
+     *Strips getting cut short.* `DungeonGenerator.CarveHorizontal()`/`CarveVertical()`'s
+     plain-floor branch (used whenever a dungeon type sets no `CorridorTileName` — true for Sprite
+     World) carved every cell along a corridor's straight-line path unconditionally, including
+     cells that fell inside a room's own footprint. Since a corridor's path always starts and ends
+     at a room's own center (see entry 315), it necessarily cut partway into both connected rooms'
+     interiors — and if a conveyor strip's row/column happened to lie along that path, the corridor
+     repaved part of it with a fresh random floor pick, breaking the strip mid-room. The
+     `corridorTile != null` branch already excluded room-interior cells via `IsInsideAnyRoom()`
+     (see its own long-standing comment); the plain-floor branch just never got the same guard.
+     Fixed by moving the `IsInsideAnyRoom()` check up so it applies regardless of whether
+     `corridorTile` is set.
+
+     Separately, `PlaceConveyorStrips()`'s own `TryPlaceConveyorCell()` deliberately skipped any
+     cell already holding a Sprite Trees obstacle (a design choice from entry 338, reasoning that a
+     destructible obstacle shouldn't get silently paved over). In practice this meant any strip
+     crossing a Sprite Trees cell — placed independently, earlier, in the room's own per-cell
+     fill — simply had a hole in it. Since a strip is now a single deliberate line that must run
+     the full width/height of the room with no gaps, this tie now goes the other way: a conveyor
+     strip overwrites an obstacle cell it crosses, the reverse of the old per-cell scatter's
+     tie-break (which no longer applies once conveyors are placed as whole lines instead of
+     independent per-cell rolls).
+
+     *Destructible tiles becoming conveyors.* `DungeonMap.cs` keeps its own separate
+     `floorCandidates` list (`DamageTile()`'s "what does a broken destructible tile turn into" pool)
+     that had the exact same leak entry 339 already fixed in `DungeonGenerator`'s own copy —
+     conveyor tiles are `CanPassThrough` too, so they were still in the pool a broken Sprite Trees
+     tile could randomly become. Fixed the same way: filtered to `CanPassThrough && ConveyorSpeed
+     == 0`.
+
+     Verified via a temporary `Game1.StartGame()` scripted check (reverted, no diff remains): for
+     every room across 30 seeded `SpriteWorld` `DungeonMap`s, scanned each conveyor-strip
+     row/column strictly within the room's own circular footprint (not its bounding box — an
+     earlier version of this check flagged a false break where a legitimate corridor cell sat
+     inside a room's bounding rectangle but outside its actual circle, never targeted by any strip
+     to begin with) — 967 strips found, 0 broken. Separately, generated a map, broke every Sprite
+     Trees cell in it via a real `DamageTile()` call, and confirmed none of the 88 broken cells
+     became a conveyor. Plain `dotnet build` (0 errors) plus a real minimized boot-check; real save
+     files backed up first and diffed — the same benign `PlayerData` equipped-item-GUID pattern
+     from entry 339 showed up again (real gameplay between sessions, unrelated to this test).

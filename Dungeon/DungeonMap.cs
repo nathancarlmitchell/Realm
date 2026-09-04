@@ -40,11 +40,17 @@ namespace Realm
 
         private readonly Dictionary<int, TileDefData> tilesById;
 
-        // Every CanPassThrough tile in this tileset — computed once here
-        // rather than per-call, since DamageTile() below needs it every time
-        // a destructible tile breaks (picks a random one to become, same
-        // "random among same-category candidates" principle DungeonGenerator
-        // already uses when carving).
+        // Every CanPassThrough tile in this tileset, excluding conveyors —
+        // computed once here rather than per-call, since DamageTile() below
+        // needs it every time a destructible tile breaks (picks a random
+        // one to become, same "random among same-category candidates"
+        // principle DungeonGenerator already uses when carving). A
+        // conveyor tile is CanPassThrough too, but must never be picked
+        // here — a broken Sprite Trees obstacle turning into a stray,
+        // ungrouped conveyor tile would be the exact same leak
+        // DungeonGenerator.Generate()'s own floorCandidates filter (see its
+        // comment) was fixed to close, just reached through tile
+        // destruction instead of initial generation.
         private readonly List<TileDefData> floorCandidates;
 
         // Remaining hit points for a destructible tile that's taken at least
@@ -68,7 +74,9 @@ namespace Realm
                 tilesById[tile.Id] = tile;
             }
 
-            floorCandidates = tileSet.Tiles.Where(t => t.CanPassThrough).ToList();
+            floorCandidates = tileSet
+                .Tiles.Where(t => t.CanPassThrough && t.ConveyorSpeed == 0)
+                .ToList();
         }
 
         public int this[int x, int y]

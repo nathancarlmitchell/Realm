@@ -379,11 +379,14 @@ namespace Realm
         // conveyor-belt lanes rather than the earlier per-cell scatter.
         // Each strip independently rerolls orientation and, within that
         // orientation, which of the (up to two) matching tiles to use, so a
-        // room can get a mix of e.g. two Left rows and one Down column.
-        // Never overwrites a Sprite Trees obstacle cell laid down by the
-        // caller's own per-cell loop just above — an obstacle is meant to
-        // block movement until destroyed, which a walkable conveyor strip
-        // stamped over it would silently undo.
+        // room can get a mix of e.g. two Left rows and one Down column. DOES
+        // overwrite a Sprite Trees obstacle cell laid down by the caller's
+        // own per-cell loop just above — a strip must run the full width/
+        // height of the room's own circular footprint with no gaps, so it
+        // takes priority over an obstacle it happens to cross (the reverse
+        // of the old per-cell scatter's tie-break, which no longer applies
+        // now that a strip is a single deliberate line rather than
+        // independent per-cell rolls).
         private static void PlaceConveyorStrips(
             DungeonMap map,
             Rectangle room,
@@ -414,14 +417,14 @@ namespace Realm
                     TileDefData tile = RandomPick(horizontalTiles, rand);
                     int stripY = rand.Next(room.Top, room.Bottom);
                     for (int cx = room.Left; cx < room.Right; cx++)
-                        TryPlaceConveyorCell(map, room, circularRooms, scatter, cx, stripY, tile);
+                        TryPlaceConveyorCell(map, room, circularRooms, cx, stripY, tile);
                 }
                 else if (verticalTiles.Count > 0)
                 {
                     TileDefData tile = RandomPick(verticalTiles, rand);
                     int stripX = rand.Next(room.Left, room.Right);
                     for (int cy = room.Top; cy < room.Bottom; cy++)
-                        TryPlaceConveyorCell(map, room, circularRooms, scatter, stripX, cy, tile);
+                        TryPlaceConveyorCell(map, room, circularRooms, stripX, cy, tile);
                 }
             }
         }
@@ -430,7 +433,6 @@ namespace Realm
             DungeonMap map,
             Rectangle room,
             bool circularRooms,
-            ScatterOptions scatter,
             int x,
             int y,
             TileDefData tile
@@ -438,9 +440,6 @@ namespace Realm
         {
             if (!RoomContains(room, circularRooms, x, y))
                 return; // outside the inscribed circle — leave whatever's there.
-
-            if (scatter.ObstacleTile != null && map[x, y] == scatter.ObstacleTile.Id)
-                return; // don't pave over a Sprite Trees obstacle.
 
             map[x, y] = tile.Id;
         }
@@ -577,16 +576,23 @@ namespace Realm
             }
         }
 
-        // corridorTile set: every cell gets that tile (e.g. a breakable
-        // wall — see DungeonTypeData.CorridorTileName's own doc comment),
-        // except cells that already fall inside some room's own footprint
-        // (RoomContains/IsInsideAnyRoom) — those are left untouched rather
-        // than stamped over, since a corridor's straight-line path always
-        // starts and ends inside a room (and can graze a third room along
-        // the way — see docs/DEVLOG.md entry 315), and overwriting a room's
-        // own already-carved floor with a hallway-fill tile would leave a
-        // visible, wrong-looking block of "rubble" sitting inside an
-        // otherwise open room.
+        // Every cell along the corridor's path gets a corridor tile (either
+        // corridorTile itself — e.g. a breakable wall, see
+        // DungeonTypeData.CorridorTileName's own doc comment — or, when
+        // that's unset, the same random-floor/cove pick a plain corridor
+        // always used), EXCEPT cells that already fall inside some room's
+        // own footprint (RoomContains/IsInsideAnyRoom) — those are left
+        // untouched rather than stamped over, since a corridor's
+        // straight-line path always starts and ends at a room's own center
+        // (and can graze a third room along the way — see docs/DEVLOG.md
+        // entry 315), so it necessarily cuts partway into both connected
+        // rooms' own interiors. Applies regardless of whether corridorTile
+        // is set — overwriting a room's own already-carved floor (which,
+        // for Sprite World, can include a destructible-obstacle cell or the
+        // middle of a conveyor strip) with a fresh random pick would leave
+        // a visible gap/break in content the room's own fill deliberately
+        // placed, the same reasoning that already gated the corridorTile
+        // case, just previously missing from this plain-floor case.
         private static void CarveHorizontal(
             DungeonMap map,
             int x1,
@@ -607,18 +613,13 @@ namespace Realm
             for (int dy = 0; dy < corridorWidth; dy++)
             {
                 int cy = y + dy;
-                if (corridorTile != null)
-                {
-                    if (!IsInsideAnyRoom(rooms, circularRooms, x, cy))
-                        map[x, cy] = corridorTile.Id;
-                }
-                else
-                {
-                    map[x, cy] =
-                        cove.WoodFloorTile != null
-                            ? PlaceCoveTile(cove.WoodFloorTile, cove, rand)
-                            : RandomPick(floorCandidates, rand).Id;
-                }
+                if (IsInsideAnyRoom(rooms, circularRooms, x, cy))
+                    continue;
+
+                map[x, cy] =
+                    corridorTile != null ? corridorTile.Id
+                    : cove.WoodFloorTile != null ? PlaceCoveTile(cove.WoodFloorTile, cove, rand)
+                    : RandomPick(floorCandidates, rand).Id;
             }
         }
 
@@ -642,18 +643,13 @@ namespace Realm
             for (int dx = 0; dx < corridorWidth; dx++)
             {
                 int cx = x + dx;
-                if (corridorTile != null)
-                {
-                    if (!IsInsideAnyRoom(rooms, circularRooms, cx, y))
-                        map[cx, y] = corridorTile.Id;
-                }
-                else
-                {
-                    map[cx, y] =
-                        cove.WoodFloorTile != null
-                            ? PlaceCoveTile(cove.WoodFloorTile, cove, rand)
-                            : RandomPick(floorCandidates, rand).Id;
-                }
+                if (IsInsideAnyRoom(rooms, circularRooms, cx, y))
+                    continue;
+
+                map[cx, y] =
+                    corridorTile != null ? corridorTile.Id
+                    : cove.WoodFloorTile != null ? PlaceCoveTile(cove.WoodFloorTile, cove, rand)
+                    : RandomPick(floorCandidates, rand).Id;
             }
         }
 
