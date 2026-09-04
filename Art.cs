@@ -193,6 +193,62 @@ namespace Realm
         public static Texture2D SpriteNatureTwirl { get; private set; }
         public static Texture2D SpriteMagicTwirl { get; private set; } // also Magic's Bolt/GreaterShape
 
+        // Limon the Sprite Goddess's own art (realmeye.com/wiki/sprite-
+        // world-guide's "Boss" section) — supplied as a distinct follow-up
+        // batch, not shared with the regular Native Sprite roster above.
+        //
+        // LimonForm{Element}: her phase 2 transform sprites (Content/
+        // Dungeons/Sprite World/Limon the Sprite Goddess {Element}.png),
+        // swapped in for the fight's duration in that form (see
+        // LimonTheSpriteGoddess.TickPendingTransition()). LimonFormFire is
+        // pixel-identical to the base Limon texture (her default
+        // appearance is already fire-colored) — kept as its own named
+        // property for symmetry with the other 4 forms rather than
+        // special-cased away, even though swapping to it is a visual
+        // no-op.
+        public static Texture2D LimonFormMagic { get; private set; }
+        public static Texture2D LimonFormIce { get; private set; }
+        public static Texture2D LimonFormNature { get; private set; }
+        public static Texture2D LimonFormDarkness { get; private set; }
+        public static Texture2D LimonFormFire { get; private set; }
+
+        // LimonSignatureBolt (Purple — matches the small pink/magenta
+        // dashes on the original placeholder LimonProjectile above,
+        // Limon's own established color) replaces that placeholder in
+        // every one of her non-elemental attacks (phase 1, phase 3).
+        public static Texture2D LimonSignatureBolt { get; private set; }
+
+        // Phase 2's own per-form attacks — one Bolt/Beam/Line pairing per
+        // form, matching (but distinct from, larger/boss-tier) the regular
+        // Native Sprites' own per-element art above. No dedicated Darkness
+        // pair was supplied this batch — that form keeps reusing
+        // SpriteDarknessBolt/GreaterShape from the regular roster instead.
+        public static Texture2D LimonMagicBolt { get; private set; }
+        public static Texture2D LimonMagicBeam { get; private set; }
+        public static Texture2D LimonIceBolt { get; private set; }
+        public static Texture2D LimonIceBeam { get; private set; }
+        public static Texture2D LimonNatureBeam { get; private set; }
+        public static Texture2D LimonNatureLine { get; private set; }
+        public static Texture2D LimonFireBolt { get; private set; }
+
+        // Phase 3's own distinct "rainbow" flourishes — realmeye.com/wiki/
+        // sprite-world-guide's own "ring of fire bolts," "rainbow blast,"
+        // and (Darkness form, phase 2) "many rainbow stars." RainbowBlast
+        // is a real 4-frame animation (Content/Projectiles/Rainbow Sprite
+        // Blast.png, 160x40 = 4x40x40 frames in one row) — the armor-
+        // piercing "rainbow blast" is the one shot in this fight dramatic
+        // enough to earn a genuinely new AnimatedEnemyProjectile (see that
+        // class's own doc comment) rather than a plain static sprite.
+        public static Texture2D RainbowLine { get; private set; }
+        public static Texture2D RainbowStar { get; private set; }
+        public static AnimatedTexture RainbowBlast { get; private set; }
+
+        // "Use of an Electric pet or other abilities to inflict Paralyzed
+        // Limon will cause her to fire a radial blast of shots similar to
+        // the Staff of Extreme Prejudice" — a real, if easy-to-miss, wiki
+        // mechanic (LimonTheSpriteGoddess.ParalyzePunishment()).
+        public static Texture2D PrejudicePulse { get; private set; }
+
         public static AnimatedTexture Portal { get; private set; }
 
         // Dungeon-specific portal animations — same 7-frame, 8fps loop as
@@ -612,6 +668,38 @@ namespace Realm
             SpriteNatureGreaterShape = content.Load<Texture2D>("Projectiles/Green Sprite Bolt");
             SpriteNatureTwirl = content.Load<Texture2D>("Projectiles/Green Sprite Twirl");
             SpriteMagicTwirl = content.Load<Texture2D>("Projectiles/Blue Sprite Twirl");
+
+            LimonFormMagic = content.Load<Texture2D>("Dungeons/Sprite World/Limon the Sprite Goddess Magic");
+            LimonFormIce = content.Load<Texture2D>("Dungeons/Sprite World/Limon the Sprite Goddess Ice");
+            LimonFormNature = content.Load<Texture2D>(
+                "Dungeons/Sprite World/Limon the Sprite Goddess Nature"
+            );
+            LimonFormDarkness = content.Load<Texture2D>(
+                "Dungeons/Sprite World/Limon the Sprite Goddess Darkness"
+            );
+            LimonFormFire = content.Load<Texture2D>("Dungeons/Sprite World/Limon the Sprite Goddess Fire");
+            LimonSignatureBolt = content.Load<Texture2D>("Projectiles/Purple Sprite Bolt");
+            LimonMagicBolt = content.Load<Texture2D>("Projectiles/Blue Sprite Bolt");
+            LimonMagicBeam = content.Load<Texture2D>("Projectiles/Blue Sprite Beam");
+            LimonIceBolt = content.Load<Texture2D>("Projectiles/Cyan Sprite Bolt");
+            LimonIceBeam = content.Load<Texture2D>("Projectiles/Cyan Sprite Beam");
+            LimonNatureBeam = content.Load<Texture2D>("Projectiles/Green Sprite Beam");
+            LimonNatureLine = content.Load<Texture2D>("Projectiles/Green Sprite Line");
+            LimonFireBolt = content.Load<Texture2D>("Projectiles/Orange Sprite Bolt");
+            RainbowLine = content.Load<Texture2D>("Projectiles/Rainbow Sprite Line");
+            RainbowStar = content.Load<Texture2D>("Projectiles/Rainbow Sprite Star");
+            PrejudicePulse = content.Load<Texture2D>("Projectiles/Prejudice Pulse");
+
+            // 4 frames, one row (160x40 = 4x40x40) — a quick, one-shot
+            // blast rather than a looping idle animation, matching how it's
+            // actually used (LimonTheSpriteGoddess's own armor-piercing
+            // shot, alive for well under a second).
+            RainbowBlast = new AnimatedTexture(Vector2.Zero, 0f, 1.0f, 0.5f);
+            RainbowBlast.Load(content, "Projectiles/Rainbow Sprite Blast", 4, 12, 4, loop: false);
+            RainbowBlast.Origin = new Vector2(
+                RainbowBlast.FrameWidth / 2f,
+                RainbowBlast.FrameHeight / 2f
+            );
 
             // Fonts.
             HudFont = content.Load<SpriteFont>("Fonts/HudFont");

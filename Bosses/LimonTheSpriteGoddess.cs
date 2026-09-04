@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using Microsoft.Xna.Framework;
+using Microsoft.Xna.Framework.Graphics;
 using Realm;
 using Realm.Projectiles;
 
@@ -39,12 +40,20 @@ namespace Realm.Bosses
             Phase3,
         }
 
+        // Fire is pixel-identical to Limon's own default appearance (see
+        // Art.LimonFormFire's own doc comment) — kept as a real 5th form
+        // anyway (its own movement + attack in Phase2Movement()/
+        // Phase2Attack() below) now that dedicated Fire-element projectile
+        // art (Art.LimonFireBolt) exists for it, rather than only ever
+        // being 1 of 4 possible picks the way the wiki's own "4 named
+        // forms" text originally read.
         private enum SecondaryForm
         {
             Magic,
             Ice,
             Nature,
             Darkness,
+            Fire,
         }
 
         private Phase currentPhase = Phase.Dormant;
@@ -87,6 +96,7 @@ namespace Realm.Bosses
             AddAttackBehaviour(Phase1Patterns());
             AddAttackBehaviour(Phase2Attack());
             AddAttackBehaviour(Phase3Attacks());
+            AddAttackBehaviour(ParalyzePunishment());
 
             GuaranteedPotionChances = new()
             {
@@ -229,7 +239,15 @@ namespace Realm.Bosses
 
             if (pendingPhase == Phase.Phase2)
             {
-                currentForm = (SecondaryForm)limonRand.Next(4);
+                currentForm = (SecondaryForm)limonRand.Next(5);
+                image = FormImage(currentForm);
+            }
+            else if (pendingPhase == Phase.Phase3)
+            {
+                // "Reverts to her original form" — back to the plain
+                // default sprite regardless of whichever of the 5 forms
+                // phase 2 picked.
+                image = Art.Limon;
             }
 
             // Phase 1's own ArmoredSpiral() pattern (and Phase 2's Magic
@@ -248,6 +266,16 @@ namespace Realm.Bosses
             pendingPhase = null;
             Invulnerable = false;
         }
+
+        private static Texture2D FormImage(SecondaryForm form) =>
+            form switch
+            {
+                SecondaryForm.Magic => Art.LimonFormMagic,
+                SecondaryForm.Ice => Art.LimonFormIce,
+                SecondaryForm.Nature => Art.LimonFormNature,
+                SecondaryForm.Darkness => Art.LimonFormDarkness,
+                _ => Art.LimonFormFire,
+            };
 
         // Geometry-based conveyor push — see this class's own header
         // comment for why this is separate from DungeonState's tile-based
@@ -384,7 +412,7 @@ namespace Realm.Bosses
                             new EnemyProjectile(
                                 Position,
                                 Extensions.FromPolar(shotAngle, 6f * 32f / 60f),
-                                Art.LimonProjectile
+                                Art.LimonSignatureBolt
                             )
                             {
                                 Damage = 45,
@@ -439,7 +467,7 @@ namespace Realm.Bosses
                                 new EnemyProjectile(
                                     Position,
                                     Extensions.FromPolar(aimAngle + offset, speed),
-                                    Art.LimonProjectile
+                                    Art.LimonSignatureBolt
                                 )
                                 {
                                     Damage = 40,
@@ -456,7 +484,7 @@ namespace Realm.Bosses
                                 new EnemyProjectile(
                                     Position,
                                     Extensions.FromPolar(perpendicular, speed),
-                                    Art.LimonProjectile
+                                    Art.LimonSignatureBolt
                                 )
                                 {
                                     Damage = 40,
@@ -483,8 +511,14 @@ namespace Realm.Bosses
         private const int SpiralTickInterval = 4;
         private int spiralTicksRemaining = 0;
 
-        private IEnumerable<int> ArmoredSpiral()
+        // projectileImage: left null, defaults to Limon's own signature
+        // bolt (phase 1's own call) — Phase2Attack()'s own Magic-form
+        // reuse of this same method passes Art.LimonMagicBolt instead, for
+        // a form-appropriate look without duplicating the whole spiral
+        // loop just to change one texture.
+        private IEnumerable<int> ArmoredSpiral(Texture2D projectileImage = null)
         {
+            Texture2D image = projectileImage ?? Art.LimonSignatureBolt;
             var armor = PeriodicArmor(intervalFrames: 0, durationFrames: PatternDuration).GetEnumerator();
 
             while (true)
@@ -501,11 +535,7 @@ namespace Realm.Bosses
                     spiralAngle += 0.35f;
                     float speed = 5f * 32f / 60f;
                     EntityManager.Add(
-                        new EnemyProjectile(
-                            Position,
-                            Extensions.FromPolar(spiralAngle, speed),
-                            Art.LimonProjectile
-                        )
+                        new EnemyProjectile(Position, Extensions.FromPolar(spiralAngle, speed), image)
                         {
                             Damage = 35,
                         }
@@ -514,7 +544,7 @@ namespace Realm.Bosses
                         new EnemyProjectile(
                             Position,
                             Extensions.FromPolar(spiralAngle + MathHelper.Pi, speed),
-                            Art.LimonProjectile
+                            image
                         )
                         {
                             Damage = 35,
@@ -583,7 +613,7 @@ namespace Realm.Bosses
                             Velocity += toDesired.ScaleTo(0.5f) - Velocity * 0.3f;
                             break;
                         }
-                        default: // Darkness
+                        case SecondaryForm.Darkness:
                             // "Hard to predict Limon's movement pattern" —
                             // an erratic wander, avoiding the corners
                             // ("stay away from the corners of the stage").
@@ -593,6 +623,19 @@ namespace Realm.Bosses
                                 Velocity += Extensions.FromPolar(angle, 1.5f);
                             }
                             break;
+                        default: // Fire
+                            // Not one of the wiki's own 4 named forms —
+                            // dedicated Fire-element projectile art
+                            // (Art.LimonFireBolt) now exists, so this gets
+                            // a real movement/attack pair too rather than
+                            // only ever being 1 of 4 possible picks. A
+                            // direct, aggressive chase, distinct from the
+                            // other 4 forms' own more evasive patterns —
+                            // matches Fire's "aggressive" flavor.
+                            Vector2 toPlayerFire = Player.Instance.Position - Position;
+                            if (toPlayerFire != Vector2.Zero)
+                                Velocity += toPlayerFire.ScaleTo(1.5f) - Velocity * 0.3f;
+                            break;
                     }
                 }
 
@@ -600,17 +643,23 @@ namespace Realm.Bosses
             }
         }
 
-        // Phase 2 attack — one signature attack per form.
+        // Phase 2 attack — one signature attack per form, each now using
+        // its own dedicated per-element projectile art instead of the
+        // generic Art.LimonProjectile placeholder every form originally
+        // shared.
         private IEnumerable<int> Phase2Attack()
         {
-            var magicSpiral = ArmoredSpiral().GetEnumerator(); // reused: "huge spiral of shots"
+            // Magic: "huge spiral of shots" — reuses ArmoredSpiral() (phase
+            // 1's own pattern C), just with Magic's own bolt art instead of
+            // Limon's plain signature one.
+            var magicSpiral = ArmoredSpiral(Art.LimonMagicBolt).GetEnumerator();
             var iceRing = FanShot(
                 range: float.MaxValue,
                 damage: 30,
                 projectileSpeed: 4f * 32f / 60f,
                 shots: 12,
                 angleStep: MathHelper.TwoPi / 12f,
-                projectileImage: Art.LimonProjectile,
+                projectileImage: Art.LimonIceBolt,
                 cooldownFrames: 120,
                 slowsOnHit: true
             ).GetEnumerator();
@@ -618,17 +667,34 @@ namespace Realm.Bosses
                 range: float.MaxValue,
                 damage: 40,
                 projectileSpeed: 5f * 32f / 60f,
-                projectileImage: Art.LimonProjectile,
+                projectileImage: Art.LimonNatureBeam,
                 cooldownFrames: 45
             ).GetEnumerator();
+            // Darkness: "the many rainbow stars are being shot out" (the
+            // wiki's own Darkness-form tip) — Art.RainbowStar directly,
+            // rather than reusing the regular roster's own
+            // SpriteDarknessBolt (no dedicated Darkness art was supplied
+            // in this batch).
             var darknessBursts = FanShot(
                 range: float.MaxValue,
                 damage: 35,
                 projectileSpeed: 6f * 32f / 60f,
                 shots: 6,
                 angleStep: MathHelper.TwoPi / 6f,
-                projectileImage: Art.LimonProjectile,
+                projectileImage: Art.RainbowStar,
                 cooldownFrames: 100
+            ).GetEnumerator();
+            // Fire (not one of the wiki's own 4 named forms — see
+            // SecondaryForm's own doc comment): a rapid, wide fan matching
+            // the aggressive chase Phase2Movement() gives this form.
+            var fireFan = FanShot(
+                range: float.MaxValue,
+                damage: 30,
+                projectileSpeed: 6.5f * 32f / 60f,
+                shots: 5,
+                angleStep: 0.25f,
+                projectileImage: Art.LimonFireBolt,
+                cooldownFrames: 50
             ).GetEnumerator();
 
             while (true)
@@ -646,8 +712,11 @@ namespace Realm.Bosses
                         case SecondaryForm.Nature:
                             natureBeams.MoveNext();
                             break;
-                        default:
+                        case SecondaryForm.Darkness:
                             darknessBursts.MoveNext();
+                            break;
+                        default: // Fire
+                            fireFan.MoveNext();
                             break;
                     }
                 }
@@ -709,13 +778,17 @@ namespace Realm.Bosses
         // Fire Python's own wavy shots).
         private void OnQuadrantSwitch()
         {
+            // "A ring of fire bolts" — Art.RainbowLine (no dedicated "fire
+            // ring" art was supplied; its own colorful, elongated shape
+            // reads well as a ring burst without reusing an already-
+            // assigned per-form asset).
             for (int i = 0; i < 16; i++)
             {
                 EntityManager.Add(
                     new EnemyProjectile(
                         Position,
                         Extensions.FromPolar(i * (MathHelper.TwoPi / 16f), 4.5f * 32f / 60f),
-                        Art.LimonProjectile
+                        Art.RainbowLine
                     )
                     {
                         Damage = 30,
@@ -724,14 +797,19 @@ namespace Realm.Bosses
                 );
             }
 
+            // "A single aimed rainbow blast that deals heavy armor
+            // piercing damage" — the one shot in this fight dramatic
+            // enough to earn a real animated projectile (Art.RainbowBlast,
+            // 4 real frames) rather than a static sprite; see
+            // AnimatedEnemyProjectile's own doc comment.
             Vector2 aim = Player.Instance.Position - Position;
             if (aim.LengthSquared() > 0)
             {
                 EntityManager.Add(
-                    new EnemyProjectile(
+                    new AnimatedEnemyProjectile(
                         Position,
                         Extensions.FromPolar(aim.ToAngle(), 8f * 32f / 60f),
-                        Art.LimonProjectile
+                        Art.RainbowBlast
                     )
                     {
                         Damage = 120,
@@ -762,12 +840,18 @@ namespace Realm.Bosses
                         {
                             float aimAngle = aim.ToAngle();
                             float speed = 5f * 32f / 60f;
+                            // "Firing pairs of wavy orange shots" —
+                            // Art.LimonFireBolt (orange) specifically,
+                            // matching the wiki's own explicit color call-
+                            // out here (unlike her other, unspecified-color
+                            // phase 1/3 shots, which use her plain
+                            // signature bolt instead).
                             foreach (float offset in new[] { -0.2f, 0.2f })
                                 EntityManager.Add(
                                     new WavyProjectile(
                                         Position,
                                         Extensions.FromPolar(aimAngle + offset, speed),
-                                        Art.LimonProjectile
+                                        Art.LimonFireBolt
                                     )
                                     {
                                         Damage = 45,
@@ -780,6 +864,48 @@ namespace Realm.Bosses
                         wavyCooldownRemaining--;
                     }
                 }
+
+                yield return 0;
+            }
+        }
+
+        // "Use of an Electric pet or other abilities to inflict Paralyzed
+        // Limon will cause her to fire a radial blast of shots similar to
+        // the Staff of Extreme Prejudice" — a real wiki-documented caution,
+        // not tied to any one phase, so this attack behaviour runs
+        // independently of currentPhase/Invulnerable (unlike every other
+        // attack in this file). Edge-triggered (wasParalyzed) rather than
+        // firing every tick Paralyzed stays active — the wiki describes one
+        // reactive burst per paralyze, not a continuous stream for the
+        // debuff's whole duration.
+        private bool wasParalyzed = false;
+        private const int ParalyzeBurstShotCount = 24;
+
+        private IEnumerable<int> ParalyzePunishment()
+        {
+            while (true)
+            {
+                bool isParalyzed = HasDebuff(DebuffType.Paralyzed);
+                if (isParalyzed && !wasParalyzed)
+                {
+                    for (int i = 0; i < ParalyzeBurstShotCount; i++)
+                    {
+                        EntityManager.Add(
+                            new EnemyProjectile(
+                                Position,
+                                Extensions.FromPolar(
+                                    i * (MathHelper.TwoPi / ParalyzeBurstShotCount),
+                                    7f * 32f / 60f
+                                ),
+                                Art.PrejudicePulse
+                            )
+                            {
+                                Damage = 80,
+                            }
+                        );
+                    }
+                }
+                wasParalyzed = isParalyzed;
 
                 yield return 0;
             }

@@ -9445,3 +9445,70 @@ date/time for those individually; don't treat their grouping as meaning they all
      in isolation); a real player `Projectile` with `SilencesOnHit` colliding with a fresh `Enemy.
      CreateWanderer()` instance applies it on that side too. Plain `dotnet build` (0 errors) plus a
      real minimized boot-check; real save files backed up first and diffed unmodified.
+337. **Wired the new Limon-specific projectile/sprite art into her fight, replacing the last
+     placeholder shots and adding real per-form sprite-swapping.** Follow-up to entry 335's Limon
+     rework, once dedicated form-sprite and per-color projectile art turned up for her specifically
+     (distinct from the shared Native Sprite roster art already wired in that pass).
+
+     `SecondaryForm` gains a 5th value, `Fire` — the wiki names only 4 named Phase 2 forms (Magic,
+     Ice, Nature, Darkness), but dedicated Fire projectile art (`Orange Sprite Bolt.png`) was
+     supplied alongside the other 4 colors, mirroring Native Sprite God's own 5-color roster, so
+     Phase 2's random form pick now covers all 5. (`Art.LimonFormFire` is pixel-identical to her
+     default `Art.Limon` texture — confirmed by direct comparison — since she's already
+     fire-colored by default; kept as its own separately-loaded texture anyway for symmetry with
+     the other 4 forms rather than special-casing Fire to skip the sprite swap.)
+
+     Real sprite-swapping on phase transition, previously entirely missing despite the "transform"
+     mechanic existing since entry 335: `TickPendingTransition()` now sets `image = FormImage
+     (currentForm)` entering Phase 2 and `image = Art.Limon` entering Phase 3 ("reverts to her
+     original form" per the wiki). New `FormImage()` switch helper maps each form to its own
+     `Art.LimonForm{Element}` texture.
+
+     Every remaining `Art.LimonProjectile` placeholder use replaced with real per-form/per-phase
+     art: Phase 1/Phase 3's non-elemental attacks (`EscalatingBurst`, `DashLasers`, `ArmoredSpiral`,
+     the Phase 3 quadrant-switch ring) now use `Art.LimonSignatureBolt` (`Purple Sprite Bolt.png` —
+     confirmed via pixel comparison against the old placeholder `limon1.png` to be her own
+     established signature color, not tied to any elemental form); `ArmoredSpiral()` gained an
+     optional `projectileImage` param so Phase 2's Magic-form reuse of the same spiral can pass
+     `Art.LimonMagicBolt` instead of duplicating the method. Each Phase 2 form's attack now uses its
+     own element's art (`LimonMagicBolt`/`LimonIceBolt`/`LimonNatureBeam`/`RainbowStar` for
+     Darkness's "rainbow stars", plus a new `fireFan` attack for the Fire form using
+     `LimonFireBolt`), and `Phase2Movement()` gained an explicit Fire case (direct aggressive chase)
+     instead of falling into Darkness's erratic-wander default. Phase 3's wavy-pair shots now use
+     `LimonFireBolt` specifically, matching the wiki's "wavy orange shots" call-out.
+
+     New `Projectiles/AnimatedEnemyProjectile.cs` — the first genuinely multi-frame-animated
+     projectile in the codebase (every other `EnemyProjectile` subclass only changes
+     Position/Velocity over time, never the sprite). Owns a `Clone()`'d `AnimatedTexture` (own
+     independent frame clock per instance, same precedent as Portal's own animation handling),
+     overrides `Update()` to advance the animation on a fixed 1/60s tick and `Draw()` to paint the
+     current frame instead of the inherited static `image`. Used for Phase 3's aimed
+     armor-piercing "rainbow blast" (`Art.RainbowBlast`, a real 4-frame animation), replacing a
+     plain static-sprite `EnemyProjectile` at that same call site in `OnQuadrantSwitch()`.
+
+     New `ParalyzePunishment()` mechanic — a real wiki-documented mechanic not built in the
+     original entry 335 rework ("use of an Electric pet or other abilities to inflict Paralyzed on
+     Limon will cause her to fire a radial blast of shots similar to the Staff of Extreme
+     Prejudice"). Edge-triggered off a `wasParalyzed` bool (fires exactly once per rising edge of
+     `HasDebuff(Paralyzed)`, not continuously while paralyzed), a 24-shot full-circle burst using
+     the new `Art.PrejudicePulse` art, deliberately phase/`Invulnerable`-independent per the wiki
+     (its own `AddAttackBehaviour`, not gated by `currentPhase`).
+
+     A real, caught-in-testing bug in the new art wiring itself: `Art.RainbowBlast.Load()`'s asset
+     string initially omitted the `"Projectiles/"` path prefix present in every other new load call
+     this pass, causing a real content-load crash at boot (confirmed via a scripted boot-check that
+     never even reached its own log-file creation, proving the crash happened inside `Art.Load()`
+     before `StartGame()`'s test block ran) — fixed by matching the asset string to its actual
+     `Content.mgcb` path.
+
+     Verified via a temporary `Game1.StartGame()` scripted check (reverted, no diff remains): a
+     real Limon ran 70 Phase 1 ticks (real `EscalatingBurst`/`DashLasers`/`ArmoredSpiral` attacks)
+     with no crash; the real random Phase 2 form pick correctly matched `FormImage(picked)`; a
+     forced Fire form ran its own new movement/attack code for 60 ticks with no crash; the sprite
+     correctly reverted to `Art.Limon` entering Phase 3; 400 more real Phase 3 ticks (wavy pairs +
+     quadrant switches, organically spawning real `AnimatedEnemyProjectile` instances) ran cleanly;
+     a directly-constructed `AnimatedEnemyProjectile` survived 20 real `Update()` ticks; the new
+     `ParalyzePunishment()` edge-trigger fired exactly one 24-shot burst on the debuff's rising edge
+     and correctly did not re-fire on later ticks while still paralyzed. Plain `dotnet build` (0
+     errors) plus a real minimized boot-check; real save files backed up first and diffed
+     unmodified.
