@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Microsoft.Xna.Framework;
 
 namespace Realm.Data
 {
@@ -50,6 +51,18 @@ namespace Realm.Data
         // is false as solid.
         public bool CanPassThrough { get; set; } = true;
 
+        // Excludes this tile from DungeonGenerator's initial full-canvas
+        // wall/background fill (every !CanPassThrough tile is normally a
+        // candidate there, for free per-cell wall-texture variety — see
+        // DungeonGenerator.Generate()'s own comment). A deliberately-placed
+        // obstacle that happens to also be !CanPassThrough (e.g. Sprite
+        // World's own "Sprite Trees", scattered only via DungeonTypeData.
+        // ObstacleTileChance within actual rooms) sets this true so it
+        // doesn't also get randomly speckled across the inaccessible void
+        // background outside any room/corridor. False (the default) is the
+        // original behavior, unchanged for every existing wall tile.
+        public bool ExcludeFromBackgroundFill { get; set; } = false;
+
         // A tile where this is false blocks projectiles — DungeonState's
         // ExpireWallBlockedProjectiles() expires any player or enemy
         // projectile that crosses into one, entirely externally to the
@@ -77,5 +90,25 @@ namespace Realm.Data
         // Reuses Entity's existing debuff taxonomy directly — no new enum
         // needed just for tiles.
         public List<Entity.DebuffType> AppliedDebuffs { get; set; } = [];
+
+        // A tile where ConveyorSpeed is nonzero pushes the player by
+        // ConveyorDirection * ConveyorSpeed (world px/tick) every frame they
+        // stand on it — see DungeonState.ApplyTileEffects(). First real use:
+        // Sprite World's own "multicolored conveyor belts... constantly
+        // pushing players" (realmeye.com/wiki/sprite-world). Split into two
+        // plain floats rather than one Vector2 property deliberately —
+        // System.Text.Json's default settings (no IncludeFields configured
+        // anywhere in this project's Util.cs Load*Data() calls) only ever
+        // populates *properties*, and MonoGame's Vector2 exposes X/Y as
+        // public *fields*, not properties, so a `Vector2 ConveyorDirection`
+        // property here would always deserialize to (0,0) regardless of
+        // what the JSON says. ConveyorDirection below is a convenience
+        // accessor over the two real, JSON-backed floats, not itself
+        // read/written by the serializer.
+        public float ConveyorDirectionX { get; set; }
+        public float ConveyorDirectionY { get; set; }
+        public float ConveyorSpeed { get; set; }
+
+        public Vector2 ConveyorDirection => new(ConveyorDirectionX, ConveyorDirectionY);
     }
 }

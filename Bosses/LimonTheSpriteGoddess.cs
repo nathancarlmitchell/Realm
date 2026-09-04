@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using Microsoft.Xna.Framework;
 using Realm;
@@ -6,67 +7,67 @@ using Realm.Projectiles;
 namespace Realm.Bosses
 {
     // The first boss, spawned inside BossRealmState (entered via the portal
-    // SpriteGod drops on death — see Enemy.WasShot()). Two-phase fight:
-    // kites at range with Spray() above 50% health; PhaseWatcher() adds a
-    // second, faster attack (BossBurst()) once health drops below that,
-    // escalating the fight rather than just being a bigger version of an
-    // existing enemy. SquareWall() and XCross() both run for the whole
-    // fight regardless of phase — a constant, ever-present hazard around
-    // (and through) the boss rather than an escalation.
+    // SpriteGod drops on death, or Sprite World's own dungeon boss portal —
+    // Data/DungeonType_SpriteWorld.json). Full rework sourced from
+    // realmeye.com/wiki/sprite-world-guide's own "Boss" section — the
+    // dormant/activation gate, the anti-rush horde, phase 1's 3-pattern
+    // cycle, phase 2's 4 elemental transformations, and phase 3's
+    // double-ring conveyor + quadrant relocation are all real wiki
+    // mechanics, not invented.
+    //
+    // BossRealmState has no tile grid (an open Vector2-bounded arena, not a
+    // DungeonMap) — the arena's own conveyor belts (both the phase 1/2
+    // square border and phase 3's double ring) are therefore geometry-based
+    // pushes computed directly against arenaCenter/ArenaHalfSize below,
+    // architecturally separate from DungeonState's own TileDefData-based
+    // conveyor mechanic (Sprite World's regular dungeon rooms/corridors).
+    // Neither the square platform nor the double-ring floor pattern has any
+    // dedicated art — no visual distinguishes the conveyor zones from the
+    // rest of the arena, an explicit simplification, not an oversight.
+    //
+    // "Silence" isn't a debuff this engine has — every Silencing shot
+    // elsewhere in Sprite World substitutes DazesOnHit; Limon's own kit
+    // doesn't use Silence at all per the wiki, so this file has no such
+    // substitution to make.
     class LimonTheSpriteGoddess : Boss
     {
-        // Dedicated cooldown, separate from the projectileCooldownRemaining
-        // Spray()/Shoot()/Bomb() share on the base Enemy class — running
-        // Spray() and BossBurst() at the same time needs its own timer, or
-        // the two attacks would fight over one shared cooldown instead of
-        // firing independently.
-        private int bossBurstCooldownRemaining = 0;
-        private readonly int bossBurstCooldown = 300;
-
-        // SquareWall()'s own cooldown, same reasoning — it runs continuously
-        // alongside Spray()/BossBurst() and can't share their timer either.
-        // Matches wallTravelFrames exactly so the next sweep launches right
-        // as the previous one finishes crossing its line, with no gap.
-        private int wallCooldownRemaining = 0;
-        private readonly int wallCooldown = 10;
-
-        // Distance from the boss's center to each side of the wall, and how
-        // long (in frames) each wall projectile takes to cross from one end
-        // of its line to the other.
-        private readonly float wallHalfSize = 500f;
-        private const int wallTravelFrames = 100;
-
-        // XCross()'s own cooldown/travel time — separate from the wall's so
-        // the two patterns' density can be tuned independently, same
-        // reasoning as bossBurstCooldown/wallCooldown above.
-        private int xCooldownRemaining = 0;
-        private const int xTravelFrames = 100;
-        private readonly int xCooldown = 10;
-
-        // A projectile that sweeps from one point to another, tracked
-        // relative to the boss so its Position can be re-derived fresh from
-        // the boss's current Position every frame instead of drifting under
-        // its own Velocity — see UpdateSweepingShots(). RelativeStart/
-        // RelativeEnd are offsets from the boss's center (e.g.
-        // (-500, -500)), not world positions. Shared by SquareWall() and
-        // XCross(), which each keep their own tracking list so the two
-        // patterns' state never crosses.
-        private class SweepingShot
+        private enum Phase
         {
-            public EnemyProjectile Projectile;
-            public Vector2 RelativeStart;
-            public Vector2 RelativeEnd;
-            public int Elapsed;
-            public int TravelFrames;
+            Dormant,
+            Phase1,
+            Phase2,
+            Phase3,
         }
 
-        private readonly List<SweepingShot> activeWallShots = new List<SweepingShot>();
-        private readonly List<SweepingShot> activeXShots = new List<SweepingShot>();
+        private enum SecondaryForm
+        {
+            Magic,
+            Ice,
+            Nature,
+            Darkness,
+        }
+
+        private Phase currentPhase = Phase.Dormant;
+        private SecondaryForm currentForm;
+        private static readonly Random limonRand = new();
+
+        private const float Phase2Threshold = 0.5f;
+        private const float Phase3Threshold = 0.4f;
+        private const int TransitionFrames = 60; // ~1s — the invulnerable window
+        private const float ActivationRadius = 400f;
+
+        // Captured once at spawn — every arena-geometry calculation below
+        // (conveyor zones, phase 1's "remain in center," phase 3's quadrant
+        // anchors) is relative to this rather than Limon's own (moving)
+        // Position.
+        private readonly Vector2 arenaCenter;
+        private const float ArenaHalfSize = 500f; // matches the old SquareWall's own wallHalfSize
 
         public LimonTheSpriteGoddess(Vector2 position)
             : base(Art.Limon, position)
         {
             Name = "Limon the Sprite Goddess";
+            arenaCenter = position;
 
             health = 12000;
             healthMax = 12000;
@@ -74,22 +75,18 @@ namespace Realm.Bosses
             PointValue = 2000;
             deathSound = Sound.SpriteGodDeath;
             hitSound = Sound.SpriteGodHit;
-            // drawScale = 1.75f;
-            // Radius = Art.Limon.Width / 2f * 1.75f;
 
-            AddBehaviour(MoveSnake(0.2f));
-            AddAttackBehaviour(
-                Spray(
-                    projectileSpeed: 6,
-                    projectileAmount: 8,
-                    damage: 50,
-                    projectileImage: Art.LimonProjectile,
-                    collisionShape: Entity.CollisionShape.Rectangle
-                )
-            );
-            AddAttackBehaviour(SquareWall());
-            AddAttackBehaviour(XCross());
+            AddBehaviour(ActivationWatcher());
             AddBehaviour(PhaseWatcher());
+            AddBehaviour(ArenaConveyorPush());
+
+            AddBehaviour(DashMovement());
+            AddBehaviour(Phase2Movement());
+            AddBehaviour(Phase3Movement());
+
+            AddAttackBehaviour(Phase1Patterns());
+            AddAttackBehaviour(Phase2Attack());
+            AddAttackBehaviour(Phase3Attacks());
 
             GuaranteedPotionChances = new()
             {
@@ -98,217 +95,692 @@ namespace Realm.Bosses
             };
         }
 
-        // Constant square-shaped wall centered on the boss's current
-        // Position — re-traced every wallCooldown frames so new sweeps keep
-        // launching as the boss moves. Each of the square's 4 lines gets 2
-        // projectiles, one starting at each end, each sweeping to the
-        // opposite end over wallTravelFrames — so the pair crosses paths
-        // partway across the line rather than sitting still. Every active
-        // wall projectile's Position is re-derived from the boss's current
-        // Position each frame (UpdateSweepingShots()) rather than moved via
-        // its own Velocity, so it stays the same distance from the boss
-        // even if the boss moves mid-sweep — the whole square translates
-        // with the boss instead of drifting behind it. The player has to
-        // stay inside the square to avoid it, since it's active for the
-        // entire fight rather than gated to one phase.
-        private IEnumerable<int> SquareWall(int damage = 25)
+        // "When approached, Limon will flash red and attack." Merges the
+        // wiki's two separate trigger paths (proximity, or taking damage
+        // while a zero-Native-Sprite-kill run's own "stays vulnerable,
+        // follows players" state) into one gate — either condition
+        // activates her — a simplification of the wiki's own passive-
+        // follow flavor state, not a mechanical difference in the fight
+        // itself once activated.
+        private IEnumerable<int> ActivationWatcher()
         {
             while (true)
             {
-                if (wallCooldownRemaining <= 0)
+                if (currentPhase == Phase.Dormant)
                 {
-                    wallCooldownRemaining = wallCooldown;
-                    SpawnSquareWall(damage);
-                }
+                    bool approached =
+                        Vector2.DistanceSquared(Player.Instance.Position, Position)
+                        <= ActivationRadius * ActivationRadius;
+                    bool damaged = health < healthMax;
 
-                if (wallCooldownRemaining > 0)
-                    wallCooldownRemaining--;
-
-                UpdateSweepingShots(activeWallShots);
-
-                yield return 0;
-            }
-        }
-
-        private void SpawnSquareWall(int damage)
-        {
-            // Corner offsets relative to the boss's center — not world
-            // positions, since the wall tracks the boss rather than staying
-            // fixed in world space.
-            Vector2[] corners =
-            {
-                new Vector2(-wallHalfSize, -wallHalfSize),
-                new Vector2(wallHalfSize, -wallHalfSize),
-                new Vector2(wallHalfSize, wallHalfSize),
-                new Vector2(-wallHalfSize, wallHalfSize),
-            };
-
-            for (int side = 0; side < corners.Length; side++)
-            {
-                Vector2 relStart = corners[side];
-                Vector2 relEnd = corners[(side + 1) % corners.Length];
-
-                SpawnSweepingShot(relStart, relEnd, damage, wallTravelFrames, activeWallShots);
-                SpawnSweepingShot(relEnd, relStart, damage, wallTravelFrames, activeWallShots);
-            }
-        }
-
-        // Same shape and box as SquareWall (reuses the same corners), but
-        // its two diagonals — top-left<->bottom-right and
-        // top-right<->bottom-left — cross through the boss's own center
-        // instead of staying on the perimeter. Combined with SquareWall,
-        // the player has to dodge something sweeping through the middle of
-        // the square too, not just its edges.
-        private IEnumerable<int> XCross(int damage = 25)
-        {
-            while (true)
-            {
-                if (xCooldownRemaining <= 0)
-                {
-                    xCooldownRemaining = xCooldown;
-                    SpawnXCross(damage);
-                }
-
-                if (xCooldownRemaining > 0)
-                    xCooldownRemaining--;
-
-                UpdateSweepingShots(activeXShots);
-
-                yield return 0;
-            }
-        }
-
-        private void SpawnXCross(int damage)
-        {
-            Vector2[] corners =
-            {
-                new Vector2(-wallHalfSize, -wallHalfSize), // top-left
-                new Vector2(wallHalfSize, -wallHalfSize), // top-right
-                new Vector2(wallHalfSize, wallHalfSize), // bottom-right
-                new Vector2(-wallHalfSize, wallHalfSize), // bottom-left
-            };
-
-            SpawnSweepingShot(corners[0], corners[2], damage, xTravelFrames, activeXShots);
-            SpawnSweepingShot(corners[2], corners[0], damage, xTravelFrames, activeXShots);
-            SpawnSweepingShot(corners[1], corners[3], damage, xTravelFrames, activeXShots);
-            SpawnSweepingShot(corners[3], corners[1], damage, xTravelFrames, activeXShots);
-        }
-
-        private void SpawnSweepingShot(
-            Vector2 relativeStart,
-            Vector2 relativeEnd,
-            int damage,
-            int travelFrames,
-            List<SweepingShot> targetList
-        )
-        {
-            var projectile = new EnemyProjectile(
-                Position + relativeStart,
-                Vector2.Zero,
-                Art.LimonProjectile,
-                CollisionShape.Rectangle
-            )
-            {
-                image = Art.LimonProjectile,
-                duration = travelFrames,
-                Damage = damage,
-                Orientation = (relativeEnd - relativeStart).ToAngle(),
-            };
-            EntityManager.Add(projectile);
-            targetList.Add(
-                new SweepingShot
-                {
-                    Projectile = projectile,
-                    RelativeStart = relativeStart,
-                    RelativeEnd = relativeEnd,
-                    Elapsed = 0,
-                    TravelFrames = travelFrames,
-                }
-            );
-        }
-
-        // Re-derives every tracked sweeping projectile's Position from the
-        // boss's current Position each frame, instead of letting it drift
-        // under its own (zero) Velocity — this is what keeps each one the
-        // same distance from the boss even if the boss moves mid-sweep.
-        private void UpdateSweepingShots(List<SweepingShot> shots)
-        {
-            for (int i = 0; i < shots.Count; i++)
-            {
-                SweepingShot shot = shots[i];
-                if (shot.Projectile.IsExpired)
-                {
-                    shots.RemoveAt(i--);
-                    continue;
-                }
-
-                shot.Elapsed++;
-                float t = System.Math.Min(1f, (float)shot.Elapsed / shot.TravelFrames);
-                shot.Projectile.Position =
-                    Position + Vector2.Lerp(shot.RelativeStart, shot.RelativeEnd, t);
-            }
-        }
-
-        // Phase-2 attack: a full-circle burst, evenly spaced (unlike the
-        // base Enemy.Bomb(), which steps by 10 *radians* per projectile —
-        // not evenly spaced; a pre-existing quirk elsewhere, not repeated
-        // here).
-        private IEnumerable<int> BossBurst(
-            int projectileCount = 24,
-            int projectileSpeed = 6,
-            int damage = 70
-        )
-        {
-            while (true)
-            {
-                if (bossBurstCooldownRemaining <= 0)
-                {
-                    bossBurstCooldownRemaining = bossBurstCooldown - (1 * 1);
-
-                    for (int i = 0; i < projectileCount; i++)
+                    if (approached || damaged)
                     {
-                        Vector2 vel = Extensions.FromPolar(
-                            i * (MathHelper.TwoPi / projectileCount),
-                            projectileSpeed
-                        );
-                        EntityManager.Add(
-                            new EnemyProjectile(Position, vel)
-                            {
-                                image = Art.LimonProjectile,
-                                duration = 90,
-                                Damage = damage,
-                            }
-                        );
+                        FlashRed();
+                        currentPhase = Phase.Phase1;
+
+                        // "if no sprites were killed before Limon was
+                        // activated, she... [creates] 5-6 portals that
+                        // summon a large number of assorted regular and
+                        // Greater Sprites before attacking" — reuses the
+                        // same 10 Native/Greater Sprite factories built for
+                        // the regular dungeon roster; no new enemy types
+                        // needed for the horde itself.
+                        if (Enemy.NativeSpriteKillCount == 0)
+                            SpawnHorde();
                     }
                 }
 
-                if (bossBurstCooldownRemaining > 0)
-                    bossBurstCooldownRemaining--;
+                yield return 0;
+            }
+        }
+
+        private static readonly Func<Vector2, Enemy>[] hordeFactories =
+        {
+            position => new NativeDarknessSprite(position),
+            position => new NativeFireSprite(position),
+            position => new NativeIceSprite(position),
+            position => new NativeMagicSprite(position),
+            position => new NativeNatureSprite(position),
+            position => new NativeGreaterDarknessSprite(position),
+            position => new NativeGreaterFireSprite(position),
+            position => new NativeGreaterIceSprite(position),
+            position => new NativeGreaterMagicSprite(position),
+            position => new NativeGreaterNatureSprite(position),
+        };
+
+        private void SpawnHorde()
+        {
+            int waveCount = limonRand.Next(5, 7); // "5-6 portals"
+            for (int i = 0; i < waveCount; i++)
+            {
+                float angle = (float)(limonRand.NextDouble() * MathHelper.TwoPi);
+                float radius = ArenaHalfSize * 0.7f;
+                Vector2 spawnPos = arenaCenter + Extensions.FromPolar(angle, radius);
+                var factory = hordeFactories[limonRand.Next(hordeFactories.Length)];
+                EntityManager.Add(factory(spawnPos));
+            }
+        }
+
+        // Health-threshold phase transitions, re-checked every tick (same
+        // "a single big hit crossing more than one threshold still visits
+        // each phase in order" precedent as SnakepitGuard/
+        // DreadstumpThePirateKing).
+        private IEnumerable<int> PhaseWatcher()
+        {
+            while (true)
+            {
+                // pendingPhase == null guards against re-arming every tick
+                // while currentPhase hasn't actually flipped yet —
+                // TickPendingTransition() (ticked from
+                // ArenaConveyorPush()) only flips currentPhase once
+                // transitionFramesRemaining reaches 0, so without this
+                // guard this loop would keep calling TransitionTo() (and
+                // so keep resetting transitionFramesRemaining back to
+                // TransitionFrames) on every single tick the health
+                // threshold stays crossed, and the transition would never
+                // actually complete.
+                if (
+                    pendingPhase == null
+                    && currentPhase == Phase.Phase1
+                    && HealthFraction <= Phase2Threshold
+                )
+                {
+                    TransitionTo(Phase.Phase2);
+                }
+                else if (
+                    pendingPhase == null
+                    && currentPhase == Phase.Phase2
+                    && HealthFraction <= Phase3Threshold
+                )
+                {
+                    TransitionTo(Phase.Phase3);
+                }
 
                 yield return 0;
             }
         }
 
-        // Polls health each frame; once it crosses the halfway mark,
-        // escalates the fight by adding a second attack (BossBurst, on top
-        // of whatever Phase 1 attack is already running) and a second
-        // movement behaviour (stacks additively with the Phase 1 one
-        // already running, rather than replacing it, for a simple "faster"
-        // effect), plus a brief red blink-flash (Enemy.FlashRed()) so the
-        // transition actually reads as a moment, not just a stat change.
-        // One-shot per fight via the local `enraged` flag.
-        private IEnumerable<int> PhaseWatcher()
+        private void TransitionTo(Phase next)
         {
-            bool enraged = false;
+            FlashRed();
+            Invulnerable = true;
+            transitionFramesRemaining = TransitionFrames;
+            pendingPhase = next;
+        }
+
+        private Phase? pendingPhase = null;
+        private int transitionFramesRemaining = 0;
+
+        // Ticked from ArenaConveyorPush() below (already runs every tick
+        // unconditionally) rather than its own separate coroutine, purely
+        // so TransitionTo() above can stay a plain synchronous method
+        // instead of also being a coroutine — the transition delay itself
+        // doesn't need to block anything else.
+        private void TickPendingTransition()
+        {
+            if (pendingPhase == null)
+                return;
+
+            if (transitionFramesRemaining > 0)
+            {
+                transitionFramesRemaining--;
+                return;
+            }
+
+            if (pendingPhase == Phase.Phase2)
+            {
+                currentForm = (SecondaryForm)limonRand.Next(4);
+            }
+
+            // Phase 1's own ArmoredSpiral() pattern (and Phase 2's Magic
+            // form, which reuses that same method — see Phase2Attack()'s
+            // own comment) can leave Defense mid-boost via PeriodicArmor()
+            // if the transition lands exactly while it's active; that
+            // enumerator simply stops being MoveNext()'d the instant the
+            // owning phase ends, so its own revert-to-base line never gets
+            // a chance to run. Resetting explicitly here guarantees a
+            // clean base Defense (16) at the start of every phase
+            // regardless of what the previous phase's own pattern left
+            // behind.
+            Defense = 16;
+
+            currentPhase = pendingPhase.Value;
+            pendingPhase = null;
+            Invulnerable = false;
+        }
+
+        // Geometry-based conveyor push — see this class's own header
+        // comment for why this is separate from DungeonState's tile-based
+        // mechanic. Clockwise tangent = Normalize(-rel.Y, rel.X) (screen
+        // coordinates are Y-down, so increasing angle in (x, y) reads as
+        // clockwise); counter-clockwise is the negation.
+        private const float ConveyorSpeed = 1.5f;
+        private const float BorderWidth = 64f;
+        private const float InnerRingInner = ArenaHalfSize * 0.35f;
+        private const float InnerRingOuter = ArenaHalfSize * 0.5f;
+
+        private IEnumerable<int> ArenaConveyorPush()
+        {
             while (true)
             {
-                if (!enraged && HealthFraction <= 0.5f)
+                TickPendingTransition();
+
+                Vector2 rel = Player.Instance.Position - arenaCenter;
+                float dist = rel.Length();
+
+                if (
+                    (currentPhase == Phase.Phase1 || currentPhase == Phase.Phase2)
+                    && dist >= ArenaHalfSize - BorderWidth
+                    && dist <= ArenaHalfSize
+                )
                 {
-                    enraged = true;
-                    FlashRed();
-                    AddAttackBehaviour(BossBurst());
-                    AddBehaviour(FollowPlayer(0.15f));
+                    Vector2 clockwise = dist > 0 ? new Vector2(-rel.Y, rel.X) / dist : Vector2.Zero;
+                    Player.Instance.Position += clockwise * ConveyorSpeed;
                 }
+                else if (currentPhase == Phase.Phase3)
+                {
+                    if (dist >= ArenaHalfSize - BorderWidth && dist <= ArenaHalfSize)
+                    {
+                        Vector2 clockwise =
+                            dist > 0 ? new Vector2(-rel.Y, rel.X) / dist : Vector2.Zero;
+                        Player.Instance.Position += clockwise * ConveyorSpeed;
+                    }
+                    else if (dist >= InnerRingInner && dist <= InnerRingOuter)
+                    {
+                        Vector2 counterClockwise =
+                            dist > 0 ? new Vector2(rel.Y, -rel.X) / dist : Vector2.Zero;
+                        Player.Instance.Position += counterClockwise * ConveyorSpeed;
+                    }
+                }
+
+                yield return 0;
+            }
+        }
+
+        // Phase 1's own dash-circle pattern (pattern B below) nudges
+        // Velocity directly from within DashMovement() rather than
+        // Phase1Patterns() itself, so movement/attack stay split the same
+        // way every other behaviour/attackBehaviour pair in this codebase
+        // does (movement isn't blocked by Stunned, attacks are).
+        private bool dashing = false;
+        private Vector2 dashDirection;
+
+        private IEnumerable<int> DashMovement()
+        {
+            while (true)
+            {
+                if (currentPhase == Phase.Phase1 && dashing && !Invulnerable)
+                    Velocity += dashDirection * 0.6f;
+
+                yield return 0;
+            }
+        }
+
+        // Phase 1: "Limon cycles between the following patterns" — 3
+        // patterns on a timer, only the active one's own MoveNext() ever
+        // advances (built once here, matching NativeSpriteGod's own "don't
+        // recreate a coroutine's enumerator every tick" precedent).
+        private const int PatternDuration = 300; // ~5s each
+        private int patternIndex = 0;
+        private int patternTimer = 0;
+
+        private IEnumerable<int> Phase1Patterns()
+        {
+            var burstPattern = EscalatingBurst().GetEnumerator();
+            var dashPattern = DashLasers().GetEnumerator();
+            var spiralPattern = ArmoredSpiral().GetEnumerator();
+
+            while (true)
+            {
+                if (currentPhase == Phase.Phase1 && !Invulnerable)
+                {
+                    patternTimer++;
+                    if (patternTimer >= PatternDuration)
+                    {
+                        patternTimer = 0;
+                        patternIndex = (patternIndex + 1) % 3;
+                        dashing = false;
+                    }
+
+                    switch (patternIndex)
+                    {
+                        case 0:
+                            burstPattern.MoveNext();
+                            break;
+                        case 1:
+                            dashPattern.MoveNext();
+                            break;
+                        default:
+                            spiralPattern.MoveNext();
+                            break;
+                    }
+                }
+
+                yield return 0;
+            }
+        }
+
+        // "Remaining in the center of the room, firing 3-way bursts of
+        // orange lasers. She initially fires one shot per burst, and every
+        // subsequent burst increases this number by 1, resetting after 5."
+        private int burstShotCount = 1;
+        private const int BurstCooldown = 90;
+        private int burstCooldownRemaining = 0;
+
+        private IEnumerable<int> EscalatingBurst()
+        {
+            while (true)
+            {
+                if (burstCooldownRemaining <= 0)
+                {
+                    burstCooldownRemaining = BurstCooldown;
+
+                    Vector2 aim = Player.Instance.Position - Position;
+                    float aimAngle = aim.LengthSquared() > 0 ? aim.ToAngle() : 0f;
+                    for (int i = 0; i < burstShotCount; i++)
+                    {
+                        float shotAngle = aimAngle + (i - (burstShotCount - 1) / 2f) * 0.3f;
+                        EntityManager.Add(
+                            new EnemyProjectile(
+                                Position,
+                                Extensions.FromPolar(shotAngle, 6f * 32f / 60f),
+                                Art.LimonProjectile
+                            )
+                            {
+                                Damage = 45,
+                            }
+                        );
+                    }
+
+                    burstShotCount = burstShotCount >= 5 ? 1 : burstShotCount + 1;
+                }
+                else
+                {
+                    burstCooldownRemaining--;
+                }
+
+                yield return 0;
+            }
+        }
+
+        // "Repeatedly dashes at the player in an attempt to circle them,
+        // firing pairs of orange lasers aimed at them and additional
+        // lasers perpendicular to the originals."
+        private const int DashCooldown = 150;
+        private const int DashDurationFrames = 30;
+        private int dashCooldownRemaining = 0;
+        private int dashFramesRemaining = 0;
+
+        private IEnumerable<int> DashLasers()
+        {
+            while (true)
+            {
+                if (dashFramesRemaining > 0)
+                {
+                    dashFramesRemaining--;
+                    if (dashFramesRemaining <= 0)
+                        dashing = false;
+                }
+                else if (dashCooldownRemaining <= 0)
+                {
+                    dashCooldownRemaining = DashCooldown;
+
+                    Vector2 aim = Player.Instance.Position - Position;
+                    if (aim.LengthSquared() > 0)
+                    {
+                        dashDirection = aim.ScaleTo(1f);
+                        dashing = true;
+                        dashFramesRemaining = DashDurationFrames;
+
+                        float aimAngle = aim.ToAngle();
+                        float speed = 6f * 32f / 60f;
+                        foreach (float offset in new[] { -0.15f, 0.15f })
+                            EntityManager.Add(
+                                new EnemyProjectile(
+                                    Position,
+                                    Extensions.FromPolar(aimAngle + offset, speed),
+                                    Art.LimonProjectile
+                                )
+                                {
+                                    Damage = 40,
+                                }
+                            );
+                        foreach (
+                            float perpendicular in new[]
+                            {
+                                aimAngle + MathHelper.PiOver2,
+                                aimAngle - MathHelper.PiOver2,
+                            }
+                        )
+                            EntityManager.Add(
+                                new EnemyProjectile(
+                                    Position,
+                                    Extensions.FromPolar(perpendicular, speed),
+                                    Art.LimonProjectile
+                                )
+                                {
+                                    Damage = 40,
+                                }
+                            );
+                    }
+                }
+                else
+                {
+                    dashCooldownRemaining--;
+                }
+
+                yield return 0;
+            }
+        }
+
+        // "Armors herself and remains still, firing a 2-armed clockwise
+        // spiral of orange lasers." Reuses PeriodicArmor's own Defense-
+        // multiplier cycle for the Armored half; the spiral itself is a
+        // small hand-rolled loop, one shot pair fired every few ticks at a
+        // slowly-incrementing angle, since none of Spray/FanShot/Bomb build
+        // up a rotating pattern over time the way a spiral needs.
+        private float spiralAngle = 0f;
+        private const int SpiralTickInterval = 4;
+        private int spiralTicksRemaining = 0;
+
+        private IEnumerable<int> ArmoredSpiral()
+        {
+            var armor = PeriodicArmor(intervalFrames: 0, durationFrames: PatternDuration).GetEnumerator();
+
+            while (true)
+            {
+                armor.MoveNext();
+
+                if (spiralTicksRemaining > 0)
+                {
+                    spiralTicksRemaining--;
+                }
+                else
+                {
+                    spiralTicksRemaining = SpiralTickInterval;
+                    spiralAngle += 0.35f;
+                    float speed = 5f * 32f / 60f;
+                    EntityManager.Add(
+                        new EnemyProjectile(
+                            Position,
+                            Extensions.FromPolar(spiralAngle, speed),
+                            Art.LimonProjectile
+                        )
+                        {
+                            Damage = 35,
+                        }
+                    );
+                    EntityManager.Add(
+                        new EnemyProjectile(
+                            Position,
+                            Extensions.FromPolar(spiralAngle + MathHelper.Pi, speed),
+                            Art.LimonProjectile
+                        )
+                        {
+                            Damage = 35,
+                        }
+                    );
+                }
+
+                yield return 0;
+            }
+        }
+
+        // Phase 2 movement — one pattern per form, only ever the active
+        // form's own logic runs (currentForm is fixed for the rest of the
+        // fight once phase 2 begins, per TickPendingTransition() above).
+        private Vector2 cornerTarget;
+        private const float CornerSpeed = 2.2f;
+
+        private IEnumerable<int> Phase2Movement()
+        {
+            while (true)
+            {
+                if (currentPhase == Phase.Phase2 && !Invulnerable)
+                {
+                    switch (currentForm)
+                    {
+                        case SecondaryForm.Magic:
+                        {
+                            // "Chase Limon as she travels from corner to
+                            // corner" — she relocates between the arena's 4
+                            // corners.
+                            Vector2 toCorner = cornerTarget - Position;
+                            if (toCorner.LengthSquared() < 64f * 64f)
+                            {
+                                cornerTarget =
+                                    arenaCenter
+                                    + new Vector2(
+                                        limonRand.Next(2) == 0 ? -1 : 1,
+                                        limonRand.Next(2) == 0 ? -1 : 1
+                                    ) * (ArenaHalfSize - 80f);
+                            }
+                            else
+                            {
+                                Velocity += toCorner.ScaleTo(CornerSpeed) - Velocity * 0.5f;
+                            }
+                            break;
+                        }
+                        case SecondaryForm.Ice:
+                            // "Stay in the middle... or stay close to the
+                            // bottom" — stays put near the arena's own
+                            // center, letting the arena's own hazards (not
+                            // built) and her ring bursts do the work.
+                            break;
+                        case SecondaryForm.Nature:
+                        {
+                            // "Rotate with Limon" — she circles the player.
+                            Vector2 toPlayer = Player.Instance.Position - Position;
+                            float radius = 4f * 32f;
+                            Vector2 desired =
+                                Player.Instance.Position
+                                - (
+                                    toPlayer.LengthSquared() > 0
+                                        ? toPlayer.ScaleTo(radius)
+                                        : new Vector2(radius, 0)
+                                );
+                            Vector2 toDesired = desired - Position;
+                            Velocity += toDesired.ScaleTo(0.5f) - Velocity * 0.3f;
+                            break;
+                        }
+                        default: // Darkness
+                            // "Hard to predict Limon's movement pattern" —
+                            // an erratic wander, avoiding the corners
+                            // ("stay away from the corners of the stage").
+                            if (limonRand.Next(30) == 0)
+                            {
+                                float angle = (float)(limonRand.NextDouble() * MathHelper.TwoPi);
+                                Velocity += Extensions.FromPolar(angle, 1.5f);
+                            }
+                            break;
+                    }
+                }
+
+                yield return 0;
+            }
+        }
+
+        // Phase 2 attack — one signature attack per form.
+        private IEnumerable<int> Phase2Attack()
+        {
+            var magicSpiral = ArmoredSpiral().GetEnumerator(); // reused: "huge spiral of shots"
+            var iceRing = FanShot(
+                range: float.MaxValue,
+                damage: 30,
+                projectileSpeed: 4f * 32f / 60f,
+                shots: 12,
+                angleStep: MathHelper.TwoPi / 12f,
+                projectileImage: Art.LimonProjectile,
+                cooldownFrames: 120,
+                slowsOnHit: true
+            ).GetEnumerator();
+            var natureBeams = ShootIfInRange(
+                range: float.MaxValue,
+                damage: 40,
+                projectileSpeed: 5f * 32f / 60f,
+                projectileImage: Art.LimonProjectile,
+                cooldownFrames: 45
+            ).GetEnumerator();
+            var darknessBursts = FanShot(
+                range: float.MaxValue,
+                damage: 35,
+                projectileSpeed: 6f * 32f / 60f,
+                shots: 6,
+                angleStep: MathHelper.TwoPi / 6f,
+                projectileImage: Art.LimonProjectile,
+                cooldownFrames: 100
+            ).GetEnumerator();
+
+            while (true)
+            {
+                if (currentPhase == Phase.Phase2 && !Invulnerable)
+                {
+                    switch (currentForm)
+                    {
+                        case SecondaryForm.Magic:
+                            magicSpiral.MoveNext();
+                            break;
+                        case SecondaryForm.Ice:
+                            iceRing.MoveNext();
+                            break;
+                        case SecondaryForm.Nature:
+                            natureBeams.MoveNext();
+                            break;
+                        default:
+                            darknessBursts.MoveNext();
+                            break;
+                    }
+                }
+
+                yield return 0;
+            }
+        }
+
+        // Phase 3: reverted form, quadrant relocation.
+        private int quadrantIndex = -1;
+        private const float QuadrantSpeed = 2.5f;
+
+        private Vector2 QuadrantAnchor(int index)
+        {
+            float offset = ArenaHalfSize * 0.5f;
+            return index switch
+            {
+                0 => arenaCenter + new Vector2(-offset, -offset),
+                1 => arenaCenter + new Vector2(offset, -offset),
+                2 => arenaCenter + new Vector2(offset, offset),
+                _ => arenaCenter + new Vector2(-offset, offset),
+            };
+        }
+
+        private IEnumerable<int> Phase3Movement()
+        {
+            while (true)
+            {
+                if (currentPhase == Phase.Phase3 && !Invulnerable)
+                {
+                    if (quadrantIndex < 0)
+                    {
+                        quadrantIndex = limonRand.Next(4);
+                    }
+
+                    Vector2 target = QuadrantAnchor(quadrantIndex);
+                    Vector2 toTarget = target - Position;
+                    if (toTarget.LengthSquared() < 48f * 48f)
+                    {
+                        quadrantIndex = (quadrantIndex + 1) % 4;
+                        OnQuadrantSwitch();
+                    }
+                    else
+                    {
+                        Velocity += toTarget.ScaleTo(QuadrantSpeed) - Velocity * 0.4f;
+                    }
+                }
+
+                yield return 0;
+            }
+        }
+
+        // "Every time she switches quadrants, she will fire a ring of fire
+        // bolts that collapses on itself before firing outwards, as well
+        // as a single aimed rainbow blast that deals heavy armor piercing
+        // damage." The collapsing-then-expanding ring is approximated as a
+        // plain outward ring burst (the collapse-first flourish is
+        // skipped, same "visual flourish simplified away" precedent as
+        // Fire Python's own wavy shots).
+        private void OnQuadrantSwitch()
+        {
+            for (int i = 0; i < 16; i++)
+            {
+                EntityManager.Add(
+                    new EnemyProjectile(
+                        Position,
+                        Extensions.FromPolar(i * (MathHelper.TwoPi / 16f), 4.5f * 32f / 60f),
+                        Art.LimonProjectile
+                    )
+                    {
+                        Damage = 30,
+                        duration = 70,
+                    }
+                );
+            }
+
+            Vector2 aim = Player.Instance.Position - Position;
+            if (aim.LengthSquared() > 0)
+            {
+                EntityManager.Add(
+                    new EnemyProjectile(
+                        Position,
+                        Extensions.FromPolar(aim.ToAngle(), 8f * 32f / 60f),
+                        Art.LimonProjectile
+                    )
+                    {
+                        Damage = 120,
+                        IgnoresDefense = true,
+                    }
+                );
+            }
+        }
+
+        // "Periodically moving between these 4 quadrants, firing pairs of
+        // wavy orange shots" — the continuous half of phase 3's attack;
+        // OnQuadrantSwitch() above covers the discrete "every time she
+        // switches" half.
+        private const int WavyCooldown = 60;
+        private int wavyCooldownRemaining = 0;
+
+        private IEnumerable<int> Phase3Attacks()
+        {
+            while (true)
+            {
+                if (currentPhase == Phase.Phase3 && !Invulnerable)
+                {
+                    if (wavyCooldownRemaining <= 0)
+                    {
+                        wavyCooldownRemaining = WavyCooldown;
+                        Vector2 aim = Player.Instance.Position - Position;
+                        if (aim.LengthSquared() > 0)
+                        {
+                            float aimAngle = aim.ToAngle();
+                            float speed = 5f * 32f / 60f;
+                            foreach (float offset in new[] { -0.2f, 0.2f })
+                                EntityManager.Add(
+                                    new WavyProjectile(
+                                        Position,
+                                        Extensions.FromPolar(aimAngle + offset, speed),
+                                        Art.LimonProjectile
+                                    )
+                                    {
+                                        Damage = 45,
+                                    }
+                                );
+                        }
+                    }
+                    else
+                    {
+                        wavyCooldownRemaining--;
+                    }
+                }
+
                 yield return 0;
             }
         }

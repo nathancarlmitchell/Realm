@@ -9302,3 +9302,110 @@ date/time for those individually; don't treat their grouping as meaning they all
      except for the equipped Weapon/Armor/Ring's own `ID` field, which `Weapon`/`Armor`/`Ring`'s
      constructors already regenerate via `Guid.NewGuid()` on every normal load regardless of this
      change — same stats, same items, nothing lost.
+
+335. **Built a real Sprite World dungeon: 10 Native Sprites, Native Sprite God, conveyor belts,
+     Sprite Trees, and a full wiki-accurate Limon rework.** Sourced from realmeye.com/wiki/
+     sprite-world + its own Guide page + every linked enemy's wiki page. Real art supplied for the
+     full enemy roster and Sprite Trees; no tileset or conveyor-belt art was supplied, and the
+     full Limon rework was confirmed directly (over reusing her existing, non-wiki-accurate fight)
+     via AskUserQuestion, alongside the tileset/conveyor scope.
+
+     *Tileset*: a new `Content/Dungeons/Sprite World/TileSet.png`, composited locally (Wall/Floor
+     cells cropped byte-for-byte from the existing Crypt tileset — the "reuse an existing tileset
+     for now" choice — plus one new Sprite Trees cell cropped/scaled from the real supplied art) into
+     a real, standalone `Data/TileSet_SpriteWorld.json` (not a shared "Crypt" reference, so the new
+     destructible tile has somewhere real to live). `TileDefData` gained `ExcludeFromBackgroundFill`
+     so Sprite Trees (itself `!CanPassThrough`) does not also get randomly speckled across the
+     inaccessible background void `DungeonGenerator`'s initial fill picks from.
+
+     *Conveyor belts*: `TileDefData` gained `ConveyorDirectionX`/`ConveyorDirectionY`/
+     `ConveyorSpeed` (two plain floats instead of one `Vector2` property — System.Text.Json's
+     default settings only populate properties, and MonoGame's `Vector2` exposes `X`/`Y` as public
+     *fields*, so a `Vector2` property here would always deserialize to (0,0)). `DungeonState.
+     ApplyTileEffects()` gained one more branch pushing `Player.Instance.Position` by
+     `ConveyorDirection * ConveyorSpeed` each tick standing on one, with a re-clamp +
+     re-sync-the-camera pass right after (so a conveyor next to a wall cannot shove the player
+     partway into it, and the camera never lags a push-increment behind). `DungeonTypeData` gained
+     `ConveyorTileChance`/`ConveyorTileNames` and `ObstacleTileChance`/`ObstacleTileName` — two
+     independent low-probability overrides in `DungeonGenerator.PlaceRooms()`'s per-cell room-fill
+     loop (Sprite Trees checked first, winning a same-cell tie), same "small chance to override the
+     normal fill" shape `PathGapChance` (cove mode) already established, generalized to apply
+     outside cove mode too. No dedicated conveyor art exists yet — all 4 directional tiles share the
+     same reused Floor cell, distinguished only by data.
+
+     *10 regular/Greater Native Sprites* (`Enemies/SpriteWorld/`): real wiki stats/attacks. Needed
+     two new `EnemyProjectile` mechanics neither existed before: `Acceleration`/`MinSpeed`/`MaxSpeed`
+     (applied each tick, clamped along a resolved direction — not raw magnitude, which could not
+     distinguish "decelerating toward a stop" from "decelerating until it reverses" — threaded
+     through `Spray`/`FanShot`/`ShootIfInRange` as an `accelerationMagnitude` applied along each
+     shot's own firing angle) and `Projectiles/BoomerangProjectile.cs` (mirrors `WavyProjectile`'s
+     own "subclass EnemyProjectile, override Update()" shape — reverses `Velocity` once after
+     `ReturnAfterFrames`). `ShootIfInRange`/`FanShot` also gained `slowsOnHit`/`dazesOnHit` params
+     (mirroring `Bomb()`'s existing ones) for Ice's Slow and (later) Native Sprite God's Silence
+     substitute.
+
+     *Native Sprite God* (`Enemies/SpriteWorld/NativeSpriteGod.cs`): a 3500 HP mini-boss, 1 of 5
+     random elemental forms, re-rolling to a different form (and gaining 18 DEF) at 50% HP. "Silence"
+     is not a debuff this engine has — every Silencing shot substitutes `DazesOnHit`. Deliberately
+     *not* in `EnemyNames`/`EnemySpawner.BasicEnemyPool`'s normal per-room pool (a 3500 HP mini-boss
+     picked uniformly per slot would be absurdly common) — `DungeonTypeData` gained a new generic
+     `EliteEnemyName`/`EliteEnemyCount` pair instead, resolved and placed directly by `DungeonState`'s
+     constructor into random spare rooms, the same "dedicated, non-pooled placement" precedent Snake
+     Pit's Treasure Room Guard already set. A real, hard-won bug caught here and generalized into a
+     rule for the rest of the file: every one of `PrimaryAttack()`/`SilenceAttack()`'s 5 per-form
+     branches must build its underlying `FanShot()`/`ShootIfInRange()` enumerator once, before the
+     tick loop — building it fresh via a `switch` expression inside the loop (as first written)
+     resets that primitive's own internal cooldown state to zero every single tick, since each call
+     produces an unrelated new enumerator instance discarded after one `MoveNext()` — the exact
+     shape SnakepitGuard's own `SnakeSpit()`/`SnakeSpinners()` already used correctly, just not
+     followed here at first.
+
+     *Limon the Sprite Goddess* (`Bosses/LimonTheSpriteGoddess.cs`): full rework, replacing her
+     entire non-wiki-accurate kit (12,000 HP kiting + wall/X-cross + burst) with the real fight from
+     realmeye.com/wiki/sprite-world-guide. Starts Dormant (genuinely vulnerable, not invulnerable —
+     matches the wiki's own "stays vulnerable" language for a zero-kill approach) until the player
+     enters her activation radius or she takes any damage, whichever comes first — a deliberate
+     merge of the wiki's two separate trigger paths. If `Enemy.NativeSpriteKillCount` (new, a
+     `CountsTowardNativeSpriteKills` opt-in flag on the 10 Native Sprite classes, incremented in
+     `WasShot()`'s death branch, reset by `DungeonState`'s constructor) is still 0 at that moment, she
+     spawns a horde of 5-6 waves reusing the same 10 Native/Greater Sprite factories — no new enemy
+     types needed. Phase 1 cycles through 3 real patterns (an escalating 1-5 shot burst; a dash-circle
+     with paired + perpendicular lasers; an Armored 2-armed spiral). Phase 2 (50% HP) picks 1 of 4
+     named forms (Magic/Ice/Nature/Darkness — the wiki names exactly 4, not 5; Fire is not one of
+     Limon's own forms), each with one signature movement + attack, deliberately trimmed down from
+     the wiki's fuller per-form description — flagged, same norm as every other simplification pass
+     this session. Phase 3 (40% HP) reverts her original form and relocates between 4 quadrant
+     anchors, firing wavy pairs continuously plus a ring burst + a heavy aimed "rainbow blast" every
+     time she switches — `Player.Hit()` gained an `ignoresDefense` param (and `EnemyProjectile` a
+     matching `IgnoresDefense` flag, wired into `EntityManager.HandleCollisions()`) for that blast's
+     "heavy armor piercing damage." Both the phase 1/2 square border and phase 3's double-ring
+     conveyor belts are geometry-based pushes (clockwise/counter-clockwise tangent vectors around a
+     captured arena center) rather than `TileDefData`-driven — `BossRealmState` has no tile grid at
+     all, an open `Vector2`-bounded arena, architecturally separate from the regular dungeon's own
+     tile-based conveyors above; neither has any dedicated floor art distinguishing the zones
+     visually. `Portal.Destination.SpriteWorldDungeon` (real dedicated `Art.SpriteWorldPortal`,
+     already loaded for the open-Realm Sprite God's own boss portal) and a `NexusState` test-portal
+     shortcut added, matching Snake Pit/Pirate Cave's own precedent — `BossName: "Limon"` needed no
+     `Portal.cs` change at all, resolving against the boss portal already registered there.
+
+     A real, caught-in-testing bug in the new scripted-test-writing itself, not the game: the
+     verification script initially crashed with a raw access violation (not a catchable .NET
+     exception) calling `Enemy.Update()` directly without first initializing `Game1.Camera` — exactly
+     the documented CLAUDE.md gotcha, just manifesting unusually severely this time (`Game1.
+     GetWorldBounds()`'s `Camera.Pos` null-dereference, reached via `Enemy.Update()`'s own onscreen
+     attack-gate check) rather than a normal reportable `NullReferenceException`. Fixed by
+     constructing a throwaway `Camera` first, per CLAUDE.md's own existing guidance.
+
+     Verified via a temporary `Game1.StartGame()` scripted check (reverted, no diff remains):
+     `Util.LoadDungeonTypeData`/`LoadTileSetData` resolve cleanly (10/10 `EnemyNames`, the
+     `EliteEnemyName`, 7 real tiles); several generated `SpriteWorld` `DungeonMap`s placed both a
+     Sprite Trees and a conveyor tile; a real `LimonTheSpriteGoddess` stayed Dormant while the player
+     was far away, activated instantly on approach (entity count confirmed the horde actually
+     spawned), ran 1000 ticks cleanly through a full Phase 1 pattern cycle, and transitioned through
+     Phase 2 and Phase 3 correctly (and stably — 500 more ticks, no crash) on forced health drops.
+     Plain `dotnet build` (0 errors) plus a real minimized boot-check afterward; real save files
+     backed up first and diffed unmodified (this test never touches `Player.Instance` state or
+     constructs a real `RealmState`/`BossRealmState`, so nothing could have written to them anyway).
+     `docs/BACKLOG.md`'s own "Create a Sprite World dungeon" entry removed (superseded by this work);
+     a new entry notes Craig the Intern's own supplied art still sits unused (no combat stats on the
+     wiki — a non-hostile NPC cameo, not a real enemy).

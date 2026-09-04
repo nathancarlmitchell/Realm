@@ -1,0 +1,34 @@
+{
+  "Name": "Sprite World",
+  "TileSetName": "SpriteWorld",
+  "MinRoomSize": 8,
+  "MaxRoomSize": 16,
+  "MinRoomCount": 12,
+  "MaxRoomCount": 18,
+  "CorridorWidth": 2,
+  "CircularRooms": true,
+  "ConveyorTileChance": 0.03,
+  "ConveyorTileNames": [
+    "Conveyor Up",
+    "Conveyor Down",
+    "Conveyor Left",
+    "Conveyor Right"
+  ],
+  "ObstacleTileChance": 0.06,
+  "ObstacleTileName": "Sprite Trees",
+  "EliteEnemyName": "Native Sprite God",
+  "EliteEnemyCount": 2,
+  "EnemyNames": [
+    "Native Darkness Sprite",
+    "Native Fire Sprite",
+    "Native Ice Sprite",
+    "Native Magic Sprite",
+    "Native Nature Sprite",
+    "Native Greater Darkness Sprite",
+    "Native Greater Fire Sprite",
+    "Native Greater Ice Sprite",
+    "Native Greater Magic Sprite",
+    "Native Greater Nature Sprite"
+  ],
+  "BossName": "Limon"
+}

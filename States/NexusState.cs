@@ -75,6 +75,11 @@ namespace Realm.States
             // farthest room's own boss portal every time.
             var dreadstumpTestPortalPos = origin + new Vector2(columnSpacing, rowSpacing);
 
+            // TEMP: same shortcut precedent — a third row for Sprite World,
+            // skipping having to generate one and walk to its farthest
+            // room's own boss portal every time.
+            var spriteWorldTestPortalPos = origin + new Vector2(-columnSpacing, rowSpacing * 2);
+
             portalList =
             [
                 new Portal(),
@@ -86,6 +91,7 @@ namespace Realm.States
                 new Portal(dungeonTestPortalPos, Portal.Destination.SnakePitDungeon),
                 new Portal(pirateCaveTestPortalPos, Portal.Destination.PirateCaveDungeon),
                 new Portal(dreadstumpTestPortalPos, Portal.Destination.DreadstumpBossRealm),
+                new Portal(spriteWorldTestPortalPos, Portal.Destination.SpriteWorldDungeon),
             ];
 
             // So Overlay's minimap can show these regardless of which state

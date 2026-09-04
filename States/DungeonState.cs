@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Content;
 using Microsoft.Xna.Framework.Graphics;
@@ -69,6 +70,11 @@ namespace Realm.States
             // instead of capturing its own (still-bounded) one.
             PendingRealmReturnPosition ??= Player.Instance.Position;
 
+            // A leftover count from a previous dungeon instance must never
+            // leak into a fresh one — see Enemy.NativeSpriteKillCount's own
+            // doc comment (LimonTheSpriteGoddess's anti-rush check).
+            Enemy.NativeSpriteKillCount = 0;
+
             // Everything that varies per dungeon type — see Data/
             // DungeonTypeData.cs and the walled-dungeon-generalization plan.
             DungeonTypeData dungeonType = Util.LoadDungeonTypeData(dungeonTypeName);
@@ -87,7 +93,11 @@ namespace Realm.States
                 dungeonType.BackgroundTileName,
                 dungeonType.PathGapChance,
                 dungeonType.CircularRooms,
-                dungeonType.CorridorTileName
+                dungeonType.CorridorTileName,
+                dungeonType.ConveyorTileChance,
+                dungeonType.ConveyorTileNames,
+                dungeonType.ObstacleTileChance,
+                dungeonType.ObstacleTileName
             );
             tileAtlas = content.Load<Texture2D>(tileSet.ImageName);
 
@@ -153,6 +163,28 @@ namespace Realm.States
             // front — no respawning afterward, so clearing them all actually
             // clears the dungeon.
             dungeonEnemySpawner.SpawnAll();
+
+            // A dedicated mini-boss (DungeonTypeData.EliteEnemyName) — see
+            // its own doc comment for why this is separate from the
+            // regular per-room spawner above. Placed into random spare
+            // rooms (with replacement — EliteEnemyCount could exceed the
+            // number of spare rooms in a small dungeon, an accepted
+            // simplification rather than a hard failure).
+            if (!string.IsNullOrEmpty(dungeonType.EliteEnemyName) && spareRooms.Count > 0)
+            {
+                Func<Vector2, Enemy> eliteFactory = EnemySpawner
+                    .ResolveFactories([dungeonType.EliteEnemyName])
+                    .First();
+
+                for (int i = 0; i < dungeonType.EliteEnemyCount; i++)
+                {
+                    Rectangle eliteRoom = spareRooms[rand.Next(spareRooms.Count)];
+                    Vector2 elitePosition = RoomCenterWorldPosition(eliteRoom);
+                    Enemy elite = eliteFactory(elitePosition);
+                    EntityManager.Add(elite);
+                    pathfindingController.Register(elite);
+                }
+            }
         }
 
         private Vector2 RoomCenterWorldPosition(Rectangle room) =>
@@ -251,6 +283,18 @@ namespace Realm.States
             }
 
             ApplyTileEffects(dungeonMap.TileAtWorldPosition(Player.Instance.Position));
+
+            // ApplyTileEffects() may have just pushed Player.Instance.
+            // Position via a conveyor tile — re-clamp against the wall grid
+            // (a conveyor placed right against a wall shouldn't be able to
+            // shove the player partway into it) and re-sync the camera, or
+            // both would otherwise silently lag one push-increment behind
+            // until next frame's own resolve/sync catches up.
+            Player.Instance.Position = dungeonMap.ResolveCircleCollision(
+                Player.Instance.Position,
+                Player.Instance.Radius
+            );
+            Game1.Camera.Pos = Player.Instance.Position;
 
             ExpireWallBlockedProjectiles();
 
@@ -371,6 +415,17 @@ namespace Realm.States
             foreach (Entity.DebuffType debuff in tile.AppliedDebuffs)
             {
                 Player.Instance.ApplyDebuff(debuff, durationFrames: 10);
+            }
+
+            // Conveyor belt — first real use: Sprite World's own
+            // "multicolored conveyor belts... constantly pushing players"
+            // (realmeye.com/wiki/sprite-world). ConveyorSpeed defaults to 0
+            // for every tile in every other tileset, so this is a pure
+            // no-op everywhere except a dungeon type that actually places
+            // one of these tiles.
+            if (tile.ConveyorSpeed != 0f)
+            {
+                Player.Instance.Position += tile.ConveyorDirection * tile.ConveyorSpeed;
             }
         }
     }

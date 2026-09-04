@@ -681,7 +681,16 @@ namespace Realm
             Weapon.Shoot();
         }
 
-        public void Hit(int damage = 25)
+        // ignoresDefense: bypasses Defense's own reduction/floor below
+        // entirely (the full raw damage lands) — first real use: Limon the
+        // Sprite Goddess's phase 3 "rainbow blast" (realmeye.com/wiki/
+        // sprite-world-guide describes it as "heavy armor piercing
+        // damage"). False (the default) is a byte-for-byte no-op for every
+        // existing caller. Difficulty/DamageTakenMultiplier still apply —
+        // those represent the hit's own raw power/reduction, not Defense
+        // specifically, so an armor-piercing shot is still a real Knight
+        // Shield Slam target, just one Defense itself can't soften.
+        public void Hit(int damage = 25, bool ignoresDefense = false)
         {
             // Global difficulty knob — see Difficulty.EnemyDamageMultiplier's
             // own comment. Applied first, before the player's own per-hit
@@ -698,10 +707,14 @@ namespace Realm
             // reduces it below — see RegisterHit()'s own comment for why.
             RegisterHit(damage);
 
-            int damageModified = damage - Defense;
-            if (damageModified <= damage / 10)
+            int damageModified = damage;
+            if (!ignoresDefense)
             {
-                damageModified = damage / 10;
+                damageModified = damage - Defense;
+                if (damageModified <= damage / 10)
+                {
+                    damageModified = damage / 10;
+                }
             }
 
             if (ShowPlayerDamageNumbersEnabled && damageModified != 0)

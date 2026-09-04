@@ -85,5 +85,40 @@ namespace Realm.Data
         // own TileSetName, same as SandFloorTileName/WoodFloorTileName/
         // BackgroundTileName above.
         public string CorridorTileName { get; set; }
+
+        // Per-cell chance (0.0-1.0), rolled during normal room floor-fill
+        // (independent of cove/circular mode — unlike CorridorTileName
+        // above, this applies inside rooms, not corridors), that a floor
+        // cell becomes a randomly-picked conveyor tile instead — first real
+        // use: Sprite World, matching its own wiki's "multicolored conveyor
+        // belts... often found in the rooms." 0/null (the default) is a
+        // no-op, unchanged for every dungeon type that doesn't opt in.
+        // Looked up by TileDefData.Name within this dungeon type's own
+        // TileSetName, same lookup convention as CorridorTileName.
+        public float ConveyorTileChance { get; set; } = 0f;
+        public string[] ConveyorTileNames { get; set; }
+
+        // Same shape as ConveyorTileChance/ConveyorTileNames immediately
+        // above, for a single scattered destructible obstacle instead of a
+        // directional push tile — first real use: Sprite World's own
+        // "almost all rooms are littered with destructible Sprite Tree
+        // obstacles." Checked first, when both are set for the same
+        // dungeon type (Sprite World has both) — see PlaceRooms()'s own
+        // comment for why Sprite Trees wins a same-cell tie over a
+        // conveyor.
+        public float ObstacleTileChance { get; set; } = 0f;
+        public string ObstacleTileName { get; set; }
+
+        // A single, dedicated mini-boss enemy — looked up by name against
+        // EnemySpawner's own BasicEnemyPool, same as EnemyNames above, but
+        // resolved and placed separately by DungeonState's constructor
+        // rather than folded into DungeonEnemySpawner's own uniform
+        // per-room roll. First real use: Sprite World's own Native Sprite
+        // God — a 3500 HP mini-boss the per-room spawner's uniform pick
+        // would otherwise make absurdly common if it were just another
+        // entry in EnemyNames. Null/0 (the default) is a no-op, unchanged
+        // for every dungeon type that doesn't opt in.
+        public string EliteEnemyName { get; set; }
+        public int EliteEnemyCount { get; set; } = 0;
     }
 }

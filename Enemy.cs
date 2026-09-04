@@ -589,6 +589,11 @@ namespace Realm
                     }
                 }
 
+                // Anti-rush tracking for LimonTheSpriteGoddess — see
+                // CountsTowardNativeSpriteKills's own doc comment above.
+                if (CountsTowardNativeSpriteKills)
+                    NativeSpriteKillCount++;
+
                 OnDeath();
             }
             else
@@ -805,6 +810,34 @@ namespace Realm
             ItemSpawner.LootCategory,
             (int Min, int Max)
         > SnakePitDropTierRanges = PirateCaveDropTierRanges;
+
+        // Shared drop table for the 10 regular/Greater Native Sprites (not
+        // Native Sprite God — see its own SpawnLoot() override) — same
+        // "reuse PirateCaveDropChances, both read as similarly early/mid-
+        // game" reasoning as SnakePitDropChances above. The wiki explicitly
+        // calls Sprite World "low to medium-level," matching Snake Pit's
+        // own framing almost verbatim.
+        protected static readonly ItemSpawner.LootCategory SpriteWorldDropPool = PirateCaveDropPool;
+        protected static readonly Dictionary<
+            ItemSpawner.LootCategory,
+            float
+        > SpriteWorldDropChances = PirateCaveDropChances;
+        protected static readonly Dictionary<
+            ItemSpawner.LootCategory,
+            (int Min, int Max)
+        > SpriteWorldDropTierRanges = PirateCaveDropTierRanges;
+
+        // Set true in each of the 10 regular/Greater Native Sprite
+        // constructors (not Native Sprite God or Limon herself) — WasShot()
+        // below increments NativeSpriteKillCount when a flagged enemy dies.
+        // Read by LimonTheSpriteGoddess on her own activation to decide
+        // whether to spawn the wiki's "kill at least one enemy before
+        // skipping to the boss room" anti-rush horde. Reset to 0 in
+        // DungeonState's constructor, same per-instance-reset precedent as
+        // Portal.Reset()/ItemSpawner.Reset() — a leftover count from a
+        // previous dungeon instance must never leak into a fresh one.
+        protected bool CountsTowardNativeSpriteKills = false;
+        internal static int NativeSpriteKillCount = 0;
 
         protected void AddBehaviour(IEnumerable<int> behaviour)
         {
@@ -1079,13 +1112,22 @@ namespace Realm
         protected int EffectiveShotCount(int baseCount) =>
             HasDebuff(DebuffType.Dazed) ? Math.Max(1, baseCount / 2) : baseCount;
 
+        // accelerationMagnitude: applied along each shot's own firing
+        // direction (not one shared vector) — negative decelerates,
+        // positive accelerates, matching the wiki's own "Acceleration: N
+        // tiles/sec²" convention directly. minSpeed/maxSpeed are the
+        // matching "Min./Max. Speed" floor/ceiling. All three default null
+        // (off), unchanged for every existing caller.
         protected IEnumerable<int> Spray(
             float projectileSpeed = 3,
             int projectileAmount = 5,
             int damage = 10,
             Texture2D projectileImage = null,
             Entity.CollisionShape collisionShape = Entity.CollisionShape.Circle,
-            float? range = null
+            float? range = null,
+            float? accelerationMagnitude = null,
+            float? minSpeed = null,
+            float? maxSpeed = null
         )
         {
             float rangeSquared = (range ?? 0) * (range ?? 0);
@@ -1104,16 +1146,19 @@ namespace Realm
                     float bulletOffset = 0.05f;
                     for (var i = 0; i < EffectiveShotCount(projectileAmount); i++)
                     {
-                        Vector2 vel = Extensions.FromPolar(
-                            aimAngle + randomSpread + (i * bulletOffset),
-                            projectileSpeed
-                        );
+                        float shotAngle = aimAngle + randomSpread + (i * bulletOffset);
+                        Vector2 vel = Extensions.FromPolar(shotAngle, projectileSpeed);
 
                         EntityManager.Add(
                             new EnemyProjectile(Position, vel, projectileImage)
                             {
                                 Damage = damage,
                                 Shape = collisionShape,
+                                Acceleration = accelerationMagnitude.HasValue
+                                    ? Extensions.FromPolar(shotAngle, accelerationMagnitude.Value)
+                                    : Vector2.Zero,
+                                MinSpeed = minSpeed,
+                                MaxSpeed = maxSpeed,
                             }
                         );
                     }
@@ -1303,7 +1348,13 @@ namespace Realm
             float projectileSpeed,
             Texture2D projectileImage = null,
             int? cooldownFrames = null,
-            CollisionShape? collisionShape = null
+            CollisionShape? collisionShape = null,
+            float? accelerationMagnitude = null,
+            float? minSpeed = null,
+            float? maxSpeed = null,
+            bool slowsOnHit = false,
+            bool dazesOnHit = false,
+            int dazeDurationFrames = 120
         )
         {
             float rangeSquared = range * range;
@@ -1324,11 +1375,20 @@ namespace Realm
 
                     float aimAngle = aim.ToAngle();
                     float randomSpread = rand.NextFloat(-0.1f, 0.1f) + rand.NextFloat(-0.1f, 0.1f);
-                    Vector2 vel = Extensions.FromPolar(aimAngle + randomSpread, projectileSpeed);
+                    float shotAngle = aimAngle + randomSpread;
+                    Vector2 vel = Extensions.FromPolar(shotAngle, projectileSpeed);
                     EntityManager.Add(
                         new EnemyProjectile(Position, vel, projectileImage, collisionShape)
                         {
                             Damage = damage,
+                            Acceleration = accelerationMagnitude.HasValue
+                                ? Extensions.FromPolar(shotAngle, accelerationMagnitude.Value)
+                                : Vector2.Zero,
+                            MinSpeed = minSpeed,
+                            MaxSpeed = maxSpeed,
+                            SlowsOnHit = slowsOnHit,
+                            DazesOnHit = dazesOnHit,
+                            DazeDurationFrames = dazeDurationFrames,
                         }
                     );
                 }
@@ -1367,7 +1427,11 @@ namespace Realm
             Texture2D projectileImage = null,
             int? cooldownFrames = null,
             bool dazesOnHit = false,
-            int dazeDurationFrames = 120
+            int dazeDurationFrames = 120,
+            float? accelerationMagnitude = null,
+            float? minSpeed = null,
+            float? maxSpeed = null,
+            bool slowsOnHit = false
         )
         {
             float rangeSquared = range * range;
@@ -1402,6 +1466,12 @@ namespace Realm
                         var projectile = new EnemyProjectile(Position, vel, projectileImage)
                         {
                             Damage = damage,
+                            Acceleration = accelerationMagnitude.HasValue
+                                ? Extensions.FromPolar(shotAngle, accelerationMagnitude.Value)
+                                : Vector2.Zero,
+                            MinSpeed = minSpeed,
+                            MaxSpeed = maxSpeed,
+                            SlowsOnHit = slowsOnHit,
                         };
                         if (dazesOnHit)
                         {

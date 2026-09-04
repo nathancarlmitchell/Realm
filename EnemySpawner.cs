@@ -136,6 +136,35 @@ namespace Realm
             ("Brown Python", position => new BrownPython(position)),
             ("Yellow Python", position => new YellowPython(position)),
             ("Fire Python", position => new FirePython(position)),
+
+            // Sprite World (Data/DungeonType_SpriteWorld.json) — same
+            // "never in any BiomeData.json" isolation as Snake Pit/Pirate
+            // Cave above. Native Sprite God isn't here — DungeonState's own
+            // constructor places 1-2 of them directly (see its own
+            // comment), since this pool's uniform per-slot pick would
+            // otherwise make a 3500 HP mini-boss absurdly common.
+            ("Native Darkness Sprite", position => new NativeDarknessSprite(position)),
+            ("Native Fire Sprite", position => new NativeFireSprite(position)),
+            ("Native Ice Sprite", position => new NativeIceSprite(position)),
+            ("Native Magic Sprite", position => new NativeMagicSprite(position)),
+            ("Native Nature Sprite", position => new NativeNatureSprite(position)),
+            (
+                "Native Greater Darkness Sprite",
+                position => new NativeGreaterDarknessSprite(position)
+            ),
+            ("Native Greater Fire Sprite", position => new NativeGreaterFireSprite(position)),
+            ("Native Greater Ice Sprite", position => new NativeGreaterIceSprite(position)),
+            ("Native Greater Magic Sprite", position => new NativeGreaterMagicSprite(position)),
+            ("Native Greater Nature Sprite", position => new NativeGreaterNatureSprite(position)),
+
+            // Not referenced by DungeonType_SpriteWorld.json's own
+            // EnemyNames (see the block above) — only reachable via
+            // DungeonTypeData.EliteEnemyName's own dedicated, non-pooled
+            // placement (see DungeonState's constructor). Registered here
+            // anyway since that's still resolved through this same pool by
+            // name, just via a 1-element lookup instead of EnemyNames'
+            // full array.
+            ("Native Sprite God", position => new NativeSpriteGod(position)),
         ];
 
         // Cross-references a name list against BasicEnemyPool above — the

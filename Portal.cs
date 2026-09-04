@@ -139,6 +139,18 @@ namespace Realm
                 () => Art.PirateCavePortal
             );
 
+            // Sprite World (Data/DungeonType_SpriteWorld.json) — reuses
+            // Art.SpriteWorldPortal, the same animated portal texture the
+            // open Realm's own Sprite God boss-arena portal already uses
+            // (BossRealm below), rather than the generic plain swirl —
+            // both lead somewhere thematically "Sprite World," so sharing
+            // the art reads as intentional, not a missing-asset fallback.
+            public static readonly Destination SpriteWorldDungeon = new DungeonDestination(
+                "SpriteWorld",
+                "Sprite World",
+                () => Art.SpriteWorldPortal
+            );
+
             private sealed class RealmDestination : Destination
             {
                 public override string DisplayName => "Realm";

@@ -143,6 +143,56 @@ namespace Realm
         // or Snakepit Guard (also Snake Balls/Spinners, not a bite).
         public static Texture2D SnakeBite { get; private set; }
 
+        // Sprite World (realmeye.com/wiki/sprite-world) — real, dedicated
+        // art supplied for the full enemy roster (Content/Dungeons/Sprite
+        // World/{Name}.png). Craig the Intern has no combat stats on the
+        // wiki (a non-hostile NPC cameo) and isn't wired to any enemy class
+        // this pass, so his own supplied art is deliberately left unloaded
+        // here rather than sitting unused as a dead Art.cs property.
+        public static Texture2D NativeDarknessSprite { get; private set; }
+        public static Texture2D NativeFireSprite { get; private set; }
+        public static Texture2D NativeIceSprite { get; private set; }
+        public static Texture2D NativeMagicSprite { get; private set; }
+        public static Texture2D NativeNatureSprite { get; private set; }
+        public static Texture2D NativeGreaterDarknessSprite { get; private set; }
+        public static Texture2D NativeGreaterFireSprite { get; private set; }
+        public static Texture2D NativeGreaterIceSprite { get; private set; }
+        public static Texture2D NativeGreaterMagicSprite { get; private set; }
+        public static Texture2D NativeGreaterNatureSprite { get; private set; }
+        public static Texture2D NativeSpriteGodDarkness { get; private set; }
+        public static Texture2D NativeSpriteGodFire { get; private set; }
+        public static Texture2D NativeSpriteGodIce { get; private set; }
+        public static Texture2D NativeSpriteGodMagic { get; private set; }
+        public static Texture2D NativeSpriteGodNature { get; private set; }
+
+        // Sprite World's own per-element projectile art (Content/
+        // Projectiles/{Color} Sprite {Shape}.png, also user-supplied) — the
+        // wiki's own element-to-color mapping (Darkness=black, Fire=orange,
+        // Nature=green bolts) plus every remaining color having its own
+        // 40x40 boomerang-shaped "Twirl" variant (matching every element's
+        // own boomerang attack on Native Sprite God's attack table, not
+        // just Magic's) fixes Ice=cyan, Magic=blue. No dedicated "Blue
+        // Sprite Magic" (plain 30x15 bolt) was supplied for Magic — only
+        // its Twirl — so the regular Native Magic Sprite's own plain shot
+        // reuses SpriteMagicTwirl below too, rather than sitting without
+        // any real art. Bolt = each element's plain shot (regular Native
+        // Sprites); GreaterShape = that element's own distinct shape
+        // (Greater Sprites' signature attack); Twirl = every element's own
+        // boomerang, used by Native Sprite God specifically (its attack
+        // table shows a boomerang variant on every form, not just Magic's).
+        public static Texture2D SpriteDarknessBolt { get; private set; }
+        public static Texture2D SpriteDarknessGreaterShape { get; private set; } // "Beam"
+        public static Texture2D SpriteDarknessTwirl { get; private set; }
+        public static Texture2D SpriteFireBolt { get; private set; }
+        public static Texture2D SpriteFireGreaterShape { get; private set; } // "Line"
+        public static Texture2D SpriteFireTwirl { get; private set; }
+        public static Texture2D SpriteIceBolt { get; private set; }
+        public static Texture2D SpriteIceTwirl { get; private set; } // also Ice's GreaterShape
+        public static Texture2D SpriteNatureBolt { get; private set; }
+        public static Texture2D SpriteNatureGreaterShape { get; private set; } // "Bolt"
+        public static Texture2D SpriteNatureTwirl { get; private set; }
+        public static Texture2D SpriteMagicTwirl { get; private set; } // also Magic's Bolt/GreaterShape
+
         public static AnimatedTexture Portal { get; private set; }
 
         // Dungeon-specific portal animations — same 7-frame, 8fps loop as
@@ -508,6 +558,58 @@ namespace Realm
             FirePython = content.Load<Texture2D>("Dungeons/Snake Pit/Fire Python");
             SnakepitGuard = content.Load<Texture2D>("Dungeons/Snake Pit/Snakepit Guard");
             SnakeBite = content.Load<Texture2D>("Projectiles/Snake Bite");
+
+            // Sprite World (realmeye.com/wiki/sprite-world).
+            NativeDarknessSprite = content.Load<Texture2D>(
+                "Dungeons/Sprite World/Native Darkness Sprite"
+            );
+            NativeFireSprite = content.Load<Texture2D>("Dungeons/Sprite World/Native Fire Sprite");
+            NativeIceSprite = content.Load<Texture2D>("Dungeons/Sprite World/Native Ice Sprite");
+            NativeMagicSprite = content.Load<Texture2D>("Dungeons/Sprite World/Native Magic Sprite");
+            NativeNatureSprite = content.Load<Texture2D>(
+                "Dungeons/Sprite World/Native Nature Sprite"
+            );
+            NativeGreaterDarknessSprite = content.Load<Texture2D>(
+                "Dungeons/Sprite World/Native Greater Darkness Sprite"
+            );
+            NativeGreaterFireSprite = content.Load<Texture2D>(
+                "Dungeons/Sprite World/Native Greater Fire Sprite"
+            );
+            NativeGreaterIceSprite = content.Load<Texture2D>(
+                "Dungeons/Sprite World/Native Greater Ice Sprite"
+            );
+            NativeGreaterMagicSprite = content.Load<Texture2D>(
+                "Dungeons/Sprite World/Native Greater Magic Sprite"
+            );
+            NativeGreaterNatureSprite = content.Load<Texture2D>(
+                "Dungeons/Sprite World/Native Greater Nature Sprite"
+            );
+            NativeSpriteGodDarkness = content.Load<Texture2D>(
+                "Dungeons/Sprite World/Native Sprite God Darkness"
+            );
+            NativeSpriteGodFire = content.Load<Texture2D>(
+                "Dungeons/Sprite World/Native Sprite God Fire"
+            );
+            NativeSpriteGodIce = content.Load<Texture2D>("Dungeons/Sprite World/Native Sprite God Ice");
+            NativeSpriteGodMagic = content.Load<Texture2D>(
+                "Dungeons/Sprite World/Native Sprite God Magic"
+            );
+            NativeSpriteGodNature = content.Load<Texture2D>(
+                "Dungeons/Sprite World/Native Sprite God Nature"
+            );
+
+            SpriteDarknessBolt = content.Load<Texture2D>("Projectiles/Black Sprite Magic");
+            SpriteDarknessGreaterShape = content.Load<Texture2D>("Projectiles/Black Sprite Beam");
+            SpriteDarknessTwirl = content.Load<Texture2D>("Projectiles/Black Sprite Twirl");
+            SpriteFireBolt = content.Load<Texture2D>("Projectiles/Orange Sprite Magic");
+            SpriteFireGreaterShape = content.Load<Texture2D>("Projectiles/Orange Sprite Line");
+            SpriteFireTwirl = content.Load<Texture2D>("Projectiles/Orange Sprite Twirl");
+            SpriteIceBolt = content.Load<Texture2D>("Projectiles/Cyan Sprite Magic");
+            SpriteIceTwirl = content.Load<Texture2D>("Projectiles/Cyan Sprite Twirl");
+            SpriteNatureBolt = content.Load<Texture2D>("Projectiles/Green Sprite Magic");
+            SpriteNatureGreaterShape = content.Load<Texture2D>("Projectiles/Green Sprite Bolt");
+            SpriteNatureTwirl = content.Load<Texture2D>("Projectiles/Green Sprite Twirl");
+            SpriteMagicTwirl = content.Load<Texture2D>("Projectiles/Blue Sprite Twirl");
 
             // Fonts.
             HudFont = content.Load<SpriteFont>("Fonts/HudFont");

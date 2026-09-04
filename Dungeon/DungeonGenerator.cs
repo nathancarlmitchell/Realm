@@ -45,6 +45,20 @@ namespace Realm
             float PathGapChance
         );
 
+        // Resolved room-interior scatter tiles, same "bundle the optional
+        // extras" reasoning as CoveOptions above — first real use: Sprite
+        // World's conveyor belts (DungeonTypeData.ConveyorTileChance/
+        // ConveyorTileNames) and Sprite Trees (ObstacleTileChance/
+        // ObstacleTileName). Empty ConveyorTiles / null ObstacleTile means
+        // "off," same "empty/null = feature off" contract every other
+        // optional tile-name field already has.
+        private readonly record struct ScatterOptions(
+            List<TileDefData> ConveyorTiles,
+            float ConveyorChance,
+            TileDefData ObstacleTile,
+            float ObstacleChance
+        );
+
         public static DungeonMap Generate(
             TileSetData tileSet,
             int widthInTiles,
@@ -60,13 +74,19 @@ namespace Realm
             float pathGapChance = 0f,
             bool circularRooms = false,
             string corridorTileName = null,
+            float conveyorTileChance = 0f,
+            string[] conveyorTileNames = null,
+            float obstacleTileChance = 0f,
+            string obstacleTileName = null,
             int? seed = null
         )
         {
             Random rand = seed.HasValue ? new Random(seed.Value) : new Random();
             var map = new DungeonMap(tileSet, widthInTiles, heightInTiles);
 
-            List<TileDefData> wallCandidates = tileSet.Tiles.Where(t => !t.CanPassThrough).ToList();
+            List<TileDefData> wallCandidates = tileSet
+                .Tiles.Where(t => !t.CanPassThrough && !t.ExcludeFromBackgroundFill)
+                .ToList();
             List<TileDefData> floorCandidates = tileSet.Tiles.Where(t => t.CanPassThrough).ToList();
 
             // Util.LoadTileSetData() already guarantees both are non-empty for
@@ -87,6 +107,15 @@ namespace Realm
                 ResolveTileByName(tileSet, woodFloorTileName),
                 ResolveTileByName(tileSet, backgroundTileName),
                 pathGapChance
+            );
+
+            ScatterOptions scatter = new(
+                (conveyorTileNames ?? [])
+                    .Select(name => ResolveTileByName(tileSet, name))
+                    .ToList(),
+                conveyorTileChance,
+                ResolveTileByName(tileSet, obstacleTileName),
+                obstacleTileChance
             );
 
             // Resolved once here rather than threaded through as a raw
@@ -114,6 +143,7 @@ namespace Realm
                 floorCandidates,
                 cove,
                 circularRooms,
+                scatter,
                 rand
             );
 
@@ -202,6 +232,7 @@ namespace Realm
             List<TileDefData> floorCandidates,
             CoveOptions cove,
             bool circularRooms,
+            ScatterOptions scatter,
             Random rand
         )
         {
@@ -300,10 +331,34 @@ namespace Realm
                     if (!RoomContains(candidate, circularRooms, cx, cy))
                         continue; // outside the inscribed circle — leave as background/wall.
 
-                    map[cx, cy] =
-                        roomTile != null
-                            ? PlaceCoveTile(roomTile, cove, rand)
-                            : RandomPick(floorCandidates, rand).Id;
+                    // Sprite Trees checked before the conveyor roll — see
+                    // DungeonTypeData.ObstacleTileChance's own comment for
+                    // why the destructible obstacle wins a same-cell tie
+                    // over a directional push tile. Both independent of
+                    // cove mode (unlike roomTile above), and both no-ops
+                    // (their tiles are null / chances 0) for every dungeon
+                    // type that doesn't set them.
+                    if (
+                        scatter.ObstacleTile != null
+                        && rand.NextDouble() < scatter.ObstacleChance
+                    )
+                    {
+                        map[cx, cy] = scatter.ObstacleTile.Id;
+                    }
+                    else if (
+                        scatter.ConveyorTiles.Count > 0
+                        && rand.NextDouble() < scatter.ConveyorChance
+                    )
+                    {
+                        map[cx, cy] = RandomPick(scatter.ConveyorTiles, rand).Id;
+                    }
+                    else
+                    {
+                        map[cx, cy] =
+                            roomTile != null
+                                ? PlaceCoveTile(roomTile, cove, rand)
+                                : RandomPick(floorCandidates, rand).Id;
+                    }
                 }
             }
 

@@ -555,7 +555,7 @@ namespace Realm
                     // the character that just spawned in, not the one that
                     // died holding this projectile's hit.
                     Player hitPlayer = Player.Instance;
-                    hitPlayer.Hit(enemiesProjectiles[i].Damage);
+                    hitPlayer.Hit(enemiesProjectiles[i].Damage, enemiesProjectiles[i].IgnoresDefense);
                     if (enemiesProjectiles[i].SlowsOnHit && Player.Instance == hitPlayer)
                     {
                         hitPlayer.Slow();
