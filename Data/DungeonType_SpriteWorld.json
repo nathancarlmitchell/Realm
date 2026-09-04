@@ -7,7 +7,7 @@
   "MaxRoomCount": 18,
   "CorridorWidth": 2,
   "CircularRooms": true,
-  "ConveyorTileChance": 0.03,
+  "ConveyorMaxStripsPerRoom": 5,
   "ConveyorTileNames": [
     "Conveyor Up",
     "Conveyor Down",

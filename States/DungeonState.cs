@@ -94,7 +94,7 @@ namespace Realm.States
                 dungeonType.PathGapChance,
                 dungeonType.CircularRooms,
                 dungeonType.CorridorTileName,
-                dungeonType.ConveyorTileChance,
+                dungeonType.ConveyorMaxStripsPerRoom,
                 dungeonType.ConveyorTileNames,
                 dungeonType.ObstacleTileChance,
                 dungeonType.ObstacleTileName

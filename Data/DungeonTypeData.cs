@@ -86,16 +86,21 @@ namespace Realm.Data
         // BackgroundTileName above.
         public string CorridorTileName { get; set; }
 
-        // Per-cell chance (0.0-1.0), rolled during normal room floor-fill
-        // (independent of cove/circular mode — unlike CorridorTileName
-        // above, this applies inside rooms, not corridors), that a floor
-        // cell becomes a randomly-picked conveyor tile instead — first real
-        // use: Sprite World, matching its own wiki's "multicolored conveyor
-        // belts... often found in the rooms." 0/null (the default) is a
-        // no-op, unchanged for every dungeon type that doesn't opt in.
-        // Looked up by TileDefData.Name within this dungeon type's own
-        // TileSetName, same lookup convention as CorridorTileName.
-        public float ConveyorTileChance { get; set; } = 0f;
+        // Each room independently rolls 0..ConveyorMaxStripsPerRoom (inclusive)
+        // conveyor strips — first real use: Sprite World, matching its own
+        // wiki's "multicolored conveyor belts... often found in the rooms."
+        // Each strip is a full row or column of the room, not a scattered
+        // per-cell pick: ConveyorTileNames entries whose ConveyorDirection
+        // is horizontal (Left/Right) lay down a horizontal strip (a single
+        // row spanning the room's width), and vertical ones (Up/Down) lay
+        // down a vertical strip (a single column spanning the room's
+        // height) — DungeonGenerator.PlaceRooms() picks the orientation by
+        // inspecting each resolved tile's own ConveyorDirection, so no
+        // separate horizontal/vertical name list is needed here. 0/null
+        // (the default) is a no-op, unchanged for every dungeon type that
+        // doesn't opt in. Looked up by TileDefData.Name within this dungeon
+        // type's own TileSetName, same lookup convention as CorridorTileName.
+        public int ConveyorMaxStripsPerRoom { get; set; } = 0;
         public string[] ConveyorTileNames { get; set; }
 
         // Same shape as ConveyorTileChance/ConveyorTileNames immediately

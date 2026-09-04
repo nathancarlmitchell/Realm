@@ -9512,3 +9512,41 @@ date/time for those individually; don't treat their grouping as meaning they all
      and correctly did not re-fire on later ticks while still paralyzed. Plain `dotnet build` (0
      errors) plus a real minimized boot-check; real save files backed up first and diffed
      unmodified.
+
+338. **Reworked Sprite World's conveyor belts from a per-cell scatter into full-room strips.**
+     Requested directly — the original per-cell roll (entry 335) scattered individual conveyor
+     tiles randomly through a room, giving no coherent "ride the belt" lane; the wiki instead
+     describes discrete conveyor belts running the length of a room.
+
+     `DungeonTypeData.ConveyorTileChance` (a per-cell 0.0-1.0 probability) replaced with
+     `ConveyorMaxStripsPerRoom` (an int, default 0 = off) — each room now independently rolls
+     `rand.Next(ConveyorMaxStripsPerRoom + 1)` (0..Max inclusive) whole strips instead of rolling
+     per cell. `ConveyorTileNames` is unchanged, but no longer needs a separate horizontal/vertical
+     list: `DungeonGenerator.PlaceConveyorStrips()` (new, called once per room right after its own
+     floor/obstacle fill loop) splits the resolved tiles by inspecting each one's own
+     `ConveyorDirection` — `ConveyorDirectionX != 0` (Left/Right) tiles lay down a horizontal strip
+     (one full row spanning the room's width), `ConveyorDirectionY != 0` (Up/Down) tiles lay down a
+     vertical strip (one full column spanning the room's height). Each strip independently rerolls
+     orientation (when both are available) and which of the up to two matching-orientation tiles to
+     use, so a room can end up with, say, two Left rows and one Down column. `TryPlaceConveyorCell()`
+     respects the room's own circular footprint (`RoomContains()`, same helper the rest of
+     `PlaceRooms()` already uses) and explicitly skips any cell already holding the Sprite Trees
+     obstacle tile, so a strip stamped after the per-cell obstacle roll never silently paves over a
+     destructible tree.
+
+     `DungeonType_SpriteWorld.json`'s `ConveyorTileChance: 0.03` became `ConveyorMaxStripsPerRoom: 5`.
+
+     Verified via a temporary `Game1.StartGame()` scripted check (reverted, no diff remains):
+     generated 20 seeded `SpriteWorld` `DungeonMap`s (302 rooms total) and, per room, scanned for
+     any fully-conveyor row/column within its own bounds — real horizontal and vertical strips
+     showed up across many rooms with no crash, and no room ever exceeded the 5-strip cap (the
+     scan's own per-room total undercounts whenever two strips overlap or a repeated row/column
+     roll collides, since an intersecting cell no longer reads as "every cell in this row is the
+     same orientation" — a detection-script limitation, not a placement bug; the underlying roll is
+     a direct, unconditionally-correct `rand.Next(6)`). A first pass at this test used the full
+     500,000×500,000 world size instead of a dungeon instance's real 3,200×3,200
+     (`DungeonState.InstanceWorldWidth/Height`), producing a ~15,625×15,625-tile map per seed and
+     effectively hanging the test run — caught by re-checking against `DungeonState`'s own actual
+     generation call rather than assuming the game's outer world size applied here too. Plain
+     `dotnet build` (0 errors) plus a real minimized boot-check; real save files backed up first
+     and diffed unmodified.

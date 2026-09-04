@@ -47,14 +47,14 @@ namespace Realm
 
         // Resolved room-interior scatter tiles, same "bundle the optional
         // extras" reasoning as CoveOptions above — first real use: Sprite
-        // World's conveyor belts (DungeonTypeData.ConveyorTileChance/
+        // World's conveyor belts (DungeonTypeData.ConveyorMaxStripsPerRoom/
         // ConveyorTileNames) and Sprite Trees (ObstacleTileChance/
         // ObstacleTileName). Empty ConveyorTiles / null ObstacleTile means
         // "off," same "empty/null = feature off" contract every other
         // optional tile-name field already has.
         private readonly record struct ScatterOptions(
             List<TileDefData> ConveyorTiles,
-            float ConveyorChance,
+            int ConveyorMaxStripsPerRoom,
             TileDefData ObstacleTile,
             float ObstacleChance
         );
@@ -74,7 +74,7 @@ namespace Realm
             float pathGapChance = 0f,
             bool circularRooms = false,
             string corridorTileName = null,
-            float conveyorTileChance = 0f,
+            int conveyorMaxStripsPerRoom = 0,
             string[] conveyorTileNames = null,
             float obstacleTileChance = 0f,
             string obstacleTileName = null,
@@ -113,7 +113,7 @@ namespace Realm
                 (conveyorTileNames ?? [])
                     .Select(name => ResolveTileByName(tileSet, name))
                     .ToList(),
-                conveyorTileChance,
+                conveyorMaxStripsPerRoom,
                 ResolveTileByName(tileSet, obstacleTileName),
                 obstacleTileChance
             );
@@ -331,26 +331,18 @@ namespace Realm
                     if (!RoomContains(candidate, circularRooms, cx, cy))
                         continue; // outside the inscribed circle — leave as background/wall.
 
-                    // Sprite Trees checked before the conveyor roll — see
-                    // DungeonTypeData.ObstacleTileChance's own comment for
-                    // why the destructible obstacle wins a same-cell tie
-                    // over a directional push tile. Both independent of
-                    // cove mode (unlike roomTile above), and both no-ops
-                    // (their tiles are null / chances 0) for every dungeon
-                    // type that doesn't set them.
+                    // Sprite Trees is the only remaining per-cell scatter —
+                    // conveyors are laid down as whole-room strips below,
+                    // after every cell here has its base floor/obstacle
+                    // tile, rather than a per-cell roll. Independent of cove
+                    // mode (unlike roomTile above), a no-op (tile null /
+                    // chance 0) for every dungeon type that doesn't set it.
                     if (
                         scatter.ObstacleTile != null
                         && rand.NextDouble() < scatter.ObstacleChance
                     )
                     {
                         map[cx, cy] = scatter.ObstacleTile.Id;
-                    }
-                    else if (
-                        scatter.ConveyorTiles.Count > 0
-                        && rand.NextDouble() < scatter.ConveyorChance
-                    )
-                    {
-                        map[cx, cy] = RandomPick(scatter.ConveyorTiles, rand).Id;
                     }
                     else
                     {
@@ -360,9 +352,85 @@ namespace Realm
                                 : RandomPick(floorCandidates, rand).Id;
                     }
                 }
+
+                PlaceConveyorStrips(map, candidate, circularRooms, scatter, rand);
             }
 
             return rooms;
+        }
+
+        // Lays 0..ConveyorMaxStripsPerRoom (inclusive) full-width/height
+        // conveyor strips across the room, one at a time — "Left"/"Right"
+        // tiles (ConveyorDirectionX != 0) run as a horizontal strip (one
+        // row spanning the room), "Up"/"Down" tiles (ConveyorDirectionY !=
+        // 0) as a vertical strip (one column) — matching the wiki's own
+        // conveyor-belt lanes rather than the earlier per-cell scatter.
+        // Each strip independently rerolls orientation and, within that
+        // orientation, which of the (up to two) matching tiles to use, so a
+        // room can get a mix of e.g. two Left rows and one Down column.
+        // Never overwrites a Sprite Trees obstacle cell laid down by the
+        // caller's own per-cell loop just above — an obstacle is meant to
+        // block movement until destroyed, which a walkable conveyor strip
+        // stamped over it would silently undo.
+        private static void PlaceConveyorStrips(
+            DungeonMap map,
+            Rectangle room,
+            bool circularRooms,
+            ScatterOptions scatter,
+            Random rand
+        )
+        {
+            if (scatter.ConveyorTiles.Count == 0 || scatter.ConveyorMaxStripsPerRoom <= 0)
+                return;
+
+            List<TileDefData> horizontalTiles = scatter
+                .ConveyorTiles.Where(t => t.ConveyorDirectionX != 0)
+                .ToList();
+            List<TileDefData> verticalTiles = scatter
+                .ConveyorTiles.Where(t => t.ConveyorDirectionY != 0)
+                .ToList();
+
+            int stripCount = rand.Next(scatter.ConveyorMaxStripsPerRoom + 1); // 0..Max inclusive.
+
+            for (int i = 0; i < stripCount; i++)
+            {
+                bool placeHorizontal = horizontalTiles.Count > 0
+                    && (verticalTiles.Count == 0 || rand.Next(2) == 0);
+
+                if (placeHorizontal)
+                {
+                    TileDefData tile = RandomPick(horizontalTiles, rand);
+                    int stripY = rand.Next(room.Top, room.Bottom);
+                    for (int cx = room.Left; cx < room.Right; cx++)
+                        TryPlaceConveyorCell(map, room, circularRooms, scatter, cx, stripY, tile);
+                }
+                else if (verticalTiles.Count > 0)
+                {
+                    TileDefData tile = RandomPick(verticalTiles, rand);
+                    int stripX = rand.Next(room.Left, room.Right);
+                    for (int cy = room.Top; cy < room.Bottom; cy++)
+                        TryPlaceConveyorCell(map, room, circularRooms, scatter, stripX, cy, tile);
+                }
+            }
+        }
+
+        private static void TryPlaceConveyorCell(
+            DungeonMap map,
+            Rectangle room,
+            bool circularRooms,
+            ScatterOptions scatter,
+            int x,
+            int y,
+            TileDefData tile
+        )
+        {
+            if (!RoomContains(room, circularRooms, x, y))
+                return; // outside the inscribed circle — leave whatever's there.
+
+            if (scatter.ObstacleTile != null && map[x, y] == scatter.ObstacleTile.Id)
+                return; // don't pave over a Sprite Trees obstacle.
+
+            map[x, y] = tile.Id;
         }
 
         // Minimum spanning tree (Prim's) over room centers — guarantees every
