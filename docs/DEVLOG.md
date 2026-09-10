@@ -9868,3 +9868,20 @@ date/time for those individually; don't treat their grouping as meaning they all
      Position` to exactly `Input.GetMousePosition()`. Plain `dotnet build` (0 errors, content
      pipeline picked up the new icon) plus a real minimized boot-check; real save files backed up
      first and diffed fully unmodified.
+
+347. **Capped the Cloak of the Planewalker teleport at 3 tiles.** Requested directly — entry 346's
+     teleport went straight to the cursor with no distance limit.
+
+     New `Cloak.TeleportRangeTiles` (mirrored on `CloakData.cs`, default 0 = "no limit"). When
+     nonzero, `Rogue.UseAbility()` clamps the cursor target to that many tiles (32px each) from the
+     player's current position along the same direction, rather than refusing to teleport a
+     far-out target (the wiki's real "no teleport if out of range" behaviour isn't modeled — it
+     ties to fog-of-war, which this engine has none of). Set to `3.0` on the Planewalker's JSON
+     entry.
+
+     Verified via a temporary `Game1.StartGame()` scripted check (reverted, no diff remains): with
+     the player 608px from where the cursor mapped, a Planewalker activation landed the player
+     96.01px away (exactly 3×32) with the movement direction dot-product against the cursor
+     direction at 1.0000; temporarily setting `TeleportRangeTiles = 0` on the equipped cloak made
+     the same activation land exactly on the cursor. Plain `dotnet build` (0 errors) plus a real
+     minimized boot-check; real save files backed up first and diffed fully unmodified.

@@ -21,6 +21,10 @@ namespace Realm
         // Rogue.UseAbility().
         public bool TeleportsOnUse { get; set; }
 
+        // Max teleport distance in tiles (32px); 0 = unlimited. See
+        // Data/CloakData.cs and Rogue.UseAbility().
+        public float TeleportRangeTiles { get; set; }
+
         public float BaseFlatDamage { get; set; }
         public float FlatDamagePerWisOver34 { get; set; }
         public float BasePercentDamage { get; set; }
@@ -62,6 +66,7 @@ namespace Realm
                     Tier = cloakData.Tier,
                     IsUntiered = cloakData.IsUntiered,
                     TeleportsOnUse = cloakData.TeleportsOnUse,
+                    TeleportRangeTiles = cloakData.TeleportRangeTiles,
                     MaxHealthBonus = cloakData.MaxHealthBonus,
                     MaxManaBonus = cloakData.MaxManaBonus,
                     AttackBonus = cloakData.AttackBonus,

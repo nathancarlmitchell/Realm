@@ -173,6 +173,7 @@
         "Tier": -1,
         "IsUntiered": true,
         "TeleportsOnUse": true,
+        "TeleportRangeTiles": 3.0,
         "MaxHealthBonus": 0,
         "MaxManaBonus": 0,
         "AttackBonus": 0,

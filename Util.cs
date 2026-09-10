@@ -917,6 +917,7 @@ namespace Realm
                             Tier = cloakData[i].Tier,
                             IsUntiered = cloakData[i].IsUntiered,
                             TeleportsOnUse = cloakData[i].TeleportsOnUse,
+                            TeleportRangeTiles = cloakData[i].TeleportRangeTiles,
                             MaxHealthBonus = cloakData[i].MaxHealthBonus,
                             MaxManaBonus = cloakData[i].MaxManaBonus,
                             AttackBonus = cloakData[i].AttackBonus,

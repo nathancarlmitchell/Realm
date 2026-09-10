@@ -24,6 +24,13 @@ namespace Realm.Data
         // only. See Rogue.UseAbility().
         public bool TeleportsOnUse { get; set; }
 
+        // Farthest the TeleportsOnUse teleport can carry the player, in
+        // tiles (32px each) — the cursor target is clamped to this
+        // distance from the player's current position. 0 (the default)
+        // means "no limit," i.e. straight to the cursor. Only read when
+        // TeleportsOnUse is true.
+        public float TeleportRangeTiles { get; set; }
+
         public int MaxHealthBonus { get; set; }
         public int MaxManaBonus { get; set; }
         public int AttackBonus { get; set; }

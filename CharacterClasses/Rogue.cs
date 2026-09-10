@@ -178,15 +178,26 @@ namespace Realm.CharacterClasses
 
                 // Cloak of the Planewalker (realmeye.com/wiki/cloak-of-the-
                 // planewalker): "Teleports to cursor location when
-                // activated." Straight to the cursor's world position —
-                // the wiki's "no teleport if the target is unexplored or
-                // out of range" nuance doesn't map to this engine (no
-                // fog-of-war, no ability range limit). Any state that
-                // cares (BossRealmState's arena clamp, DungeonState's wall
-                // resolve) already corrects an out-of-bounds Position on
-                // its next Update().
+                // activated." The target is the cursor's world position,
+                // clamped to TeleportRangeTiles (3 tiles) from the player —
+                // a cursor farther out lands the player at the range limit
+                // along the same direction rather than not teleporting at
+                // all (the wiki's real "no teleport if out of range" isn't
+                // modeled). Any state that cares (BossRealmState's arena
+                // clamp, DungeonState's wall resolve) still corrects an
+                // out-of-bounds Position on its next Update().
                 if (cloak.TeleportsOnUse)
-                    Position = Input.GetMousePosition();
+                {
+                    Vector2 target = Input.GetMousePosition();
+                    if (cloak.TeleportRangeTiles > 0f)
+                    {
+                        Vector2 offset = target - Position;
+                        float maxDist = cloak.TeleportRangeTiles * 32f;
+                        if (offset.LengthSquared() > maxDist * maxDist)
+                            target = Position + Vector2.Normalize(offset) * maxDist;
+                    }
+                    Position = target;
+                }
             }
             else
             {
