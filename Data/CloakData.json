@@ -166,5 +166,28 @@
         "PercentDamagePerWisOver34": 0.5,
         "XpBonusPercent": 8.0,
         "ImageName": "AbilityItems/Cloaks/7"
+    },
+    {
+        "Name": "Cloak of the Planewalker",
+        "Description": "An enchanted cloak crafted by an ancient guild of timeshifter thieves.",
+        "Tier": -1,
+        "IsUntiered": true,
+        "TeleportsOnUse": true,
+        "MaxHealthBonus": 0,
+        "MaxManaBonus": 0,
+        "AttackBonus": 0,
+        "DefenseBonus": 0,
+        "SpeedBonus": 15.0,
+        "DexterityBonus": 6,
+        "VitalityBonus": 0,
+        "WisdomBonus": 0,
+        "ManaCost": 90,
+        "InvisibilityDurationFrames": 180,
+        "BaseFlatDamage": 0.0,
+        "FlatDamagePerWisOver34": 0.0,
+        "BasePercentDamage": 0.0,
+        "PercentDamagePerWisOver34": 0.0,
+        "XpBonusPercent": 6.0,
+        "ImageName": "AbilityItems/Cloaks/UT/Cloak of the Planewalker"
     }
 ]

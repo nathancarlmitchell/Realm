@@ -133,17 +133,20 @@ namespace Realm.Bosses
             AddAttackBehaviour(Phase3Attacks());
             AddAttackBehaviour(ParalyzePunishment());
 
-            // Both are real wiki-listed drop sources for Limon:
-            // realmeye.com/wiki/staff-of-extreme-prejudice and
-            // realmeye.com/wiki/sprite-wand. Each also lists sources that
-            // don't exist in this engine (a Standard Quest Chest,
-            // Prismimic Attacker, and — for the wand — several Native
-            // Sprite enemies), so Limon is the only wired source for each.
-            // Independent per-entry rolls, on top of the guaranteed loot.
+            // All three are real wiki-listed drop sources for Limon:
+            // realmeye.com/wiki/staff-of-extreme-prejudice,
+            // realmeye.com/wiki/sprite-wand, and
+            // realmeye.com/wiki/cloak-of-the-planewalker. Each also lists
+            // sources that don't exist in this engine (a Standard Quest
+            // Chest, Prismimic Attacker, a Golden Oryx Effigy, and — for
+            // the wand — several Native Sprite enemies), so Limon is the
+            // only wired source for each. Independent per-entry rolls, on
+            // top of the guaranteed loot.
             UniqueItemDropChances = new()
             {
-                ["Staff of Extreme Prejudice"] = 1f,
-                ["Sprite Wand"] = 1f,
+                ["Staff of Extreme Prejudice"] = .05f,
+                ["Sprite Wand"] = .05f,
+                ["Cloak of the Planewalker"] = .05f,
             };
 
             GuaranteedPotionChances = new()

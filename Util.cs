@@ -915,6 +915,8 @@ namespace Realm
                             Name = cloakData[i].Name,
                             Description = cloakData[i].Description,
                             Tier = cloakData[i].Tier,
+                            IsUntiered = cloakData[i].IsUntiered,
+                            TeleportsOnUse = cloakData[i].TeleportsOnUse,
                             MaxHealthBonus = cloakData[i].MaxHealthBonus,
                             MaxManaBonus = cloakData[i].MaxManaBonus,
                             AttackBonus = cloakData[i].AttackBonus,

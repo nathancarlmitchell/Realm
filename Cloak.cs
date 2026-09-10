@@ -15,6 +15,12 @@ namespace Realm
     {
         // Cloak's own ability fields — see Data/CloakData.cs.
         public int InvisibilityDurationFrames { get; set; }
+
+        // Cloak of the Planewalker only — teleport to the cursor on
+        // activation, on top of the usual invisibility. See
+        // Rogue.UseAbility().
+        public bool TeleportsOnUse { get; set; }
+
         public float BaseFlatDamage { get; set; }
         public float FlatDamagePerWisOver34 { get; set; }
         public float BasePercentDamage { get; set; }
@@ -54,6 +60,8 @@ namespace Realm
                     Name = cloakData.Name,
                     Description = cloakData.Description,
                     Tier = cloakData.Tier,
+                    IsUntiered = cloakData.IsUntiered,
+                    TeleportsOnUse = cloakData.TeleportsOnUse,
                     MaxHealthBonus = cloakData.MaxHealthBonus,
                     MaxManaBonus = cloakData.MaxManaBonus,
                     AttackBonus = cloakData.AttackBonus,

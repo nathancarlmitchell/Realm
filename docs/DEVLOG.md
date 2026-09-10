@@ -9827,3 +9827,44 @@ date/time for those individually; don't treat their grouping as meaning they all
      Sprite Wand shots produced 20 distinct tints, every one fully saturated (each has a channel at
      255 and a channel at 0), none near-black. Plain `dotnet build` (0 errors) plus a real
      minimized boot-check; real save files backed up first and diffed fully unmodified.
+
+346. **Added the Cloak of the Planewalker, a real wiki-sourced UT cloak, dropped by Limon.**
+     Requested directly (realmeye.com/wiki/cloak-of-the-planewalker) — the game's fourth UT item,
+     first UT ability item, and the first cloak whose activation does more than start invisibility.
+
+     New `Cloak.TeleportsOnUse` (mirrored on `CloakData.cs`, default false — every tiered cloak
+     unaffected). `Rogue.UseAbility()`, right after `EnterInvisibility()`, sets `Position =
+     Input.GetMousePosition()` when the equipped cloak has the flag — "Teleports to cursor location
+     when activated." The wiki's "no teleport if the target is unexplored or out of range" nuance
+     doesn't map to this engine (no fog-of-war, no ability range limit); an out-of-bounds landing
+     is corrected by whatever state cares on its next `Update()` — `BossRealmState`'s arena clamp,
+     `DungeonState`'s wall-collision resolve — both of which already run every frame.
+
+     Stats from the wiki: On Equip +15 SPD / +6 DEX (`SpeedBonus 15` / `DexterityBonus 6`), MP Cost
+     90, Invisible for 3s (`InvisibilityDurationFrames 180`), XP Bonus 6%. `Tier: -1` +
+     `IsUntiered: true`, same convention as the other three UT items. The Lethal Strike damage
+     fields (`BaseFlatDamage` etc., this engine's port of the wiki's "Comparative Cloaks Table")
+     are all 0 — the Planewalker has no row in that table, it's a pure utility cloak. (The engine's
+     generic "any cloak grants Lethal Strike after the 1s invisibility grace + a shot" still fires
+     its two extra base-damage shots — pre-existing behavior for every cloak, not this item's
+     design, and with the bonus fields at 0 it adds no extra damage.)
+
+     `CloakData.cs`/`Util.LoadCloakData()` also gained `IsUntiered` (like `WandData`/`StaffData`
+     before them), and `Cloak.LoadCloak()`'s copy-list now carries `IsUntiered`/`TeleportsOnUse`.
+     `ItemSpawner.ResolveUniqueItem()` — which the entry-343 staff first extended past Rings, to
+     Weapons+Armors — is now fully generalized: a small `ByName<T>` local helper walks every
+     equippable catalog (Weapons, Armors, Rings, Spells, Quivers, Shields, Tomes, Cloaks), so a UT
+     item of any equip type resolves with no further change there.
+
+     `LimonTheSpriteGoddess.UniqueItemDropChances` gains `["Cloak of the Planewalker"] = .05f`
+     alongside the Staff and Wand. The wiki's other sources (a Standard Quest Chest, a Golden Oryx
+     Effigy) don't exist here, and the request was specifically the Limon drop.
+
+     Verified via a temporary `Game1.StartGame()` scripted check (reverted, no diff remains): the
+     catalog entry resolves with the right IsUntiered/TeleportsOnUse/SPD/DEX/mana/duration;
+     `ItemSpawner.ResolveUniqueItem` finds it as a `Cloak`; equipping via the real
+     `Cloak.LoadCloak()` path restores `IsUntiered`/`TeleportsOnUse`/the stat bonuses; and a Rogue
+     calling `UseAbility()` with it equipped both entered invisibility and moved `Player.Instance.
+     Position` to exactly `Input.GetMousePosition()`. Plain `dotnet build` (0 errors, content
+     pipeline picked up the new icon) plus a real minimized boot-check; real save files backed up
+     first and diffed fully unmodified.

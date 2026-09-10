@@ -11,6 +11,19 @@ namespace Realm.Data
         public string Name { get; set; }
         public string Description { get; set; }
         public int Tier { get; set; }
+
+        // UT-only — see Equipment.IsUntiered's own doc comment. False (the
+        // default) for every tiered cloak; a UT entry leaves Tier at -1 by
+        // convention (matching Data/RingData.json's Snake Eye Ring and the
+        // UT weapons in Data/StaffData.json / Data/WandData.json).
+        public bool IsUntiered { get; set; }
+
+        // Cloak of the Planewalker only (realmeye.com/wiki/cloak-of-the-
+        // planewalker: "Teleports to cursor location when activated").
+        // False for every other cloak, whose activation is invisibility
+        // only. See Rogue.UseAbility().
+        public bool TeleportsOnUse { get; set; }
+
         public int MaxHealthBonus { get; set; }
         public int MaxManaBonus { get; set; }
         public int AttackBonus { get; set; }

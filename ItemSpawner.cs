@@ -847,11 +847,12 @@ namespace Realm
         // randomly *within* a tier; a UT item isn't part of any tier at
         // all — see Equipment.IsUntiered's own doc comment). First real
         // use: Enemy.UniqueItemDropChances (Snake Eye Ring, dropped by
-        // Stheno/Snakepit Guard; Staff of Extreme Prejudice, dropped by
-        // Limon the Sprite Goddess). Searches Weapons/Armors/Rings — every
-        // catalog with a real UT entry so far — extend the search to the
-        // AbilityItem-family catalogs too whenever a UT item of one of
-        // those types exists.
+        // Stheno/Snakepit Guard; Staff of Extreme Prejudice / Sprite Wand /
+        // Cloak of the Planewalker, dropped by Limon the Sprite Goddess).
+        // Searches every equippable catalog — Weapons, Armors, Rings, and
+        // the AbilityItem family (Spells/Quivers/Shields/Tomes/Cloaks) —
+        // so a UT item of any equip type resolves with no further change
+        // here.
         //
         // Returns the resolved Item rather than spawning its own bag — the
         // caller (Enemy.WasShot()) folds it into the same extraItems list
@@ -867,10 +868,18 @@ namespace Realm
         // immediately instead of silently never dropping.
         public static Item ResolveUniqueItem(string itemName)
         {
+            static Item ByName<T>(System.Collections.Generic.List<T> catalog, string name)
+                where T : Item => catalog.FirstOrDefault(x => x.Name == name);
+
             Item item =
-                (Item)Game1.Instance.Weapons.FirstOrDefault(x => x.Name == itemName)
-                ?? (Item)Game1.Instance.Armors.FirstOrDefault(x => x.Name == itemName)
-                ?? Game1.Instance.Rings.FirstOrDefault(x => x.Name == itemName);
+                ByName(Game1.Instance.Weapons, itemName)
+                ?? ByName(Game1.Instance.Armors, itemName)
+                ?? ByName(Game1.Instance.Rings, itemName)
+                ?? ByName(Game1.Instance.Spells, itemName)
+                ?? ByName(Game1.Instance.Quivers, itemName)
+                ?? ByName(Game1.Instance.Shields, itemName)
+                ?? ByName(Game1.Instance.Tomes, itemName)
+                ?? ByName(Game1.Instance.Cloaks, itemName);
 
             if (item == null)
                 throw new InvalidOperationException(

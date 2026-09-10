@@ -1,3 +1,4 @@
+using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Audio;
 
 namespace Realm.CharacterClasses
@@ -174,6 +175,18 @@ namespace Realm.CharacterClasses
 
                 Cloak cloak = (Cloak)AbilityItem;
                 EnterInvisibility(cloak.InvisibilityDurationFrames);
+
+                // Cloak of the Planewalker (realmeye.com/wiki/cloak-of-the-
+                // planewalker): "Teleports to cursor location when
+                // activated." Straight to the cursor's world position —
+                // the wiki's "no teleport if the target is unexplored or
+                // out of range" nuance doesn't map to this engine (no
+                // fog-of-war, no ability range limit). Any state that
+                // cares (BossRealmState's arena clamp, DungeonState's wall
+                // resolve) already corrects an out-of-bounds Position on
+                // its next Update().
+                if (cloak.TeleportsOnUse)
+                    Position = Input.GetMousePosition();
             }
             else
             {
