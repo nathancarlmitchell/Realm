@@ -9771,3 +9771,40 @@ date/time for those individually; don't treat their grouping as meaning they all
      reads mouse-aim direction. Plain `dotnet build` (0 errors) plus a real minimized boot-check;
      real save files backed up first and diffed fully unmodified this time (the test's `Util.
      ResetPlayer()` call only ever touched the in-memory `Player.Instance`, no real save path ran).
+
+344. **Added the Sprite Wand, a real wiki-sourced UT wand, dropped by Limon.** Requested directly
+     (realmeye.com/wiki/sprite-wand) — the game's third UT item, first UT wand, and the first wand
+     of any kind whose shot isn't a straight line.
+
+     New `Weapon.Shoot()` branch for `WeaponType.Wand` with a nonzero `Amplitude`: fires a single
+     `SineWaveProjectile` (the same primitive every Staff shot already uses) instead of the straight
+     `Projectile` every tiered wand fires — matching the wiki's "shoots in a wavy pattern, much like
+     the Doku No Ken, with a much higher amplitude." Still one shot, still piercing (a Wand's
+     `expiresOnHit` is already false), unlike a Staff's own non-piercing wavy shot; returns early
+     like the Staff branches, since Lethal Strike (Rogue/Dagger-only) and Bow side-shots never
+     apply to a Wand. `WandData.cs`/`Util.LoadWandData()` gained `IsUntiered`/`Amplitude`/`Frequency`
+     (all default 0/false — every tiered wand unaffected); `Weapon.LoadWeapon()`'s copy-list already
+     carried all three from the entry-343 UT-staff work.
+
+     Stats from the wiki table, converted the usual way (`tiles/sec * 32/60` -> px/tick,
+     `tile * 32` -> px, `sec * 60` -> frames): Damage 10-290 (a deliberately huge RNG spread — the
+     wiki's own "heavy reliance on RNG" note), ProjectileMagnitude 9.6 (18 tiles/sec — same as every
+     tiered wand), ProjectileDuration 30 frames (0.5s — also same), Amplitude 25.6 (0.8 tile),
+     Frequency 1.5 (cycles/shot, unconverted, matching `StaffData.cs`). No `XpBonusPercent` — the
+     wiki page for this wand, unlike the Staff of Extreme Prejudice's, shows no "XP Bonus" row at
+     all, so it's left at 0. `Tier: -1` + `IsUntiered: true`, same convention as the Snake Eye Ring
+     and the Staff.
+
+     `LimonTheSpriteGoddess`'s `UniqueItemDropChances` gained `["Sprite Wand"] = 1f` alongside the
+     existing Staff entry. The wiki lists several Native Sprite enemies plus a Standard Quest Chest
+     as additional sources, none of which exist in this engine, so Limon is the only wired one — and
+     the request was specifically "the Sprite Wand UT drop from Limon."
+
+     Verified via a temporary `Game1.StartGame()` scripted check (reverted, no diff remains): the
+     catalog entry resolves with the right Type/IsUntiered/Amplitude/Frequency/damage;
+     `ItemSpawner.ResolveUniqueItem` finds it as a `Weapon`; equipping via the real
+     `Weapon.LoadWeapon()` path restores `IsUntiered`/`Amplitude`/`Frequency`; firing it spawns
+     exactly one projectile, of type `SineWaveProjectile`, with `ExpiresOnHit` false (pierces) and
+     damage inside the 10-290 range. Plain `dotnet build` (0 errors, content pipeline picked up the
+     two new PNGs) plus a real minimized boot-check; real save files backed up first and diffed
+     fully unmodified.

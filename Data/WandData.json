@@ -178,5 +178,20 @@
         "XpBonusPercent": 8.0,
         "ImageName": "Weapons/Wands/14",
         "ProjectileImageName": "Weapons/Wands/Projectiles/14"
+    },
+    {
+        "Name": "Sprite Wand",
+        "Description": "A wand created from the wood of Sprite trees. Seems to be poorly calibrated, though.",
+        "Tier": -1,
+        "IsUntiered": true,
+        "DamageMin": 10,
+        "DamageMax": 290,
+        "ProjectileMagnitude": 9.6,
+        "ProjectileDuration": 30,
+        "Amplitude": 25.6,
+        "Frequency": 1.5,
+        "XpBonusPercent": 0.0,
+        "ImageName": "Weapons/Wands/UT/Sprite Wand",
+        "ProjectileImageName": "Weapons/Wands/Projectiles/Sprite Wand"
     }
 ]

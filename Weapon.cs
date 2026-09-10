@@ -302,6 +302,40 @@ namespace Realm
                     return;
                 }
 
+                if (this.Type == WeaponType.Wand && this.Amplitude != 0f)
+                {
+                    // Sprite Wand (realmeye.com/wiki/sprite-wand): "shoots
+                    // in a wavy pattern, much like the Doku No Ken, with a
+                    // much higher amplitude." Its own Amplitude/Frequency
+                    // drive a single SineWaveProjectile — the same
+                    // primitive every Staff shot uses — instead of the
+                    // straight Projectile every tiered wand fires. Still
+                    // one shot (Shots: 1) and still pierces (expiresOnHit
+                    // is already false for a Wand), unlike a Staff's own
+                    // non-piercing wavy shot. No Lethal Strike / Bow side-
+                    // shot handling below applies to a Wand, so this
+                    // returns straight away like the Staff branches do.
+                    EntityManager.Add(
+                        new SineWaveProjectile(
+                            spawnPosition,
+                            aimAngle + randomSpread,
+                            this.ProjectileMagnitude,
+                            this.Amplitude,
+                            this.Frequency,
+                            phaseOffset: 0f
+                        )
+                        {
+                            image = this.ProjectileImage,
+                            Damage = (int)damage,
+                            ExpiresOnHit = expiresOnHit,
+                            Duration = this.ProjectileDuration,
+                        }
+                    );
+
+                    Sound.Play(Sound.MagicShoot, 0.3f);
+                    return;
+                }
+
                 Vector2 vel = Extensions.FromPolar(
                     aimAngle + randomSpread,
                     this.ProjectileMagnitude
