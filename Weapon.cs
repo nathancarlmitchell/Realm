@@ -329,6 +329,7 @@ namespace Realm
                             Damage = (int)damage,
                             ExpiresOnHit = expiresOnHit,
                             Duration = this.ProjectileDuration,
+                            Tint = RandomBrightColor(),
                         }
                     );
 
@@ -421,6 +422,28 @@ namespace Realm
 
                 Sound.Play(Sound.MagicShoot, 0.3f);
             }
+        }
+
+        // A vivid random color — full saturation and value, only the hue is
+        // random. Sprite Wand only (realmeye.com/wiki/sprite-wand:
+        // "originally shot random colors"). Deliberately not a raw random
+        // RGB, which lands on a muddy or near-black color most of the time;
+        // rotating hue at S=V=1 keeps every result bright and readable
+        // against the game's dark background.
+        private Color RandomBrightColor()
+        {
+            float h = rand.NextFloat(0f, 6f); // hue measured in 60° sextants: [0, 6)
+            float x = 1f - Math.Abs(h % 2f - 1f);
+            (float r, float g, float b) = (int)h switch
+            {
+                0 => (1f, x, 0f),
+                1 => (x, 1f, 0f),
+                2 => (0f, 1f, x),
+                3 => (0f, x, 1f),
+                4 => (x, 0f, 1f),
+                _ => (1f, 0f, x),
+            };
+            return new Color(r, g, b);
         }
 
         // The current class's Tier 0 weapon — shown greyed out in an empty

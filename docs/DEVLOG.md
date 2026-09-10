@@ -9808,3 +9808,22 @@ date/time for those individually; don't treat their grouping as meaning they all
      damage inside the 10-290 range. Plain `dotnet build` (0 errors, content pipeline picked up the
      two new PNGs) plus a real minimized boot-check; real save files backed up first and diffed
      fully unmodified.
+
+345. **Sprite Wand now shoots a random color per shot.** Requested directly, and a real bit of the
+     item's own history — realmeye.com/wiki/sprite-wand: "Added in Build 83 (Feb 2010), the Sprite
+     Wand originally shot random colors."
+
+     New `Projectile.Tint` property (a public get/set proxy onto `Entity.color`, which is
+     `protected` and so unreachable from a spawn-site object initializer). Left `Color.White` — an
+     identity tint — for every projectile except the Sprite Wand's, so nothing else changes. The
+     wavy-wand branch in `Weapon.Shoot()` sets `Tint = RandomBrightColor()` on each shot.
+
+     `RandomBrightColor()` rotates hue at full saturation and value (only the hue is random),
+     rather than picking a raw random RGB — a raw RGB lands on a muddy or near-black color most of
+     the time, which would read as broken against the game's dark background. Implemented as a
+     plain 6-sextant hue-to-RGB switch, no new color library.
+
+     Verified via a temporary `Game1.StartGame()` scripted check (reverted, no diff remains): 20
+     Sprite Wand shots produced 20 distinct tints, every one fully saturated (each has a channel at
+     255 and a channel at 0), none near-black. Plain `dotnet build` (0 errors) plus a real
+     minimized boot-check; real save files backed up first and diffed fully unmodified.

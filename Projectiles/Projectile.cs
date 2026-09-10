@@ -11,6 +11,17 @@ namespace Realm.Projectiles
         public int Damage;
         public Guid ID;
 
+        // Sprite tint, exposed for a spawn-site object initializer since
+        // Entity.color itself is protected. Left Color.White (no tint) for
+        // every projectile except the Sprite Wand's own shots, which
+        // randomize it per shot — Weapon.Shoot(), matching the wiki's
+        // "originally shot random colors."
+        public Color Tint
+        {
+            get => color;
+            set => color = value;
+        }
+
         // Whether this projectile expires the moment it hits an enemy, or
         // keeps flying through (still only damages a given enemy once each,
         // via EntityManager's HitBy tracking — this only controls whether it
