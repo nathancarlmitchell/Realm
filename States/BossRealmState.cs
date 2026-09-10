@@ -174,6 +174,16 @@ namespace Realm.States
                 announcementFramesRemaining--;
         }
 
+        // The arena is an open box with no interior walls — a position is
+        // walkable iff a circle of `radius` at it stays fully inside the
+        // same bounds Update() above clamps the player to. See
+        // State.IsWalkable / Rogue.UseAbility()'s teleport guard.
+        public override bool IsWalkable(Vector2 worldPosition, float radius) =>
+            worldPosition.X >= radius
+            && worldPosition.X <= InstanceWorldWidth - radius
+            && worldPosition.Y >= radius
+            && worldPosition.Y <= InstanceWorldHeight - radius;
+
         // Boss name+health bar (drawn whenever a boss is alive) and the
         // fade-out appearance announcement banner (drawn only for the first
         // few seconds after the fight starts) — both screen-space, centered

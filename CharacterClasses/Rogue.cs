@@ -171,21 +171,16 @@ namespace Realm.CharacterClasses
 
             if (Mana >= AbilityCost)
             {
-                Mana -= AbilityCost;
-
                 Cloak cloak = (Cloak)AbilityItem;
-                EnterInvisibility(cloak.InvisibilityDurationFrames);
 
                 // Cloak of the Planewalker (realmeye.com/wiki/cloak-of-the-
                 // planewalker): "Teleports to cursor location when
                 // activated." The target is the cursor's world position,
-                // clamped to TeleportRangeTiles (3 tiles) from the player —
-                // a cursor farther out lands the player at the range limit
-                // along the same direction rather than not teleporting at
-                // all (the wiki's real "no teleport if out of range" isn't
-                // modeled). Any state that cares (BossRealmState's arena
-                // clamp, DungeonState's wall resolve) still corrects an
-                // out-of-bounds Position on its next Update().
+                // clamped to TeleportRangeTiles from the player — a cursor
+                // farther out lands the player at the range limit along the
+                // same direction rather than not teleporting at all (the
+                // wiki's real "no teleport if out of range" isn't modeled).
+                Vector2? teleportTarget = null;
                 if (cloak.TeleportsOnUse)
                 {
                     Vector2 target = Input.GetMousePosition();
@@ -196,8 +191,27 @@ namespace Realm.CharacterClasses
                         if (offset.LengthSquared() > maxDist * maxDist)
                             target = Position + Vector2.Normalize(offset) * maxDist;
                     }
-                    Position = target;
+
+                    // Refuse a teleport onto a wall or past the instance's
+                    // bounds — otherwise the next Update()'s collision pass
+                    // immediately shoves the player back out, which reads as
+                    // the teleport dumping them somewhere random. Nothing is
+                    // spent on a failed cast (no mana, no invisibility),
+                    // same as the equipped-check guards above.
+                    if (!Game1.Instance.CurrentState.IsWalkable(target, Radius))
+                    {
+                        Sound.Play(Sound.Error, 0.4f);
+                        return;
+                    }
+
+                    teleportTarget = target;
                 }
+
+                Mana -= AbilityCost;
+                EnterInvisibility(cloak.InvisibilityDurationFrames);
+
+                if (teleportTarget.HasValue)
+                    Position = teleportTarget.Value;
             }
             else
             {

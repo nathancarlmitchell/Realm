@@ -65,6 +65,14 @@ namespace Realm.States
 
         public abstract void Update(GameTime gameTime);
 
+        // Whether a circle of the given radius at worldPosition sits on
+        // walkable ground in this state. True by default — the open Realm
+        // and the Nexus have no walls or hard edges within reach. Overridden
+        // by DungeonState (tile grid) and BossRealmState (bounded arena).
+        // First use: Rogue.UseAbility()'s Cloak of the Planewalker teleport,
+        // which refuses to drop the player onto a wall or past the map edge.
+        public virtual bool IsWalkable(Vector2 worldPosition, float radius) => true;
+
         #endregion
     }
 }

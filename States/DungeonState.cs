@@ -302,6 +302,17 @@ namespace Realm.States
             pathfindingController.Update();
         }
 
+        // A position is walkable here only if a circle of `radius` at it
+        // overlaps no wall and no out-of-bounds cell — reuses the exact
+        // per-frame collision resolve above: if ResolveCircleCollision()
+        // would push the circle at all, it was clipping a wall or the map
+        // edge. See State.IsWalkable / Rogue.UseAbility()'s teleport guard.
+        public override bool IsWalkable(Vector2 worldPosition, float radius)
+        {
+            Vector2 resolved = dungeonMap.ResolveCircleCollision(worldPosition, radius);
+            return Vector2.DistanceSquared(resolved, worldPosition) < 0.01f;
+        }
+
         // Every projectile in the game passes straight through obstacles
         // everywhere else (there's no obstacle/projectile interaction
         // anywhere in the shared collision code) — this is where dungeon

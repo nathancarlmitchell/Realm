@@ -9885,3 +9885,33 @@ date/time for those individually; don't treat their grouping as meaning they all
      direction at 1.0000; temporarily setting `TeleportRangeTiles = 0` on the equipped cloak made
      the same activation land exactly on the cursor. Plain `dotnet build` (0 errors) plus a real
      minimized boot-check; real save files backed up first and diffed fully unmodified.
+
+348. **The Cloak of the Planewalker teleport now refuses invalid destinations instead of dumping
+     the player out of bounds.** Reported directly — teleporting onto a wall or past the map edge
+     let the next `Update()`'s collision pass shove the player back out, which read as the teleport
+     landing somewhere random.
+
+     New `State.IsWalkable(Vector2 worldPosition, float radius)` — `true` by default (the open Realm
+     and Nexus have no walls or hard edges within reach), overridden by:
+     - `DungeonState`: reuses the per-frame `dungeonMap.ResolveCircleCollision()` — if a circle at
+       the target would be pushed at all, it was clipping a wall or the map edge (`TileAt()` returns
+       a non-passable `OutOfBoundsTile` for out-of-bounds cells, so one call covers both).
+     - `BossRealmState`: the target must keep a `radius` circle fully inside the same
+       `[radius, InstanceWorldWidth/Height - radius]` box `Update()` already clamps the player to.
+
+     New `Game1.CurrentState` (read-only view of the private `currentState`). `Rogue.UseAbility()`
+     now computes the (range-clamped) teleport target first and checks `Game1.Instance.CurrentState.
+     IsWalkable(target, Radius)` before spending anything — an invalid target plays `Sound.Error`
+     and returns with no mana spent, no invisibility, no movement, exactly like the
+     already-existing "no weapon / no cloak equipped" guards. `UseAbility()` was restructured so
+     mana deduction and `EnterInvisibility()` happen only after the target is validated.
+
+     Verified via a temporary `Game1.StartGame()` scripted check (reverted, no diff remains):
+     `BossRealmState.IsWalkable` returns true inside the arena and false past / within a radius of
+     the edge; `DungeonState.IsWalkable` returns true at the generated dungeon's start-room center
+     and false at a void corner cell and at out-of-bounds coordinates (both small-negative and far
+     past the grid). Integration: with the current state a `DungeonState` and the cursor aimed at a
+     void cell, a Planewalker activation left `Position`, `Mana`, and `IsInvisible` all unchanged;
+     with the current state an open `NexusState`, the same activation teleported exactly 96px,
+     spent 90 mana, and entered invisibility. Plain `dotnet build` (0 errors) plus a real minimized
+     boot-check; real save files backed up first and diffed fully unmodified.

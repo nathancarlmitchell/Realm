@@ -17,6 +17,11 @@ namespace Realm
         private State nextState,
             currentState;
 
+        // The live gameplay/menu state. Read-only view of the private field
+        // above — Update() is the only thing that swaps it (from nextState,
+        // queued by ChangeState()).
+        public State CurrentState => currentState;
+
         public static Camera Camera;
 
         // The window stays the original 1280x720 — the sidebar carves its
