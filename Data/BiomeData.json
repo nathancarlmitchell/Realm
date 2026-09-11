@@ -16,7 +16,19 @@
             "Scorpion Queen",
             "Sandsman King",
             "Giant Crab"
-        ]
+        ],
+        "TerrainTileSetName": "Beach",
+        "WaterTileName": "Water",
+        "ObstacleTileName": "Driftwood",
+        "WaterPoolCountMin": 8,
+        "WaterPoolCountMax": 15,
+        "WaterPoolMinRadius": 80,
+        "WaterPoolMaxRadius": 180,
+        "ObstacleClusterCountMin": 10,
+        "ObstacleClusterCountMax": 15,
+        "ObstacleMinRadius": 50,
+        "ObstacleMaxRadius": 120,
+        "FeaturePadding": 150
     },
     {
         "Name": "Forest",

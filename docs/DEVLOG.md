@@ -9915,3 +9915,74 @@ date/time for those individually; don't treat their grouping as meaning they all
      with the current state an open `NexusState`, the same activation teleported exactly 96px,
      spent 90 mana, and entered invisibility. Plain `dotnet build` (0 errors) plus a real minimized
      boot-check; real save files backed up first and diffed fully unmodified.
+
+349. **Gave the open Realm's Beach biome real generated terrain — scattered water pools and
+     driftwood clusters — instead of just a flat color tint.** Requested directly. The open Realm
+     has no tile grid or collision anywhere today (unlike the bounded `DungeonState`/
+     `BossRealmState` instances), and the Beach ring alone (radius 8000 around wherever the player
+     entered this Realm instance — `EnemySpawner.EntryPosition`) would be a ~500x500-tile grid if
+     ported straight through `DungeonGenerator.cs`'s room-and-corridor approach — a cost category
+     nothing else in this engine pays. Built instead as a **sparse set of scattered circular
+     features in continuous space**, deliberately not a maze: real terrain, genuinely different
+     generation shape from every dungeon type.
+
+     New `Beach/BeachTerrainFeature.cs` (a plain `Vector2 Center` + `float Radius` + `TileDefData
+     Tile` — a circle, not a tile-grid region) and `Beach/BeachTerrainGenerator.cs`
+     (`Generate(TileSetData, BiomeData, Vector2 center, Random) -> List<BeachTerrainFeature>`).
+     Placement mirrors `DungeonGenerator.PlaceRooms()`'s own circular-room overlap rejection
+     (center-distance-vs-summed-radii+padding, up to 500 attempts per slot) but samples uniformly
+     over the ring's *area* in continuous space (`radius * sqrt(rand)`, the same technique
+     `RealmState`'s own Beach Beacon placement already uses) instead of picking grid cells. A fixed
+     400px keep-clear zone around the entry point stops a fresh arrival from spawning pinned inside
+     a feature.
+
+     Each feature reuses the existing `TileDefData` schema for both its sprite (`OffsetX`/`OffsetY`
+     into a small new tileset atlas) *and* its real gameplay semantics — no separate feature-type
+     enum. Placeholder tileset: `Content/Dungeons/Beach/TileSet.png` is a real, separate copy of
+     Pirate Cave's own tileset PNG (not a shared reference — swapping in real beach art later never
+     touches Pirate Cave's file), catalogued as new `Data/TileSet_Beach.json` with `Water`
+     (`CanPassThrough: true`, `SlowsPlayer: true` — copied verbatim from Pirate Cave's own Water
+     tile) and `Driftwood` (`CanPassThrough: false`, reusing Pirate Cave's Cave Wall cell as a
+     placeholder "blocking obstacle" visual).
+
+     New optional `Data/BiomeData.cs` fields (`TerrainTileSetName`, `WaterTileName`/
+     `ObstacleTileName`, `WaterPoolCountMin/Max`, `WaterPoolMinRadius/MaxRadius`,
+     `ObstacleClusterCountMin/Max`, `ObstacleMinRadius/MaxRadius`, `FeaturePadding`) — the same
+     "0/null = off" convention `DungeonTypeData.cs`'s own optional knobs already established, so
+     every biome besides Beach is untouched. Beach's own values (8-15 water pools at 80-180px
+     radius, 10-15 obstacle clusters at 50-120px, 150px padding) keep the total feature footprint
+     under 1% of the ring's ~2.01×10⁸px² area — sparse and tasteful, not maze-density.
+
+     `RealmState.cs` wiring: a new `beachFeatures` list generated once per instance right after the
+     existing Beach Beacon placement block (same `if (beachBiome != null)` guard — already skipped
+     entirely for `BossRealmState`/`DungeonState`, both hardcoding `SpawnsRegularEnemies => false`);
+     `DrawBackground()` gains a second `PointClamp`-sampled pass (crisp tile edges, same reasoning
+     `DungeonState`'s own override already documents) drawing each on-screen feature as a
+     tile-filled, circle-clipped patch — a small per-feature loop over that one feature's own
+     bounding box, mirroring `DungeonMap.Draw()`'s visible-bounds tile iteration without needing a
+     world-spanning grid; `Update()` gains a per-tick collision pass for the player and every
+     `EntityManager.OfEnemyType<Enemy>()` enemy — a `!CanPassThrough` feature (Driftwood) pushes the
+     entity out along the center-to-center normal (the circle-vs-circle counterpart to
+     `DungeonMap.PushOutOfRectangle()`), a `SlowsPlayer` feature (Water) calls `Player.Instance.
+     Slow(10)`, the same call `DungeonState.ApplyTileEffects()` already makes for its own tile
+     grid — player-only, since there's no `Enemy.Slow()` equivalent. New `RealmState.IsWalkable()`
+     override (the `State.IsWalkable` virtual added for the Planewalker cloak's teleport
+     validation) rejects a target overlapping a blocking feature, so a Planewalker teleport onto a
+     driftwood pile is now correctly refused in the open Realm too, not just inside a dungeon.
+     Projectile-terrain collision is explicitly out of scope, matching the documented default
+     everywhere outside a dungeon.
+
+     Verified via a temporary `Game1.StartGame()` scripted check (reverted, no diff remains):
+     constructing a real `RealmState` generated 22 features (10 water, 12 obstacle — both within
+     their configured `[Min,Max]`), every one within `MaxDistance` of the entry point, outside the
+     400px keep-clear zone, and with no two overlapping closer than their combined radii +
+     `FeaturePadding`; `IsWalkable` correctly returned false at an obstacle's center and true far
+     away; a direct `ResolveBeachTerrainCollision()` call from inside an obstacle pushed the test
+     point out to exactly `obstacleRadius + entityRadius` from its center. Also verified visually —
+     a non-minimized screenshot with the camera centered on a generated water pool showed a real,
+     correctly circle-clipped, point-sampled tile patch rendered over the flat biome tint (the
+     expected "staircase" tile-boundary edge, same shape Snake Pit's own circular rooms already
+     produce). Plain `dotnet build` (0 errors, content pipeline picked up the new tileset PNG) plus
+     a real minimized boot-check; real save files backed up first and diffed — the same benign
+     equipped-item-instance-GUID churn from prior entries showed up on the one `PlayerData` file
+     touched by this test's own `RealmState` construction (stats/tiers/names all identical).

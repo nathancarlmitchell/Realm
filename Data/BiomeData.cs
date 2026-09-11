@@ -31,5 +31,32 @@ namespace Realm.Data
         // is standing in this ring. An enemy needs both: level-unlocked
         // AND biome-eligible.
         public string[] EnemyNames { get; set; }
+
+        // Scattered terrain features (water pools, obstacle clusters) —
+        // see Beach/BeachTerrainGenerator.cs and RealmState.cs's own
+        // wiring. Null/0 (the default) for every biome that doesn't set
+        // TerrainTileSetName is a complete no-op — first real use: Beach.
+        // Looked up by Data/TileSet_{TerrainTileSetName}.json, same
+        // Util.LoadTileSetData() convention every dungeon tileset uses.
+        public string TerrainTileSetName { get; set; }
+        public string WaterTileName { get; set; }
+        public string ObstacleTileName { get; set; }
+
+        // Feature counts are rolled once per Realm instance as
+        // rand.Next(Min, Max + 1) — inclusive of both ends, same
+        // convention DungeonGenerator.PlaceRooms() uses for room count.
+        public int WaterPoolCountMin { get; set; }
+        public int WaterPoolCountMax { get; set; }
+        public float WaterPoolMinRadius { get; set; } // world px
+        public float WaterPoolMaxRadius { get; set; }
+
+        public int ObstacleClusterCountMin { get; set; }
+        public int ObstacleClusterCountMax { get; set; }
+        public float ObstacleMinRadius { get; set; }
+        public float ObstacleMaxRadius { get; set; }
+
+        // Minimum gap (world px) kept between any two features' own
+        // edges, regardless of type — see BeachTerrainGenerator.PlaceOne().
+        public float FeaturePadding { get; set; }
     }
 }

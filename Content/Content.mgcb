@@ -3486,6 +3486,18 @@
 /processorParam:TextureFormat=Color
 /build:Dungeons/Pirate Cave/TileSet.png
 
+#begin Dungeons/Beach/TileSet.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:Dungeons/Beach/TileSet.png
+
 #begin Dungeons/Pirate Cave/Portal.png
 /importer:TextureImporter
 /processor:TextureProcessor

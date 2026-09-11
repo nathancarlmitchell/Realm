@@ -25,6 +25,18 @@ namespace Realm.States
         // biomes existed.
         private readonly List<(Data.BiomeData biome, Texture2D texture)> biomeRings = [];
 
+        // Scattered water-pool/obstacle-cluster circles generated once per
+        // instance for a biome that opts in (see Beach/
+        // BeachTerrainGenerator.cs and Data/BiomeData.cs's own
+        // TerrainTileSetName doc comment) — empty for every biome that
+        // doesn't (every instance's own Draw()/Update() below no-op
+        // cleanly on an empty list, same "additive, zero-cost when unused"
+        // shape biomeRings above already has). beachTileAtlas is that
+        // tileset's own loaded texture, resolved once alongside the
+        // feature list rather than re-resolving Content.Load() per draw.
+        private readonly List<BeachTerrainFeature> beachFeatures = [];
+        private Texture2D beachTileAtlas;
+
         // Extension points for BossRealmState (a bounded arena instance
         // instead of the open Realm world, and no regular EnemySpawner
         // traffic) — pure constants, safe to read from this base
@@ -83,6 +95,137 @@ namespace Realm.States
                 spriteBatch.Draw(Art.Tile, new Vector2(32, 32), targetRectangle, Color.White);
 
             spriteBatch.End();
+
+            // Scattered terrain features on top of the flat biome tint, in
+            // their own PointClamp-sampled pass — a real tile atlas needs
+            // point sampling to avoid bleeding an adjacent packed tile in
+            // at its seams (same reasoning DungeonState's own
+            // DrawBackground() override already documents), which the
+            // LinearWrap pass above doesn't provide. No-ops (empty loop)
+            // for every instance without any beachFeatures — every boss
+            // arena/dungeon, and the open Realm before its own generation
+            // above ever runs.
+            if (beachFeatures.Count > 0)
+            {
+                spriteBatch.Begin(
+                    SpriteSortMode.Deferred,
+                    BlendState.AlphaBlend,
+                    SamplerState.PointClamp,
+                    DepthStencilState.Default,
+                    RasterizerState.CullNone,
+                    null,
+                    Game1.Camera.GetTransformation()
+                );
+
+                Rectangle worldBounds = Game1.GetWorldBounds(1.1f);
+                foreach (BeachTerrainFeature feature in beachFeatures)
+                    DrawBeachFeature(spriteBatch, feature, worldBounds);
+
+                spriteBatch.End();
+            }
+        }
+
+        // Fills feature's own circular footprint with its tile's sprite,
+        // one 32px cell at a time — mirrors DungeonMap.Draw()'s own
+        // visible-bounds tile iteration, just scoped to this one feature's
+        // small local bounding box instead of a whole grid (there is no
+        // grid for the open Realm to iterate). Skips entirely if the
+        // feature's own bounding box doesn't overlap worldBounds, same
+        // "only draw what's on screen" reasoning DungeonMap.Draw() uses.
+        private void DrawBeachFeature(
+            SpriteBatch spriteBatch,
+            BeachTerrainFeature feature,
+            Rectangle worldBounds
+        )
+        {
+            Rectangle featureBounds = new(
+                (int)(feature.Center.X - feature.Radius),
+                (int)(feature.Center.Y - feature.Radius),
+                (int)(feature.Radius * 2),
+                (int)(feature.Radius * 2)
+            );
+            if (!featureBounds.Intersects(worldBounds))
+                return;
+
+            const int tileSize = 32;
+            Rectangle sourceRect = new(
+                feature.Tile.OffsetX * tileSize,
+                feature.Tile.OffsetY * tileSize,
+                tileSize,
+                tileSize
+            );
+
+            int minTileX = (int)MathF.Floor(featureBounds.Left / (float)tileSize);
+            int maxTileX = (int)MathF.Floor(featureBounds.Right / (float)tileSize);
+            int minTileY = (int)MathF.Floor(featureBounds.Top / (float)tileSize);
+            int maxTileY = (int)MathF.Floor(featureBounds.Bottom / (float)tileSize);
+
+            for (int ty = minTileY; ty <= maxTileY; ty++)
+            for (int tx = minTileX; tx <= maxTileX; tx++)
+            {
+                Vector2 cellCenter = new(tx * tileSize + tileSize / 2f, ty * tileSize + tileSize / 2f);
+                if (Vector2.DistanceSquared(cellCenter, feature.Center) > feature.Radius * feature.Radius)
+                    continue; // outside the circle — leave the flat biome tint showing through.
+
+                Rectangle destRect = new(tx * tileSize, ty * tileSize, tileSize, tileSize);
+                spriteBatch.Draw(beachTileAtlas, destRect, sourceRect, Color.White);
+            }
+        }
+
+        // Resolves `position` against every beachFeatures circle it
+        // overlaps: a blocking (!CanPassThrough) feature — e.g. Driftwood —
+        // pushes it out along the center-to-center normal (the circle-vs-
+        // circle equivalent of DungeonMap's own rectangle-vs-circle
+        // PushOutOfRectangle()); a SlowsPlayer feature — e.g. Water — just
+        // applies Player.Instance.Slow(), same call DungeonState.
+        // ApplyTileEffects() already makes for its own SlowsPlayer tiles.
+        // applySlow is false for enemies — there's no Enemy-side Slow()
+        // equivalent to call.
+        private Vector2 ResolveBeachTerrainCollision(Vector2 position, float radius, bool applySlow)
+        {
+            foreach (BeachTerrainFeature feature in beachFeatures)
+            {
+                Vector2 delta = position - feature.Center;
+                float dist = delta.Length();
+                float minDist = feature.Radius + radius;
+                if (dist >= minDist)
+                    continue; // not overlapping this feature.
+
+                if (!feature.Tile.CanPassThrough)
+                {
+                    Vector2 normal = dist > 0f ? delta / dist : new Vector2(1f, 0f);
+                    position = feature.Center + normal * minDist;
+                }
+                else if (applySlow && feature.Tile.SlowsPlayer)
+                {
+                    Player.Instance.Slow(durationFrames: 10);
+                }
+            }
+
+            return position;
+        }
+
+        // A position is walkable here only if it overlaps no blocking
+        // (!CanPassThrough) feature — Water is still "walkable" (it only
+        // slows), same as DungeonState.IsWalkable()'s own wall/out-of-
+        // bounds check, just against BeachTerrainFeature circles instead
+        // of a tile grid. True (State's own default) when beachFeatures is
+        // empty. First real consumer: Rogue.UseAbility()'s Cloak of the
+        // Planewalker teleport, which now refuses to land the player on a
+        // driftwood pile in the open Realm too, not just inside a dungeon.
+        public override bool IsWalkable(Vector2 worldPosition, float radius)
+        {
+            foreach (BeachTerrainFeature feature in beachFeatures)
+            {
+                if (feature.Tile.CanPassThrough)
+                    continue;
+
+                float minDist = feature.Radius + radius;
+                if (Vector2.DistanceSquared(worldPosition, feature.Center) < minDist * minDist)
+                    return false;
+            }
+
+            return true;
         }
 
         public static Guid HealthPotionGuid = Guid.NewGuid();
@@ -218,6 +361,28 @@ namespace Realm.States
                     Vector2 beaconPosition =
                         EnemySpawner.EntryPosition + Extensions.FromPolar(angle, radius);
                     EntityManager.Add(new BeachBeacon(beaconPosition));
+
+                    // Scattered terrain (water pools, obstacle clusters) —
+                    // see Beach/BeachTerrainGenerator.cs. Opt-in per biome
+                    // (TerrainTileSetName unset = skip entirely, the same
+                    // "0/null = off" contract every other optional
+                    // BiomeData field already has), so this is a no-op for
+                    // every biome besides Beach today.
+                    if (!string.IsNullOrEmpty(beachBiome.TerrainTileSetName))
+                    {
+                        Data.TileSetData terrainTileSet = Util.LoadTileSetData(
+                            beachBiome.TerrainTileSetName
+                        );
+                        beachTileAtlas = content.Load<Texture2D>(terrainTileSet.ImageName);
+                        beachFeatures.AddRange(
+                            BeachTerrainGenerator.Generate(
+                                terrainTileSet,
+                                beachBiome,
+                                EnemySpawner.EntryPosition,
+                                beaconRand
+                            )
+                        );
+                    }
                 }
             }
 
@@ -345,6 +510,28 @@ namespace Realm.States
         public override void Update(GameTime gameTime)
         {
             EntityManager.Update();
+
+            // Scattered terrain collision (water pools slow, obstacle
+            // clusters block) — mirrors DungeonState.Update()'s own
+            // player+enemy ResolveCircleCollision loop and ApplyTileEffects
+            // SlowsPlayer branch, just against BeachTerrainFeature circles
+            // instead of a tile grid. No-op when beachFeatures is empty
+            // (every instance besides an open Realm with Beach terrain).
+            if (beachFeatures.Count > 0)
+            {
+                Player.Instance.Position = ResolveBeachTerrainCollision(
+                    Player.Instance.Position,
+                    Player.Instance.Radius,
+                    applySlow: true
+                );
+
+                foreach (Enemy enemy in EntityManager.OfEnemyType<Enemy>())
+                    enemy.Position = ResolveBeachTerrainCollision(
+                        enemy.Position,
+                        enemy.Radius,
+                        applySlow: false
+                    );
+            }
 
             if (SpawnsRegularEnemies)
                 EnemySpawner.Update();
