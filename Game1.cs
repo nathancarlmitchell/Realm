@@ -98,6 +98,25 @@ namespace Realm
             );
         }
 
+        // Circular "vision" cutoff around the camera (== the player —
+        // Camera.Pos tracks Player.Instance.Position every frame) that
+        // every tile-based renderer — the open Realm's biome background
+        // and scattered terrain features (RealmState), and a dungeon's own
+        // tile grid (DungeonMap) — clips against, on top of their existing
+        // GetWorldBounds() rectangle (still used to bound which tiles get
+        // iterated at all, for the same performance reason it always was).
+        // A plain rectangle fills the whole screen edge-to-edge, so the
+        // loaded/unloaded boundary always read as a square silhouette
+        // around the player; this radius instead leaves the four screen
+        // corners as void even well inside an otherwise-loaded area, the
+        // same rounded "torch-lit" reveal shape everywhere it's used.
+        // Sized to just clear both GameplayViewportWidth/2 (980/2 = 490)
+        // and GameplayViewportHeight/2 (720/2 = 360), so the top/bottom/
+        // left/right screen edges stay reachable right at the camera's own
+        // height/column, while the screen's own corners (roughly 608px
+        // out) are comfortably beyond it and round off.
+        public const float VisionRadius = 500f;
+
         public static bool Mute { get; set; }
         public static bool _Debug { get; set; }
         public List<Weapon> Weapons { get; set; }

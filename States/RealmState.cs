@@ -137,7 +137,11 @@ namespace Realm.States
         // small local bounding box instead of a whole grid (there is no
         // grid for the open Realm to iterate). Skips entirely if the
         // feature's own bounding box doesn't overlap worldBounds, same
-        // "only draw what's on screen" reasoning DungeonMap.Draw() uses.
+        // "only draw what's on screen" reasoning DungeonMap.Draw() uses;
+        // each surviving cell is then also clipped against Game1.
+        // VisionRadius around the camera, same as DrawBiomeRings(), so a
+        // feature near the edge of vision fades into the same circular
+        // cutoff as the ground beneath it rather than popping past it.
         private void DrawBeachFeature(
             SpriteBatch spriteBatch,
             BeachTerrainFeature feature,
@@ -154,6 +158,8 @@ namespace Realm.States
                 return;
 
             const int tileSize = 32;
+            const float visionRadiusSq = Game1.VisionRadius * Game1.VisionRadius;
+            Vector2 cameraPos = Game1.Camera.Pos;
             Rectangle sourceRect = new(
                 feature.Tile.OffsetX * tileSize,
                 feature.Tile.OffsetY * tileSize,
@@ -172,6 +178,8 @@ namespace Realm.States
                 Vector2 cellCenter = new(tx * tileSize + tileSize / 2f, ty * tileSize + tileSize / 2f);
                 if (Vector2.DistanceSquared(cellCenter, feature.Center) > feature.Radius * feature.Radius)
                     continue; // outside the circle — leave the flat biome tint showing through.
+                if (Vector2.DistanceSquared(cellCenter, cameraPos) > visionRadiusSq)
+                    continue; // outside the circular vision radius — leave it black.
 
                 Rectangle destRect = new(tx * tileSize, ty * tileSize, tileSize, tileSize);
                 spriteBatch.Draw(beachTileAtlas, destRect, sourceRect, Color.White);
@@ -508,6 +516,10 @@ namespace Realm.States
         // true circle instead of the old oversized-square-per-biome
         // approach's actual (if not visually obvious) square edge --
         // now consistent with the already-circular gameplay/spawn boundary.
+        // On top of that, every cell is also clipped against Game1.
+        // VisionRadius around the camera -- see its own doc comment -- so
+        // the loaded/unloaded edge reads as a circle around the player,
+        // not the rectangular worldBounds window's own square silhouette.
         private void DrawBiomeRings(SpriteBatch spriteBatch)
         {
             spriteBatch.Begin(
@@ -521,8 +533,10 @@ namespace Realm.States
             );
 
             Vector2 entryPos = EnemySpawner.EntryPosition;
+            Vector2 cameraPos = Game1.Camera.Pos;
             Rectangle worldBounds = Game1.GetWorldBounds(1.1f);
             const int tileSize = 32;
+            const float visionRadiusSq = Game1.VisionRadius * Game1.VisionRadius;
 
             int minTileX = (int)MathF.Floor(worldBounds.Left / (float)tileSize);
             int maxTileX = (int)MathF.Floor(worldBounds.Right / (float)tileSize);
@@ -536,6 +550,9 @@ namespace Realm.States
                     tx * tileSize + tileSize / 2f,
                     ty * tileSize + tileSize / 2f
                 );
+                if (Vector2.DistanceSquared(cellCenter, cameraPos) > visionRadiusSq)
+                    continue; // outside the circular vision radius — leave it black.
+
                 float dist = Vector2.Distance(cellCenter, entryPos);
 
                 foreach (var (biome, texture) in biomeRings)

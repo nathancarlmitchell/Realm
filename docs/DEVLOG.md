@@ -10090,3 +10090,39 @@ date/time for those individually; don't treat their grouping as meaning they all
      Plain `dotnet build` (0 errors, pre-existing unrelated warnings only) -- no scripted
      verification test this time per the standing "don't script a test unless asked" note; this was
      a compile-checked change only.
+
+353. **A circular vision radius now clips both the open Realm's biome background and every
+     dungeon's own tile grid.** Requested directly after entry 352's windowing fix: "can you change
+     the shape to a circle instead of square for both realm and dungeons." Clarified against two
+     readings (a circular *map/dungeon footprint* vs. a circular *player vision window*) -- the
+     user picked the vision-radius reading: tiles should only render within a fixed radius of the
+     player, with the screen's own corners going black even well inside an otherwise-loaded area,
+     the same way in the open Realm and in dungeons.
+
+     New `Game1.VisionRadius` (500 world px) -- a shared constant, since the same clip now applies
+     in two independent renderers. Sized to just clear both half of `GameplayViewportWidth` (490)
+     and half of `GameplayViewportHeight` (360), so the screen's own top/bottom/left/right edges
+     stay reachable in line with the camera, while the screen's actual corners (~608px out) round
+     off into black -- a circle inscribed just outside the screen's own half-dimensions, not a tight
+     circle that clips the edges too.
+
+     `RealmState.DrawBiomeRings()` (entry 352's own windowed per-tile loop) and
+     `RealmState.DrawBeachFeature()` (the scattered water/driftwood pass) each gained one more
+     per-cell check alongside their existing ones: `Vector2.DistanceSquared(cellCenter, Game1.
+     Camera.Pos) > VisionRadius^2` skips the cell (left black) the same way a cell outside a biome's
+     own distance band already did. `Dungeon/DungeonMap.cs`'s own `Draw()` gained the identical
+     check right next to its existing `OutOfBoundsTile` skip -- same constant, same math, so a
+     dungeon room now fades into the same circular cutoff as the open Realm instead of filling the
+     screen edge-to-edge. `Camera.Pos` is used as the circle's center rather than threading
+     `Player.Instance.Position` through -- it tracks the player every frame already, and every
+     existing `GetWorldBounds()` caller already treats it as "where the player is" for the same kind
+     of culling.
+
+     Verified with a real (non-scripted) play session: launched the game, entered the open Realm
+     (Beach biome) and confirmed the sand/water background renders as a true circle with black
+     corners and a visible water-pool feature cut cleanly at the vision edge; then entered the
+     Pirate Cave dungeon via the Nexus and confirmed its tile grid (floor + water tiles) shows the
+     same circular cutoff instead of filling the rectangular camera window. Real save files backed
+     up first and diffed after -- only the one active character's equipped-item-instance GUIDs
+     changed (Weapon/Armor/Ring/Cloak `ID` fields only, stats/tiers/names identical), the same
+     benign re-equip-on-load churn pattern confirmed in entries 349-351. `dotnet build`: 0 errors.
