@@ -13,12 +13,19 @@ namespace Realm.Data
         public float MinDistance { get; set; }
         public float MaxDistance { get; set; }
 
-        // Placeholder art strategy for now: every biome points at the same
-        // existing "tile" texture (Art.Tile's own content path) and is
-        // told apart purely by GroundTint below. Swapping in real
-        // per-biome ground art later is just changing this string — the
-        // ring-drawing code (RealmState.DrawBiomeRings()) already treats
-        // it as "whatever texture this biome uses," not specifically Tile.
+        // Every biome besides Beach still points at the same shared
+        // placeholder "tile" texture (Art.Tile's own content path) and is
+        // told apart purely by TintR/G/B below — swapping in real
+        // per-biome ground art for one of them later is just changing this
+        // string, the ring-drawing code (RealmState.DrawBiomeRings())
+        // already treats it as "whatever texture this biome uses," not
+        // specifically Tile. Beach is the first with its own real ground
+        // art (a real sand tile cropped from the placeholder Beach
+        // tileset's own "Sand" cell — see Content/Biomes/Beach/Sand.png
+        // and Data/TileSet_Beach.json), so its own Tint is left at
+        // 255/255/255 (a no-op multiply) rather than the old sandy-tan
+        // placeholder tint every biome without real art still uses to fake
+        // its own color.
         public string GroundTileImageName { get; set; }
         public int TintR { get; set; }
         public int TintG { get; set; }

@@ -10017,3 +10017,35 @@ date/time for those individually; don't treat their grouping as meaning they all
      plus a real minimized boot-check; real save files backed up first and diffed — the same benign
      equipped-item-GUID churn from entry 349 on the one file this test's own `RealmState`
      construction touched.
+
+351. **Beach's flat, generically-tinted background is now a real sand texture.** Requested directly
+     ("add the sand tile and replace the default background in the beach with that"). Every biome,
+     Beach included, previously shared the same neutral `Art.Tile` texture ("tile.png") tinted per
+     biome (`RealmState.DrawBiomeRings()`) — a placeholder scheme `Data/BiomeData.cs`'s own doc
+     comment already flagged as temporary.
+
+     New `Content/Biomes/Beach/Sand.png` (32x32) — a direct pixel crop of the "Sandy Shore" cell
+     already sitting in the placeholder Beach tileset (`Content/Dungeons/Beach/TileSet.png`, itself
+     a copy of Pirate Cave's own tileset — see entry 349), the same "reuse real, already-supplied
+     pixels" precedent this session has used for every other placeholder tileset. New `Sand` entry
+     in `Data/TileSet_Beach.json` (`Id 2`, `OffsetX 2`, `CanPassThrough: true`, no slow/harm) for
+     completeness alongside the existing `Water`/`Driftwood` entries, even though the background
+     swap itself only needed the standalone cropped PNG (`RealmState.DrawBiomeRings()` tiles one
+     whole texture via `LinearWrap`, not a sub-rectangle of a shared atlas).
+
+     `Data/BiomeData.json`'s Beach entry: `GroundTileImageName` "tile" -> "Biomes/Beach/Sand";
+     `TintR/G/B` `230/210/150` (the old placeholder's fake sandy-tan, applied as a color multiply
+     over the neutral tile) -> `255/255/255` (a no-op multiply, so the real sand texture's own
+     color shows through unmodified rather than getting double-tinted). Every other biome is
+     untouched — still on the shared placeholder tile + its own fake tint, per `BiomeData.cs`'s
+     updated doc comment noting Beach as the first exception.
+
+     Verified via a temporary `Game1.StartGame()` scripted check (reverted, no diff remains): a
+     real gameplay screenshot (non-minimized launch, window brought to front) with the camera
+     centered inside the Beach ring showed the real sand texture (a tan tone with a faint speckled
+     highlight pattern) tiling seamlessly across the entire visible viewport, with a Driftwood
+     obstacle cluster and live Beach enemies rendering correctly on top of it — confirming both the
+     new asset loads and the `LinearWrap` tiling still works cleanly at the neutral tint. Plain
+     `dotnet build` (0 errors, content pipeline picked up the new `Sand.png`) plus a real minimized
+     boot-check; real save files backed up first and diffed — the same benign equipped-item-GUID
+     churn from entries 349/350 on the one file this test's own `RealmState` construction touched.

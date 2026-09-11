@@ -33,6 +33,21 @@
       "SlowsPlayer": true,
       "SlowMultiplier": 1,
       "AppliedDebuffs": []
+    },
+    {
+      "Id": 2,
+      "Name": "Sand",
+      "OffsetX": 2,
+      "OffsetY": 0,
+      "CanPassThrough": true,
+      "CanShootThrough": true,
+      "IsDestructible": false,
+      "DestructibleHealth": 0,
+      "HarmsPlayer": false,
+      "DamagePerSecond": 0,
+      "SlowsPlayer": false,
+      "SlowMultiplier": 1,
+      "AppliedDebuffs": []
     }
   ]
 }

@@ -1310,6 +1310,18 @@
 /processorParam:TextureFormat=Color
 /build:Enemies/Cube God/Cube Blaster.png
 
+#begin Biomes/Beach/Sand.png
+/importer:TextureImporter
+/processor:TextureProcessor
+/processorParam:ColorKeyColor=255,0,255,255
+/processorParam:ColorKeyEnabled=True
+/processorParam:GenerateMipmaps=False
+/processorParam:PremultiplyAlpha=True
+/processorParam:ResizeToPowerOfTwo=False
+/processorParam:MakeSquare=False
+/processorParam:TextureFormat=Color
+/build:Biomes/Beach/Sand.png
+
 #begin Biomes/Beach/Pirate.png
 /importer:TextureImporter
 /processor:TextureProcessor
