@@ -10049,3 +10049,44 @@ date/time for those individually; don't treat their grouping as meaning they all
      `dotnet build` (0 errors, content pipeline picked up the new `Sand.png`) plus a real minimized
      boot-check; real save files backed up first and diffed — the same benign equipped-item-GUID
      churn from entries 349/350 on the one file this test's own `RealmState` construction touched.
+
+352. **The open Realm's biome background is now a real windowed per-tile draw, not one giant
+     oversized rectangle.** Requested directly after clarifying that the previously-verified
+     already-windowed `BeachTerrainFeature` scatter pass wasn't what was meant: "the background
+     tiles are still rendering. I guess I want it to show
+     void / black tiles off screen." `RealmState.DrawBiomeRings()` previously drew each biome
+     (`Data/BiomeData.json`'s four MinDistance/MaxDistance bands) as one `spriteBatch.Draw()` call
+     sized up to 16000x16000 world units (Beach's own `MaxDistance` doubled), relying on
+     `SamplerState.LinearWrap` GPU texture-wrap sampling to tile a 32x32 ground texture across that
+     whole area -- the entire ring was "loaded" uniformly with no windowing, and each ring's visual
+     edge was actually a square (an oversized rectangle), even though the gameplay/enemy-spawn
+     boundary (`EnemySpawner.GetCurrentBiome()`) has always been a true circle
+     (`Vector2.Distance`-based).
+
+     `DrawBiomeRings()` now mirrors `Dungeon/DungeonMap.cs`'s own `Draw()` exactly: it iterates only
+     the 32x32 cells inside the camera's current `Game1.GetWorldBounds(1.1f)`, and for each cell
+     checks every biome's own `[MinDistance, MaxDistance)` band against that cell's distance from
+     `EnemySpawner.EntryPosition` -- the identical half-open interval check
+     `EnemySpawner.GetCurrentBiome()` already uses to decide enemy eligibility, now shared logic
+     between rendering and spawning for the first time. A cell that lands in a biome's band gets
+     that biome's ground texture (still one `Texture2D` per biome, still tinted via
+     `TintR/G/B` -- unchanged data, just drawn per-cell now) in a new `PointClamp`-sampled pass
+     (no wrap-sampling needed for single-tile draws, same reasoning the existing
+     `DrawBeachFeature()` pass already documents); a cell outside every biome's band is left
+     undrawn entirely, so `Game1.Draw()`'s own `GraphicsDevice.Clear(Color.Black)` shows through --
+     the same "never drawn = black" reveal `DungeonMap.Draw()` already gives any
+     `OutOfBoundsTile` cell. `DrawBackground()` now calls `DrawBiomeRings()` directly (it owns its
+     own Begin/End) instead of wrapping it in a shared `LinearWrap` batch; the flat single-tile
+     `BossRealmState`/`DungeonState` fallback path (`targetRectangle`, only used when
+     `biomeRings` is empty) is untouched.
+
+     A side effect, not the primary ask but a direct consequence of matching
+     `EnemySpawner.GetCurrentBiome()`'s own circular check: every biome's visible edge is now a true
+     circle instead of the old square, for the first time matching the (always-circular) gameplay
+     boundary. Applies uniformly to every biome (`DrawBiomeRings()` is shared code, not
+     Beach-specific) -- Forest/Highlands/Blighted Wastes get the same windowing and circular edges
+     as Beach.
+
+     Plain `dotnet build` (0 errors, pre-existing unrelated warnings only) -- no scripted
+     verification test this time per the standing "don't script a test unless asked" note; this was
+     a compile-checked change only.

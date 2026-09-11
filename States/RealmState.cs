@@ -79,22 +79,28 @@ namespace Realm.States
         // packed atlas).
         protected virtual void DrawBackground(SpriteBatch spriteBatch)
         {
-            spriteBatch.Begin(
-                SpriteSortMode.FrontToBack,
-                BlendState.AlphaBlend,
-                SamplerState.LinearWrap,
-                DepthStencilState.Default,
-                RasterizerState.CullNone,
-                null,
-                Game1.Camera.GetTransformation()
-            );
-
             if (biomeRings.Count > 0)
+            {
+                // Owns its own Begin/End (PointClamp — see its own doc
+                // comment) rather than sharing this method's own
+                // LinearWrap pass below, which only the flat single-tile
+                // BossRealmState fallback still needs.
                 DrawBiomeRings(spriteBatch);
+            }
             else
+            {
+                spriteBatch.Begin(
+                    SpriteSortMode.FrontToBack,
+                    BlendState.AlphaBlend,
+                    SamplerState.LinearWrap,
+                    DepthStencilState.Default,
+                    RasterizerState.CullNone,
+                    null,
+                    Game1.Camera.GetTransformation()
+                );
                 spriteBatch.Draw(Art.Tile, new Vector2(32, 32), targetRectangle, Color.White);
-
-            spriteBatch.End();
+                spriteBatch.End();
+            }
 
             // Scattered terrain features on top of the flat biome tint, in
             // their own PointClamp-sampled pass — a real tile atlas needs
@@ -489,20 +495,62 @@ namespace Realm.States
         // underneath it, leaving only the band between two consecutive
         // MaxDistance values visible for each biome — the same trick as
         // painting concentric squares in any raster editor.
+        // Windowed per-tile draw, mirroring DungeonMap.Draw()'s own visible-
+        // bounds tile loop exactly: only the cells inside the camera's
+        // current world bounds are ever drawn, and a cell whose distance
+        // from EnemySpawner.EntryPosition doesn't land inside any biome's
+        // own [MinDistance, MaxDistance) band (the same half-open check
+        // EnemySpawner.GetCurrentBiome() already uses to decide enemy
+        // spawns) is simply skipped -- left for Game1.Draw()'s own
+        // GraphicsDevice.Clear(Color.Black) to show through, the same
+        // "never drawn = black" reveal a dungeon gives any out-of-bounds
+        // cell. This also incidentally makes each biome's visible edge a
+        // true circle instead of the old oversized-square-per-biome
+        // approach's actual (if not visually obvious) square edge --
+        // now consistent with the already-circular gameplay/spawn boundary.
         private void DrawBiomeRings(SpriteBatch spriteBatch)
         {
+            spriteBatch.Begin(
+                SpriteSortMode.Deferred,
+                BlendState.AlphaBlend,
+                SamplerState.PointClamp,
+                DepthStencilState.Default,
+                RasterizerState.CullNone,
+                null,
+                Game1.Camera.GetTransformation()
+            );
+
             Vector2 entryPos = EnemySpawner.EntryPosition;
+            Rectangle worldBounds = Game1.GetWorldBounds(1.1f);
+            const int tileSize = 32;
 
-            for (int i = biomeRings.Count - 1; i >= 0; i--)
+            int minTileX = (int)MathF.Floor(worldBounds.Left / (float)tileSize);
+            int maxTileX = (int)MathF.Floor(worldBounds.Right / (float)tileSize);
+            int minTileY = (int)MathF.Floor(worldBounds.Top / (float)tileSize);
+            int maxTileY = (int)MathF.Floor(worldBounds.Bottom / (float)tileSize);
+
+            for (int ty = minTileY; ty <= maxTileY; ty++)
+            for (int tx = minTileX; tx <= maxTileX; tx++)
             {
-                var (biome, texture) = biomeRings[i];
-                float half = biome.MaxDistance;
-                Vector2 topLeft = entryPos - new Vector2(half, half);
-                Rectangle ringRect = new(0, 0, (int)(half * 2f), (int)(half * 2f));
-                Color tint = new(biome.TintR, biome.TintG, biome.TintB);
+                Vector2 cellCenter = new(
+                    tx * tileSize + tileSize / 2f,
+                    ty * tileSize + tileSize / 2f
+                );
+                float dist = Vector2.Distance(cellCenter, entryPos);
 
-                spriteBatch.Draw(texture, topLeft, ringRect, tint);
+                foreach (var (biome, texture) in biomeRings)
+                {
+                    if (dist < biome.MinDistance || dist >= biome.MaxDistance)
+                        continue;
+
+                    Rectangle destRect = new(tx * tileSize, ty * tileSize, tileSize, tileSize);
+                    Color tint = new(biome.TintR, biome.TintG, biome.TintB);
+                    spriteBatch.Draw(texture, destRect, tint);
+                    break;
+                }
             }
+
+            spriteBatch.End();
         }
 
         public override void PostUpdate(GameTime gameTime) { }
