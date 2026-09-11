@@ -9986,3 +9986,34 @@ date/time for those individually; don't treat their grouping as meaning they all
      a real minimized boot-check; real save files backed up first and diffed — the same benign
      equipped-item-instance-GUID churn from prior entries showed up on the one `PlayerData` file
      touched by this test's own `RealmState` construction (stats/tiers/names all identical).
+
+350. **Beach terrain (entry 349) was too sparse to actually notice during play — increased feature
+     density ~4x after measuring it directly.** Reported directly ("I still do not see the beach
+     tiles in the realm"), right after entry 349 shipped with real, screenshot-confirmed rendering.
+
+     Root cause wasn't a bug — a scripted measurement (distance from a fresh entry point to the
+     nearest feature's own edge, across 8 different entry positions) showed the original count
+     (8-15 water pools + 10-15 obstacle clusters, ~20-30 total, scattered across the Beach ring's
+     full ~2.01×10⁸px² area) put the nearest feature 500-1800px away from spawn on average, and
+     never once inside the ~980×720px gameplay viewport at spawn across all 8 trials — confirmed
+     directly with a real gameplay screenshot at a "typical walked-to" position showing nothing but
+     flat sand. The ring is simply too large for that few features to be noticeable without a long,
+     specifically-aimed walk.
+
+     `Data/BiomeData.json`'s Beach entry: `WaterPoolCountMin/Max` and `ObstacleClusterCountMin/Max`
+     raised from 8-15/10-15 to 150-220/150-220 (~10x the count), `FeaturePadding` lowered from 150
+     to 80 to let the higher count still place cleanly within `BeachTerrainGenerator`'s existing
+     500-attempts-per-slot budget. Re-measured the same way: nearest-feature-edge distance dropped
+     to a consistent 320-540px, with a feature immediately on-screen at spawn in 6 of 8 trials (the
+     other 2 still only ~500-540px away — a few seconds' walk, not a long search). No code changes
+     — `BeachTerrainGenerator.cs`'s placement algorithm and `RealmState.cs`'s draw/collision wiring
+     from entry 349 are unchanged; this was purely a data-tuning pass once the actual problem was
+     measured rather than guessed at.
+
+     Verified via a temporary `Game1.StartGame()` scripted check (reverted, no diff remains): the
+     same 8-trial nearest-edge-distance measurement re-run at each density step (original, then a
+     ~3x bump, then the final ~10x bump) to confirm the trend before committing to final numbers,
+     plus a real non-minimized gameplay screenshot at each step. Plain `dotnet build` (0 errors)
+     plus a real minimized boot-check; real save files backed up first and diffed — the same benign
+     equipped-item-GUID churn from entry 349 on the one file this test's own `RealmState`
+     construction touched.

@@ -20,15 +20,15 @@
         "TerrainTileSetName": "Beach",
         "WaterTileName": "Water",
         "ObstacleTileName": "Driftwood",
-        "WaterPoolCountMin": 8,
-        "WaterPoolCountMax": 15,
+        "WaterPoolCountMin": 150,
+        "WaterPoolCountMax": 220,
         "WaterPoolMinRadius": 80,
         "WaterPoolMaxRadius": 180,
-        "ObstacleClusterCountMin": 10,
-        "ObstacleClusterCountMax": 15,
+        "ObstacleClusterCountMin": 150,
+        "ObstacleClusterCountMax": 220,
         "ObstacleMinRadius": 50,
         "ObstacleMaxRadius": 120,
-        "FeaturePadding": 150
+        "FeaturePadding": 80
     },
     {
         "Name": "Forest",
