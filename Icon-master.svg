@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
+  <!--
+    Source-of-truth master for Icon.ico (see Icon-master.png for the
+    rasterized 1024px render actually used to generate the shipped .ico —
+    that PNG was produced by scratchpad/make_icon.py via PIL, not by
+    rasterizing this SVG directly, so treat this file as a close hand-
+    authored equivalent for future edits rather than a byte-exact source).
+  -->
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#3B1E6E"/>
+      <stop offset="100%" stop-color="#12081E"/>
+    </linearGradient>
+  </defs>
+
+  <g id="background">
+    <rect x="16" y="16" width="992" height="992" rx="170" fill="url(#bg)"/>
+  </g>
+
+  <g id="sword">
+    <polygon points="512,100 572,500 544,578 480,578 452,500"
+      fill="#F0C468" stroke="#5E4018" stroke-width="14" stroke-linejoin="round"/>
+    <line x1="512" y1="165" x2="512" y2="550" stroke="#FFE9A8" stroke-width="16" stroke-linecap="round"/>
+
+    <rect x="368" y="578" width="288" height="54" rx="20"
+      fill="#D4A62A" stroke="#6E5010" stroke-width="12"/>
+
+    <rect x="478" y="632" width="68" height="134" rx="12"
+      fill="#281536" stroke="#5E4018" stroke-width="10"/>
+    <line x1="484" y1="664" x2="540" y2="664" stroke="#4A2A5E" stroke-width="10"/>
+    <line x1="484" y1="698" x2="540" y2="698" stroke="#4A2A5E" stroke-width="10"/>
+    <line x1="484" y1="732" x2="540" y2="732" stroke="#4A2A5E" stroke-width="10"/>
+
+    <circle cx="512" cy="806" r="66" fill="#D4A62A" stroke="#6E5010" stroke-width="12"/>
+    <circle cx="512" cy="806" r="36" fill="#C026D3" stroke="#360848" stroke-width="8"/>
+    <circle cx="494" cy="788" r="12" fill="#F0A8FF"/>
+  </g>
+</svg>
