@@ -10154,3 +10154,35 @@ date/time for those individually; don't treat their grouping as meaning they all
      all the way down to 16px. Verified by extracting the icon actually embedded in the built
      `Realm.exe` after a plain `dotnet build` (0 errors) and confirming it matches, rather than just
      trusting the source `.ico` file looked right.
+
+355. **Realm.exe's icon (entry 354) is now genuine pixel art instead of a smoothly-shaded vector
+     mark.** Requested directly: "convert the icon to pixel art style." Same motif and palette as
+     before (gold sword, violet gem pommel, deep violet background) -- only the rendering technique
+     changed.
+
+     Entry 354's icon was built by supersampling smooth vector shapes 4x and downsampling with
+     LANCZOS, which is exactly the anti-aliased look pixel art avoids. Rebuilt from scratch as a
+     hand-authored 32x32 pixel grid (32px chosen to match this project's own tile size --
+     `Data/TileSetData.cs`'s `TileWidth`/`TileHeight` -- rather than an arbitrary resolution) with
+     every pixel placed explicitly as a `(row, column-span, color)` table, not rasterized from
+     geometry -- avoids the stray anti-aliased or off-grid pixels that automatic rasterization at
+     low resolution tends to produce. Every embedded `.ico` size (16-256px, the same 8-size set as
+     entries 354/the original placeholder) is a plain nearest-neighbor scale of that one 32x32
+     source, so the pixel grid stays crisp and blocky at every size instead of smoothing out at
+     larger ones -- the defining trait of pixel art versus a vector mark that merely gets sharper
+     when scaled up.
+
+     Pillow's own ICO writer turned out to hardcode its own resize filter when producing each
+     embedded size from a source image (confirmed by inspecting its output), which would have
+     softened every pixel edge right back out -- worked around by building the `.ico` file's binary
+     format directly (`ICONDIR`/`ICONDIRENTRY` headers wrapping one already-nearest-neighbor-scaled
+     PNG per size), giving full control over the exact resampling used for every embedded frame.
+     `Icon-master.svg` rewritten to match: one `<rect>` per contiguous same-color run on the same
+     32x32 grid, `shape-rendering="crispEdges"`, generated from the identical row-span table used
+     for the raster so the two never drift apart. `Icon-master.png` is now a clean nearest-neighbor
+     32x-to-1024px scale of the same source (visibly blocky at full size, which is correct for a
+     pixel-art master -- it isn't meant to look smooth even at 1024px).
+
+     Verified across the full embedded size range (16 through 256px) that hard pixel edges survive
+     intact at every size, and confirmed by extracting the icon actually embedded in a freshly built
+     `Realm.exe` after a plain `dotnet build` (0 errors) rather than just trusting the source `.ico`.
