@@ -10186,3 +10186,29 @@ date/time for those individually; don't treat their grouping as meaning they all
      Verified across the full embedded size range (16 through 256px) that hard pixel edges survive
      intact at every size, and confirmed by extracting the icon actually embedded in a freshly built
      `Realm.exe` after a plain `dotnet build` (0 errors) rather than just trusting the source `.ico`.
+
+356. **Enemies (and bosses) no longer render past the edge of the fog-of-war circle.** Requested
+     directly: "the enemies should not be shown outside the fog of war." Entries 352/353 clipped the
+     ground itself (`RealmState.DrawBiomeRings()`/`DungeonMap.Draw()`) to a circular `Game1.
+     VisionRadius` around the camera, but nothing in `EntityManager`/`Enemy`/`Entity` ever culled
+     entities at all -- every enemy drew unconditionally regardless of camera position. That was
+     invisible before the fog-of-war change (an enemy on screen was, incidentally, always standing
+     on lit ground too), but once the ground started going black past `VisionRadius`, an enemy
+     beyond that same radius but still inside the camera's rectangular view drew floating over the
+     void.
+
+     New `State.UsesVisionRadius` (`States/State.cs`) -- `false` by default, overridden `true` on
+     `RealmState` (and inherited by every `DungeonState`, whose own `DungeonMap.Draw()` already
+     applies the identical clip), overridden back to `false` on `BossRealmState`. That last override
+     matters: a boss arena's own background is the flat single-tile fallback (`biomeRings` is always
+     empty there), which entry 352 deliberately left outside the vision-radius clip -- so the boss
+     itself has to stay exempt too, or it would vanish mid-fight the instant the camera drifted more
+     than 500px away from it over a floor that never actually darkens at that same distance.
+
+     `Enemy.Draw()` (`Enemy.cs`) now returns immediately, before drawing the sprite, health bar, or
+     debuff indicators, when `Game1.Instance.CurrentState.UsesVisionRadius` is true and the enemy's
+     `Position` is farther than `Game1.VisionRadius` from `Game1.Camera.Pos` -- the same distance
+     check the ground itself already uses. `Boss : Enemy` has no `Draw()` override of its own, so
+     this covers bosses too, everywhere except the arena they're exempted from above.
+
+     Plain `dotnet build`: 0 errors, no new warnings.

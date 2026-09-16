@@ -46,6 +46,12 @@ namespace Realm.States
         protected virtual int InstanceWorldWidth => Game1.WorldWidth;
         protected virtual int InstanceWorldHeight => Game1.WorldHeight;
 
+        // The open Realm's own DrawBiomeRings() below clips to Game1.
+        // VisionRadius, and so does every DungeonState by inheriting this —
+        // see State.UsesVisionRadius's own doc comment. BossRealmState
+        // overrides this back to false.
+        public override bool UsesVisionRadius => true;
+
         // Boss-arena-specific HUD (name+health bar, appearance announcement)
         // — empty here since the open Realm/regular dungeons never have a
         // Boss; BossRealmState overrides it. Called from the same

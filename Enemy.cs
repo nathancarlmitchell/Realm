@@ -412,6 +412,22 @@ namespace Realm
 
         public override void Draw(SpriteBatch spriteBatch)
         {
+            // Hidden entirely once outside the camera's own circular vision
+            // radius (Game1.VisionRadius) in a state that actually darkens
+            // the ground out there (State.UsesVisionRadius) -- matches the
+            // fog-of-war cutoff RealmState.DrawBiomeRings()/DungeonMap.
+            // Draw() already apply to the terrain itself, so an enemy
+            // standing in the black void beyond it doesn't render floating
+            // over nothing. Applies to Boss too (Boss : Enemy, no Draw()
+            // override of its own) everywhere except a BossRealmState's own
+            // arena, which opts out via UsesVisionRadius => false.
+            if (
+                Game1.Instance.CurrentState.UsesVisionRadius
+                && Vector2.DistanceSquared(Position, Game1.Camera.Pos)
+                    > Game1.VisionRadius * Game1.VisionRadius
+            )
+                return;
+
             DrawHealthBars(spriteBatch);
 
             if (blinkOn)

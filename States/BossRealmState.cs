@@ -19,6 +19,15 @@ namespace Realm.States
         protected override int InstanceWorldWidth => 2000;
         protected override int InstanceWorldHeight => 2000;
 
+        // The arena's own flat single-tile floor (DrawBackground()'s base
+        // call falls through to RealmState's flat fallback branch here,
+        // since biomeRings is always empty for a boss arena) was
+        // deliberately left out of the vision-radius clip, so the boss
+        // itself must stay exempt too -- otherwise it'd vanish mid-fight
+        // the moment the camera drifted VisionRadius away from it, over a
+        // floor that never actually darkens at that same distance.
+        public override bool UsesVisionRadius => false;
+
         // Boss-appearance announcement: the boss's name banner is fully
         // visible for the first announcementHoldFrames, then fades out over
         // announcementFadeFrames — ticked down in Update() below, drawn in
