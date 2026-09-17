@@ -19,11 +19,13 @@ namespace Realm.States
         protected override int InstanceWorldWidth => 2000;
         protected override int InstanceWorldHeight => 2000;
 
-        // No fog-of-war overlay in a boss arena -- the boss itself would
-        // otherwise vanish under it the moment the camera drifted
-        // VisionRadius away, over a small bounded floor that was never
-        // meant to darken at its own edges the way the open Realm/a
-        // dungeon does.
+        // The arena's own flat single-tile floor (DrawBackground()'s base
+        // call falls through to RealmState's flat fallback branch here,
+        // since biomeRings is always empty for a boss arena) was
+        // deliberately left out of the vision-radius clip, so the boss
+        // itself must stay exempt too -- otherwise it'd vanish mid-fight
+        // the moment the camera drifted VisionRadius away from it, over a
+        // floor that never actually darkens at that same distance.
         public override bool UsesVisionRadius => false;
 
         // Boss-appearance announcement: the boss's name banner is fully

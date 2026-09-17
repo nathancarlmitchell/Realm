@@ -46,10 +46,10 @@ namespace Realm.States
         protected virtual int InstanceWorldWidth => Game1.WorldWidth;
         protected virtual int InstanceWorldHeight => Game1.WorldHeight;
 
-        // Draw() below layers VisionFog's darkness overlay over the open
-        // Realm, and every DungeonState by inheriting this — see State.
-        // UsesVisionRadius's own doc comment. BossRealmState overrides this
-        // back to false.
+        // The open Realm's own DrawBiomeRings() below clips to Game1.
+        // VisionRadius, and so does every DungeonState by inheriting this —
+        // see State.UsesVisionRadius's own doc comment. BossRealmState
+        // overrides this back to false.
         public override bool UsesVisionRadius => true;
 
         // Boss-arena-specific HUD (name+health bar, appearance announcement)
@@ -143,11 +143,11 @@ namespace Realm.States
         // small local bounding box instead of a whole grid (there is no
         // grid for the open Realm to iterate). Skips entirely if the
         // feature's own bounding box doesn't overlap worldBounds, same
-        // "only draw what's on screen" reasoning DungeonMap.Draw() uses.
-        // No vision-radius check here any more -- see VisionFog.cs's own
-        // doc comment; RealmState.Draw() layers that overlay on top of
-        // everything (including this) instead of each draw call fading
-        // itself individually.
+        // "only draw what's on screen" reasoning DungeonMap.Draw() uses;
+        // each surviving cell is then also clipped against Game1.
+        // VisionRadius around Game1.GetVisionCenter(), same as
+        // DrawBiomeRings(), so a feature near the edge of vision cuts off
+        // at the same blocky boundary as the ground beneath it.
         private void DrawBeachFeature(
             SpriteBatch spriteBatch,
             BeachTerrainFeature feature,
@@ -164,6 +164,8 @@ namespace Realm.States
                 return;
 
             const int tileSize = 32;
+            Vector2 visionCenter = Game1.GetVisionCenter();
+            const float visionRadiusSq = Game1.VisionRadius * Game1.VisionRadius;
             Rectangle sourceRect = new(
                 feature.Tile.OffsetX * tileSize,
                 feature.Tile.OffsetY * tileSize,
@@ -182,6 +184,8 @@ namespace Realm.States
                 Vector2 cellCenter = new(tx * tileSize + tileSize / 2f, ty * tileSize + tileSize / 2f);
                 if (Vector2.DistanceSquared(cellCenter, feature.Center) > feature.Radius * feature.Radius)
                     continue; // outside the circle — leave the flat biome tint showing through.
+                if (Vector2.DistanceSquared(cellCenter, visionCenter) > visionRadiusSq)
+                    continue; // outside the circular vision radius — leave it black.
 
                 Rectangle destRect = new(tx * tileSize, ty * tileSize, tileSize, tileSize);
                 spriteBatch.Draw(beachTileAtlas, destRect, sourceRect, Color.White);
@@ -461,14 +465,6 @@ namespace Realm.States
                 bag.DrawLoot(spriteBatch);
             }
 
-            // Screen-space fog-of-war darkness, layered on top of every
-            // world-space thing drawn above (background, entities, portals,
-            // loot) — see VisionFog.cs's own doc comment. Skipped entirely
-            // in a BossRealmState arena (UsesVisionRadius => false there),
-            // whose flat single-tile floor was never part of this either.
-            if (UsesVisionRadius)
-                VisionFog.Draw(spriteBatch);
-
             // Draw the HUD sidebar (stats, XP, health, mana, ability,
             // equipment, inventory, in that order).
             Overlay.DrawSidebar(spriteBatch);
@@ -526,12 +522,14 @@ namespace Realm.States
         // true circle instead of the old oversized-square-per-biome
         // approach's actual (if not visually obvious) square edge --
         // now consistent with the already-circular gameplay/spawn boundary.
-        // Vision-radius fog is no longer handled per-tile here at all --
-        // see VisionFog.cs's own doc comment for why (a per-tile check
-        // against the camera's continuously-moving position quantized
-        // against this fixed 32px grid, which visibly reshaped the "circle"
-        // every frame as the player walked). RealmState.Draw() layers
-        // VisionFog.Draw() on top of everything instead.
+        // On top of that, every cell is also clipped against Game1.
+        // VisionRadius around Game1.GetVisionCenter() -- the camera's own
+        // position snapped to the tile grid, not its raw continuous value
+        // -- see that method's own doc comment for why: keeps this blocky/
+        // pixelated circle from reshaping itself every single frame the
+        // camera moves even slightly, while still updating in a clean,
+        // whole-tile step whenever the player actually crosses into a new
+        // tile.
         private void DrawBiomeRings(SpriteBatch spriteBatch)
         {
             spriteBatch.Begin(
@@ -545,8 +543,10 @@ namespace Realm.States
             );
 
             Vector2 entryPos = EnemySpawner.EntryPosition;
+            Vector2 visionCenter = Game1.GetVisionCenter();
             Rectangle worldBounds = Game1.GetWorldBounds(1.1f);
             const int tileSize = 32;
+            const float visionRadiusSq = Game1.VisionRadius * Game1.VisionRadius;
 
             int minTileX = (int)MathF.Floor(worldBounds.Left / (float)tileSize);
             int maxTileX = (int)MathF.Floor(worldBounds.Right / (float)tileSize);
@@ -560,6 +560,9 @@ namespace Realm.States
                     tx * tileSize + tileSize / 2f,
                     ty * tileSize + tileSize / 2f
                 );
+                if (Vector2.DistanceSquared(cellCenter, visionCenter) > visionRadiusSq)
+                    continue; // outside the circular vision radius — leave it black.
+
                 float dist = Vector2.Distance(cellCenter, entryPos);
 
                 foreach (var (biome, texture) in biomeRings)

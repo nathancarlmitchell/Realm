@@ -412,12 +412,23 @@ namespace Realm
 
         public override void Draw(SpriteBatch spriteBatch)
         {
-            // No vision-radius check here any more -- VisionFog.Draw()
-            // layers a screen-space darkness overlay on top of the entire
-            // world (see its own doc comment), which covers an enemy
-            // standing beyond Game1.VisionRadius the same way it covers the
-            // ground beneath it, without every entity needing to duplicate
-            // that distance check itself.
+            // Hidden entirely once outside the circular vision radius
+            // (Game1.VisionRadius around Game1.GetVisionCenter() -- the
+            // camera's own position snapped to the tile grid, not its raw
+            // continuous value, so an enemy near the boundary pops in/out
+            // in the same clean whole-tile steps the ground itself does,
+            // not a per-frame wobble) in a state that actually darkens the
+            // ground out there (State.UsesVisionRadius). Applies to Boss
+            // too (Boss : Enemy, no Draw() override of its own) everywhere
+            // except a BossRealmState's own arena, which opts out via
+            // UsesVisionRadius => false.
+            if (
+                Game1.Instance.CurrentState.UsesVisionRadius
+                && Vector2.DistanceSquared(Position, Game1.GetVisionCenter())
+                    > Game1.VisionRadius * Game1.VisionRadius
+            )
+                return;
+
             DrawHealthBars(spriteBatch);
 
             if (blinkOn)

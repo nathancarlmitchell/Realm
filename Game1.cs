@@ -117,36 +117,30 @@ namespace Realm
         // out) are comfortably beyond it and round off.
         public const float VisionRadius = 500f;
 
-        // Width (world px) of the soft fade band just inside VisionRadius —
-        // tiles from (VisionRadius - VisionFeatherWidth) out to VisionRadius
-        // itself ramp linearly from fully opaque to fully transparent
-        // instead of a single hard on/off cutoff. A hard per-tile cutoff
-        // means each boundary tile is a flat yes/no test against the
-        // camera's own continuously-moving position, so as the player
-        // walks, individual 32px tiles right at the edge flip fully in and
-        // out from one frame to the next — visible as the circle's own
-        // silhouette subtly reshaping itself every step. Fading instead
-        // means the same boundary tiles shift by a few percent opacity per
-        // frame rather than popping fully on/off, which reads as a smooth
-        // vignette instead of a jittering edge. 128px (4 tiles) is wide
-        // enough to hide the individual tile steps as a gradient rather
-        // than visible bands.
-        public const float VisionFeatherWidth = 128f;
-
-        // 0 at/beyond VisionRadius, 1 at or inside (VisionRadius -
-        // VisionFeatherWidth), linear in between. Every tile-based renderer
-        // that clips to VisionRadius (RealmState's biome background/
-        // terrain features, DungeonMap's own tile grid) multiplies its draw
-        // tint by this instead of skipping the tile outright, so the fade
-        // band is shared/identical everywhere it's used.
-        public static float GetVisionAlpha(float distanceFromCamera)
+        // The world-space point every vision-radius cutoff (RealmState's
+        // biome background/terrain features, DungeonMap's own tile grid,
+        // Enemy.Draw()) measures distance from -- Camera.Pos itself
+        // snapped down to the nearest tile's center, not the camera's raw
+        // continuous position. A hard per-tile "distance <= VisionRadius"
+        // test against a continuously-moving center necessarily changes
+        // its result for whichever tiles sit near the boundary on every
+        // single frame the camera moves at all, even by a fraction of a
+        // pixel -- visible as the circle's own blocky silhouette subtly
+        // reshaping itself constantly instead of holding still. Snapping
+        // the center to the same 32px tile grid the boundary itself is
+        // drawn on means the exact same set of tiles stays lit for as long
+        // as the camera remains within one tile -- the shape only updates
+        // (by a whole tile-width step, not a sub-pixel wobble) on the
+        // frame the player actually crosses into a new tile, which reads
+        // as a deliberate, chunky reveal in keeping with the blocky/
+        // pixelated look rather than continuous jitter.
+        public static Vector2 GetVisionCenter()
         {
-            if (distanceFromCamera >= VisionRadius)
-                return 0f;
-            float innerRadius = VisionRadius - VisionFeatherWidth;
-            if (distanceFromCamera <= innerRadius)
-                return 1f;
-            return (VisionRadius - distanceFromCamera) / VisionFeatherWidth;
+            const float grid = 32f;
+            return new Vector2(
+                MathF.Floor(Camera.Pos.X / grid) * grid + grid / 2f,
+                MathF.Floor(Camera.Pos.Y / grid) * grid + grid / 2f
+            );
         }
 
         public static bool Mute { get; set; }

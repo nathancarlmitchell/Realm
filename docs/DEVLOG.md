@@ -10275,3 +10275,31 @@ date/time for those individually; don't treat their grouping as meaning they all
      Plain `dotnet build`: 0 errors (one `Color(int,int,int,int)` vs `Color(byte,byte,byte,byte)`
      constructor ambiguity fixed with explicit byte casts). Not yet checked in a live play session --
      worth a look in-game before deciding this reads better than entry 357's attempt.
+
+359. **Fog-of-war back to a hard per-tile cutoff (the blocky look), fixed by snapping the vision
+     center to the tile grid instead of smoothing or replacing it.** Neither of the last two attempts
+     landed: entry 357's feathered edge and entry 358's screen-space overlay were both explicitly
+     rejected -- "not good. I like having the tiles to create a more blocky / pixelated circle like
+     the original version, just that the shape of the circle seems to change." The actual ask was
+     narrower than either previous attempt addressed: keep the original hard-edged, tile-blocky
+     circle exactly as it looked, just stop it from reshaping itself as the player walks.
+
+     Entry 358's `VisionFog.cs` screen-space overlay is gone -- deleted outright, along with its call
+     site in `RealmState.Draw()`. `RealmState.DrawBiomeRings()`/`DrawBeachFeature()` and `Dungeon/
+     DungeonMap.cs`'s own `Draw()` are all back to a plain hard `distance > VisionRadius` skip (no
+     alpha, no fading), and `Enemy.Draw()`'s own hard cutoff (entry 356) is back too -- all four
+     call sites now genuinely reproduce entry 352/353's original look.
+
+     The actual fix: new `Game1.GetVisionCenter()` replaces `Game1.Camera.Pos` as the point every one
+     of those four cutoffs measures distance from. It's `Camera.Pos` snapped down to the nearest
+     tile's own center (`Math.Floor(pos / 32) * 32 + 16` per axis) rather than the camera's raw,
+     continuously-moving position. The real root cause across every earlier attempt (352/353/356/357)
+     was never about hard vs. soft edges -- it was that a per-tile boolean test against a
+     continuously-moving center necessarily re-evaluates, and can flip, for every boundary tile on
+     literally every frame the camera moves by any amount, however small. Snapping the center to the
+     same 32px grid the tiles themselves already live on means the exact same set of tiles stays lit
+     for as long as the camera remains anywhere within one tile -- the shape is now genuinely static
+     between tile crossings, and only steps (by a whole tile-width, a deliberate and far less jarring
+     change) on the frame the player actually crosses into a new tile.
+
+     Plain `dotnet build`: 0 errors, no new warnings. Not yet checked in a live play session.

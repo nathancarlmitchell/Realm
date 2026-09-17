@@ -243,16 +243,21 @@ namespace Realm
 
         // Draws only the tiles overlapping worldBounds (in world pixels) —
         // never the whole grid — so per-frame draw cost stays bounded
-        // regardless of total dungeon size. No vision-radius fade here any
-        // more -- see VisionFog.cs's own doc comment; RealmState.Draw()
-        // (DungeonState's own base class) layers that overlay on top of
-        // everything instead of this draw call fading itself per-tile.
+        // regardless of total dungeon size. Each surviving cell is then
+        // also clipped against Game1.VisionRadius around Game1.
+        // GetVisionCenter() -- the camera's own position snapped to the
+        // tile grid, not its raw continuous value -- see that method's own
+        // doc comment; the open Realm's own RealmState.DrawBiomeRings()
+        // applies the exact same clip for the same reason.
         public void Draw(SpriteBatch spriteBatch, Rectangle worldBounds, Texture2D atlas)
         {
             int minTileX = Math.Max(0, worldBounds.Left / TileSet.TileWidth);
             int maxTileX = Math.Min(WidthInTiles - 1, worldBounds.Right / TileSet.TileWidth);
             int minTileY = Math.Max(0, worldBounds.Top / TileSet.TileHeight);
             int maxTileY = Math.Min(HeightInTiles - 1, worldBounds.Bottom / TileSet.TileHeight);
+
+            Vector2 visionCenter = Game1.GetVisionCenter();
+            const float visionRadiusSq = Game1.VisionRadius * Game1.VisionRadius;
 
             for (int ty = minTileY; ty <= maxTileY; ty++)
             {
@@ -261,6 +266,13 @@ namespace Realm
                     TileDefData tile = TileAt(tx, ty);
                     if (tile == OutOfBoundsTile)
                         continue;
+
+                    Vector2 cellCenter = new(
+                        tx * TileSet.TileWidth + TileSet.TileWidth / 2f,
+                        ty * TileSet.TileHeight + TileSet.TileHeight / 2f
+                    );
+                    if (Vector2.DistanceSquared(cellCenter, visionCenter) > visionRadiusSq)
+                        continue; // outside the circular vision radius — leave it black.
 
                     Rectangle destRect = new(
                         tx * TileSet.TileWidth,
