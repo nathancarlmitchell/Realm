@@ -46,10 +46,10 @@ namespace Realm.States
         protected virtual int InstanceWorldWidth => Game1.WorldWidth;
         protected virtual int InstanceWorldHeight => Game1.WorldHeight;
 
-        // The open Realm's own DrawBiomeRings() below clips to Game1.
-        // VisionRadius, and so does every DungeonState by inheriting this —
-        // see State.UsesVisionRadius's own doc comment. BossRealmState
-        // overrides this back to false.
+        // Draw() below layers VisionFog's darkness overlay over the open
+        // Realm, and every DungeonState by inheriting this — see State.
+        // UsesVisionRadius's own doc comment. BossRealmState overrides this
+        // back to false.
         public override bool UsesVisionRadius => true;
 
         // Boss-arena-specific HUD (name+health bar, appearance announcement)
@@ -143,11 +143,11 @@ namespace Realm.States
         // small local bounding box instead of a whole grid (there is no
         // grid for the open Realm to iterate). Skips entirely if the
         // feature's own bounding box doesn't overlap worldBounds, same
-        // "only draw what's on screen" reasoning DungeonMap.Draw() uses;
-        // each surviving cell is then also faded against Game1.VisionRadius
-        // around the camera, same as DrawBiomeRings(), so a feature near
-        // the edge of vision fades into the same soft cutoff as the ground
-        // beneath it rather than popping past it.
+        // "only draw what's on screen" reasoning DungeonMap.Draw() uses.
+        // No vision-radius check here any more -- see VisionFog.cs's own
+        // doc comment; RealmState.Draw() layers that overlay on top of
+        // everything (including this) instead of each draw call fading
+        // itself individually.
         private void DrawBeachFeature(
             SpriteBatch spriteBatch,
             BeachTerrainFeature feature,
@@ -164,7 +164,6 @@ namespace Realm.States
                 return;
 
             const int tileSize = 32;
-            Vector2 cameraPos = Game1.Camera.Pos;
             Rectangle sourceRect = new(
                 feature.Tile.OffsetX * tileSize,
                 feature.Tile.OffsetY * tileSize,
@@ -183,12 +182,9 @@ namespace Realm.States
                 Vector2 cellCenter = new(tx * tileSize + tileSize / 2f, ty * tileSize + tileSize / 2f);
                 if (Vector2.DistanceSquared(cellCenter, feature.Center) > feature.Radius * feature.Radius)
                     continue; // outside the circle — leave the flat biome tint showing through.
-                float visionAlpha = Game1.GetVisionAlpha(Vector2.Distance(cellCenter, cameraPos));
-                if (visionAlpha <= 0f)
-                    continue; // fully outside the vision radius — leave it black.
 
                 Rectangle destRect = new(tx * tileSize, ty * tileSize, tileSize, tileSize);
-                spriteBatch.Draw(beachTileAtlas, destRect, sourceRect, Color.White * visionAlpha);
+                spriteBatch.Draw(beachTileAtlas, destRect, sourceRect, Color.White);
             }
         }
 
@@ -465,6 +461,14 @@ namespace Realm.States
                 bag.DrawLoot(spriteBatch);
             }
 
+            // Screen-space fog-of-war darkness, layered on top of every
+            // world-space thing drawn above (background, entities, portals,
+            // loot) — see VisionFog.cs's own doc comment. Skipped entirely
+            // in a BossRealmState arena (UsesVisionRadius => false there),
+            // whose flat single-tile floor was never part of this either.
+            if (UsesVisionRadius)
+                VisionFog.Draw(spriteBatch);
+
             // Draw the HUD sidebar (stats, XP, health, mana, ability,
             // equipment, inventory, in that order).
             Overlay.DrawSidebar(spriteBatch);
@@ -522,12 +526,12 @@ namespace Realm.States
         // true circle instead of the old oversized-square-per-biome
         // approach's actual (if not visually obvious) square edge --
         // now consistent with the already-circular gameplay/spawn boundary.
-        // On top of that, every cell is also faded against Game1.
-        // VisionRadius around the camera (Game1.GetVisionAlpha() -- see its
-        // own doc comment) instead of a hard cutoff, so the loaded/unloaded
-        // edge reads as a soft circular vignette around the player rather
-        // than individual 32px tiles popping fully on/off as the camera
-        // moves.
+        // Vision-radius fog is no longer handled per-tile here at all --
+        // see VisionFog.cs's own doc comment for why (a per-tile check
+        // against the camera's continuously-moving position quantized
+        // against this fixed 32px grid, which visibly reshaped the "circle"
+        // every frame as the player walked). RealmState.Draw() layers
+        // VisionFog.Draw() on top of everything instead.
         private void DrawBiomeRings(SpriteBatch spriteBatch)
         {
             spriteBatch.Begin(
@@ -541,7 +545,6 @@ namespace Realm.States
             );
 
             Vector2 entryPos = EnemySpawner.EntryPosition;
-            Vector2 cameraPos = Game1.Camera.Pos;
             Rectangle worldBounds = Game1.GetWorldBounds(1.1f);
             const int tileSize = 32;
 
@@ -557,10 +560,6 @@ namespace Realm.States
                     tx * tileSize + tileSize / 2f,
                     ty * tileSize + tileSize / 2f
                 );
-                float visionAlpha = Game1.GetVisionAlpha(Vector2.Distance(cellCenter, cameraPos));
-                if (visionAlpha <= 0f)
-                    continue; // fully outside the vision radius — leave it black.
-
                 float dist = Vector2.Distance(cellCenter, entryPos);
 
                 foreach (var (biome, texture) in biomeRings)
@@ -569,7 +568,7 @@ namespace Realm.States
                         continue;
 
                     Rectangle destRect = new(tx * tileSize, ty * tileSize, tileSize, tileSize);
-                    Color tint = new Color(biome.TintR, biome.TintG, biome.TintB) * visionAlpha;
+                    Color tint = new(biome.TintR, biome.TintG, biome.TintB);
                     spriteBatch.Draw(texture, destRect, tint);
                     break;
                 }

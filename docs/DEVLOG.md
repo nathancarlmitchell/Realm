@@ -10241,3 +10241,37 @@ date/time for those individually; don't treat their grouping as meaning they all
      a hard-edged entity -- both reach "gone" at the same boundary.
 
      Plain `dotnet build`: 0 errors, no new warnings.
+
+358. **Fog-of-war rebuilt as a single screen-space overlay instead of per-tile/per-entity fading.**
+     Entry 357's feathered per-tile fade didn't land: "i don't like that fog of war solution, can
+     you try something else." The actual root cause of the original jitter complaint (entry 357) was
+     never the lack of a soft edge -- it was that every approach so far (entries 352/353/356/357)
+     computed "is this cell/entity lit" by comparing the camera's own continuously-moving world
+     position against a fixed 32px tile grid, so boundary tiles/entities necessarily recompute (and
+     therefore can visibly shift) every single frame as the player walks, soft-edged or not.
+
+     New `VisionFog.cs`: a single static darkness texture (1536x1536, radial gradient using the same
+     `Game1.GetVisionAlpha()`/`VisionRadius`/`VisionFeatherWidth` this project already had, just
+     inverted to "how dark" instead of "how lit"), generated once and drawn every frame at a *fixed
+     screen position* -- the exact center of the gameplay viewport. That position is provably
+     constant regardless of where the camera actually is in world space:
+     `Camera.GetTransformation()` always maps `Camera.Pos` to that same screen point by construction
+     (translate by `-Camera.Pos`, then by `+viewport/2`). A static image drawn at a static screen
+     position every frame cannot jitter -- there's no longer any per-tile recomputation against a
+     moving world coordinate for this to depend on.
+
+     This let the earlier per-cell/per-entity fog logic come back out entirely rather than needing
+     yet another tuning pass: `RealmState.DrawBiomeRings()`/`DrawBeachFeature()` and `Dungeon/
+     DungeonMap.cs`'s own `Draw()` are back to plain unconditional draws (still windowed to
+     `Game1.GetWorldBounds()` for performance, that part was never the problem), and `Enemy.Draw()`
+     no longer checks vision radius at all -- the overlay darkens an off-screen-in-the-dark enemy
+     the same way it darkens the ground under it, automatically, along with loot bags and dropped
+     portals, without each draw call needing its own copy of the same distance check.
+     `RealmState.Draw()` now calls `VisionFog.Draw(spriteBatch)` once, right after loot is drawn and
+     before the HUD sidebar, gated on the same `State.UsesVisionRadius` flag entry 356 already added
+     (true for the open Realm/dungeons, false for a `BossRealmState` arena, which still has no
+     fog-of-war edge at all).
+
+     Plain `dotnet build`: 0 errors (one `Color(int,int,int,int)` vs `Color(byte,byte,byte,byte)`
+     constructor ambiguity fixed with explicit byte casts). Not yet checked in a live play session --
+     worth a look in-game before deciding this reads better than entry 357's attempt.

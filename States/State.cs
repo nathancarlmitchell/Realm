@@ -73,18 +73,15 @@ namespace Realm.States
         // which refuses to drop the player onto a wall or past the map edge.
         public virtual bool IsWalkable(Vector2 worldPosition, float radius) => true;
 
-        // Whether this state clips its own ground rendering to Game1.
-        // VisionRadius around the camera (see that constant's own doc
-        // comment) -- false by default, since most states (menus, Nexus,
-        // Character Select) have no such thing to match against. Overridden
-        // true by RealmState (the open Realm's own DrawBiomeRings(), and
-        // every DungeonState by inheritance -- DungeonMap.Draw() applies the
-        // identical clip), then back to false by BossRealmState, whose flat
-        // single-tile arena floor was deliberately left out of that clip.
-        // Enemy.Draw() checks this before hiding an off-screen-in-the-dark
-        // enemy, so a boss fight never loses its own boss just because the
-        // camera drifted more than VisionRadius away from it in an arena
-        // that doesn't otherwise darken at that same distance.
+        // Whether this state draws the VisionFog screen-space darkness
+        // overlay (see VisionFog.cs's own doc comment) over the gameplay
+        // world -- false by default, since most states (menus, Nexus,
+        // Character Select) have no world to darken at all. Overridden true
+        // by RealmState (the open Realm, and every DungeonState by
+        // inheritance), then back to false by BossRealmState, whose flat
+        // single-tile arena floor was never meant to have a fog-of-war edge
+        // -- a boss fight would otherwise lose its own boss to the overlay
+        // the moment the camera drifted VisionRadius away from it.
         public virtual bool UsesVisionRadius => false;
 
         #endregion
