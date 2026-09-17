@@ -10212,3 +10212,32 @@ date/time for those individually; don't treat their grouping as meaning they all
      this covers bosses too, everywhere except the arena they're exempted from above.
 
      Plain `dotnet build`: 0 errors, no new warnings.
+
+357. **The fog-of-war edge no longer visibly reshapes itself as the player walks.** Reported
+     directly: "the fog of war circle changes shape slightly as the player moves which is visually
+     distracting." Root cause: entries 352/353's vision-radius clip was a hard per-tile yes/no test
+     (`distance <= Game1.VisionRadius`) against the camera's own continuously-moving position, so
+     individual 32px boundary tiles flipped fully on or fully off from one frame to the next as that
+     continuous distance crossed the radius threshold -- visible as the circle's own silhouette
+     subtly reshaping itself every step instead of holding a stable outline.
+
+     New `Game1.VisionFeatherWidth` (128px, 4 tiles) and `Game1.GetVisionAlpha(distance)`: 1.0 at or
+     inside `VisionRadius - VisionFeatherWidth`, ramping linearly down to 0.0 at `VisionRadius`
+     itself, instead of a single hard cutoff. `RealmState.DrawBiomeRings()`, `RealmState.
+     DrawBeachFeature()`, and `Dungeon/DungeonMap.cs`'s own `Draw()` all now multiply their draw
+     tint by this alpha (`Color * visionAlpha`, relying on the same premultiplied-alpha semantics
+     `BlendState.AlphaBlend` already assumes everywhere else in these draws) instead of skipping a
+     tile outright once inside the radius -- a tile is only skipped once its alpha reaches exactly
+     0, i.e. fully outside `VisionRadius`, same boundary as before. The boundary tiles still
+     technically flicker in the same way every frame, but now only by a few percent of
+     opacity at a time rather than popping fully in and out, so it reads as a soft, stable vignette
+     rather than a jittering hard edge. `BeachTerrainFeature`'s own circular footprint check (a
+     different, deliberate shape boundary, unrelated to vision) was left as a hard cutoff --
+     only the vision-radius check itself changed.
+
+     `Enemy.Draw()`'s own hard vision-radius cutoff (entry 356) was left untouched: it already
+     disappears at exactly the same `VisionRadius` distance where the ground's own alpha has faded
+     to fully 0 (invisible) anyway, so there's no visible seam between a softly-faded background and
+     a hard-edged entity -- both reach "gone" at the same boundary.
+
+     Plain `dotnet build`: 0 errors, no new warnings.

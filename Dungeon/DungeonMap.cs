@@ -244,12 +244,12 @@ namespace Realm
         // Draws only the tiles overlapping worldBounds (in world pixels) —
         // never the whole grid — so per-frame draw cost stays bounded
         // regardless of total dungeon size. Each surviving cell is then
-        // also clipped against Game1.VisionRadius around the camera (==
-        // the player) — see that constant's own doc comment — so the
-        // loaded/unloaded edge reads as a circle around the player instead
-        // of worldBounds' own rectangular (square-ish) silhouette; the
-        // open Realm's own RealmState.DrawBiomeRings() applies the exact
-        // same clip for the same reason.
+        // also faded against Game1.VisionRadius around the camera (== the
+        // player) — see Game1.GetVisionAlpha()'s own doc comment — so the
+        // loaded/unloaded edge reads as a soft circular vignette around the
+        // player instead of individual tiles popping fully on/off as the
+        // camera moves; the open Realm's own RealmState.DrawBiomeRings()
+        // applies the exact same fade for the same reason.
         public void Draw(SpriteBatch spriteBatch, Rectangle worldBounds, Texture2D atlas)
         {
             int minTileX = Math.Max(0, worldBounds.Left / TileSet.TileWidth);
@@ -258,7 +258,6 @@ namespace Realm
             int maxTileY = Math.Min(HeightInTiles - 1, worldBounds.Bottom / TileSet.TileHeight);
 
             Vector2 cameraPos = Game1.Camera.Pos;
-            const float visionRadiusSq = Game1.VisionRadius * Game1.VisionRadius;
 
             for (int ty = minTileY; ty <= maxTileY; ty++)
             {
@@ -272,8 +271,9 @@ namespace Realm
                         tx * TileSet.TileWidth + TileSet.TileWidth / 2f,
                         ty * TileSet.TileHeight + TileSet.TileHeight / 2f
                     );
-                    if (Vector2.DistanceSquared(cellCenter, cameraPos) > visionRadiusSq)
-                        continue; // outside the circular vision radius — leave it black.
+                    float visionAlpha = Game1.GetVisionAlpha(Vector2.Distance(cellCenter, cameraPos));
+                    if (visionAlpha <= 0f)
+                        continue; // fully outside the vision radius — leave it black.
 
                     Rectangle destRect = new(
                         tx * TileSet.TileWidth,
@@ -288,7 +288,7 @@ namespace Realm
                         TileSet.TileHeight
                     );
 
-                    spriteBatch.Draw(atlas, destRect, sourceRect, Color.White);
+                    spriteBatch.Draw(atlas, destRect, sourceRect, Color.White * visionAlpha);
                 }
             }
         }
